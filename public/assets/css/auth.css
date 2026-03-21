@@ -1,0 +1,20 @@
+.auth-bg {
+    background: linear-gradient(135deg, #0d1b2a, #1b263b);
+}
+
+.auth-card {
+    width: 400px;
+    border-radius: 12px;
+}
+
+.auth-card h3 {
+    font-weight: bold;
+}
+
+input {
+    border-radius: 8px !important;
+}
+
+button {
+    border-radius: 8px !important;
+}
