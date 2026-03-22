@@ -2,62 +2,80 @@
 
 namespace App\Controllers;
 
+use App\Services\AuthService;
 use App\Models\UserModel;
 
 class AuthController extends BaseController
 {
     public function login()
     {
+        if (session()->get('isLoggedIn')) {
+            return redirect()->to('/dashboard');
+        }
+
         return view('auth/login');
     }
 
+
     public function register()
     {
+        if (session()->get('isLoggedIn')) {
+            return redirect()->to('/dashboard');
+        }
+
         return view('auth/register');
     }
 
     public function registerPost()
     {
-        $model = new UserModel();
+        log_message('error', "Hola: " . json_encode($this->request->getPost()));
+        $validation = \Config\Services::validation();
 
-        $data = [
-            'name'     => $this->request->getPost('name'),
-            'email'    => $this->request->getPost('email'),
-            'password' => $this->request->getPost('password'),
-            'role'     => 'player'
+        $rules = [
+            'name' => 'required|min_length[3]',
+            'email' => 'required|valid_email|is_unique[users.email]',
+            'password' => 'required|min_length[6]',
+            'confirm_password' => 'matches[password]'
         ];
 
-        if (!$model->insert($data)) {
-            return redirect()->back()
-                ->withInput()
-                ->with('errors', $model->errors());
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'errors' => $validation->getErrors()
+            ])->setStatusCode(400);
         }
 
-        return redirect()->to('/login')->with('success', 'Usuario creado correctamente');
+        $model = new UserModel();
+
+        $model->insert([
+            'name' => $this->request->getPost('name'),
+            'email' => $this->request->getPost('email'),
+            'password' => $this->request->getPost('password'),
+            'role' => 'player'
+        ]);
+
+        return $this->response->setJSON([
+            'status' => 'success'
+        ]);
     }
 
     public function loginPost()
     {
-        $session = session();
-        $model = new UserModel();
+        $auth = new AuthService();
 
         $email = $this->request->getPost('email');
         $password = $this->request->getPost('password');
 
-        $user = $model->where('email', $email)->first();
-
-        if (!$user || !password_verify($password, $user['password'])) {
-            return redirect()->back()->with('error', 'Credenciales incorrectas');
+        if (!$auth->attempt($email, $password)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'error' => 'Credenciales incorrectas'
+            ])->setStatusCode(401);
         }
 
-        $session->set([
-            'user_id'   => $user['id'],
-            'user_name' => $user['name'],
-            'role'      => $user['role'],
-            'isLoggedIn'=> true
+        return $this->response->setJSON([
+            'status' => 'success'
         ]);
-
-        return redirect()->to('/dashboard');
     }
 
     public function logout()

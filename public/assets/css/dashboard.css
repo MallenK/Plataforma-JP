@@ -1,0 +1,82 @@
+/* HEADER */
+.page-header .title {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.page-header .subtitle {
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* CARDS MEJORADAS */
+.card-metric {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 14px;
+    padding: 20px;
+    transition: 0.2s ease;
+}
+
+.card-metric:hover {
+    border-color: #334155;
+    transform: translateY(-2px);
+}
+
+.card-metric-header {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.card-metric-body h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+/* EMPTY STATE */
+.empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+}
+
+.empty-state-box {
+    background: #020617;
+    border: 1px solid #1e293b;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+
+/* CONTENEDOR GLOBAL */
+.app {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: #020617;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* CONTENT */
+.content {
+    padding: 20px;
+}
+
+

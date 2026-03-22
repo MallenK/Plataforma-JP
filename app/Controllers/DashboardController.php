@@ -2,17 +2,32 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
-
 class DashboardController extends BaseController
 {
     public function index()
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login');
+        return view('dashboard/index', [
+            'title' => 'Dashboard'
+        ]);
+    }
+
+
+    public function getStats()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
         }
 
-        return "Bienvenido " . session()->get('user_name') . " (" . session()->get('role') . ")";
+        if (session('role') !== 'admin') {
+            return $this->response->setJSON([
+                'error' => 'No autorizado'
+            ]);
+        }
+
+        $dashboardModel = new \App\Models\DashboardModel();
+
+        return $this->response->setJSON(
+            $dashboardModel->getAdminStats()
+        );
     }
 }

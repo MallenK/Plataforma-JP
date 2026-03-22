@@ -1,69 +1,247 @@
-# CodeIgniter 4 Application Starter
+# 🚀 Plataforma JP Preparation
 
-## What is CodeIgniter?
+Aplicación web desarrollada con **CodeIgniter 4 + Docker**, orientada a la gestión de jugadores, entrenadores y servicios de la academia JP Preparation.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+---
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+# 🧱 Tecnologías
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+* PHP 8.x (Docker)
+* CodeIgniter 4
+* MySQL 8
+* Docker + Docker Compose
+* jQuery (frontend básico)
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+---
 
-## Installation & updates
+# 🐳 Entorno de desarrollo (Docker)
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## ▶️ Levantar el entorno
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+```bash
+docker-compose up -d --build
+```
 
-## Setup
+---
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 🛑 Parar el entorno
 
-## Important Change with index.php
+```bash
+docker-compose down
+```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+## 🛑 Limpiar caché
 
-**Please** read the user guide for a better explanation of how CI4 works!
+```bash
+docker exec -it jp_app php spark cache:clear
+```
 
-## Repository Management
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+---
 
-## Server Requirements
+## 🔍 Ver contenedores activos
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+```bash
+docker ps
+```
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+---
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+## 💻 Entrar al contenedor PHP
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+```bash
+docker exec -it jp_app bash
+```
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+---
+
+## 🚪 Salir del contenedor
+
+```bash
+exit
+```
+
+---
+
+## ⚙️ Ejecutar comandos de CodeIgniter
+
+Ejemplo:
+
+```bash
+docker exec -it jp_app php spark
+```
+
+Crear filtro:
+
+```bash
+docker exec -it jp_app php spark make:filter AuthFilter
+```
+
+---
+
+# 🌐 Acceso a la aplicación
+
+```text
+http://localhost:8080
+```
+
+---
+
+# 🧪 Base de datos
+
+* Host: `localhost`
+* Puerto: `3306`
+* Contenedor: `jp_db`
+
+phpMyAdmin:
+
+```text
+http://localhost:8081
+```
+
+---
+
+# ⚙️ Configuración
+
+## 🔧 Variables de entorno
+
+Editar:
+
+```bash
+.env
+```
+
+Claves importantes:
+
+```env
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost:8080/'
+database.default.hostname = db
+```
+
+---
+
+# 📁 Estructura del proyecto
+
+```text
+app/
+ ├── Controllers/
+ ├── Models/
+ ├── Views/
+
+public/
+ ├── assets/
+ │    ├── js/
+ │    ├── css/
+
+docker/
+```
+
+---
+
+# 🔐 Autenticación
+
+Actualmente implementado:
+
+* Registro de usuarios
+* Login
+* Logout
+* Sesiones
+* Filtro de protección de rutas
+
+---
+
+# 🧠 Flujo actual
+
+* `/login`
+* `/register`
+* `/dashboard` (protegido)
+
+---
+
+# 🛠️ Git & GitHub
+
+## 🔄 Estado del repo
+
+```bash
+git status
+```
+
+---
+
+## ➕ Añadir cambios
+
+```bash
+git add .
+```
+
+---
+
+## 💾 Commit
+
+```bash
+git commit -m "mensaje"
+```
+
+---
+
+## 🚀 Subir cambios
+
+```bash
+git push origin main
+```
+
+---
+
+## ⚠️ Forzar subida (usar con cuidado)
+
+```bash
+git push origin main --force
+```
+
+---
+
+## 🔄 Traer cambios
+
+```bash
+git pull origin main
+```
+
+---
+
+# 🚨 Problemas comunes
+
+## ❌ No funciona `php spark`
+
+👉 Ejecuta dentro de Docker:
+
+```bash
+docker exec -it jp_app php spark
+```
+
+---
+
+## ❌ Rutas con /public
+
+👉 Solucionado configurando Docker para apuntar a `/public`
+
+---
+
+## ❌ AJAX no funciona
+
+* Revisar rutas (`/register`, `/login`)
+* Revisar consola navegador
+* Ver Network → POST vs GET
+
+---
+
+# 🚀 Próximos pasos
+
+* Sistema de roles (admin / coach / player)
+* Dashboard dinámico
+* API interna
+* Mejora de UI/UX
+
+---

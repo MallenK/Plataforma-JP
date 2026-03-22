@@ -35,7 +35,7 @@ class UserModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = null;
+    protected $updatedField  = 'updated_at';
     protected $deletedField  = null;
 
     /*
@@ -98,5 +98,22 @@ class UserModel extends Model
         $data['data']['password'] = password_hash($data['data']['password'], PASSWORD_BCRYPT);
 
         return $data;
+    }
+
+
+
+    public function countByRole(string $role): int
+    {
+        return $this->where('role', $role)->countAllResults();
+    }
+
+    public function countAlumnos(): int
+    {
+        return $this->countByRole('player');
+    }
+
+    public function countEntrenadores(): int
+    {
+        return $this->countByRole('coach');
     }
 }

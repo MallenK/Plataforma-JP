@@ -42,4 +42,24 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
     }
+
+
+    protected function jsonResponse($data, int $status = 200)
+    {
+        return $this->response->setJSON($data)->setStatusCode($status);
+    }
+
+    protected function currentUser()
+    {
+        return [
+            'id' => session('user_id'),
+            'name' => session('user_name'),
+            'role' => session('role'),
+        ];
+    }
+
+    protected function isAdmin(): bool
+    {
+        return session('role') === 'admin';
+    }
 }
