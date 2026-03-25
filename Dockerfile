@@ -8,9 +8,12 @@ RUN apt-get update && apt-get install -y \
 # Extensiones MySQL
 RUN docker-php-ext-install mysqli pdo pdo_mysql
 
-# Apache config
+# 🔥 FIX MPM (CLAVE)
 RUN a2dismod mpm_event
+RUN a2dismod mpm_worker
 RUN a2enmod mpm_prefork
+
+# Apache config
 RUN a2enmod rewrite
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
@@ -22,6 +25,6 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 # Copiar proyecto
 COPY . /var/www/html
 
-# Permisos (CLAVE)
+# Permisos
 RUN chown -R www-data:www-data /var/www/html
 RUN chmod -R 775 /var/www/html/writable
