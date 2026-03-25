@@ -14,7 +14,15 @@ RUN a2dismod mpm_worker
 RUN a2enmod mpm_prefork
 
 # Apache config
+RUN a2dismod mpm_event || true
+RUN a2dismod mpm_worker || true
+RUN a2enmod mpm_prefork
 RUN a2enmod rewrite
+
+# 🔥 FORZAR DocumentRoot correctamente
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+# Permitir .htaccess
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # DocumentRoot → public
