@@ -12,11 +12,27 @@ $(document).ready(function () {
         }).showToast();
     }
 
+    function showErrorBox(messages) {
+        let box = $('#errorBox');
+        box.html('');
 
-    
+        if (!messages) return;
+
+        if (typeof messages === 'string') {
+            box.html(messages);
+            return;
+        }
+
+        Object.values(messages).forEach(msg => {
+            box.append(`<div>${msg}</div>`);
+        });
+    }
+
     // LOGIN
     $(document).on('submit', '#loginForm', function (e) {
         e.preventDefault();
+
+        $('#errorBox').html('');
 
         let data = $(this).serializeArray();
         data.push({ name: CSRF.name, value: CSRF.hash });
@@ -27,7 +43,7 @@ $(document).ready(function () {
             data: $.param(data),
             dataType: 'json',
 
-            success: function (res) {
+            success: function () {
                 showToast("Login correcto", "success");
                 setTimeout(() => {
                     window.location.href = '/dashboard';
@@ -35,15 +51,69 @@ $(document).ready(function () {
             },
 
             error: function (xhr) {
-                let error = xhr.responseJSON?.error || "Error en login";
-                showToast(error, "error");
+                let res = xhr.responseJSON;
+
+                if (res?.errors) {
+                    showErrorBox(res.errors);
+                } else if (res?.error) {
+                    showErrorBox(res.error);
+                } else {
+                    showErrorBox("Error en login");
+                }
+
+                showToast("Error en login", "error");
             }
         });
     });
 
+
+    // FORGOT
+    $(document).on('submit', '#forgotForm', function (e) {
+        e.preventDefault();
+
+        $('#errorBox').html('');
+
+        let data = $(this).serializeArray();
+        data.push({ name: CSRF.name, value: CSRF.hash });
+
+        $.post('/forgot-password', $.param(data))
+            .done(() => {
+                $('#errorBox').html('Si el email existe, recibirás instrucciones');
+                showToast("Solicitud enviada", "success");
+            })
+            .fail(() => {
+                $('#errorBox').html('Error al procesar la solicitud');
+                showToast("Error", "error");
+            });
+    });
+
+    // RESET
+    $(document).on('submit', '#resetForm', function (e) {
+        e.preventDefault();
+
+        console.log("Reset Pasword");
+
+        let data = $(this).serializeArray();
+        data.push({ name: CSRF.name, value: CSRF.hash });
+
+        $.post('/reset-password', $.param(data))
+            .done(() => {
+                showToast("Password actualizada", "success");
+                window.location.href = '/login';
+            })
+            .fail((xhr) => {
+                let err = xhr.responseJSON?.error || "Error";
+                showErrorBox(err);
+            });
+    });
+
+
+
     // REGISTER
     $(document).on('submit', '#registerForm', function (e) {
         e.preventDefault();
+
+        $('#errorBox').html('');
 
         let data = $(this).serializeArray();
         data.push({ name: CSRF.name, value: CSRF.hash });
@@ -63,15 +133,17 @@ $(document).ready(function () {
             },
 
             error: function (xhr) {
-                let errors = xhr.responseJSON?.errors;
+                let res = xhr.responseJSON;
 
-                if (errors) {
-                    Object.values(errors).forEach(err => {
-                        showToast(err, "error");
-                    });
+                if (res?.errors) {
+                    showErrorBox(res.errors);
+                } else if (res?.error) {
+                    showErrorBox(res.error);
                 } else {
-                    showToast("Error en el registro", "error");
+                    showErrorBox("Error en el registro");
                 }
+
+                showToast("Error en registro", "error");
             }
         });
     });

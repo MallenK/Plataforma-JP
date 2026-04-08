@@ -1,54 +1,59 @@
 $(document).ready(function () {
 
-    console.log('Dashboard loaded');
-
-
     const container = $('#stats-container');
     if (container.length === 0) return;
 
-    const url = container.data('url');
-    let csrfName = container.data('csrf-name');
-    let csrfHash = container.data('csrf-hash');
+    const url      = container.data('url');
+    let csrfName   = container.data('csrf-name');
+    let csrfHash   = container.data('csrf-hash');
 
-    let data = {};
+    const data = {};
     data[csrfName] = csrfHash;
 
-    // 🔹 Loading state (mejor UX)
-    $('#alumnos-count').text('...');
-    $('#entrenadores-count').text('...');
-
     $.ajax({
-        url: url,
-        method: 'POST',
+        url:      url,
+        method:   'POST',
         dataType: 'json',
-        data: data,
+        data:     data,
 
         success: function (res) {
-
-            // 🔹 Actualizar métricas
+            // Métricas numéricas
             $('#alumnos-count').text(res.alumnos ?? 0);
             $('#entrenadores-count').text(res.entrenadores ?? 0);
 
-            // 🔹 Actualizar CSRF si backend lo devuelve (muy importante en CI4)
+            // Métricas opcionales (cuando el backend las devuelva)
+            if (res.ingresos !== undefined) {
+                $('#ingresos-count').text(res.ingresos + '€');
+                const pct = Math.min(Math.round((res.ingresos / 5000) * 100), 100);
+                $('#ingresos-bar').css('width', pct + '%');
+            }
+
+            if (res.alertas !== undefined) {
+                $('#alertas-count').text(res.alertas);
+            }
+
+            // Progreso de alumnos (sobre una meta de 150)
+            const alumnosPct = Math.min(Math.round(((res.alumnos ?? 0) / 150) * 100), 100);
+            $('#alumnos-bar').css('width', alumnosPct + '%');
+
+            // Estado de pagos
+            if (res.pagos_pct !== undefined) {
+                $('#pagos-pct').text(res.pagos_pct + '%');
+                $('#pagos-bar').css('width', res.pagos_pct + '%');
+                $('#pagos-desc').text(res.pagos_desc ?? '');
+            }
+
+            // Renovar CSRF
             if (res.csrfHash) {
                 csrfHash = res.csrfHash;
                 container.data('csrf-hash', csrfHash);
             }
         },
 
-        error: function (xhr) {
-
-            console.error('Dashboard error:', xhr);
-
-            // 🔹 UI consistente (no usar alert bootstrap cutre)
-            container.html(`
-                <div class="empty-state">
-                    <div class="empty-state-box">
-                        <h5>Error cargando datos</h5>
-                        <p>Inténtalo de nuevo más tarde</p>
-                    </div>
-                </div>
-            `);
+        error: function () {
+            ['alumnos-count', 'entrenadores-count', 'ingresos-count', 'alertas-count'].forEach(function (id) {
+                $('#' + id).text('—');
+            });
         }
     });
 

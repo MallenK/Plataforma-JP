@@ -2,28 +2,33 @@
 
 <?= $this->section('content') ?>
 
-<div class="container d-flex align-items-center justify-content-center vh-100">
-    <div class="card auth-card shadow-lg">
-        <div class="card-body">
-            <h3 class="text-center mb-4">JP Preparation</h3>
+<div style="height:100vh;display:flex;align-items:center;justify-content:center; background:linear-gradient(135deg,#0f172a,#1e3a8a);">
 
-            <form id="loginForm">
-                <div class="mb-3">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" required>
-                </div>
+    <div style="width:380px;padding:40px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.3);color:white;">
+        <h2 style="text-align:center;margin-bottom:30px;">JP Preparation</h2>
 
-                <div class="mb-3">
-                    <label>Password</label>
-                    <input type="password" name="password" class="form-control" required>
-                </div>
+        <div id="errorBox" style="color:#fca5a5;margin-bottom:15px;"></div>
 
-                <button type="submit" class="btn btn-dark w-100">Entrar</button>
-            </form>
+        <form id="loginForm">
 
-            <div class="text-center mt-3">
-                <a href="/register">Crear cuenta</a>
-            </div>
+            <input type="email" name="email" placeholder="Email"
+                style="width:100%;padding:12px;margin-bottom:15px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+
+            <input type="password" name="password" placeholder="Password"
+                style="width:100%;padding:12px;margin-bottom:20px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+
+            <button type="submit"
+                style="width:100%;padding:12px;border:none;border-radius:10px;background:#3b82f6;color:white;font-weight:bold;">
+                Entrar
+            </button>
+        </form>
+
+        <div style="text-align:center;margin-top:15px;">
+            <a href="/register" style="color:#93c5fd;">Crear cuenta</a>
+        </div>
+
+        <div style="text-align:center;margin-top:10px;">
+            <a href="/forgot-password" style="color:#93c5fd;">¿Olvidaste tu contraseña?</a>
         </div>
     </div>
 </div>

@@ -35,6 +35,10 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'auth' => \App\Filters\AuthFilter::class,
+
+        // Filtro de roles — se usa junto a 'auth' en las rutas protegidas.
+        // Sintaxis: 'role:superadmin,admin'  →  solo esos roles pueden acceder.
+        'role' => \App\Filters\RoleFilter::class,
     ];
 
     /**

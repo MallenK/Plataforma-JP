@@ -2,15 +2,17 @@
 
 <?= $this->section('content') ?>
 
-<div class="app">
+<link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>">
+
+<div class="app-layout">
 
     <?= view('components/sidebar') ?>
 
-    <div class="main">
+    <div class="main-wrap">
 
         <?= view('components/navbar') ?>
 
-        <div class="content">
+        <div class="page-body">
             <?= $this->renderSection('page_content') ?>
         </div>
 

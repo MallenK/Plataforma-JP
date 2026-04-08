@@ -6,11 +6,20 @@ class DashboardController extends BaseController
 {
     public function index()
     {
+        $userId = $this->currentUserId();
+        $role   = $this->currentRole();
+
+        // Alumnos sin ficha → redirigir a crear perfil
+        if ($role === 'alumno') {
+            if (!$this->playerService->hasProfile($userId)) {
+                return redirect()->to('/alumno');
+            }
+        }
+
         return view('dashboard/index', [
-            'title' => 'Dashboard'
+            'title' => 'Dashboard — JP Preparation',
         ]);
     }
-
 
     public function getStats()
     {
@@ -18,16 +27,12 @@ class DashboardController extends BaseController
             return $this->response->setStatusCode(403);
         }
 
-        if (session('role') !== 'admin') {
-            return $this->response->setJSON([
-                'error' => 'No autorizado'
-            ]);
+        if (!in_array(session('role'), ['admin', 'superadmin'])) {
+            return $this->jsonResponse(['error' => 'No autorizado'], 403);
         }
 
         $dashboardModel = new \App\Models\DashboardModel();
 
-        return $this->response->setJSON(
-            $dashboardModel->getAdminStats()
-        );
+        return $this->jsonResponse($dashboardModel->getAdminStats());
     }
 }
