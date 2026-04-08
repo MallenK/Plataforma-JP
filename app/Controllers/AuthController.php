@@ -28,7 +28,6 @@ class AuthController extends BaseController
 
     public function registerPost()
     {
-        log_message('error', "Hola: " . json_encode($this->request->getPost()));
         $validation = \Config\Services::validation();
 
         $rules = [
@@ -51,7 +50,7 @@ class AuthController extends BaseController
             'name' => $this->request->getPost('name'),
             'email' => strtolower(trim($this->request->getPost('email'))),
             'password' => $this->request->getPost('password'),
-            'role' => 'player'
+            'role' => 'alumno'
         ]);
 
         return $this->response->setJSON([

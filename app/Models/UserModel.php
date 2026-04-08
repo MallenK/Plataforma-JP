@@ -17,7 +17,8 @@ class UserModel extends Model
         'name',
         'email',
         'password',
-        'role'
+        'role',
+        'status'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -109,11 +110,20 @@ class UserModel extends Model
 
     public function countAlumnos(): int
     {
-        return $this->countByRole('player');
+        return $this->countByRole('alumno');
     }
 
     public function countEntrenadores(): int
     {
         return $this->countByRole('coach');
+    }
+
+    public function getPlayersWithProfile()
+    {
+        // Corregido: la FK en player_profiles es 'player_id', no 'user_id'
+        return $this->select('users.*, player_profiles.*')
+            ->join('player_profiles', 'player_profiles.player_id = users.id', 'left')
+            ->where('users.role', 'alumno')
+            ->findAll();
     }
 }

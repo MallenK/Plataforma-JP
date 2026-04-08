@@ -117,7 +117,7 @@ Claves importantes:
 
 ```env
 CI_ENVIRONMENT = development
-app.baseURL = 'http://localhost:8080/'
+app.baseURL = 'http://localhost/'
 database.default.hostname = db
 ```
 
