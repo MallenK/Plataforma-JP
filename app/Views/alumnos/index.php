@@ -7,6 +7,29 @@ $pageSubtitle = 'Gestión de alumnos registrados';
 
 <?= $this->section('page_content') ?>
 
+<?php if (session()->getFlashdata('created_password')): ?>
+<div class="alert-jp success" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+    <i class="bi bi-check-circle-fill" style="font-size:18px;margin-top:2px;flex-shrink:0"></i>
+    <div>
+        <strong>Alumno "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
+        <span style="font-size:13px">
+            Contraseña inicial:
+            <code style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px">
+                <?= esc(session()->getFlashdata('created_password')) ?>
+            </code>
+            — anótala antes de salir de esta página.
+        </span>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (session()->getFlashdata('success')): ?>
+<div class="alert-jp success" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <i class="bi bi-check-circle-fill"></i>
+    <?= esc(session()->getFlashdata('success')) ?>
+</div>
+<?php endif; ?>
+
 <!-- Cabecera -->
 <div class="page-header">
     <div class="page-header-text">
@@ -15,10 +38,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
     </div>
     <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
     <div class="d-flex gap-2">
-        <a href="#" class="btn-jp btn-jp-secondary">
-            <i class="bi bi-download"></i> Exportar
-        </a>
-        <a href="#" class="btn-jp btn-jp-primary">
+        <a href="<?= base_url('alumnos/nuevo') ?>" class="btn-jp btn-jp-primary">
             <i class="bi bi-person-plus-fill"></i> Nuevo alumno
         </a>
     </div>
@@ -110,13 +130,19 @@ $pageSubtitle = 'Gestión de alumnos registrados';
                     </td>
                     <td>
                         <div class="d-flex gap-1 justify-content-end">
-                            <a href="<?= base_url('perfil/' . $p['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver perfil">
+                            <a href="<?= base_url('alumnos/' . $p['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver perfil">
                                 <i class="bi bi-eye"></i>
                             </a>
                             <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
-                            <a href="#" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Editar">
+                            <a href="<?= base_url('alumnos/' . $p['id'] . '/editar') ?>" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <form method="post" action="<?= base_url('alumnos/' . $p['id'] . '/eliminar') ?>" style="display:inline" onsubmit="return confirm('¿Dar de baja a <?= esc($p['name']) ?>? Esta acción cambia su estado a inactivo.')">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Dar de baja">
+                                    <i class="bi bi-person-x-fill"></i>
+                                </button>
+                            </form>
                             <?php endif; ?>
                         </div>
                     </td>
@@ -131,13 +157,27 @@ $pageSubtitle = 'Gestión de alumnos registrados';
         <h3>Sin alumnos registrados</h3>
         <p>Todavía no hay alumnos en el sistema.</p>
         <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
-        <a href="#" class="btn-jp btn-jp-primary">
+        <a href="<?= base_url('alumnos/nuevo') ?>" class="btn-jp btn-jp-primary">
             <i class="bi bi-person-plus-fill"></i> Añadir primer alumno
         </a>
         <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>
+
+<?= console_debug('PlayerController::index', [
+    'total'     => count($players ?? []),
+    'role_filter' => 'player',
+    'status_filter' => 'active',
+    'players'   => array_map(fn($p) => [
+        'id'         => $p['id'],
+        'name'       => $p['name'],
+        'email'      => $p['email'],
+        'status'     => $p['status'] ?? 'active',
+        'profile_id' => $p['profile_id'] ?? null,
+        'position'   => $p['position'] ?? null,
+    ], $players ?? []),
+], collapsed: true) ?>
 
 <?= $this->endSection() ?>
 

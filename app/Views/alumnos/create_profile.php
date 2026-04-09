@@ -3,7 +3,7 @@
 <?= $this->section('page_content') ?>
 
 <?php
-$canEdit   = in_array(session('role'), ['admin', 'superadmin', 'alumno']);
+$canEdit   = in_array(session('role'), ['admin', 'superadmin', 'player']);
 $isEditing = !empty($profile);
 ?>
 

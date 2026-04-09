@@ -64,30 +64,83 @@ $routes->post('dashboard/stats', 'DashboardController::getStats', [
 // ------------------------------------------------------------
 // ALUMNOS
 //
-//  /alumnos        → listado global — admin, superadmin, coach
-//  /alumno         → perfil propio — alumno + admin/superadmin para editar
-//  /alumno/save    → guardar perfil — alumno + admin/superadmin
+//  /alumnos              → listado global — admin, superadmin, coach
+//  /alumnos/nuevo        → formulario nuevo alumno — admin, superadmin
+//  /alumnos/:id          → perfil completo de un alumno — admin, superadmin, coach
+//  /alumnos/:id/editar   → formulario edición — admin, superadmin
+//  /alumnos/:id/eliminar → baja lógica (POST) — admin, superadmin
+//  /alumno               → perfil propio — alumno + admin/superadmin para editar
+//  /alumno/save          → guardar perfil — alumno + admin/superadmin
 // ------------------------------------------------------------
 
 $routes->get('/alumnos', 'PlayerController::index', [
     'filter' => ['auth', 'role:superadmin,admin,coach'],
 ]);
 
+$routes->get('/alumnos/nuevo', 'PlayerController::create', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('/alumnos/nuevo', 'PlayerController::store', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('/alumnos/(:num)', 'PlayerController::show/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,coach'],
+]);
+
+$routes->get('/alumnos/(:num)/editar', 'PlayerController::edit/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('/alumnos/(:num)/editar', 'PlayerController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('/alumnos/(:num)/eliminar', 'PlayerController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 $routes->get('/alumno', 'PlayerController::profile', [
-    'filter' => ['auth', 'role:superadmin,admin,alumno'],
+    'filter' => ['auth', 'role:superadmin,admin,player'],
 ]);
 
 $routes->post('/alumno/save', 'PlayerController::saveProfile', [
-    'filter' => ['auth', 'role:superadmin,admin,alumno'],
+    'filter' => ['auth', 'role:superadmin,admin,player'],
 ]);
 
 
 // ------------------------------------------------------------
 // ENTRENADORES
-// Gestión interna — solo admin y superadmin.
+//
+//  /entrenadores              → listado — admin, superadmin
+//  /entrenadores/nuevo        → formulario nuevo entrenador — admin, superadmin
+//  /entrenadores/:id          → perfil completo — admin, superadmin
+//  /entrenadores/:id/editar   → formulario edición — admin, superadmin
+//  /entrenadores/:id/eliminar → baja lógica (POST) — admin, superadmin
 // ------------------------------------------------------------
 
 $routes->get('entrenadores', 'EntrenadoresController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('entrenadores/nuevo', 'EntrenadoresController::create', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('entrenadores/nuevo', 'EntrenadoresController::store', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('entrenadores/(:num)', 'EntrenadoresController::show/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('entrenadores/(:num)/editar', 'EntrenadoresController::edit/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('entrenadores/(:num)/editar', 'EntrenadoresController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('entrenadores/(:num)/eliminar', 'EntrenadoresController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
@@ -143,6 +196,36 @@ $routes->get('documentacion', 'DocumentacionController::index', [
 
 $routes->get('documentacion/(:num)', 'DocumentacionController::index/$1', [
     'filter' => 'auth',
+]);
+
+// ── Archivos: descarga y previsualización ──────────────────────────
+// Todos los roles autenticados (el controller valida permisos por carpeta)
+$routes->get('documentacion/file/(:num)/download', 'DocumentacionController::download/$1', [
+    'filter' => 'auth',
+]);
+$routes->get('documentacion/file/(:num)/preview', 'DocumentacionController::preview/$1', [
+    'filter' => 'auth',
+]);
+$routes->post('documentacion/file/(:num)/delete', 'DocumentacionController::deleteFile/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Subida ─────────────────────────────────────────────────────────
+$routes->post('documentacion/upload', 'DocumentacionController::upload', [
+    'filter' => 'auth',
+]);
+
+// ── Gestión de carpetas (solo admin/superadmin) ────────────────────
+$routes->post('documentacion/folder/create', 'DocumentacionController::createFolder', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('documentacion/folder/(:num)/delete', 'DocumentacionController::deleteFolder/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Permisos de carpetas internas (solo admin/superadmin) ──────────
+$routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionController::savePermissions/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 

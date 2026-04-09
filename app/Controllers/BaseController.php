@@ -24,6 +24,8 @@ abstract class BaseController extends Controller
         parent::initController($request, $response, $logger);
 
         $this->playerService = new \App\Services\PlayerService();
+
+        helper('debug');
     }
 
     // ----------------------------------------------------------------
@@ -109,7 +111,7 @@ abstract class BaseController extends Controller
      */
     protected function isAlumno(): bool
     {
-        return $this->currentRole() === 'alumno';
+        return $this->currentRole() === 'player';
     }
 
     // ----------------------------------------------------------------
