@@ -110,7 +110,7 @@ class UserModel extends Model
 
     public function countAlumnos(): int
     {
-        return $this->countByRole('alumno');
+        return $this->countByRole('player');
     }
 
     public function countEntrenadores(): int
@@ -123,7 +123,7 @@ class UserModel extends Model
         // Corregido: la FK en player_profiles es 'player_id', no 'user_id'
         return $this->select('users.*, player_profiles.*')
             ->join('player_profiles', 'player_profiles.player_id = users.id', 'left')
-            ->where('users.role', 'alumno')
+            ->where('users.role', 'player')
             ->findAll();
     }
 }
