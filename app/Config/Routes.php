@@ -241,14 +241,78 @@ $routes->get('finanzas', 'FinanzasController::index', [
 
 // ------------------------------------------------------------
 // CONFIGURACIÓN
-// Solo superadmin y admin gestionan la plataforma.
+//
+//  GET  /configuracion          → todos los roles (no-admin ve solo General, read-only)
+//  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 
 $routes->get('configuracion', 'ConfiguracionController::index', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => 'auth',
 ]);
 
 $routes->get('configuracion/(:num)', 'ConfiguracionController::index/$1', [
+    'filter' => 'auth',
+]);
+
+// ── General ───────────────────────────────────────────────
+$routes->post('configuracion/general/save', 'ConfiguracionController::saveGeneral', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Gestión de Staff ───────────────────────────────────────
+$routes->post('configuracion/staff/create', 'ConfiguracionController::createStaff', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/staff/(:num)/role', 'ConfiguracionController::updateStaffRole/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/staff/(:num)/deactivate', 'ConfiguracionController::deactivateStaff/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/staff/(:num)/activate', 'ConfiguracionController::activateStaff/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Campos y Sedes ─────────────────────────────────────────
+$routes->post('configuracion/sedes/create', 'ConfiguracionController::createSede', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/sedes/(:num)/edit', 'ConfiguracionController::updateSede/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/sedes/(:num)/delete', 'ConfiguracionController::deleteSede/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Facturación — Tipos de Bono ────────────────────────────
+$routes->post('configuracion/bonos/create', 'ConfiguracionController::createBonoType', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/bonos/(:num)/edit', 'ConfiguracionController::updateBonoType/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/bonos/(:num)/delete', 'ConfiguracionController::deleteBonoType/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Notificaciones ─────────────────────────────────────────
+$routes->post('configuracion/notificaciones/smtp', 'ConfiguracionController::saveSmtp', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/notificaciones/toggles', 'ConfiguracionController::saveNotifToggles', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('configuracion/notificaciones/send', 'ConfiguracionController::sendEmail', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Seguridad ──────────────────────────────────────────────
+$routes->post('configuracion/seguridad/save', 'ConfiguracionController::saveSeguridad', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Web Pública ────────────────────────────────────────────
+$routes->post('configuracion/web/save', 'ConfiguracionController::saveWeb', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
