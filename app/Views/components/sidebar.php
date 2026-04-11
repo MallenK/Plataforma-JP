@@ -17,8 +17,9 @@ function sidebarActive(string $path, string $uri): string {
 
 $isAdmin      = in_array($role, ['superadmin', 'admin']);
 $isCoach      = $role === 'coach';
-$isAlumno     = $role === 'alumno';
+$isAlumno     = in_array($role, ['alumno', 'player']);
 $isStaff      = $role === 'staff';
+$canManage    = $isAdmin || $isStaff || $isCoach;
 ?>
 
 <aside class="sidebar">
@@ -68,19 +69,7 @@ $isStaff      = $role === 'staff';
             </li>
             <?php endif; ?>
 
-            <!-- Organizador — admin, superadmin, coach -->
-            <?php if ($isAdmin || $isCoach): ?>
-            <li class="sidebar-nav-item">
-                <a href="<?= base_url('organizador') ?>"
-                   class="sidebar-nav-link <?= sidebarActive('/organizador', $currentUri) ?>">
-                    <i class="bi bi-calendar3"></i>
-                    Organizador
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <!-- Clases — admin, superadmin, coach -->
-            <?php if ($isAdmin || $isCoach): ?>
+            <!-- Clases — todos los roles autenticados -->
             <li class="sidebar-nav-item">
                 <a href="<?= base_url('clases') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/clases', $currentUri) ?>">
@@ -88,7 +77,6 @@ $isStaff      = $role === 'staff';
                     Clases
                 </a>
             </li>
-            <?php endif; ?>
 
             <!-- Entrenadores — solo admin / superadmin -->
             <?php if ($isAdmin): ?>
@@ -131,17 +119,6 @@ $isStaff      = $role === 'staff';
                     Documentos
                 </a>
             </li>
-
-            <!-- Finanzas — admin, superadmin -->
-            <?php if ($isAdmin): ?>
-            <li class="sidebar-nav-item">
-                <a href="<?= base_url('finanzas') ?>"
-                   class="sidebar-nav-link <?= sidebarActive('/finanzas', $currentUri) ?>">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    Finanzas
-                </a>
-            </li>
-            <?php endif; ?>
 
             <!-- Configuración — admin, superadmin -->
             <?php if ($isAdmin): ?>

@@ -88,7 +88,7 @@ class SettingsModel extends Model
     public function setMultiple(array $data, int $updatedBy = 0): void
     {
         foreach ($data as $key => $value) {
-            $this->set($key, $value, $updatedBy);
+            $this->setSetting($key, $value, $updatedBy);
         }
     }
 

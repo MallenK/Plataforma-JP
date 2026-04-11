@@ -41,6 +41,10 @@
     --shadow-md:       0 4px 16px rgba(0,0,0,.08);
     --radius:          10px;
     --radius-sm:        6px;
+
+    /* Aliases de compatibilidad (usados en vistas) */
+    --card-bg:         #ffffff;
+    --bg-secondary:    #f1f5f9;
 }
 
 /* ── Reset ─────────────────────────────────────────────── */
@@ -48,7 +52,7 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
     font-size: 14px;
     background: var(--bg-app);
     color: var(--text-body);

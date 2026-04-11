@@ -146,22 +146,89 @@ $routes->post('entrenadores/(:num)/eliminar', 'EntrenadoresController::destroy/$
 
 
 // ------------------------------------------------------------
-// ORGANIZADOR (Calendario)
-// Planificación de clases — admin, superadmin, coach.
+// CLASES Y CALENDARIO
+//
+//  GET  /clases               → todos los roles autenticados (jugadores ven las suyas)
+//  GET  /clases/:id           → todos los roles (el controller filtra por rol)
+//  POST /clases/:id/confirmar → cualquier usuario asignado
+//  Todo lo demás              → admin, superadmin, staff, coach
 // ------------------------------------------------------------
 
-$routes->get('organizador', 'OrganizadorController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach'],
+// ── Listado / Calendario ────────────────────────────────────
+$routes->get('clases', 'ClasesController::index', [
+    'filter' => 'auth',
 ]);
 
+// ── AJAX: datos calendario y opciones ──────────────────────
+$routes->get('clases/api/calendario', 'ClasesController::calendario', [
+    'filter' => 'auth',
+]);
+$routes->get('clases/api/opciones', 'ClasesController::opciones', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 
-// ------------------------------------------------------------
-// CLASES
-// Gestión de sesiones de entrenamiento — admin, superadmin, coach.
-// ------------------------------------------------------------
+// ── Crear ──────────────────────────────────────────────────
+$routes->get('clases/nueva', 'ClasesController::create', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/nueva', 'ClasesController::store', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 
-$routes->get('clases', 'ClasesController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach'],
+// ── Quick-create (AJAX, desde Dashboard / Torneos) ─────────
+$routes->post('clases/rapida', 'ClasesController::quickCreate', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
+// ── Detalle ────────────────────────────────────────────────
+$routes->get('clases/(:num)', 'ClasesController::show/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Confirmar asistencia (jugador convocado) ───────────────
+$routes->post('clases/(:num)/confirmar', 'ClasesController::respond/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Editar / Completar / Cancelar / Eliminar ───────────────
+$routes->get('clases/(:num)/editar', 'ClasesController::edit/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/editar', 'ClasesController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/completar', 'ClasesController::complete/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/cancelar', 'ClasesController::cancel/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/eliminar', 'ClasesController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
+// ── Observaciones y asistencia ─────────────────────────────
+$routes->post('clases/(:num)/observaciones', 'ClasesController::saveObservations/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/asistencia', 'ClasesController::saveAttendance/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
+// ── Entrenadores ───────────────────────────────────────────
+$routes->post('clases/(:num)/coaches/add', 'ClasesController::addCoach/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/coaches/(:num)/remove', 'ClasesController::removeCoach/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
+// ── Jugadores ──────────────────────────────────────────────
+$routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::removePlayer/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
 
@@ -176,12 +243,80 @@ $routes->get('bonos', 'BonosController::index', [
 
 
 // ------------------------------------------------------------
-// TORNEOS
-// Visibles para todos excepto alumno (solo participan, no gestionan).
+// TORNEOS Y CAMPUS
+//
+//  GET  /torneos              → todos los roles autenticados
+//  GET  /torneos/:id          → todos los roles autenticados
+//  POST /torneos/*            → admin / superadmin
+//  POST /torneos/:id/respond  → cualquier usuario autenticado (convocado)
 // ------------------------------------------------------------
 
+// ── Listado ────────────────────────────────────────────────
 $routes->get('torneos', 'TorneosController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => 'auth',
+]);
+
+// ── Crear ──────────────────────────────────────────────────
+$routes->get('torneos/nuevo', 'TorneosController::create', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/nuevo', 'TorneosController::store', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Participantes externos ─────────────────────────────────
+$routes->post('torneos/externos/create', 'TorneosController::createExternal', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Detalle ────────────────────────────────────────────────
+$routes->get('torneos/(:num)', 'TorneosController::show/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Confirmación de asistencia (cualquier usuario convocado)
+$routes->post('torneos/(:num)/respond', 'TorneosController::respond/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Editar / Cancelar / Eliminar (solo admin) ──────────────
+$routes->get('torneos/(:num)/editar', 'TorneosController::edit/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/(:num)/editar', 'TorneosController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/(:num)/cancelar', 'TorneosController::cancel/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/(:num)/eliminar', 'TorneosController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Equipos ────────────────────────────────────────────────
+$routes->post('torneos/(:num)/equipos/create', 'TorneosController::createTeam/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/(:num)/equipos/(:num)/delete', 'TorneosController::deleteTeam/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Miembros ───────────────────────────────────────────────
+$routes->post('torneos/(:num)/equipos/(:num)/miembros/add', 'TorneosController::addMember/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('torneos/(:num)/miembros/(:num)/remove', 'TorneosController::removeMember/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Notificaciones ─────────────────────────────────────────
+$routes->post('torneos/(:num)/notificar', 'TorneosController::sendNotifications/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Resultados ─────────────────────────────────────────────
+$routes->post('torneos/(:num)/resultado', 'TorneosController::saveResult/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 
@@ -225,16 +360,6 @@ $routes->post('documentacion/folder/(:num)/delete', 'DocumentacionController::de
 
 // ── Permisos de carpetas internas (solo admin/superadmin) ──────────
 $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionController::savePermissions/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-
-// ------------------------------------------------------------
-// FINANZAS
-// Control económico — solo admin y superadmin.
-// ------------------------------------------------------------
-
-$routes->get('finanzas', 'FinanzasController::index', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
