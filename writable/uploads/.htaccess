@@ -1,0 +1,25 @@
+# ══════════════════════════════════════════════════════════════════
+#  JP PREPARATION — Protección del directorio de uploads
+#  Este directorio NO debe ser accesible directamente por URL.
+#  Todos los archivos se sirven a través del controller PHP.
+# ══════════════════════════════════════════════════════════════════
+
+# Deshabilitar listado de directorio
+Options -Indexes
+
+# Denegar todo acceso HTTP directo
+Deny from all
+
+# Bloquear ejecución de PHP (por si Apache interpreta estos archivos)
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Bloquear acceso a archivos PHP, scripts y ejecutables
+<FilesMatch "\.(php[s357]?|phtml|phar|pl|py|sh|cgi|exe|bat|cmd)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

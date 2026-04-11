@@ -1,0 +1,194 @@
+DEBUG - 2026-04-11 19:31:53 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+ERROR - 2026-04-11 19:31:54 --> Duplicate column name 'id'
+in SYSTEMPATH/Database/MySQLi/Connection.php on line 300.
+ 1 SYSTEMPATH/Database/MySQLi/Connection.php(300): mysqli->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', 0)
+ 2 SYSTEMPATH/Database/BaseConnection.php(769): CodeIgniter\Database\MySQLi\Connection->execute('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 3 SYSTEMPATH/Database/BaseConnection.php(686): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 4 SYSTEMPATH/Database/BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= :cs.session_date:
+AND `cs`.`session_date` <= :cs.session_date.1:
+AND `cs`.`status` != :cs.status:
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', [...], false)
+ 5 APPPATH/Services/ClasesService.php(469): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 6 APPPATH/Controllers/ClasesController.php(32): App\Services\ClasesService->getStats(2, 'admin')
+ 7 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\ClasesController->index()
+ 8 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\ClasesController))
+ 9 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2026-04-11 19:31:54 --> CodeIgniter\Database\Exceptions\DatabaseException: Duplicate column name 'id'
+[Method: GET, Route: clases]
+in SYSTEMPATH/Database/BaseConnection.php on line 724.
+ 1 SYSTEMPATH/Database/BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= :cs.session_date:
+AND `cs`.`session_date` <= :cs.session_date.1:
+AND `cs`.`status` != :cs.status:
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', [...], false)
+ 2 APPPATH/Services/ClasesService.php(469): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 3 APPPATH/Controllers/ClasesController.php(32): App\Services\ClasesService->getStats(2, 'admin')
+ 4 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\ClasesController->index()
+ 5 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\ClasesController))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2026-04-11 19:31:54 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Duplicate column name 'id'
+in SYSTEMPATH/Database/MySQLi/Connection.php on line 310.
+ 1 SYSTEMPATH/Database/BaseConnection.php(769): CodeIgniter\Database\MySQLi\Connection->execute('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 2 SYSTEMPATH/Database/BaseConnection.php(686): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 3 SYSTEMPATH/Database/BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= :cs.session_date:
+AND `cs`.`session_date` <= :cs.session_date.1:
+AND `cs`.`status` != :cs.status:
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', [...], false)
+ 4 APPPATH/Services/ClasesService.php(469): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 5 APPPATH/Controllers/ClasesController.php(32): App\Services\ClasesService->getStats(2, 'admin')
+ 6 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\ClasesController->index()
+ 7 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\ClasesController))
+ 8 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2026-04-11 19:31:54 --> [Caused by] mysqli_sql_exception: Duplicate column name 'id'
+in SYSTEMPATH/Database/MySQLi/Connection.php on line 300.
+ 1 SYSTEMPATH/Database/MySQLi/Connection.php(300): mysqli->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', 0)
+ 2 SYSTEMPATH/Database/BaseConnection.php(769): CodeIgniter\Database\MySQLi\Connection->execute('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 3 SYSTEMPATH/Database/BaseConnection.php(686): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= \'2026-04-01\'
+AND `cs`.`session_date` <= \'2026-04-30\'
+AND `cs`.`status` != \'cancelled\'
+GROUP BY `csp`.`user_id`
+) CI_count_all_results')
+ 4 SYSTEMPATH/Database/BaseBuilder.php(1733): CodeIgniter\Database\BaseConnection->query('SELECT COUNT(*) AS `numrows`
+FROM (
+SELECT *
+FROM `class_session_players` `csp`
+JOIN `class_sessions` `cs` ON `cs`.`id` = `csp`.`session_id`
+WHERE `cs`.`session_date` >= :cs.session_date:
+AND `cs`.`session_date` <= :cs.session_date.1:
+AND `cs`.`status` != :cs.status:
+GROUP BY `csp`.`user_id`
+) CI_count_all_results', [...], false)
+ 5 APPPATH/Services/ClasesService.php(469): CodeIgniter\Database\BaseBuilder->countAllResults()
+ 6 APPPATH/Controllers/ClasesController.php(32): App\Services\ClasesService->getStats(2, 'admin')
+ 7 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\ClasesController->index()
+ 8 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\ClasesController))
+ 9 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-04-11 19:35:40 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:35:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:35:54 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:35:58 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:35:58 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:35:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:36:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:36:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:36:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:36:28 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:36:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:37:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:37:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:37:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:37:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:37:48 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:11 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:29 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:38:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:39:16 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:39:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:40:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:40:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:40:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:40:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:44:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:44:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:44:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-04-11 19:44:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.

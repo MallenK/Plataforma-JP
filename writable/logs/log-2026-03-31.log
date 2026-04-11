@@ -1,0 +1,407 @@
+DEBUG - 2026-03-31 16:37:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:37:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:37:55 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:38:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:38:42 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:38:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:39:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:39:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:39:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:40:40 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:40:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:42:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:42:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:42:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:42:43 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:42:56 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:43:49 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:21 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:30 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:44:32 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 16:44:32 --> Session data: {"__ci_last_regenerate":1774975451,"_ci_previous_url":"http:\/\/localhost:8080\/dashboard","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 16:44:32 --> CurrentUserId: 2
+DEBUG - 2026-03-31 16:44:32 --> Role: admin
+DEBUG - 2026-03-31 16:44:32 --> Requested ID: NULL
+DEBUG - 2026-03-31 16:44:32 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 16:44:32 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 16:44:32 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 16:45:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:45:27 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 16:47:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:39:42 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:11 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:54 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:43:54 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:43:54 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/dashboard","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:43:54 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:43:54 --> Role: admin
+DEBUG - 2026-03-31 17:43:54 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:43:55 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:43:55 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:43:55 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:44:21 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:44:27 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:44:27 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:44:27 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:44:27 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:44:27 --> Role: admin
+DEBUG - 2026-03-31 17:44:27 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:44:27 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:44:27 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:44:27 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:45:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:45:15 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:45:15 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:45:15 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:45:15 --> Role: admin
+DEBUG - 2026-03-31 17:45:15 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:45:15 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:45:15 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:45:15 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:45:26 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:45:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:45:36 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:45:36 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:45:36 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:45:36 --> Role: admin
+DEBUG - 2026-03-31 17:45:36 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:45:37 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:45:37 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:45:37 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:46:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:46:38 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:46:38 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:46:38 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:46:38 --> Role: admin
+DEBUG - 2026-03-31 17:46:38 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:46:38 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:46:38 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:46:38 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:46:56 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:46:56 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:46:56 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:46:56 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:46:56 --> Role: admin
+DEBUG - 2026-03-31 17:46:56 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:46:56 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:46:56 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:46:56 --> --- PERFIL DEBUG END ---
+CRITICAL - 2026-03-31 17:47:11 --> ErrorException: preg_match(): Compilation failed: missing closing parenthesis at offset 17
+[Method: GET, Route: perfil]
+in SYSTEMPATH/Router/Router.php on line 463.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->errorHandler(2, 'preg_match(): Compilation failed: missing closing parenthesis at offset 17', '/var/www/html/vendor/codeigniter4/framework/system/Router/Router.php', 463)
+ 2 SYSTEMPATH/Router/Router.php(463): preg_match('#^configuracion/($#u', 'perfil', [])
+ 3 SYSTEMPATH/Router/Router.php(225): CodeIgniter\Router\Router->checkRoutes('perfil')
+ 4 SYSTEMPATH/CodeIgniter.php(829): CodeIgniter\Router\Router->handle('perfil')
+ 5 SYSTEMPATH/CodeIgniter.php(441): CodeIgniter\CodeIgniter->tryToRouteIt(Object(CodeIgniter\Router\RouteCollection))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 17:47:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:47:25 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:47:25 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:47:25 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:47:25 --> Role: admin
+DEBUG - 2026-03-31 17:47:25 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:47:25 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:47:25 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:47:25 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:47:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:47:35 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:47:35 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:47:35 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:47:35 --> Role: admin
+DEBUG - 2026-03-31 17:47:35 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:47:35 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:47:35 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:47:35 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:47:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:47:41 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:47:41 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:47:41 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:47:41 --> Role: admin
+DEBUG - 2026-03-31 17:47:41 --> Requested ID: NULL
+CRITICAL - 2026-03-31 17:47:41 --> Error: Class "App\Controllers\UserModel" not found
+[Method: GET, Route: configuracion]
+in APPPATH/Controllers/ConfiguracionController.php on line 23.
+ 1 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\ConfiguracionController->index()
+ 2 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\ConfiguracionController))
+ 3 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 17:48:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:48:08 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:48:08 --> Session data: {"__ci_last_regenerate":1774978994,"_ci_previous_url":"http:\/\/localhost:8080\/perfil","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:48:08 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:48:08 --> Role: admin
+DEBUG - 2026-03-31 17:48:08 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:48:08 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:48:08 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:48:08 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:48:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:49:21 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:49:21 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:49:21 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:49:21 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:49:21 --> Role: admin
+DEBUG - 2026-03-31 17:49:21 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:49:21 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:49:21 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:49:21 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:49:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:49:49 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:49:49 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:49:49 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:49:49 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:49:49 --> Role: admin
+DEBUG - 2026-03-31 17:49:49 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:49:49 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:49:49 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:49:49 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:50:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:50:47 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:50:47 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:50:47 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:50:47 --> Role: admin
+DEBUG - 2026-03-31 17:50:47 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:50:47 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:50:47 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:50:47 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:51:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:51:00 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:51:00 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:51:00 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:51:00 --> Role: admin
+DEBUG - 2026-03-31 17:51:00 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:51:00 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:51:00 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:51:00 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:51:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:51:14 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:51:14 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:51:14 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:51:14 --> Role: admin
+DEBUG - 2026-03-31 17:51:14 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:51:14 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:51:14 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:51:14 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:51:31 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:51:31 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:51:31 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/configuracion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:51:31 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:51:31 --> Role: admin
+DEBUG - 2026-03-31 17:51:31 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:51:32 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:51:32 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:51:32 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:51:40 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:53:55 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:53:55 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:53:55 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/documentacion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:53:55 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:53:55 --> Role: admin
+DEBUG - 2026-03-31 17:53:55 --> Requested ID: NULL
+CRITICAL - 2026-03-31 17:53:55 --> Error: Class "App\Controllers\UserModel" not found
+[Method: GET, Route: documentacion]
+in APPPATH/Controllers/DocumentacionController.php on line 23.
+ 1 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\DocumentacionController->index()
+ 2 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\DocumentacionController))
+ 3 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 17:54:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:54:05 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:54:05 --> Session data: {"__ci_last_regenerate":1774979361,"_ci_previous_url":"http:\/\/localhost:8080\/documentacion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:54:05 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:54:05 --> Role: admin
+DEBUG - 2026-03-31 17:54:05 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:54:06 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:54:06 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:54:06 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:54:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:54:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:54:36 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:54:36 --> --- PERFIL DEBUG START ---
+DEBUG - 2026-03-31 17:54:36 --> Session data: {"__ci_last_regenerate":1774979676,"_ci_previous_url":"http:\/\/localhost:8080\/documentacion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:54:36 --> Session data: {"__ci_last_regenerate":1774979676,"_ci_previous_url":"http:\/\/localhost:8080\/documentacion","id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","role":"admin","isLoggedIn":true}
+DEBUG - 2026-03-31 17:54:36 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:54:36 --> CurrentUserId: 2
+DEBUG - 2026-03-31 17:54:36 --> Role: admin
+DEBUG - 2026-03-31 17:54:36 --> Role: admin
+DEBUG - 2026-03-31 17:54:36 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:54:36 --> Requested ID: NULL
+DEBUG - 2026-03-31 17:54:36 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:54:36 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:54:36 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:54:36 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:54:36 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:54:36 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:54:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:55:00 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:55:00 --> User result: {"id":"2","name":"Sergi Mall\u00e9n L\u00f3pez","email":"sergimallenweb@gmail.com","password":"$2y$10$7LjAY1A5rnFnTNgm9Ccj4OSP7sVCc.RmuaTtqHjk.ousUPRgGTYEG","role":"admin","created_at":"2026-03-22 02:54:02","updated_at":"2026-03-22 02:54:02"}
+DEBUG - 2026-03-31 17:55:00 --> --- PERFIL DEBUG END ---
+DEBUG - 2026-03-31 17:55:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:55:16 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:55:18 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:55:19 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:56:26 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:56:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 17:56:50 --> Error: Class "App\Controllers\UserModel" not found
+[Method: GET, Route: alumnos]
+in APPPATH/Controllers/AlumnosController.php on line 17.
+ 1 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\AlumnosController->index()
+ 2 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AlumnosController))
+ 3 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 17:57:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:57:26 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 17:57:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 17:57:45 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 18:03:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:03:06 --> Fetching current user by ID: 2
+DEBUG - 2026-03-31 18:03:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:03:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:03:46 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+ERROR - 2026-03-31 18:04:38 --> Hola: {"name":"Aleix","email":"aleixvila@gmail.com","password":"Aleix123","confirm_password":"Aleix123","csrf_test_name":"2eb13a9b3db3b4584362dbb0732d371d"}
+DEBUG - 2026-03-31 18:04:43 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:16 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:18 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:30 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:05:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:08:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:08:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:10:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:10:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:21:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:21:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:21:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:18 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:43 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:23:57 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:24:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:24:31 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 18:24:35 --> ParseError: syntax error, unexpected variable "$this"
+[Method: POST, Route: dashboard/stats]
+in APPPATH/Controllers/BaseController.php on line 41.
+ 1 VENDORPATH/composer/ClassLoader.php(427): Composer\Autoload\{closure}('/var/www/html/vendor/composer/../../app/Controllers/BaseController.php')
+ 2 APPPATH/Controllers/DashboardController.php(5): Composer\Autoload\ClassLoader->loadClass('App\\Controllers\\BaseController')
+ 3 VENDORPATH/composer/ClassLoader.php(576): include('/var/www/html/app/Controllers/DashboardController.php')
+ 4 VENDORPATH/composer/ClassLoader.php(427): Composer\Autoload\{closure}('/var/www/html/vendor/composer/../../app/Controllers/DashboardController.php')
+ 5 [internal function]: Composer\Autoload\ClassLoader->loadClass('App\\Controllers\\DashboardController')
+ 6 SYSTEMPATH/Router/Router.php(792): class_exists('\\App\\Controllers\\DashboardController')
+ 7 SYSTEMPATH/Router/Router.php(230): CodeIgniter\Router\Router->processRouteAttributes()
+ 8 SYSTEMPATH/CodeIgniter.php(829): CodeIgniter\Router\Router->handle('dashboard/stats')
+ 9 SYSTEMPATH/CodeIgniter.php(441): CodeIgniter\CodeIgniter->tryToRouteIt(Object(CodeIgniter\Router\RouteCollection))
+10 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:24:44 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2026-03-31 18:24:44 --> [DEPRECATED] Creation of dynamic property App\Controllers\DashboardController::$playerService is deprecated in APPPATH/Controllers/BaseController.php on line 41.
+ 1 SYSTEMPATH/CodeIgniter.php(922): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH/CodeIgniter.php(488): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:24:48 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2026-03-31 18:24:48 --> [DEPRECATED] Creation of dynamic property App\Controllers\DashboardController::$playerService is deprecated in APPPATH/Controllers/BaseController.php on line 41.
+ 1 SYSTEMPATH/CodeIgniter.php(922): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 2 SYSTEMPATH/CodeIgniter.php(488): CodeIgniter\CodeIgniter->createController()
+ 3 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 4 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 5 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:25:23 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:25:27 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:25:48 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:25:53 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:26:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:26:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 18:26:22 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "dashboard/alumnos.php"
+[Method: GET, Route: alumnos]
+in SYSTEMPATH/Exceptions/FrameworkException.php on line 39.
+ 1 SYSTEMPATH/View/View.php(226): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('dashboard/alumnos.php')
+ 2 SYSTEMPATH/Common.php(1250): CodeIgniter\View\View->render('dashboard/alumnos', [], true)
+ 3 APPPATH/Controllers/PlayerController.php(11): view('dashboard/alumnos', [...])
+ 4 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\PlayerController->index()
+ 5 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\PlayerController))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:26:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:27:27 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:30:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:30:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:31:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:32:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:32:31 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:32:44 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:33:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:33:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:34:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:34:23 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:34:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:35:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:35:19 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:35:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:35:30 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2026-03-31 18:35:57 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 18:35:58 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "player/create_profile.php"
+[Method: GET, Route: alumno]
+in SYSTEMPATH/Exceptions/FrameworkException.php on line 39.
+ 1 SYSTEMPATH/View/View.php(226): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('player/create_profile.php')
+ 2 SYSTEMPATH/Common.php(1250): CodeIgniter\View\View->render('player/create_profile', [], true)
+ 3 APPPATH/Controllers/PlayerController.php(23): view('player/create_profile', [...])
+ 4 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\PlayerController->profile()
+ 5 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\PlayerController))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:36:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 18:36:37 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "alumno/create_profile.php"
+[Method: GET, Route: alumno]
+in SYSTEMPATH/Exceptions/FrameworkException.php on line 39.
+ 1 SYSTEMPATH/View/View.php(226): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('alumno/create_profile.php')
+ 2 SYSTEMPATH/Common.php(1250): CodeIgniter\View\View->render('alumno/create_profile', [], true)
+ 3 APPPATH/Controllers/PlayerController.php(23): view('alumno/create_profile', [...])
+ 4 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\PlayerController->profile()
+ 5 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\PlayerController))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:37:43 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2026-03-31 18:37:44 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "alumno/create_profile.php"
+[Method: GET, Route: alumno]
+in SYSTEMPATH/Exceptions/FrameworkException.php on line 39.
+ 1 SYSTEMPATH/View/View.php(226): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('alumno/create_profile.php')
+ 2 SYSTEMPATH/Common.php(1250): CodeIgniter\View\View->render('alumno/create_profile', [], true)
+ 3 APPPATH/Controllers/PlayerController.php(23): view('alumno/create_profile', [...])
+ 4 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\PlayerController->profile()
+ 5 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\PlayerController))
+ 6 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+DEBUG - 2026-03-31 18:38:48 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
