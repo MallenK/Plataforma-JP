@@ -94,7 +94,7 @@
                     <?php elseif ($role === 'coach'): ?>
                         Gestiona tus alumnos desde <a href="<?= base_url('alumnos') ?>">Alumnos</a> o revisa las <a href="<?= base_url('clases') ?>">Clases</a>.
                     <?php else: ?>
-                        Consulta los <a href="<?= base_url('torneos') ?>">torneos</a> o la <a href="<?= base_url('documentacion') ?>">documentación</a>.
+                        Consulta la <a href="<?= base_url('documentacion') ?>">documentación</a> o revisa las <a href="<?= base_url('clases') ?>">clases</a>.
                     <?php endif; ?>
                 </p>
             </div>
@@ -144,28 +144,6 @@
 
     <!-- Panel lateral derecho -->
     <div class="col-12 col-xl-4 d-flex flex-column gap-3">
-
-        <!-- Próximos torneos -->
-        <?php if (in_array($role, ['superadmin', 'admin', 'coach', 'staff'])): ?>
-        <div class="card-jp">
-            <div class="card-jp-header">
-                <span class="card-jp-title"><i class="bi bi-trophy-fill me-2" style="color:var(--warning)"></i>Próximos Torneos</span>
-                <a href="<?= base_url('torneos') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todos</a>
-            </div>
-            <div class="card-jp-body py-0">
-                <div id="proximos-torneos">
-                    <div class="list-item-jp">
-                        <div class="list-item-icon blue"><i class="bi bi-calendar-event"></i></div>
-                        <div class="list-item-info">
-                            <div class="list-item-title">—</div>
-                            <div class="list-item-sub">Pendiente de carga</div>
-                        </div>
-                        <i class="bi bi-chevron-right list-item-action"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- Próximas clases -->
         <?php if ($dbCanManage): ?>

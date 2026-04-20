@@ -1,15 +1,13 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
+helper('avatar');
 $pageTitle    = esc($coach['name'] ?? 'Entrenador');
 $pageSubtitle = 'Perfil del entrenador';
 
-$name     = $coach['name'] ?? '?';
-$parts    = explode(' ', trim($name));
-$initials = strtoupper(substr($parts[0], 0, 1));
-if (count($parts) >= 2) {
-    $initials .= strtoupper(substr($parts[1], 0, 1));
-}
+$name        = $coach['name']   ?? '?';
+$userAvatar  = $coach['avatar'] ?? null;
+$isAdminUser = in_array(session('role'), ['superadmin', 'admin']);
 
 $statusLabel = match($coach['status'] ?? 'active') {
     'active'   => 'Activo',
@@ -56,7 +54,16 @@ $evalsCount      = count($coach['evaluations'] ?? []);
         <!-- Tarjeta de identidad -->
         <div class="card-jp">
             <div class="profile-header">
-                <div class="profile-avatar-lg" style="background:var(--success)"><?= esc($initials) ?></div>
+                <div style="position:relative;display:inline-block">
+                    <?= avatar_html($userAvatar, $name, 'profile-avatar-lg') ?>
+                    <?php if ($isAdminUser): ?>
+                    <button onclick="document.getElementById('avatarInputCoach').click()"
+                            title="Cambiar foto"
+                            style="position:absolute;bottom:2px;right:2px;width:28px;height:28px;border-radius:50%;background:var(--accent);border:2px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;padding:0;">
+                        <i class="bi bi-camera-fill"></i>
+                    </button>
+                    <?php endif; ?>
+                </div>
                 <div>
                     <div class="profile-name"><?= esc($name) ?></div>
                     <div class="profile-email"><?= esc($coach['email'] ?? '') ?></div>
@@ -65,6 +72,27 @@ $evalsCount      = count($coach['evaluations'] ?? []);
                     </span>
                 </div>
             </div>
+            <?php if ($isAdminUser): ?>
+            <div class="card-jp-body pt-0 pb-2 text-center">
+                <form id="avatarFormCoach" action="<?= base_url('avatar/upload/' . $coach['id']) ?>" method="post" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    <input type="file" id="avatarInputCoach" name="avatar"
+                           accept="image/jpeg,image/png,image/webp,image/gif"
+                           style="display:none"
+                           onchange="this.form.submit()">
+                </form>
+                <?php if ($userAvatar): ?>
+                <form action="<?= base_url('avatar/delete/' . $coach['id']) ?>" method="post">
+                    <?= csrf_field() ?>
+                    <button type="submit"
+                            onclick="return confirm('¿Eliminar el avatar?')"
+                            style="background:none;border:none;font-size:12px;color:var(--danger);cursor:pointer;padding:0;text-decoration:underline">
+                        <i class="bi bi-trash"></i> Eliminar foto
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             <div class="card-jp-body">
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex justify-content-between align-items-center">

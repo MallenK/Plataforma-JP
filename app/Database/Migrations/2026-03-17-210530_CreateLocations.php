@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUsers extends Migration
+class CreateLocations extends Migration
 {
     public function up()
     {
@@ -17,25 +17,33 @@ class CreateUsers extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 150,
             ],
-            'email' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 150,
+            'description' => [
+                'type' => 'TEXT',
+                'null' => true,
             ],
-            'password' => [
+            'address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
-            ],
-            'role' => [
-                'type'       => 'ENUM',
-                'constraint' => ['admin', 'coach', 'player'],
-                'default'    => 'player',
                 'null'       => true,
             ],
-            'status' => [
+            'type' => [
                 'type'       => 'ENUM',
-                'constraint' => ['active', 'inactive', 'blocked'],
-                'default'    => 'active',
+                'constraint' => ['pitch', 'gym', 'room', 'office', 'other'],
+                'default'    => 'pitch',
+            ],
+            'capacity' => [
+                'type'     => 'INT',
+                'unsigned' => true,
+                'null'     => true,
+            ],
+            'phone' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 30,
                 'null'       => true,
+            ],
+            'active' => [
+                'type'    => 'TINYINT',
+                'default' => 1,
             ],
             'created_at' => [
                 'type'    => 'DATETIME',
@@ -50,13 +58,11 @@ class CreateUsers extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->addUniqueKey('email');
-        $this->forge->addKey('role', false, false, 'idx_users_role');
-        $this->forge->createTable('users');
+        $this->forge->createTable('locations');
     }
 
     public function down()
     {
-        $this->forge->dropTable('users');
+        $this->forge->dropTable('locations');
     }
 }

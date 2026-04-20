@@ -1,12 +1,9 @@
 <?php
+helper('avatar');
 // ── Datos del usuario ─────────────────────────────────────
-$name  = session('name') ?? 'Usuario';
-$role  = session('role') ?? '';
-$parts = explode(' ', trim($name));
-$initials = strtoupper(substr($parts[0], 0, 1));
-if (count($parts) >= 2) {
-    $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
-}
+$name   = session('name')   ?? 'Usuario';
+$role   = session('role')   ?? '';
+$avatar = session('avatar');
 
 $roleLabel = match($role) {
     'superadmin' => 'Super Admin',
@@ -32,7 +29,6 @@ $navTitles = [
     'organizador'  => ['Organizador',    'Calendario y planificación'],
     'clases'       => ['Clases',         'Sesiones de entrenamiento'],
     'bonos'        => ['Bonos',          'Membresías y bonos'],
-    'torneos'      => ['Torneos',        'Calendario de competiciones'],
     'documentacion'=> ['Documentación',  'Material formativo'],
     'finanzas'     => ['Finanzas',       'Control económico'],
     'configuracion'=> ['Configuración',  'Ajustes de la plataforma'],
@@ -66,7 +62,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
                 <div class="topbar-user-name"><?= esc($name) ?></div>
                 <div class="topbar-user-role"><?= esc($roleLabel) ?></div>
             </div>
-            <div class="topbar-avatar"><?= esc($initials) ?></div>
+            <?= avatar_html($avatar, $name, 'topbar-avatar') ?>
         </a>
 
     </div>

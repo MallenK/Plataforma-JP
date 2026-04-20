@@ -208,7 +208,7 @@ class ConfiguracionService
             'sessions'      => (int)($data['sessions']      ?? 10),
             'price'         => (float)($data['price']       ?? 0),
             'validity_days' => (int)($data['validity_days'] ?? 90),
-            'active'        => 1,
+            'active'        => isset($data['active']) ? (int)$data['active'] : 1,
         ]);
 
         if (!$id) {

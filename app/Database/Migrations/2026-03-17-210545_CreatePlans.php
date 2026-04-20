@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUsers extends Migration
+class CreatePlans extends Migration
 {
     public function up()
     {
@@ -16,26 +16,20 @@ class CreateUsers extends Migration
             'name' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 150,
-            ],
-            'email' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 150,
-            ],
-            'password' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-            ],
-            'role' => [
-                'type'       => 'ENUM',
-                'constraint' => ['admin', 'coach', 'player'],
-                'default'    => 'player',
                 'null'       => true,
             ],
-            'status' => [
-                'type'       => 'ENUM',
-                'constraint' => ['active', 'inactive', 'blocked'],
-                'default'    => 'active',
+            'sessions_count' => [
+                'type' => 'INT',
+                'null' => true,
+            ],
+            'price' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '10,2',
                 'null'       => true,
+            ],
+            'description' => [
+                'type' => 'TEXT',
+                'null' => true,
             ],
             'created_at' => [
                 'type'    => 'DATETIME',
@@ -50,13 +44,11 @@ class CreateUsers extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->addUniqueKey('email');
-        $this->forge->addKey('role', false, false, 'idx_users_role');
-        $this->forge->createTable('users');
+        $this->forge->createTable('plans');
     }
 
     public function down()
     {
-        $this->forge->dropTable('users');
+        $this->forge->dropTable('plans');
     }
 }

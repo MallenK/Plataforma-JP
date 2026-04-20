@@ -1,14 +1,9 @@
 <?php
+helper('avatar');
 $role        = session('role');
 $currentUri  = current_url(true)->getPath();
 $name        = session('name') ?? 'Usuario';
-$initials    = strtoupper(substr($name, 0, 1));
-
-// Genera las iniciales del nombre completo (hasta 2 letras)
-$parts = explode(' ', trim($name));
-if (count($parts) >= 2) {
-    $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
-}
+$avatar      = session('avatar');
 
 // Helper: activa la clase 'active' si la URI coincide con el prefijo
 function sidebarActive(string $path, string $uri): string {
@@ -100,17 +95,6 @@ $canManage    = $isAdmin || $isStaff || $isCoach;
             </li>
             <?php endif; ?>
 
-            <!-- Torneos — todos menos alumno -->
-            <?php if ($isAdmin || $isCoach || $isStaff): ?>
-            <li class="sidebar-nav-item">
-                <a href="<?= base_url('torneos') ?>"
-                   class="sidebar-nav-link <?= sidebarActive('/torneos', $currentUri) ?>">
-                    <i class="bi bi-trophy-fill"></i>
-                    Torneos
-                </a>
-            </li>
-            <?php endif; ?>
-
             <!-- Documentación — todos los roles -->
             <li class="sidebar-nav-item">
                 <a href="<?= base_url('documentacion') ?>"
@@ -137,7 +121,7 @@ $canManage    = $isAdmin || $isStaff || $isCoach;
     <!-- Footer: usuario + cerrar sesión -->
     <div class="sidebar-footer">
         <a href="<?= base_url('perfil') ?>" class="sidebar-user">
-            <div class="sidebar-avatar"><?= esc($initials) ?></div>
+            <?= avatar_html($avatar, $name, 'sidebar-avatar') ?>
             <div class="sidebar-user-info">
                 <div class="sidebar-user-name"><?= esc($name) ?></div>
                 <div class="sidebar-user-role"><?= esc($role) ?></div>

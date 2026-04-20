@@ -11,10 +11,13 @@ use CodeIgniter\Router\RouteCollection;
 // ============================================================
 //
 //  superadmin → acceso total a todo
-//  admin      → gestión completa (alumnos, entrenadores, config, finanzas, bonos)
-//  coach      → sus grupos, alumnos asignados, organizador, clases, torneos
+//  admin      → gestión completa (alumnos, entrenadores, config, bonos)
+//  coach      → sus grupos, alumnos asignados, organizador, clases
 //  alumno     → su propio perfil y documentación
-//  staff      → torneos y documentación
+//  staff      → documentación
+//
+//  NOTA: La funcionalidad de torneos está desactivada temporalmente.
+//  Las rutas se conservan comentadas para reactivarlas en el futuro.
 //
 //  Cada ruta protegida lleva DOS filtros encadenados:
 //    1. 'auth'  → verifica que hay sesión activa (redirige a /login si no)
@@ -241,83 +244,96 @@ $routes->get('bonos', 'BonosController::index', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->post('bonos/store', 'BonosController::store', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/check-active', 'BonosController::checkActive', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('bonos/(:num)', 'BonosController::show/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/(:num)/assign', 'BonosController::assign/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/(:num)/update', 'BonosController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/(:num)/delete', 'BonosController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ------------------------------------------------------------
-// TORNEOS Y CAMPUS
+// TORNEOS Y CAMPUS — DESACTIVADO TEMPORALMENTE
 //
-//  GET  /torneos              → todos los roles autenticados
-//  GET  /torneos/:id          → todos los roles autenticados
-//  POST /torneos/*            → admin / superadmin
-//  POST /torneos/:id/respond  → cualquier usuario autenticado (convocado)
+// Funcionalidad conservada para reactivación futura.
+// Para reactivar: descomentar el bloque completo.
 // ------------------------------------------------------------
 
-// ── Listado ────────────────────────────────────────────────
-$routes->get('torneos', 'TorneosController::index', [
-    'filter' => 'auth',
-]);
-
-// ── Crear ──────────────────────────────────────────────────
-$routes->get('torneos/nuevo', 'TorneosController::create', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/nuevo', 'TorneosController::store', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Participantes externos ─────────────────────────────────
-$routes->post('torneos/externos/create', 'TorneosController::createExternal', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Detalle ────────────────────────────────────────────────
-$routes->get('torneos/(:num)', 'TorneosController::show/$1', [
-    'filter' => 'auth',
-]);
-
-// ── Confirmación de asistencia (cualquier usuario convocado)
-$routes->post('torneos/(:num)/respond', 'TorneosController::respond/$1', [
-    'filter' => 'auth',
-]);
-
-// ── Editar / Cancelar / Eliminar (solo admin) ──────────────
-$routes->get('torneos/(:num)/editar', 'TorneosController::edit/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/(:num)/editar', 'TorneosController::update/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/(:num)/cancelar', 'TorneosController::cancel/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/(:num)/eliminar', 'TorneosController::destroy/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Equipos ────────────────────────────────────────────────
-$routes->post('torneos/(:num)/equipos/create', 'TorneosController::createTeam/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/(:num)/equipos/(:num)/delete', 'TorneosController::deleteTeam/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Miembros ───────────────────────────────────────────────
-$routes->post('torneos/(:num)/equipos/(:num)/miembros/add', 'TorneosController::addMember/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('torneos/(:num)/miembros/(:num)/remove', 'TorneosController::removeMember/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Notificaciones ─────────────────────────────────────────
-$routes->post('torneos/(:num)/notificar', 'TorneosController::sendNotifications/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-// ── Resultados ─────────────────────────────────────────────
-$routes->post('torneos/(:num)/resultado', 'TorneosController::saveResult/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
+// // ── Listado ────────────────────────────────────────────────
+// $routes->get('torneos', 'TorneosController::index', [
+//     'filter' => 'auth',
+// ]);
+// // ── Crear ──────────────────────────────────────────────────
+// $routes->get('torneos/nuevo', 'TorneosController::create', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/nuevo', 'TorneosController::store', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Participantes externos ─────────────────────────────────
+// $routes->post('torneos/externos/create', 'TorneosController::createExternal', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Detalle ────────────────────────────────────────────────
+// $routes->get('torneos/(:num)', 'TorneosController::show/$1', [
+//     'filter' => 'auth',
+// ]);
+// // ── Confirmación de asistencia (cualquier usuario convocado)
+// $routes->post('torneos/(:num)/respond', 'TorneosController::respond/$1', [
+//     'filter' => 'auth',
+// ]);
+// // ── Editar / Cancelar / Eliminar (solo admin) ──────────────
+// $routes->get('torneos/(:num)/editar', 'TorneosController::edit/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/(:num)/editar', 'TorneosController::update/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/(:num)/cancelar', 'TorneosController::cancel/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/(:num)/eliminar', 'TorneosController::destroy/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Equipos ────────────────────────────────────────────────
+// $routes->post('torneos/(:num)/equipos/create', 'TorneosController::createTeam/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/(:num)/equipos/(:num)/delete', 'TorneosController::deleteTeam/$1/$2', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Miembros ───────────────────────────────────────────────
+// $routes->post('torneos/(:num)/equipos/(:num)/miembros/add', 'TorneosController::addMember/$1/$2', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// $routes->post('torneos/(:num)/miembros/(:num)/remove', 'TorneosController::removeMember/$1/$2', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Notificaciones ─────────────────────────────────────────
+// $routes->post('torneos/(:num)/notificar', 'TorneosController::sendNotifications/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
+// // ── Resultados ─────────────────────────────────────────────
+// $routes->post('torneos/(:num)/resultado', 'TorneosController::saveResult/$1', [
+//     'filter' => ['auth', 'role:superadmin,admin'],
+// ]);
 
 
 // ------------------------------------------------------------
@@ -454,5 +470,25 @@ $routes->get('perfil', 'PerfilController::index', [
 ]);
 
 $routes->get('perfil/(:num)', 'PerfilController::index/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+
+// ------------------------------------------------------------
+// AVATARES
+// Cualquier usuario autenticado puede gestionar su propio avatar.
+// Con /:id solo admin/superadmin pueden gestionar el de otro usuario.
+// ------------------------------------------------------------
+
+$routes->post('avatar/upload', 'AvatarController::upload', [
+    'filter' => 'auth',
+]);
+$routes->post('avatar/upload/(:num)', 'AvatarController::upload/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('avatar/delete', 'AvatarController::delete', [
+    'filter' => 'auth',
+]);
+$routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
