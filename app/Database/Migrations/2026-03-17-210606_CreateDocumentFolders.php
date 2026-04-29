@@ -66,7 +66,7 @@ class CreateDocumentFolders extends Migration
         $this->forge->addUniqueKey('slug', 'uq_slug');
         $this->forge->addKey('type', false, false, 'idx_type');
         $this->forge->addKey('owner_id', false, false, 'idx_owner');
-        $this->forge->createTable('document_folders');
+        $this->forge->createTable('document_folders', true);
     }
 
     public function down()

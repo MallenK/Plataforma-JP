@@ -45,7 +45,7 @@ class CreateEventResults extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addKey('event_id', false, false, 'idx_event_id');
-        $this->forge->createTable('event_results');
+        $this->forge->createTable('event_results', true);
     }
 
     public function down()

@@ -36,7 +36,7 @@ class CreateEventNotifications extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey(['event_id', 'member_id'], 'uq_event_member');
         $this->forge->addKey('member_id', false, false, 'idx_member_id');
-        $this->forge->createTable('event_notifications');
+        $this->forge->createTable('event_notifications', true);
     }
 
     public function down()

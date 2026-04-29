@@ -40,7 +40,7 @@ class CreateAcademySettings extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey('setting_key', 'uq_setting_key');
-        $this->forge->createTable('academy_settings');
+        $this->forge->createTable('academy_settings', true);
     }
 
     public function down()

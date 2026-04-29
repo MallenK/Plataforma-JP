@@ -43,7 +43,7 @@ class CreateFolderPermissions extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey(['folder_id', 'user_id'], 'uq_folder_user');
-        $this->forge->createTable('folder_permissions');
+        $this->forge->createTable('folder_permissions', true);
     }
 
     public function down()

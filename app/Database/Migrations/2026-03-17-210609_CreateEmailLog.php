@@ -59,7 +59,7 @@ class CreateEmailLog extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addKey('sender_id', false, false, 'idx_sender');
         $this->forge->addKey('created_at', false, false, 'idx_created_at');
-        $this->forge->createTable('email_log');
+        $this->forge->createTable('email_log', true);
     }
 
     public function down()

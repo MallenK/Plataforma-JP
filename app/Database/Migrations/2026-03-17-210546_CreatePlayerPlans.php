@@ -55,7 +55,7 @@ class CreatePlayerPlans extends Migration
         $this->forge->addKey('plan_id');
         $this->forge->addForeignKey('player_id', 'users', 'id', '', '');
         $this->forge->addForeignKey('plan_id', 'plans', 'id', '', '');
-        $this->forge->createTable('player_plans');
+        $this->forge->createTable('player_plans', true);
     }
 
     public function down()

@@ -49,7 +49,7 @@ class CreateBonoTypes extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('bono_types');
+        $this->forge->createTable('bono_types', true);
     }
 
     public function down()

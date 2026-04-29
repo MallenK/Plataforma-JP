@@ -98,7 +98,7 @@ class CreateEvents extends Migration
         $this->forge->addKey('cancelled', false, false, 'idx_cancelled');
         $this->forge->addForeignKey('location_id', 'locations', 'id', '', '');
         $this->forge->addForeignKey('created_by', 'users', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->createTable('events');
+        $this->forge->createTable('events', true);
     }
 
     public function down()

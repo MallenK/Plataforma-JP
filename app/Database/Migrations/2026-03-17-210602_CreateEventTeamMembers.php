@@ -64,7 +64,7 @@ class CreateEventTeamMembers extends Migration
         $this->forge->addKey('team_id', false, false, 'idx_team_id');
         $this->forge->addKey('user_id', false, false, 'idx_user_id');
         $this->forge->addKey('external_id', false, false, 'idx_external_id');
-        $this->forge->createTable('event_team_members');
+        $this->forge->createTable('event_team_members', true);
     }
 
     public function down()

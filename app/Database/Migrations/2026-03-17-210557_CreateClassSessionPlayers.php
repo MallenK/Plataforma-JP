@@ -59,7 +59,7 @@ class CreateClassSessionPlayers extends Migration
         $this->forge->addUniqueKey(['session_id', 'user_id'], 'uq_csp');
         $this->forge->addKey('user_id', false, false, 'idx_csp_user');
         $this->forge->addKey('coach_id', false, false, 'idx_csp_coach');
-        $this->forge->createTable('class_session_players');
+        $this->forge->createTable('class_session_players', true);
     }
 
     public function down()

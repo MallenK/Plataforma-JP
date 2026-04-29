@@ -52,7 +52,7 @@ class CreateUsers extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey('email');
         $this->forge->addKey('role', false, false, 'idx_users_role');
-        $this->forge->createTable('users');
+        $this->forge->createTable('users', true);
     }
 
     public function down()

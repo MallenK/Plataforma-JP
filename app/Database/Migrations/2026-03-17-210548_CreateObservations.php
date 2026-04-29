@@ -53,7 +53,7 @@ class CreateObservations extends Migration
         $this->forge->addForeignKey('player_id', 'users', 'id', '', '');
         $this->forge->addForeignKey('session_id', 'sessions', 'id', '', 'SET NULL');
         $this->forge->addForeignKey('author_id', 'users', 'id', '', '');
-        $this->forge->createTable('observations');
+        $this->forge->createTable('observations', true);
     }
 
     public function down()

@@ -56,7 +56,7 @@ class CreatePlayerMetrics extends Migration
         $this->forge->addForeignKey('player_id', 'users', 'id', '', '');
         $this->forge->addForeignKey('coach_id', 'users', 'id', '', '');
         $this->forge->addForeignKey('session_id', 'sessions', 'id', '', 'SET NULL');
-        $this->forge->createTable('player_metrics');
+        $this->forge->createTable('player_metrics', true);
     }
 
     public function down()

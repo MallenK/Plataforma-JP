@@ -78,7 +78,7 @@ class CreateClassSessions extends Migration
         $this->forge->addKey('session_date', false, false, 'idx_cs_date');
         $this->forge->addKey('class_id', false, false, 'idx_cs_class');
         $this->forge->addKey('status', false, false, 'idx_cs_status');
-        $this->forge->createTable('class_sessions');
+        $this->forge->createTable('class_sessions', true);
     }
 
     public function down()

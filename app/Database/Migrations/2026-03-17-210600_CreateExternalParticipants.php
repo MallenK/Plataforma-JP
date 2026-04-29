@@ -59,7 +59,7 @@ class CreateExternalParticipants extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addKey('type', false, false, 'idx_type');
-        $this->forge->createTable('external_participants');
+        $this->forge->createTable('external_participants', true);
     }
 
     public function down()

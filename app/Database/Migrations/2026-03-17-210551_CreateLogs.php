@@ -45,7 +45,7 @@ class CreateLogs extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addKey('user_id');
         $this->forge->addForeignKey('user_id', 'users', 'id', '', '');
-        $this->forge->createTable('logs');
+        $this->forge->createTable('logs', true);
     }
 
     public function down()

@@ -42,3 +42,34 @@ if (!function_exists('avatar_html')) {
         return '<div class="' . esc($cssClass, 'attr') . '">' . esc($initials) . '</div>';
     }
 }
+
+if (!function_exists('timeAgo')) {
+    /**
+     * Devuelve una cadena legible "hace X tiempo" a partir de un datetime string.
+     */
+    function timeAgo(?string $datetime): string
+    {
+        if (!$datetime) return '';
+        $now  = time();
+        $then = strtotime($datetime);
+        $diff = $now - $then;
+
+        if ($diff < 60)     return 'ahora';
+        if ($diff < 3600)   return floor($diff / 60) . ' min';
+        if ($diff < 86400)  return floor($diff / 3600) . ' h';
+        if ($diff < 604800) return floor($diff / 86400) . ' d';
+        return date('d/m/Y', $then);
+    }
+}
+
+if (!function_exists('formatBytes')) {
+    /**
+     * Convierte bytes a una cadena legible (KB, MB…).
+     */
+    function formatBytes(int $bytes): string
+    {
+        if ($bytes < 1024)    return $bytes . ' B';
+        if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
+        return round($bytes / 1048576, 1) . ' MB';
+    }
+}

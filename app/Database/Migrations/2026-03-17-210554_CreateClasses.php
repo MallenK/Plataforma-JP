@@ -79,7 +79,7 @@ class CreateClasses extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addKey('created_by', false, false, 'idx_classes_by');
-        $this->forge->createTable('classes');
+        $this->forge->createTable('classes', true);
     }
 
     public function down()

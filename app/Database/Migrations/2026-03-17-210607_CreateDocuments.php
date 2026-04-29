@@ -66,7 +66,7 @@ class CreateDocuments extends Migration
         $this->forge->addKey('folder_id', false, false, 'idx_folder');
         $this->forge->addKey('uploader_id', false, false, 'idx_uploader');
         $this->forge->addKey('deleted_at', false, false, 'idx_deleted');
-        $this->forge->createTable('documents');
+        $this->forge->createTable('documents', true);
     }
 
     public function down()

@@ -44,7 +44,7 @@ class CreatePlans extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('plans');
+        $this->forge->createTable('plans', true);
     }
 
     public function down()

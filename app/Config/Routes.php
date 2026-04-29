@@ -475,6 +475,104 @@ $routes->get('perfil/(:num)', 'PerfilController::index/$1', [
 
 
 // ------------------------------------------------------------
+// NOTIFICACIONES
+//
+//  GET  /notificaciones         → centro de notificaciones — todos los roles
+//  POST /notificaciones/send    → enviar notificación (individual: todos; grupal: admin,superadmin,coach)
+//  POST /notificaciones/:id/read  → marcar una notificación como leída
+//  POST /notificaciones/read-all  → marcar todas como leídas
+//  GET  /notificaciones/:id/download → descargar adjunto
+//  GET  /notificaciones/latest  → AJAX campana navbar (últimas N + unread count)
+// ------------------------------------------------------------
+
+$routes->get('notificaciones', 'NotificacionesController::index', [
+    'filter' => 'auth',
+]);
+
+$routes->post('notificaciones/send', 'NotificacionesController::send', [
+    'filter' => 'auth',
+]);
+
+$routes->post('notificaciones/read-all', 'NotificacionesController::ajaxMarkAllRead', [
+    'filter' => 'auth',
+]);
+
+$routes->post('notificaciones/(:num)/read', 'NotificacionesController::ajaxMarkRead/$1', [
+    'filter' => 'auth',
+]);
+
+$routes->get('notificaciones/(:num)/download', 'NotificacionesController::download/$1', [
+    'filter' => 'auth',
+]);
+
+$routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
+    'filter' => 'auth',
+]);
+
+
+// ------------------------------------------------------------
+// MENSAJES (CHAT)
+//
+//  GET  /mensajes                     → bandeja de entrada
+//  POST /mensajes/open                → abrir/crear conversación
+//  POST /mensajes/send                → enviar mensaje
+//  GET  /mensajes/:id/poll            → polling mensajes nuevos (AJAX)
+//  GET  /mensajes/conversations       → lista conversaciones (AJAX)
+//  GET  /mensajes/download/:id        → descargar archivo de mensaje
+// ------------------------------------------------------------
+
+$routes->get('mensajes', 'MensajesController::index', [
+    'filter' => 'auth',
+]);
+
+$routes->post('mensajes/open', 'MensajesController::ajaxOpenConversation', [
+    'filter' => 'auth',
+]);
+
+$routes->post('mensajes/send', 'MensajesController::ajaxSend', [
+    'filter' => 'auth',
+]);
+
+$routes->get('mensajes/(:num)/poll', 'MensajesController::ajaxPoll/$1', [
+    'filter' => 'auth',
+]);
+
+$routes->get('mensajes/conversations', 'MensajesController::ajaxConversations', [
+    'filter' => 'auth',
+]);
+
+$routes->get('mensajes/download/(:num)', 'MensajesController::download/$1', [
+    'filter' => 'auth',
+]);
+
+
+// ------------------------------------------------------------
+// COMPRAS (LISTA DE COMPRAS)
+//
+//  GET  /compras              → listado general — todos los no-jugadores
+//  POST /compras/store        → crear solicitud — todos los no-jugadores
+//  POST /compras/:id/estado   → cambiar estado + comentario — admin, superadmin
+//  POST /compras/:id/eliminar → eliminar solicitud — admin, superadmin
+// ------------------------------------------------------------
+
+$routes->get('compras', 'ComprasController::index', [
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+]);
+
+$routes->post('compras/store', 'ComprasController::store', [
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+]);
+
+$routes->post('compras/(:num)/estado', 'ComprasController::updateStatus/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('compras/(:num)/eliminar', 'ComprasController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+
+// ------------------------------------------------------------
 // AVATARES
 // Cualquier usuario autenticado puede gestionar su propio avatar.
 // Con /:id solo admin/superadmin pueden gestionar el de otro usuario.

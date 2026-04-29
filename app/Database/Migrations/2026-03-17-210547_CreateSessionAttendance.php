@@ -42,7 +42,7 @@ class CreateSessionAttendance extends Migration
         $this->forge->addKey('player_id');
         $this->forge->addForeignKey('session_id', 'sessions', 'id', 'CASCADE', '');
         $this->forge->addForeignKey('player_id', 'users', 'id', 'CASCADE', '');
-        $this->forge->createTable('session_attendance');
+        $this->forge->createTable('session_attendance', true);
     }
 
     public function down()

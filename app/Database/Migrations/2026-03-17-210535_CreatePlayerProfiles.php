@@ -57,7 +57,7 @@ class CreatePlayerProfiles extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey('player_id');
         $this->forge->addForeignKey('player_id', 'users', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->createTable('player_profiles');
+        $this->forge->createTable('player_profiles', true);
     }
 
     public function down()

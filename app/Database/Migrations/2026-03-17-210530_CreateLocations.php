@@ -58,7 +58,7 @@ class CreateLocations extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('locations');
+        $this->forge->createTable('locations', true);
     }
 
     public function down()

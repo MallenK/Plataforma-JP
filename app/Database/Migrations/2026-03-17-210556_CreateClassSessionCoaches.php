@@ -32,7 +32,7 @@ class CreateClassSessionCoaches extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey(['session_id', 'user_id'], 'uq_csc');
         $this->forge->addKey('user_id', false, false, 'idx_csc_user');
-        $this->forge->createTable('class_session_coaches');
+        $this->forge->createTable('class_session_coaches', true);
     }
 
     public function down()

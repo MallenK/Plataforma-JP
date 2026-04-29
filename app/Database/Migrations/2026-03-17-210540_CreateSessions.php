@@ -68,7 +68,7 @@ class CreateSessions extends Migration
         $this->forge->addForeignKey('location_id', 'locations', 'id', '', '');
         $this->forge->addForeignKey('coach_id', 'users', 'id', '', '');
         $this->forge->addForeignKey('created_by', 'users', 'id', '', '');
-        $this->forge->createTable('sessions');
+        $this->forge->createTable('sessions', true);
     }
 
     public function down()

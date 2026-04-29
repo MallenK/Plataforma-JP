@@ -57,9 +57,10 @@ abstract class BaseController extends Controller
     protected function currentUser(): array
     {
         return [
-            'id'   => session('id'),
-            'name' => session('name'),
-            'role' => session('role'),
+            'id'     => session('id'),
+            'name'   => session('name'),
+            'role'   => session('role'),
+            'avatar' => session('avatar'),
         ];
     }
 

@@ -33,7 +33,7 @@ class CreateEventParticipants extends Migration
         $this->forge->addKey('user_id');
         $this->forge->addForeignKey('event_id', 'events', 'id', 'CASCADE', '');
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', '');
-        $this->forge->createTable('event_participants');
+        $this->forge->createTable('event_participants', true);
     }
 
     public function down()
