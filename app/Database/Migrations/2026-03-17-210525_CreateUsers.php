@@ -11,7 +11,6 @@ class CreateUsers extends Migration
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',
-                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'name' => [
@@ -28,13 +27,15 @@ class CreateUsers extends Migration
             ],
             'role' => [
                 'type'       => 'ENUM',
-                'constraint' => ['superadmin', 'admin', 'coach', 'alumno', 'staff'],
-                'default'    => 'alumno',
+                'constraint' => ['admin', 'coach', 'player'],
+                'default'    => 'player',
+                'null'       => true,
             ],
             'status' => [
                 'type'       => 'ENUM',
-                'constraint' => ['active', 'inactive', 'banned'],
+                'constraint' => ['active', 'inactive', 'blocked'],
                 'default'    => 'active',
+                'null'       => true,
             ],
             'created_at' => [
                 'type'    => 'DATETIME',
@@ -50,7 +51,8 @@ class CreateUsers extends Migration
 
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey('email');
-        $this->forge->createTable('users');
+        $this->forge->addKey('role', false, false, 'idx_users_role');
+        $this->forge->createTable('users', true);
     }
 
     public function down()

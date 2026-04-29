@@ -71,7 +71,14 @@ Ejemplo:
 
 ```bash
 docker exec -it jp_app php spark
+
 ```
+
+Ejemplo:
+
+```bash
+docker exec -it jp_app php spark migrate
+
 
 Crear filtro:
 

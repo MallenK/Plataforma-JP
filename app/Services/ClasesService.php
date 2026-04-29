@@ -6,6 +6,7 @@ use App\Models\ClassModel;
 use App\Models\ClassSessionModel;
 use App\Models\ClassSessionCoachModel;
 use App\Models\ClassSessionPlayerModel;
+use App\Models\PlayerBonoModel;
 
 class ClasesService
 {
@@ -247,7 +248,32 @@ class ClasesService
 
     public function markComplete(int $id): bool
     {
-        return (bool)$this->sessionModel->update($id, ['status' => 'completed']);
+        $ok = (bool)$this->sessionModel->update($id, ['status' => 'completed']);
+
+        if ($ok) {
+            $this->deductBonosForSession($id);
+        }
+
+        return $ok;
+    }
+
+    /**
+     * Al completar una sesión, descuenta 1 sesión del bono activo de cada
+     * jugador que NO esté marcado como 'absent'. Los jugadores sin bono
+     * simplemente no se ven afectados.
+     */
+    private function deductBonosForSession(int $sessionId): void
+    {
+        $bonoModel = new PlayerBonoModel();
+
+        $players = $this->db->table('class_session_players')
+            ->where('session_id', $sessionId)
+            ->where('attendance !=', 'absent')
+            ->get()->getResultArray();
+
+        foreach ($players as $player) {
+            $bonoModel->deductSession((int)$player['user_id']);
+        }
     }
 
     public function cancelSession(int $id): bool
