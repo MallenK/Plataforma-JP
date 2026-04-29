@@ -16,12 +16,12 @@ database.default.port = ${DB_PORT:-3306}
 
 encryption.key = hex2bin:${ENCRYPTION_KEY:-}
 
-email.fromEmail  = ${MAIL_FROM_EMAIL:-}
-email.fromName   = ${MAIL_FROM_NAME:-JP Academy}
+email.fromEmail  = "${MAIL_FROM_EMAIL:-}"
+email.fromName   = "${MAIL_FROM_NAME:-JP Academy}"
 email.protocol   = smtp
-email.SMTPHost   = ${SMTP_HOST:-smtp-relay.brevo.com}
-email.SMTPUser   = ${SMTP_USER:-}
-email.SMTPPass   = ${SMTP_PASS:-}
+email.SMTPHost   = "${SMTP_HOST:-smtp-relay.brevo.com}"
+email.SMTPUser   = "${SMTP_USER:-}"
+email.SMTPPass   = "${SMTP_PASS:-}"
 email.SMTPPort   = ${SMTP_PORT:-587}
 email.SMTPCrypto = tls
 email.mailType   = html
