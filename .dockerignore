@@ -1,0 +1,14 @@
+.env
+.git
+.gitignore
+docker-compose.yml
+*.md
+writable/logs/*
+writable/cache/*
+writable/debugbar/*
+writable/session/*
+writable/uploads/*
+tests/
+phpunit.xml.dist
+users.txt
+app/Database/Database.zip
