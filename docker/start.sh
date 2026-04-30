@@ -3,7 +3,7 @@ set -e
 
 echo "==> Generating .env from environment variables..."
 cat > /var/www/html/.env << EOF
-CI_ENVIRONMENT = production
+CI_ENVIRONMENT = ${CI_ENVIRONMENT:-production}
 
 app.baseURL = ${APP_BASE_URL:-''}
 
@@ -33,4 +33,6 @@ cd /var/www/html
 php spark migrate --all -n 2>&1 || echo "[WARN] Migrations failed, continuing..."
 
 echo "==> Starting Apache..."
-exec apache2-foreground
+# Pipe PHP/Apache error log to stdout so Render captures it
+mkdir -p /var/log/apache2
+exec apache2-foreground 2>&1
