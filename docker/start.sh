@@ -13,7 +13,6 @@ database.default.username = ${DB_USER:-}
 database.default.password = ${DB_PASS:-}
 database.default.DBDriver = MySQLi
 database.default.port = ${DB_PORT:-3306}
-database.default.encrypt = true
 
 encryption.key = hex2bin:${ENCRYPTION_KEY:-}
 
