@@ -43,27 +43,25 @@ class ConversationModel extends Model
             SELECT
                 c.id,
                 c.last_message_at,
-                -- Otro usuario
                 IF(c.user1_id = ?, c.user2_id, c.user1_id) AS other_user_id,
                 u.name     AS other_name,
                 u.avatar   AS other_avatar,
                 u.role     AS other_role,
-                -- Último mensaje
                 m.body         AS last_body,
                 m.file_name    AS last_file,
                 m.sender_id    AS last_sender_id,
-                -- Mensajes no leídos
                 (SELECT COUNT(*) FROM messages ms
                  WHERE ms.conversation_id = c.id
                    AND ms.sender_id != ?
                    AND ms.read_at IS NULL) AS unread_count
             FROM conversations c
             JOIN users u ON u.id = IF(c.user1_id = ?, c.user2_id, c.user1_id)
-            LEFT JOIN messages m ON m.id = (
-                SELECT id FROM messages
-                WHERE conversation_id = c.id
-                ORDER BY created_at DESC LIMIT 1
-            )
+            LEFT JOIN (
+                SELECT conversation_id, MAX(id) AS last_id
+                FROM messages
+                GROUP BY conversation_id
+            ) lm ON lm.conversation_id = c.id
+            LEFT JOIN messages m ON m.id = lm.last_id
             WHERE c.user1_id = ? OR c.user2_id = ?
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
         ", [$userId, $userId, $userId, $userId, $userId]);
