@@ -102,6 +102,16 @@ $routes->post('/alumnos/(:num)/eliminar', 'PlayerController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+// ── Anotaciones de alumno ──────────────────────────────────────────────
+//  POST /alumnos/:id/anotaciones        → crear anotación — todos los roles
+//  POST /anotaciones/:id/eliminar       → eliminar — autor, admin, superadmin
+$routes->post('/alumnos/(:num)/anotaciones', 'AnnotationController::store/$1', [
+    'filter' => 'auth',
+]);
+$routes->post('/anotaciones/(:num)/eliminar', 'AnnotationController::destroy/$1', [
+    'filter' => 'auth',
+]);
+
 $routes->get('/alumno', 'PlayerController::profile', [
     'filter' => ['auth', 'role:superadmin,admin,player'],
 ]);

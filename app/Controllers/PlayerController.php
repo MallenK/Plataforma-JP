@@ -34,9 +34,15 @@ class PlayerController extends BaseController
             ]);
         }
 
+        $annotationModel = new \App\Models\PlayerAnnotationModel();
+        $role = $this->currentRole();
+        $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
+
         return view('alumnos/profile', [
-            'title'   => 'Mi ficha — JP Preparation',
-            'profile' => $profile,
+            'title'       => 'Mi ficha — JP Preparation',
+            'profile'     => $profile,
+            'annotations' => $annotationModel->getForPlayer($userId, $types),
+            'canInternal' => $role !== 'player',
         ]);
     }
 
@@ -124,9 +130,15 @@ class PlayerController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        $annotationModel = new \App\Models\PlayerAnnotationModel();
+        $role = $this->currentRole();
+        $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
+
         return view('alumnos/show', [
-            'title'  => esc($alumno['name']) . ' — JP Preparation',
-            'alumno' => $alumno,
+            'title'       => esc($alumno['name']) . ' — JP Preparation',
+            'alumno'      => $alumno,
+            'annotations' => $annotationModel->getForPlayer($id, $types),
+            'canInternal' => $role !== 'player',
         ]);
     }
 
