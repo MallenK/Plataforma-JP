@@ -127,6 +127,51 @@ class ConfiguracionService
     }
 
     /**
+     * Elimina permanentemente un usuario de staff.
+     * Limpia referencias en tablas con FK RESTRICT antes de borrar,
+     * y elimina registros de tablas pivot sin FK por coherencia.
+     *
+     * @return array{success: bool, name?: string, error?: string}
+     */
+    public function deleteStaffUser(int $userId, int $byUserId): array
+    {
+        if ($userId <= 0 || $byUserId <= 0) return ['success' => false, 'error' => 'ID inválido.'];
+        if ($userId === $byUserId)          return ['success' => false, 'error' => 'No puedes eliminarte a ti mismo.'];
+
+        $user = $this->users->find($userId);
+        if (!$user)                           return ['success' => false, 'error' => 'Usuario no encontrado.'];
+        if ($user['role'] === 'superadmin')   return ['success' => false, 'error' => 'No se puede eliminar un superadmin.'];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // FK RESTRICT nullable → SET NULL para no bloquear el DELETE del usuario
+        $db->table('sessions')->where('coach_id',   $userId)->set(['coach_id'   => null])->update();
+        $db->table('sessions')->where('created_by', $userId)->set(['created_by' => null])->update();
+        $db->table('observations')->where('author_id', $userId)->set(['author_id' => null])->update();
+        $db->table('player_metrics')->where('coach_id', $userId)->set(['coach_id' => null])->update();
+        $db->table('player_plans')->where('player_id', $userId)->set(['player_id' => null])->update();
+        $db->table('logs')->where('user_id', $userId)->set(['user_id' => null])->update();
+
+        // Tablas pivot sin FK — limpiar para coherencia
+        $db->table('class_session_coaches')->where('user_id', $userId)->delete();
+        $db->table('class_session_players')->where('user_id', $userId)->delete();
+        $db->table('folder_permissions')->where('user_id', $userId)->delete();
+        $db->table('event_team_members')->where('user_id', $userId)->delete();
+
+        // Eliminar el usuario (las FK CASCADE se resuelven automáticamente)
+        $this->users->delete($userId);
+
+        $db->transComplete();
+
+        if (!$db->transStatus()) {
+            return ['success' => false, 'error' => 'Error al eliminar el usuario. Inténtalo de nuevo.'];
+        }
+
+        return ['success' => true, 'name' => $user['name']];
+    }
+
+    /**
      * Reactiva un usuario de staff previamente desactivado.
      */
     public function activateStaffUser(int $userId): bool
