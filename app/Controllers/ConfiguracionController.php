@@ -94,8 +94,9 @@ class ConfiguracionController extends BaseController
 
     public function updateStaffRole(int $id)
     {
-        $role = $this->request->getPost('role');
-        $ok   = $this->cfgService->updateStaffRole($id, $role, $this->currentUserId());
+        $role      = $this->request->getPost('role');
+        $currentId = (int)$this->currentUserId();
+        $ok        = $this->cfgService->updateStaffRole($id, $role, $currentId);
 
         session()->setFlashdata(
             $ok ? 'success' : 'error',
@@ -107,7 +108,7 @@ class ConfiguracionController extends BaseController
 
     public function deactivateStaff(int $id)
     {
-        $ok = $this->cfgService->deactivateStaffUser($id, $this->currentUserId());
+        $ok = $this->cfgService->deactivateStaffUser($id, (int)$this->currentUserId());
 
         session()->setFlashdata(
             $ok ? 'success' : 'error',
@@ -257,7 +258,7 @@ class ConfiguracionController extends BaseController
     {
         $result = $this->cfgService->sendEmail([
             'type'            => $this->request->getPost('recipient_type') ?? 'individual',
-            'recipient_id'    => (int)($this->request->getPost('recipient_id') ?? 0),
+            'recipient_id'    => $this->request->getPost('recipient_id'),
             'recipient_group' => $this->request->getPost('recipient_group') ?? 'all',
             'subject'         => $this->request->getPost('subject')         ?? '',
             'message'         => $this->request->getPost('message')         ?? '',

@@ -101,9 +101,10 @@ class ConfiguracionService
      */
     public function updateStaffRole(int $userId, string $newRole, int $byUserId): bool
     {
+        if ($userId <= 0 || $byUserId <= 0)    return false;
         $allowed = ['admin', 'staff', 'coach'];
-        if (!in_array($newRole, $allowed))  return false;
-        if ($userId === $byUserId)          return false;
+        if (!in_array($newRole, $allowed))     return false;
+        if ($userId === $byUserId)             return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
@@ -116,7 +117,8 @@ class ConfiguracionService
      */
     public function deactivateStaffUser(int $userId, int $byUserId): bool
     {
-        if ($userId === $byUserId) return false;
+        if ($userId <= 0 || $byUserId <= 0) return false;
+        if ($userId === $byUserId)          return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
@@ -129,6 +131,8 @@ class ConfiguracionService
      */
     public function activateStaffUser(int $userId): bool
     {
+        if ($userId <= 0) return false;
+
         $user = $this->users->find($userId);
         if (!$user) return false;
 
@@ -256,7 +260,11 @@ class ConfiguracionService
         // Determinar destinatarios
         $recipients = [];
         if ($data['type'] === 'individual') {
-            $user = $this->users->find((int)($data['recipient_id'] ?? 0));
+            $recipientId = (int)($data['recipient_id'] ?? 0);
+            if ($recipientId <= 0) {
+                return ['success' => false, 'error' => 'Debes seleccionar un destinatario.'];
+            }
+            $user = $this->users->find($recipientId);
             if (!$user) {
                 return ['success' => false, 'error' => 'Usuario no encontrado.'];
             }
