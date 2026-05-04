@@ -109,7 +109,12 @@ class ConfiguracionService
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['role' => $newRole]);
+        // Query builder directo para evitar callbacks/validaciones del Model
+        // que podrían interferir cuando solo se actualiza un campo.
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['role' => $newRole]);
     }
 
     /**
@@ -123,7 +128,10 @@ class ConfiguracionService
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['status' => 'inactive']);
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['status' => 'inactive']);
     }
 
     /**
@@ -181,7 +189,10 @@ class ConfiguracionService
         $user = $this->users->find($userId);
         if (!$user) return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['status' => 'active']);
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['status' => 'active']);
     }
 
     // ════════════════════════════════════════════════════════════════
