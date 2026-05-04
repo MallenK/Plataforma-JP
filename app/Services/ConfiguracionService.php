@@ -56,39 +56,58 @@ class ConfiguracionService
     /**
      * Crea un nuevo usuario de tipo staff (admin|staff|coach).
      * Genera contraseña automáticamente.
+     * Usa query builder directo para evitar los quirks del Model de CI4
+     * (insertID()=0, is_unique con {id} vacío, callbacks en insert).
      *
-     * @return array{success: bool, userId?: int, password?: string, name?: string, error?: string, errors?: array}
+     * @return array{success: bool, userId?: int, password?: string, name?: string, error?: string}
      */
     public function createStaffUser(array $data): array
     {
         $allowedRoles = ['admin', 'staff', 'coach'];
-        if (!in_array($data['role'] ?? '', $allowedRoles)) {
+        $role  = $data['role']  ?? '';
+        $name  = trim($data['name']  ?? '');
+        $email = strtolower(trim($data['email'] ?? ''));
+
+        if (!in_array($role, $allowedRoles)) {
             return ['success' => false, 'error' => 'Rol no válido.'];
+        }
+        if (mb_strlen($name) < 3) {
+            return ['success' => false, 'error' => 'El nombre debe tener mínimo 3 caracteres.'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'error' => 'El email no es válido.'];
+        }
+
+        $db = \Config\Database::connect();
+
+        if ($db->table('users')->where('email', $email)->countAllResults() > 0) {
+            return ['success' => false, 'error' => 'Este email ya está registrado.'];
         }
 
         $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
+        $now      = date('Y-m-d H:i:s');
 
-        $id = $this->users->insert([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => $password,
-            'role'     => $data['role'],
-            'status'   => 'active',
+        $db->table('users')->insert([
+            'name'       => $name,
+            'email'      => $email,
+            'password'   => password_hash($password, PASSWORD_BCRYPT),
+            'role'       => $role,
+            'status'     => 'active',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        if (!$id) {
-            return [
-                'success' => false,
-                'error'   => 'No se pudo crear el usuario.',
-                'errors'  => $this->users->errors(),
-            ];
+        $id = (int) $db->insertID();
+
+        if ($id <= 0) {
+            return ['success' => false, 'error' => 'No se pudo crear el usuario.'];
         }
 
         return [
             'success'  => true,
             'userId'   => $id,
             'password' => $password,
-            'name'     => $data['name'],
+            'name'     => $name,
         ];
     }
 
@@ -167,8 +186,9 @@ class ConfiguracionService
         $db->table('folder_permissions')->where('user_id', $userId)->delete();
         $db->table('event_team_members')->where('user_id', $userId)->delete();
 
-        // Eliminar el usuario (las FK CASCADE se resuelven automáticamente)
-        $this->users->delete($userId);
+        // Eliminar el usuario (las FK CASCADE se resuelven automáticamente).
+        // Usamos $db explícitamente para permanecer dentro de la misma transacción.
+        $db->table('users')->delete(['id' => $userId]);
 
         $db->transComplete();
 
