@@ -130,6 +130,20 @@ class ConfiguracionController extends BaseController
         return redirect()->to('/configuracion?section=staff');
     }
 
+    public function deleteStaff(int $id)
+    {
+        $result = $this->cfgService->deleteStaffUser($id, (int)$this->currentUserId());
+
+        session()->setFlashdata(
+            $result['success'] ? 'success' : 'error',
+            $result['success']
+                ? 'El usuario "' . $result['name'] . '" ha sido eliminado permanentemente.'
+                : ($result['error'] ?? 'No se pudo eliminar el usuario.')
+        );
+
+        return redirect()->to('/configuracion?section=staff');
+    }
+
     // ════════════════════════════════════════════════════════════════
     //  CAMPOS Y SEDES
     // ════════════════════════════════════════════════════════════════

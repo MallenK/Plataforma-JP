@@ -423,6 +423,9 @@ $routes->post('configuracion/staff/(:num)/deactivate', 'ConfiguracionController:
 $routes->post('configuracion/staff/(:num)/activate', 'ConfiguracionController::activateStaff/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+$routes->post('configuracion/staff/(:num)/delete', 'ConfiguracionController::deleteStaff/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 
 // ── Campos y Sedes ─────────────────────────────────────────
 $routes->post('configuracion/sedes/create', 'ConfiguracionController::createSede', [
