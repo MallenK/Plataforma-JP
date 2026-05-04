@@ -87,7 +87,7 @@ class ConfiguracionService
         $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
         $now      = date('Y-m-d H:i:s');
 
-        $db->table('users')->insert([
+        $inserted = $db->table('users')->insert([
             'name'       => $name,
             'email'      => $email,
             'password'   => password_hash($password, PASSWORD_BCRYPT),
@@ -97,10 +97,19 @@ class ConfiguracionService
             'updated_at' => $now,
         ]);
 
-        $id = (int) $db->insertID();
+        if (!$inserted) {
+            return ['success' => false, 'error' => 'No se pudo crear el usuario.'];
+        }
+
+        // insertID() puede devolver 0 en algunas versiones de CI4/MySQLi;
+        // consultamos por email (ya validado único) para obtener el id real.
+        $row = $db->table('users')->select('id')->where('email', $email)->get()->getRow();
+        $id  = $row ? (int) $row->id : 0;
 
         if ($id <= 0) {
-            return ['success' => false, 'error' => 'No se pudo crear el usuario.'];
+            // El usuario se creó pero no pudimos obtener su id; lo limpiamos
+            $db->table('users')->where('email', $email)->delete();
+            return ['success' => false, 'error' => 'Error al recuperar el id del usuario creado.'];
         }
 
         return [
