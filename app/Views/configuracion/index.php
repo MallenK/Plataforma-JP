@@ -301,7 +301,7 @@ $sec  = $section;        // sección activa
                                             <div class="d-flex gap-1 justify-content-end">
                                             <?php if ($u['status'] === 'active'): ?>
                                             <form action="/configuracion/staff/<?= $u['id'] ?>/deactivate" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Desactivar a <?= esc($u['name']) ?>?')">
+                                                  onsubmit="return confirm('¿Desactivar a <?= esc($u['name'], 'js') ?>?')">
                                                 <?= csrf_field() ?>
                                                 <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Desactivar">
                                                     <i class="bi bi-person-x-fill"></i>
