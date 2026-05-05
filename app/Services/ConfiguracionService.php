@@ -56,39 +56,67 @@ class ConfiguracionService
     /**
      * Crea un nuevo usuario de tipo staff (admin|staff|coach).
      * Genera contraseña automáticamente.
+     * Usa query builder directo para evitar los quirks del Model de CI4
+     * (insertID()=0, is_unique con {id} vacío, callbacks en insert).
      *
-     * @return array{success: bool, userId?: int, password?: string, name?: string, error?: string, errors?: array}
+     * @return array{success: bool, userId?: int, password?: string, name?: string, error?: string}
      */
     public function createStaffUser(array $data): array
     {
         $allowedRoles = ['admin', 'staff', 'coach'];
-        if (!in_array($data['role'] ?? '', $allowedRoles)) {
+        $role  = $data['role']  ?? '';
+        $name  = trim($data['name']  ?? '');
+        $email = strtolower(trim($data['email'] ?? ''));
+
+        if (!in_array($role, $allowedRoles)) {
             return ['success' => false, 'error' => 'Rol no válido.'];
+        }
+        if (mb_strlen($name) < 3) {
+            return ['success' => false, 'error' => 'El nombre debe tener mínimo 3 caracteres.'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'error' => 'El email no es válido.'];
+        }
+
+        $db = \Config\Database::connect();
+
+        if ($db->table('users')->where('email', $email)->countAllResults() > 0) {
+            return ['success' => false, 'error' => 'Este email ya está registrado.'];
         }
 
         $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
+        $now      = date('Y-m-d H:i:s');
 
-        $id = $this->users->insert([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => $password,
-            'role'     => $data['role'],
-            'status'   => 'active',
+        $inserted = $db->table('users')->insert([
+            'name'       => $name,
+            'email'      => $email,
+            'password'   => password_hash($password, PASSWORD_BCRYPT),
+            'role'       => $role,
+            'status'     => 'active',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        if (!$id) {
-            return [
-                'success' => false,
-                'error'   => 'No se pudo crear el usuario.',
-                'errors'  => $this->users->errors(),
-            ];
+        if (!$inserted) {
+            return ['success' => false, 'error' => 'No se pudo crear el usuario.'];
+        }
+
+        // insertID() puede devolver 0 en algunas versiones de CI4/MySQLi;
+        // consultamos por email (ya validado único) para obtener el id real.
+        $row = $db->table('users')->select('id')->where('email', $email)->get()->getRow();
+        $id  = $row ? (int) $row->id : 0;
+
+        if ($id <= 0) {
+            // El usuario se creó pero no pudimos obtener su id; lo limpiamos
+            $db->table('users')->where('email', $email)->delete();
+            return ['success' => false, 'error' => 'Error al recuperar el id del usuario creado.'];
         }
 
         return [
             'success'  => true,
             'userId'   => $id,
             'password' => $password,
-            'name'     => $data['name'],
+            'name'     => $name,
         ];
     }
 
@@ -101,14 +129,20 @@ class ConfiguracionService
      */
     public function updateStaffRole(int $userId, string $newRole, int $byUserId): bool
     {
+        if ($userId <= 0 || $byUserId <= 0)    return false;
         $allowed = ['admin', 'staff', 'coach'];
-        if (!in_array($newRole, $allowed))  return false;
-        if ($userId === $byUserId)          return false;
+        if (!in_array($newRole, $allowed))     return false;
+        if ($userId === $byUserId)             return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['role' => $newRole]);
+        // Query builder directo para evitar callbacks/validaciones del Model
+        // que podrían interferir cuando solo se actualiza un campo.
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['role' => $newRole]);
     }
 
     /**
@@ -116,12 +150,62 @@ class ConfiguracionService
      */
     public function deactivateStaffUser(int $userId, int $byUserId): bool
     {
-        if ($userId === $byUserId) return false;
+        if ($userId <= 0 || $byUserId <= 0) return false;
+        if ($userId === $byUserId)          return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['status' => 'inactive']);
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['status' => 'inactive']);
+    }
+
+    /**
+     * Elimina permanentemente un usuario de staff.
+     * Limpia referencias en tablas con FK RESTRICT antes de borrar,
+     * y elimina registros de tablas pivot sin FK por coherencia.
+     *
+     * @return array{success: bool, name?: string, error?: string}
+     */
+    public function deleteStaffUser(int $userId, int $byUserId): array
+    {
+        if ($userId <= 0 || $byUserId <= 0) return ['success' => false, 'error' => 'ID inválido.'];
+        if ($userId === $byUserId)          return ['success' => false, 'error' => 'No puedes eliminarte a ti mismo.'];
+
+        $user = $this->users->find($userId);
+        if (!$user)                           return ['success' => false, 'error' => 'Usuario no encontrado.'];
+        if ($user['role'] === 'superadmin')   return ['success' => false, 'error' => 'No se puede eliminar un superadmin.'];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // FK RESTRICT nullable → SET NULL para no bloquear el DELETE del usuario
+        $db->table('sessions')->where('coach_id',   $userId)->set(['coach_id'   => null])->update();
+        $db->table('sessions')->where('created_by', $userId)->set(['created_by' => null])->update();
+        $db->table('observations')->where('author_id', $userId)->set(['author_id' => null])->update();
+        $db->table('player_metrics')->where('coach_id', $userId)->set(['coach_id' => null])->update();
+        $db->table('player_plans')->where('player_id', $userId)->set(['player_id' => null])->update();
+        $db->table('logs')->where('user_id', $userId)->set(['user_id' => null])->update();
+
+        // Tablas pivot sin FK — limpiar para coherencia
+        $db->table('class_session_coaches')->where('user_id', $userId)->delete();
+        $db->table('class_session_players')->where('user_id', $userId)->delete();
+        $db->table('folder_permissions')->where('user_id', $userId)->delete();
+        $db->table('event_team_members')->where('user_id', $userId)->delete();
+
+        // Eliminar el usuario (las FK CASCADE se resuelven automáticamente).
+        // Usamos $db explícitamente para permanecer dentro de la misma transacción.
+        $db->table('users')->delete(['id' => $userId]);
+
+        $db->transComplete();
+
+        if (!$db->transStatus()) {
+            return ['success' => false, 'error' => 'Error al eliminar el usuario. Inténtalo de nuevo.'];
+        }
+
+        return ['success' => true, 'name' => $user['name']];
     }
 
     /**
@@ -129,10 +213,15 @@ class ConfiguracionService
      */
     public function activateStaffUser(int $userId): bool
     {
+        if ($userId <= 0) return false;
+
         $user = $this->users->find($userId);
         if (!$user) return false;
 
-        return (bool) $this->users->skipValidation(true)->update($userId, ['status' => 'active']);
+        return (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $userId)
+            ->update(['status' => 'active']);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -256,7 +345,11 @@ class ConfiguracionService
         // Determinar destinatarios
         $recipients = [];
         if ($data['type'] === 'individual') {
-            $user = $this->users->find((int)($data['recipient_id'] ?? 0));
+            $recipientId = (int)($data['recipient_id'] ?? 0);
+            if ($recipientId <= 0) {
+                return ['success' => false, 'error' => 'Debes seleccionar un destinatario.'];
+            }
+            $user = $this->users->find($recipientId);
             if (!$user) {
                 return ['success' => false, 'error' => 'Usuario no encontrado.'];
             }

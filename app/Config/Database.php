@@ -200,5 +200,10 @@ class Database extends Config
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
         }
+
+        // Enable SSL for TiDB Cloud (and similar providers that require encrypted transport)
+        if (env('DB_SSL', false)) {
+            $this->default['encrypt'] = ['ssl_verify' => false];
+        }
     }
 }

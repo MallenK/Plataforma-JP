@@ -120,7 +120,9 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
                         <i class="bi <?= esc($f['icon'] ?? 'bi-folder-fill') ?>"></i>
                     </div>
                     <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px">
-                        <?= esc($f['name']) ?>
+                        <?= $f['type'] === 'personal'
+                            ? 'Carpeta de ' . esc($f['owner_name'] ?? $f['name'])
+                            : esc($f['name']) ?>
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
                         <?= (int)($f['files_count'] ?? 0) ?> archivo(s)

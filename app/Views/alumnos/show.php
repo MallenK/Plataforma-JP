@@ -32,6 +32,18 @@ $statusLabel = match($alumno['status'] ?? 'active') {
     <?= esc(session()->getFlashdata('success')) ?>
 </div>
 <?php endif; ?>
+<?php if (session()->getFlashdata('annotation_success')): ?>
+<div class="alert-jp success" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <i class="bi bi-check-circle-fill"></i>
+    <?= esc(session()->getFlashdata('annotation_success')) ?>
+</div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('annotation_error')): ?>
+<div class="alert-jp danger" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <?= esc(session()->getFlashdata('annotation_error')) ?>
+</div>
+<?php endif; ?>
 
 <!-- Cabecera -->
 <div class="page-header">
@@ -338,6 +350,151 @@ $statusLabel = match($alumno['status'] ?? 'active') {
         </div>
 
     </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ANOTACIONES
+     ═══════════════════════════════════════════════════════ -->
+<div id="anotaciones" class="d-flex flex-column gap-3 mt-3">
+
+<?php
+$currentUserId   = session('id');
+$currentRole     = session('role');
+$isStaff         = in_array($currentRole, ['superadmin', 'admin', 'coach', 'staff']);
+$isAdminOrSuper  = in_array($currentRole, ['superadmin', 'admin']);
+
+$publicAnnotations   = array_filter($annotations ?? [], fn($a) => $a['type'] === 'public');
+$internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] === 'internal');
+?>
+
+    <!-- ── Anotaciones públicas ────────────────────────────── -->
+    <div class="card-jp">
+        <div class="card-jp-header">
+            <span class="card-jp-title">
+                <i class="bi bi-chat-square-text-fill me-2" style="color:var(--accent)"></i>
+                Anotaciones
+            </span>
+            <span style="font-size:12px;color:var(--text-muted)"><?= count($publicAnnotations) ?> anotación(es)</span>
+        </div>
+
+        <!-- Lista -->
+        <div class="card-jp-body d-flex flex-column gap-2" id="public-annotations-list">
+            <?php if (empty($publicAnnotations)): ?>
+                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin anotaciones todavía.</p>
+            <?php else: ?>
+                <?php foreach ($publicAnnotations as $ann): ?>
+                <?php
+                    $canDelete = (int)$ann['author_id'] === (int)$currentUserId || $isAdminOrSuper;
+                ?>
+                <div style="background:var(--bg-card-inner,rgba(0,0,0,.04));border-radius:8px;padding:12px 14px;position:relative">
+                    <div style="font-size:13.5px;color:var(--text-body);line-height:1.55;white-space:pre-wrap"><?= nl2br(esc($ann['content'])) ?></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                        <span style="font-size:11px;color:var(--text-muted)">
+                            <i class="bi bi-person-fill me-1"></i><?= esc($ann['author_name']) ?>
+                            &nbsp;·&nbsp;
+                            <?= date('d/m/Y H:i', strtotime($ann['created_at'])) ?>
+                        </span>
+                        <?php if ($canDelete): ?>
+                        <form action="<?= base_url('anotaciones/' . $ann['id'] . '/eliminar') ?>" method="post"
+                              onsubmit="return confirm('¿Eliminar esta anotación?')">
+                            <?= csrf_field() ?>
+                            <button type="submit"
+                                    style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:0;line-height:1"
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- Formulario nueva anotación pública -->
+        <div class="card-jp-body" style="border-top:1px solid var(--border)">
+            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="type" value="public">
+                <div class="form-group mb-2">
+                    <textarea name="content" class="form-control-jp" rows="2"
+                              placeholder="Añadir anotación..." required
+                              style="resize:vertical;min-height:64px"></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn-jp btn-jp-primary" style="padding:6px 16px;font-size:13px">
+                        <i class="bi bi-plus-circle me-1"></i>Añadir anotación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── Anotaciones internas (solo cuerpo técnico) ─────── -->
+    <?php if ($canInternal ?? false): ?>
+    <div class="card-jp">
+        <div class="card-jp-header">
+            <span class="card-jp-title">
+                <i class="bi bi-shield-lock-fill me-2" style="color:var(--warning,#f59e0b)"></i>
+                Notas internas del cuerpo técnico
+            </span>
+            <span style="font-size:12px;color:var(--text-muted)"><?= count($internalAnnotations) ?> nota(s)</span>
+        </div>
+
+        <!-- Lista -->
+        <div class="card-jp-body d-flex flex-column gap-2" id="internal-annotations-list">
+            <?php if (empty($internalAnnotations)): ?>
+                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin notas internas todavía.</p>
+            <?php else: ?>
+                <?php foreach ($internalAnnotations as $ann): ?>
+                <?php
+                    $canDelete = (int)$ann['author_id'] === (int)$currentUserId || $isAdminOrSuper;
+                ?>
+                <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:12px 14px;position:relative">
+                    <div style="font-size:13.5px;color:var(--text-body);line-height:1.55;white-space:pre-wrap"><?= nl2br(esc($ann['content'])) ?></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                        <span style="font-size:11px;color:var(--text-muted)">
+                            <i class="bi bi-person-fill me-1"></i><?= esc($ann['author_name']) ?>
+                            &nbsp;·&nbsp;
+                            <?= date('d/m/Y H:i', strtotime($ann['created_at'])) ?>
+                        </span>
+                        <?php if ($canDelete): ?>
+                        <form action="<?= base_url('anotaciones/' . $ann['id'] . '/eliminar') ?>" method="post"
+                              onsubmit="return confirm('¿Eliminar esta nota interna?')">
+                            <?= csrf_field() ?>
+                            <button type="submit"
+                                    style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:0;line-height:1"
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- Formulario nueva nota interna -->
+        <div class="card-jp-body" style="border-top:1px solid var(--border)">
+            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="type" value="internal">
+                <div class="form-group mb-2">
+                    <textarea name="content" class="form-control-jp" rows="2"
+                              placeholder="Añadir nota interna..." required
+                              style="resize:vertical;min-height:64px"></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn-jp btn-jp-primary" style="padding:6px 16px;font-size:13px;background:var(--warning,#f59e0b);border-color:var(--warning,#f59e0b)">
+                        <i class="bi bi-shield-plus me-1"></i>Añadir nota interna
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
 </div>
 
 <?= console_debug('PlayerController::show #' . ($alumno['id'] ?? '?'), [

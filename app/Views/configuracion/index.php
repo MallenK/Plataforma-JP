@@ -100,12 +100,6 @@ $sec  = $section;        // sección activa
                         </a>
                     </li>
                     <li class="sidebar-nav-item">
-                        <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'facturacion' ? 'active' : '' ?>"
-                           data-section="facturacion" style="color:var(--text-h)">
-                            <i class="bi bi-credit-card-fill me-2"></i>Facturación y Pagos
-                        </a>
-                    </li>
-                    <li class="sidebar-nav-item">
                         <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'notificaciones' ? 'active' : '' ?>"
                            data-section="notificaciones" style="color:var(--text-h)">
                             <i class="bi bi-bell-fill me-2"></i>Notificaciones
@@ -286,7 +280,7 @@ $sec  = $section;        // sección activa
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if ((int)$u['id'] !== $currentUserId && $u['role'] !== 'superadmin'): ?>
+                                        <?php if ((int)$u['id'] !== (int)$currentUserId && $u['role'] !== 'superadmin'): ?>
                                         <form action="/configuracion/staff/<?= $u['id'] ?>/role" method="POST" class="d-flex gap-2 align-items-center">
                                             <?= csrf_field() ?>
                                             <select name="role" class="form-control-jp" style="font-size:12px;padding:4px 8px;min-width:120px">
@@ -303,12 +297,13 @@ $sec  = $section;        // sección activa
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-end">
-                                        <?php if ((int)$u['id'] !== $currentUserId && $u['role'] !== 'superadmin'): ?>
+                                        <?php if ((int)$u['id'] !== (int)$currentUserId && $u['role'] !== 'superadmin'): ?>
+                                            <div class="d-flex gap-1 justify-content-end">
                                             <?php if ($u['status'] === 'active'): ?>
                                             <form action="/configuracion/staff/<?= $u['id'] ?>/deactivate" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Desactivar a <?= esc($u['name']) ?>?')">
+                                                  onsubmit="return confirm('¿Desactivar a <?= esc($u['name'], 'js') ?>?')">
                                                 <?= csrf_field() ?>
-                                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Desactivar">
+                                                <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Desactivar">
                                                     <i class="bi bi-person-x-fill"></i>
                                                 </button>
                                             </form>
@@ -320,6 +315,13 @@ $sec  = $section;        // sección activa
                                                 </button>
                                             </form>
                                             <?php endif; ?>
+                                            <button type="button"
+                                                    class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
+                                                    title="Eliminar permanentemente"
+                                                    onclick="openDeleteStaffModal(<?= (int)$u['id'] ?>, '<?= esc($u['name'], 'js') ?>')">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -418,83 +420,7 @@ $sec  = $section;        // sección activa
 
 
         <!-- ────────────────────────────────────────────────────
-             4. FACTURACIÓN Y PAGOS
-        ──────────────────────────────────────────────────── -->
-        <div id="sec-facturacion" class="cfg-section <?= $sec !== 'facturacion' ? 'd-none' : '' ?>">
-            <div class="card-jp mb-3">
-                <div class="card-jp-header d-flex align-items-center justify-content-between">
-                    <span class="card-jp-title"><i class="bi bi-credit-card-fill me-2" style="color:#d97706"></i>Tipos de Bono</span>
-                    <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="openBonoModal()">
-                        <i class="bi bi-plus-lg me-1"></i>Nuevo bono
-                    </button>
-                </div>
-                <div class="card-jp-body p-0">
-                    <?php if (empty($bonoTypes)): ?>
-                        <div class="empty-state p-4">
-                            <i class="bi bi-ticket-perforated" style="font-size:2rem;color:var(--text-muted)"></i>
-                            <p class="mt-2 mb-0" style="color:var(--text-muted)">No hay tipos de bono configurados todavía.</p>
-                        </div>
-                    <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table-jp">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th class="text-center">Sesiones</th>
-                                    <th class="text-end">Precio</th>
-                                    <th class="text-center">Validez</th>
-                                    <th>Estado</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($bonoTypes as $bt): ?>
-                                <tr>
-                                    <td style="font-weight:600;color:var(--text-h)"><?= esc($bt['name']) ?></td>
-                                    <td class="text-center"><?= $bt['sessions'] ?></td>
-                                    <td class="text-end" style="font-weight:600"><?= number_format((float)$bt['price'], 2) ?> €</td>
-                                    <td class="text-center" style="font-size:12px"><?= $bt['validity_days'] ?> días</td>
-                                    <td>
-                                        <?php if ($bt['active']): ?>
-                                            <span class="badge-status" style="background:#05966922;color:#059669;border:1px solid #05966944">Activo</span>
-                                        <?php else: ?>
-                                            <span class="badge-status" style="background:#6b728022;color:#6b7280;border:1px solid #6b728044">Inactivo</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="text-end">
-                                        <div class="d-flex gap-2 justify-content-end">
-                                            <button class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"
-                                                    onclick="openBonoModal(<?= htmlspecialchars(json_encode($bt)) ?>)"
-                                                    title="Editar">
-                                                <i class="bi bi-pencil-fill"></i>
-                                            </button>
-                                            <form action="/configuracion/bonos/<?= $bt['id'] ?>/delete" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Eliminar el bono «<?= esc($bt['name']) ?>»?')">
-                                                <?= csrf_field() ?>
-                                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar">
-                                                    <i class="bi bi-trash-fill"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="alert-jp info">
-                <i class="bi bi-info-circle-fill me-2"></i>
-                Los bonos también se pueden asignar y gestionar individualmente desde la pantalla de <strong>Bonos</strong>.
-            </div>
-        </div><!-- /sec-facturacion -->
-
-
-        <!-- ────────────────────────────────────────────────────
-             5. NOTIFICACIONES
+             4. NOTIFICACIONES
         ──────────────────────────────────────────────────── -->
         <div id="sec-notificaciones" class="cfg-section <?= $sec !== 'notificaciones' ? 'd-none' : '' ?>">
 
@@ -892,6 +818,37 @@ $sec  = $section;        // sección activa
     </div>
 </div>
 
+<!-- Modal: Confirmar eliminación de staff -->
+<div id="modalDeleteStaff" class="cfg-modal-overlay d-none">
+    <div class="cfg-modal" style="max-width:480px">
+        <div class="cfg-modal-header" style="border-bottom:1px solid var(--danger)22">
+            <span style="color:var(--danger)"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar usuario</span>
+            <button onclick="closeModal('modalDeleteStaff')"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cfg-modal-body">
+            <div class="text-center" style="padding:8px 0 16px">
+                <div style="width:56px;height:56px;border-radius:50%;background:var(--danger)15;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                    <i class="bi bi-trash3-fill" style="font-size:1.5rem;color:var(--danger)"></i>
+                </div>
+                <p style="font-size:15px;font-weight:600;color:var(--text-h);margin-bottom:8px">
+                    ¿Eliminar a <span id="deleteStaffName" style="color:var(--danger)"></span>?
+                </p>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:0">
+                    Esta acción es <strong>irreversible</strong>. El usuario será eliminado permanentemente de la plataforma junto con todos sus datos asociados.<br><br>
+                    <span style="color:var(--danger);font-weight:600">No se podrá recuperar.</span>
+                </p>
+            </div>
+        </div>
+        <form id="deleteStaffForm" action="" method="POST">
+            <?= csrf_field() ?>
+            <div class="cfg-modal-footer" style="gap:8px">
+                <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalDeleteStaff')">Cancelar</button>
+                <button type="submit" class="btn-jp btn-jp-danger"><i class="bi bi-trash3-fill me-1"></i>Eliminar definitivamente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal: Sede (crear / editar) -->
 <div id="modalSede" class="cfg-modal-overlay d-none">
     <div class="cfg-modal" style="max-width:640px">
@@ -1062,6 +1019,12 @@ document.querySelectorAll('.cfg-tab').forEach(link => {
 });
 
 // ── Modales ───────────────────────────────────────────────────────────
+function openDeleteStaffModal(id, name) {
+    document.getElementById('deleteStaffName').textContent = name;
+    document.getElementById('deleteStaffForm').action = '/configuracion/staff/' + id + '/delete';
+    openModal('modalDeleteStaff');
+}
+
 function openModal(id) {
     document.getElementById(id).classList.remove('d-none');
     document.body.style.overflow = 'hidden';

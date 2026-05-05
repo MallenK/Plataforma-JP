@@ -111,7 +111,8 @@ class DocumentService
     {
         $db      = \Config\Database::connect();
         $builder = $db->table('document_folders df')
-            ->select('df.*, (SELECT COUNT(*) FROM documents d WHERE d.folder_id = df.id AND d.deleted_at IS NULL) AS files_count')
+            ->select('df.*, u.name AS owner_name, (SELECT COUNT(*) FROM documents d WHERE d.folder_id = df.id AND d.deleted_at IS NULL) AS files_count')
+            ->join('users u', 'u.id = df.owner_id', 'left')
             ->where('df.status', 'active');
 
         if ($role === 'player') {
