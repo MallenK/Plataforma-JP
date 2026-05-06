@@ -37,8 +37,9 @@ class PlayerBonoModel extends Model
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Bono activo de un jugador (sesiones restantes > 0 y no caducado).
-     * Un jugador solo puede tener un bono activo.
+     * Bono activo de un jugador: el bono MÁS ANTIGUO con sesiones
+     * restantes > 0 y no caducado. La cola es FIFO — los bonos más
+     * recientes esperan a que el actual se agote o caduque.
      */
     public function getActiveBono(int $playerId): ?array
     {
@@ -50,7 +51,7 @@ class PlayerBonoModel extends Model
                 ->where('expires_at IS NULL')
                 ->orWhere('expires_at >=', $today)
             ->groupEnd()
-            ->orderBy('created_at', 'DESC')
+            ->orderBy('created_at', 'ASC')
             ->first();
     }
 
@@ -60,6 +61,31 @@ class PlayerBonoModel extends Model
     public function hasActiveBono(int $playerId): bool
     {
         return $this->getActiveBono($playerId) !== null;
+    }
+
+    /**
+     * Bonos en cola de un jugador: tienen sesiones restantes y no han
+     * caducado, pero NO son el activo (el activo es el más antiguo).
+     * Devuelve cero o más bonos ordenados por fecha de creación
+     * (próximo a activarse primero).
+     */
+    public function getQueuedBonos(int $playerId): array
+    {
+        $today  = date('Y-m-d');
+        $active = $this->getActiveBono($playerId);
+        if (!$active) {
+            return [];
+        }
+
+        return $this->where('player_id', $playerId)
+            ->where('id !=', (int)$active['id'])
+            ->where('sessions_remaining >', 0)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->orderBy('created_at', 'ASC')
+            ->findAll();
     }
 
     /**

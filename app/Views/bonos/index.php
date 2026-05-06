@@ -4,7 +4,6 @@
 helper('avatar');
 $pageTitle    = 'Bonos';
 $pageSubtitle = 'Gestión de bonos y membresías';
-$errorBonoActivo = session()->getFlashdata('error_bono_activo');
 ?>
 
 <?= $this->section('page_content') ?>
@@ -244,10 +243,10 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
                             <?php endforeach; ?>
                         </select>
                         <div id="alertaBonoActivo" style="display:none;margin-top:8px;padding:10px 12px;background:var(--warning-light);border-radius:6px;font-size:13px;color:#92400e;border:1px solid #fcd34d">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <i class="bi bi-info-circle-fill me-2"></i>
                             <strong>Este jugador ya tiene un bono activo.</strong>
                             <span id="alertaBonoDetalles"></span>
-                            <br><small>Debes esperar a que lo agote o caduque antes de emitir uno nuevo.</small>
+                            <br><small>El nuevo bono quedará <strong>encolado</strong> y se activará automáticamente cuando el actual se agote o caduque.</small>
                         </div>
                     </div>
 
@@ -272,25 +271,6 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
         </form>
     </div>
 </div>
-
-<!-- ── Modal alerta bono activo (respuesta del servidor) ────── -->
-<?php if ($errorBonoActivo): ?>
-<div id="modalBonoActivoServer" class="bono-modal-overlay">
-    <div class="bono-modal" style="max-width:420px">
-        <div class="bono-modal-header">
-            <span><i class="bi bi-exclamation-triangle-fill me-2" style="color:var(--warning)"></i>Bono activo existente</span>
-            <button onclick="document.getElementById('modalBonoActivoServer').classList.add('d-none')"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="bono-modal-body">
-            <p>Este jugador ya tiene un <strong>bono activo</strong> con sesiones disponibles.</p>
-            <p style="color:var(--text-muted);font-size:13px">Un jugador solo puede tener un bono activo a la vez. Espera a que lo agote o caduque antes de emitir uno nuevo.</p>
-        </div>
-        <div style="display:flex;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border)">
-            <button class="btn-jp btn-jp-primary" onclick="document.getElementById('modalBonoActivoServer').classList.add('d-none')">Entendido</button>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
 
 <?= $this->endSection() ?>
 
@@ -354,7 +334,7 @@ async function checkBonoActivo(playerId) {
             const b = data.bono;
             detalles.textContent = ` (${b.bono_name ?? ''}: ${b.sessions_remaining} sesiones restantes)`;
             alertEl.style.display = 'block';
-            btnEmitir.disabled = true;
+            btnEmitir.disabled = false;
         } else {
             alertEl.style.display = 'none';
             btnEmitir.disabled = false;

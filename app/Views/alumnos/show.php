@@ -265,15 +265,16 @@ $formatTime = static function (?string $hms): string {
                             $remaining = (int)($bono['sessions_remaining'] ?? 0);
                             $total     = (int)($bono['sessions_total']     ?? 0);
                             $expired   = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
-                            $isActive  = $remaining > 0 && !$expired;
-                            $statusKey = $expired ? 'expired' : ($remaining === 0 ? 'depleted' : 'active');
-                            $statusLbl = match($statusKey) {
-                                'active'   => 'Activo',
-                                'depleted' => 'Agotado',
-                                'expired'  => 'Vencido',
-                                default    => 'Activo',
-                            };
-                            $statusCls = $isActive ? 'active' : 'inactive';
+                            $usable    = $remaining > 0 && !$expired;
+                            $isActive  = $usable && (int)$bono['id'] === (int)($alumno['active_bono_id'] ?? 0);
+                            $isQueued  = $usable && !$isActive;
+
+                            if ($expired)             { $statusLbl = 'Vencido';  $statusCls = 'inactive'; }
+                            elseif ($remaining === 0) { $statusLbl = 'Agotado';  $statusCls = 'inactive'; }
+                            elseif ($isActive)        { $statusLbl = 'Activo';   $statusCls = 'active'; }
+                            elseif ($isQueued)        { $statusLbl = 'En cola';  $statusCls = 'inactive'; }
+                            else                      { $statusLbl = '—';        $statusCls = 'inactive'; }
+
                             $pct = $total > 0 ? max(0, min(100, round(($remaining / $total) * 100))) : 0;
                         ?>
                         <tr>

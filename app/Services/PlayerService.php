@@ -191,6 +191,10 @@ class PlayerService
             ->orderBy('pb.created_at', 'DESC')
             ->get()->getResultArray();
 
+        // ID del bono activo (oldest FIFO con sesiones y no caducado).
+        $activeBono = (new \App\Models\PlayerBonoModel())->getActiveBono($id);
+        $user['active_bono_id'] = $activeBono['id'] ?? null;
+
         // Métricas — últimas 5 desde player_metrics (tabla ya existente,
         // ver app/Models/PlayerMetricModel.php para la plantilla del JSON).
         $user['metrics'] = (new \App\Models\PlayerMetricModel())->getRecentForPlayer($id, 5);

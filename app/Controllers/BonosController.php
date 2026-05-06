@@ -69,10 +69,7 @@ class BonosController extends BaseController
             return redirect()->to('/bonos');
         }
 
-        if ($playerId && $this->bonoModel->hasActiveBono($playerId)) {
-            session()->setFlashdata('error_bono_activo', $playerId);
-            return redirect()->to('/bonos');
-        }
+        $willBeQueued = $playerId && $this->bonoModel->hasActiveBono($playerId);
 
         $type = $this->typeModel->find($bonoTypeId);
         if (!$type) {
@@ -95,9 +92,13 @@ class BonosController extends BaseController
             'created_by'         => $this->currentUserId(),
         ]);
 
-        $msg = $playerId
-            ? 'Bono emitido correctamente.'
-            : 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
+        if (!$playerId) {
+            $msg = 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
+        } elseif ($willBeQueued) {
+            $msg = 'Bono creado y encolado: se activará automáticamente cuando el alumno agote o caduque su bono actual.';
+        } else {
+            $msg = 'Bono emitido correctamente.';
+        }
 
         session()->setFlashdata('success', $msg);
         return redirect()->to('/bonos');
@@ -149,13 +150,15 @@ class BonosController extends BaseController
             return redirect()->to('/bonos/' . $id);
         }
 
-        if ($this->bonoModel->hasActiveBono($playerId)) {
-            session()->setFlashdata('error', 'Este jugador ya tiene un bono activo. Espera a que lo agote o caduque.');
-            return redirect()->to('/bonos/' . $id);
-        }
+        $willBeQueued = $this->bonoModel->hasActiveBono($playerId);
 
         $this->bonoModel->update($id, ['player_id' => $playerId]);
-        session()->setFlashdata('success', 'Jugador asignado al bono correctamente.');
+
+        $msg = $willBeQueued
+            ? 'Jugador asignado. El bono queda encolado tras el activo actual del alumno.'
+            : 'Jugador asignado al bono correctamente.';
+
+        session()->setFlashdata('success', $msg);
         return redirect()->to('/bonos/' . $id);
     }
 
