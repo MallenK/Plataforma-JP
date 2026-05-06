@@ -37,8 +37,9 @@ class PlayerBonoModel extends Model
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Bono activo de un jugador (sesiones restantes > 0 y no caducado).
-     * Un jugador solo puede tener un bono activo.
+     * Bono activo de un jugador: el bono MÁS ANTIGUO con sesiones
+     * restantes > 0 y no caducado. La cola es FIFO — los bonos más
+     * recientes esperan a que el actual se agote o caduque.
      */
     public function getActiveBono(int $playerId): ?array
     {
@@ -50,7 +51,7 @@ class PlayerBonoModel extends Model
                 ->where('expires_at IS NULL')
                 ->orWhere('expires_at >=', $today)
             ->groupEnd()
-            ->orderBy('created_at', 'DESC')
+            ->orderBy('created_at', 'ASC')
             ->first();
     }
 
@@ -63,19 +64,59 @@ class PlayerBonoModel extends Model
     }
 
     /**
+     * Bonos en cola de un jugador: tienen sesiones restantes y no han
+     * caducado, pero NO son el activo (el activo es el más antiguo).
+     * Devuelve cero o más bonos ordenados por fecha de creación
+     * (próximo a activarse primero).
+     */
+    public function getQueuedBonos(int $playerId): array
+    {
+        $today  = date('Y-m-d');
+        $active = $this->getActiveBono($playerId);
+        if (!$active) {
+            return [];
+        }
+
+        return $this->where('player_id', $playerId)
+            ->where('id !=', (int)$active['id'])
+            ->where('sessions_remaining >', 0)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->orderBy('created_at', 'ASC')
+            ->findAll();
+    }
+
+    /**
      * Descuenta 1 sesión del bono activo de un jugador.
      * Retorna true si se descontó, false si no hay bono activo.
      */
     public function deductSession(int $playerId): bool
     {
+        return $this->deductSessionDetailed($playerId) !== null;
+    }
+
+    /**
+     * Versión detallada de deductSession: descuenta 1 sesión y devuelve
+     * el bono resultante (con `sessions_remaining` actualizado y la
+     * info necesaria para emitir notificaciones).
+     *
+     * @return array|null  null si no había bono activo
+     */
+    public function deductSessionDetailed(int $playerId): ?array
+    {
         $bono = $this->getActiveBono($playerId);
         if (!$bono) {
-            return false;
+            return null;
         }
 
         $newRemaining = max(0, (int)$bono['sessions_remaining'] - 1);
         $this->update($bono['id'], ['sessions_remaining' => $newRemaining]);
-        return true;
+
+        $bono['sessions_remaining_before'] = (int)$bono['sessions_remaining'];
+        $bono['sessions_remaining']        = $newRemaining;
+        return $bono;
     }
 
     /**
@@ -157,11 +198,30 @@ class PlayerBonoModel extends Model
             ->where('sessions_remaining >', 0)
             ->countAllResults();
 
+        // Bonos asignados con 0 sesiones (agotados pero no vencidos en fecha,
+        // o ya vencidos): el alumno necesita renovar.
+        $depleted = (int)$this->db->table('player_bonos')
+            ->where('player_id IS NOT NULL')
+            ->where('sessions_remaining', 0)
+            ->countAllResults();
+
+        // Bonos asignados con exactamente 1 sesión restante (alerta).
+        $lowSessions = (int)$this->db->table('player_bonos')
+            ->where('player_id IS NOT NULL')
+            ->where('sessions_remaining', 1)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->countAllResults();
+
         return [
             'active'            => $active,
             'issued_this_month' => $issuedThisMonth,
             'expiring_soon'     => $expiringSoon,
             'unassigned'        => $unassigned,
+            'depleted'          => $depleted,
+            'low_sessions'      => $lowSessions,
         ];
     }
 }

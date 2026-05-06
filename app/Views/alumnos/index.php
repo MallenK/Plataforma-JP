@@ -165,7 +165,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
     <?php endif; ?>
 </div>
 
-<?= console_debug('PlayerController::index', [
+<?= console_debug('AlumnosController::index', [
     'total'     => count($players ?? []),
     'role_filter' => 'player',
     'status_filter' => 'active',

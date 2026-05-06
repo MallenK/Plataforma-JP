@@ -32,10 +32,12 @@ class BonosController extends BaseController
         $filter = $this->request->getGet('filtro') ?? 'activos';
 
         $bonos = match($filter) {
-            'todos'       => $this->bonoModel->getAllWithDetails(),
-            'vencidos'    => $this->getExpiredBonos(),
-            'sin-asignar' => $this->getUnassignedBonos(),
-            default       => $this->bonoModel->getActiveBonosWithDetails(),
+            'todos'         => $this->bonoModel->getAllWithDetails(),
+            'vencidos'      => $this->getExpiredBonos(),
+            'sin-asignar'   => $this->getUnassignedBonos(),
+            'agotados'      => $this->getDepletedBonos(),
+            'casi-agotados' => $this->getLowSessionBonos(),
+            default         => $this->bonoModel->getActiveBonosWithDetails(),
         };
 
         return view('bonos/index', [
@@ -67,10 +69,7 @@ class BonosController extends BaseController
             return redirect()->to('/bonos');
         }
 
-        if ($playerId && $this->bonoModel->hasActiveBono($playerId)) {
-            session()->setFlashdata('error_bono_activo', $playerId);
-            return redirect()->to('/bonos');
-        }
+        $willBeQueued = $playerId && $this->bonoModel->hasActiveBono($playerId);
 
         $type = $this->typeModel->find($bonoTypeId);
         if (!$type) {
@@ -93,9 +92,13 @@ class BonosController extends BaseController
             'created_by'         => $this->currentUserId(),
         ]);
 
-        $msg = $playerId
-            ? 'Bono emitido correctamente.'
-            : 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
+        if (!$playerId) {
+            $msg = 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
+        } elseif ($willBeQueued) {
+            $msg = 'Bono creado y encolado: se activará automáticamente cuando el alumno agote o caduque su bono actual.';
+        } else {
+            $msg = 'Bono emitido correctamente.';
+        }
 
         session()->setFlashdata('success', $msg);
         return redirect()->to('/bonos');
@@ -147,13 +150,15 @@ class BonosController extends BaseController
             return redirect()->to('/bonos/' . $id);
         }
 
-        if ($this->bonoModel->hasActiveBono($playerId)) {
-            session()->setFlashdata('error', 'Este jugador ya tiene un bono activo. Espera a que lo agote o caduque.');
-            return redirect()->to('/bonos/' . $id);
-        }
+        $willBeQueued = $this->bonoModel->hasActiveBono($playerId);
 
         $this->bonoModel->update($id, ['player_id' => $playerId]);
-        session()->setFlashdata('success', 'Jugador asignado al bono correctamente.');
+
+        $msg = $willBeQueued
+            ? 'Jugador asignado. El bono queda encolado tras el activo actual del alumno.'
+            : 'Jugador asignado al bono correctamente.';
+
+        session()->setFlashdata('success', $msg);
         return redirect()->to('/bonos/' . $id);
     }
 
@@ -249,6 +254,43 @@ class BonosController extends BaseController
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.player_id IS NULL')
             ->orderBy('pb.created_at', 'DESC')
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Bonos asignados a un alumno con 0 sesiones restantes — necesitan renovación.
+     */
+    private function getDepletedBonos(): array
+    {
+        $db = \Config\Database::connect();
+
+        return $db->table('player_bonos pb')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->join('users u',       'u.id = pb.player_id')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.sessions_remaining', 0)
+            ->orderBy('pb.updated_at', 'DESC')
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Bonos asignados con exactamente 1 sesión restante (alerta).
+     */
+    private function getLowSessionBonos(): array
+    {
+        $today = date('Y-m-d');
+        $db    = \Config\Database::connect();
+
+        return $db->table('player_bonos pb')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->join('users u',       'u.id = pb.player_id')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.sessions_remaining', 1)
+            ->groupStart()
+                ->where('pb.expires_at IS NULL')
+                ->orWhere('pb.expires_at >=', $today)
+            ->groupEnd()
+            ->orderBy('pb.updated_at', 'DESC')
             ->get()->getResultArray();
     }
 

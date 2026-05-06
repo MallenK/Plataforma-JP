@@ -7,6 +7,8 @@ use App\Models\ClassSessionModel;
 use App\Models\ClassSessionCoachModel;
 use App\Models\ClassSessionPlayerModel;
 use App\Models\PlayerBonoModel;
+use App\Models\NotificationModel;
+use App\Models\UserModel;
 
 class ClasesService
 {
@@ -259,8 +261,13 @@ class ClasesService
 
     /**
      * Al completar una sesión, descuenta 1 sesión del bono activo de cada
-     * jugador que NO esté marcado como 'absent'. Los jugadores sin bono
-     * simplemente no se ven afectados.
+     * jugador que asistió REALMENTE (attendance='present').
+     *
+     * No se descuenta a 'pending', 'confirmed', 'declined' ni 'absent':
+     * solo el 'present' representa una clase consumida por el alumno.
+     *
+     * Si tras descontar el bono queda con 1 sesión o se agota (0),
+     * se emite una notificación interna al alumno y a todos los admins.
      */
     private function deductBonosForSession(int $sessionId): void
     {
@@ -268,12 +275,90 @@ class ClasesService
 
         $players = $this->db->table('class_session_players')
             ->where('session_id', $sessionId)
-            ->where('attendance !=', 'absent')
+            ->where('attendance', 'present')
             ->get()->getResultArray();
 
         foreach ($players as $player) {
-            $bonoModel->deductSession((int)$player['user_id']);
+            $bono = $bonoModel->deductSessionDetailed((int)$player['user_id']);
+            if ($bono === null) {
+                continue;
+            }
+
+            $remaining = (int)$bono['sessions_remaining'];
+            if ($remaining === 1 || $remaining === 0) {
+                $this->emitBonoLowSessionsNotification((int)$player['user_id'], $bono);
+            }
         }
+    }
+
+    /**
+     * Notifica al alumno y a los admins cuando un bono cae a 1 o 0 sesiones.
+     * Usa el sistema de notificaciones internas (sin email).
+     */
+    private function emitBonoLowSessionsNotification(int $playerId, array $bono): void
+    {
+        $remaining = (int)$bono['sessions_remaining'];
+
+        // Datos del bono (nombre del tipo) — un join puntual
+        $bonoTypeRow = $this->db->table('player_bonos pb')
+            ->select('bt.name AS bono_name')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.id', (int)$bono['id'])
+            ->get()->getRow();
+        $bonoName = $bonoTypeRow->bono_name ?? 'Bono';
+
+        // Nombre del alumno
+        $userModel = new UserModel();
+        $player    = $userModel->find($playerId);
+        $playerName = $player['name'] ?? 'Alumno';
+
+        if ($remaining === 0) {
+            $title = "🎟️ Bono agotado: {$playerName}";
+            $body  = "El bono \"{$bonoName}\" de {$playerName} se ha agotado (0 sesiones restantes). "
+                   . "Si va a continuar entrenando, asígnale un nuevo bono.";
+        } else {
+            $title = "⚠️ Última sesión del bono: {$playerName}";
+            $body  = "Al alumno {$playerName} le queda 1 sesión en su bono \"{$bonoName}\". "
+                   . "Considera renovar o asignar un nuevo bono.";
+        }
+
+        // Destinatarios: el propio alumno + el creador del bono + todos los admins/superadmins
+        $recipients = [$playerId];
+
+        if (!empty($bono['created_by'])) {
+            $recipients[] = (int)$bono['created_by'];
+        }
+
+        $admins = $userModel
+            ->select('id')
+            ->whereIn('role', ['admin', 'superadmin'])
+            ->where('status', 'active')
+            ->findAll();
+        foreach ($admins as $a) {
+            $recipients[] = (int)$a['id'];
+        }
+
+        $recipients = array_values(array_unique(array_filter($recipients, fn($r) => $r > 0)));
+        if (empty($recipients)) {
+            return;
+        }
+
+        // Sender: el creador del bono si existe; si no, el primer superadmin disponible
+        $senderId = (int)($bono['created_by'] ?? 0);
+        if ($senderId <= 0) {
+            $sa = $userModel->select('id')->where('role', 'superadmin')->where('status', 'active')->first();
+            $senderId = (int)($sa['id'] ?? 0);
+        }
+        if ($senderId <= 0) {
+            return; // No hay sender válido, abortar
+        }
+
+        (new NotificationModel())->createWithRecipients([
+            'sender_id' => $senderId,
+            'type'      => 'group',
+            'title'     => $title,
+            'body'      => $body,
+        ], $recipients);
     }
 
     public function cancelSession(int $id): bool

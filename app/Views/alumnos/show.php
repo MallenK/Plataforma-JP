@@ -22,6 +22,17 @@ $statusLabel = match($alumno['status'] ?? 'active') {
     'banned'   => 'Bloqueado',
     default    => ucfirst($alumno['status'] ?? ''),
 };
+
+$classesCount  = (int)($alumno['classes_count']  ?? 0);
+$upcomingCount = (int)($alumno['upcoming_count'] ?? 0);
+$activeBonos   = (int)($alumno['active_bonos']   ?? 0);
+
+$today = date('Y-m-d');
+
+$formatTime = static function (?string $hms): string {
+    if (!$hms) return '';
+    return substr($hms, 0, 5);
+};
 ?>
 
 <?= $this->section('page_content') ?>
@@ -134,6 +145,32 @@ $statusLabel = match($alumno['status'] ?? 'active') {
             </div>
         </div>
 
+        <!-- Stats de actividad -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-bar-chart-fill me-2" style="color:var(--accent)"></i>
+                    Actividad
+                </span>
+            </div>
+            <div class="card-jp-body">
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar-check me-2"></i>Clases asistidas</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $classesCount ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar3 me-2"></i>Próximas clases</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $upcomingCount ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-ticket-perforated-fill me-2"></i>Bonos activos</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $activeBonos ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notas médicas -->
         <div class="card-jp">
             <div class="card-jp-header">
@@ -202,51 +239,69 @@ $statusLabel = match($alumno['status'] ?? 'active') {
             </div>
         </div>
 
-        <!-- Planes activos -->
+        <!-- Planes / Bonos -->
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>
                     Planes / Bonos
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['plans']) ?> registrado(s)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['plans'] ?? []) ?> registrado(s)</span>
             </div>
             <?php if (!empty($alumno['plans'])): ?>
             <div class="table-responsive">
                 <table class="table-jp">
                     <thead>
                         <tr>
-                            <th>Plan</th>
-                            <th>Sesiones restantes</th>
+                            <th>Bono</th>
+                            <th>Sesiones</th>
                             <th>Vigencia</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($alumno['plans'] as $plan): ?>
+                        <?php foreach ($alumno['plans'] as $bono): ?>
+                        <?php
+                            $remaining = (int)($bono['sessions_remaining'] ?? 0);
+                            $total     = (int)($bono['sessions_total']     ?? 0);
+                            $expired   = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
+                            $usable    = $remaining > 0 && !$expired;
+                            $isActive  = $usable && (int)$bono['id'] === (int)($alumno['active_bono_id'] ?? 0);
+                            $isQueued  = $usable && !$isActive;
+
+                            if ($expired)             { $statusLbl = 'Vencido';  $statusCls = 'inactive'; }
+                            elseif ($remaining === 0) { $statusLbl = 'Agotado';  $statusCls = 'inactive'; }
+                            elseif ($isActive)        { $statusLbl = 'Activo';   $statusCls = 'active'; }
+                            elseif ($isQueued)        { $statusLbl = 'En cola';  $statusCls = 'inactive'; }
+                            else                      { $statusLbl = '—';        $statusCls = 'inactive'; }
+
+                            $pct = $total > 0 ? max(0, min(100, round(($remaining / $total) * 100))) : 0;
+                        ?>
                         <tr>
                             <td>
-                                <div style="font-weight:600;color:var(--text-h)"><?= esc($plan['plan_name']) ?></div>
-                                <?php if (!empty($plan['price'])): ?>
-                                <div style="font-size:12px;color:var(--text-muted)"><?= number_format($plan['price'], 2) ?> €</div>
-                                <?php endif; ?>
+                                <a href="<?= base_url('bonos/' . (int)$bono['id']) ?>" style="color:inherit;text-decoration:none">
+                                    <div style="font-weight:600;color:var(--text-h)"><?= esc($bono['bono_name']) ?></div>
+                                    <?php if (!empty($bono['price'])): ?>
+                                    <div style="font-size:12px;color:var(--text-muted)"><?= number_format((float)$bono['price'], 2) ?> €</div>
+                                    <?php endif; ?>
+                                </a>
                             </td>
-                            <td><?= esc($plan['sessions_remaining'] ?? '—') ?> / <?= esc($plan['sessions_count'] ?? '—') ?></td>
+                            <td style="min-width:140px">
+                                <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
+                                    <strong style="color:var(--text-h)"><?= $remaining ?></strong> / <?= $total ?>
+                                </div>
+                                <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                                    <div style="height:100%;width:<?= $pct ?>%;background:<?= $remaining === 0 ? 'var(--danger)' : ($remaining <= 1 ? 'var(--warning,#f59e0b)' : 'var(--accent)') ?>"></div>
+                                </div>
+                            </td>
                             <td style="font-size:12px;color:var(--text-muted)">
-                                <?= !empty($plan['start_date']) ? date('d/m/Y', strtotime($plan['start_date'])) : '—' ?>
-                                <?php if (!empty($plan['end_date'])): ?>
-                                → <?= date('d/m/Y', strtotime($plan['end_date'])) ?>
+                                <?= !empty($bono['start_date']) ? date('d/m/Y', strtotime($bono['start_date'])) : '—' ?>
+                                <?php if (!empty($bono['expires_at'])): ?>
+                                → <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge-status <?= esc($plan['status'] ?? 'active') ?>">
-                                    <?= match($plan['status'] ?? '') {
-                                        'active'   => 'Activo',
-                                        'expired'  => 'Expirado',
-                                        'paused'   => 'Pausado',
-                                        default    => ucfirst($plan['status'] ?? '—'),
-                                    } ?>
-                                </span>
+                                <span class="badge-status <?= $statusCls ?>"><?= $statusLbl ?></span>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -255,7 +310,7 @@ $statusLabel = match($alumno['status'] ?? 'active') {
             </div>
             <?php else: ?>
             <div class="card-jp-body">
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin planes asignados.</p>
+                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin bonos asignados.</p>
             </div>
             <?php endif; ?>
         </div>
@@ -267,7 +322,7 @@ $statusLabel = match($alumno['status'] ?? 'active') {
                     <i class="bi bi-graph-up-arrow me-2" style="color:var(--success)"></i>
                     Últimas métricas
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['metrics']) ?> registro(s)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['metrics'] ?? []) ?> registro(s)</span>
             </div>
             <?php if (!empty($alumno['metrics'])): ?>
             <div class="table-responsive">
@@ -275,18 +330,43 @@ $statusLabel = match($alumno['status'] ?? 'active') {
                     <thead>
                         <tr>
                             <th>Fecha</th>
+                            <th>Categoría</th>
+                            <th>Valores</th>
                             <th>Evaluación</th>
-                            <th>Notas</th>
+                            <th>Entrenador</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($alumno['metrics'] as $metric): ?>
+                        <?php
+                            $payload = [];
+                            if (!empty($metric['metrics'])) {
+                                $decoded = is_array($metric['metrics'])
+                                    ? $metric['metrics']
+                                    : json_decode($metric['metrics'], true);
+                                if (is_array($decoded)) $payload = $decoded;
+                            }
+                            $category = $payload['category'] ?? '—';
+                            unset($payload['category']);
+                        ?>
                         <tr>
                             <td style="white-space:nowrap;color:var(--text-muted);font-size:12px">
                                 <?= !empty($metric['date']) ? date('d/m/Y', strtotime($metric['date'])) : '—' ?>
                             </td>
+                            <td style="font-size:12px;color:var(--text-h);font-weight:600"><?= esc(ucfirst($category)) ?></td>
+                            <td>
+                                <?php if (empty($payload)): ?>
+                                    <span style="font-size:12px;color:var(--text-muted)">—</span>
+                                <?php else: ?>
+                                <div style="font-size:12px;color:var(--text-body);line-height:1.5">
+                                    <?php foreach ($payload as $k => $v): ?>
+                                        <div><strong style="color:var(--text-h);text-transform:capitalize"><?= esc(str_replace('_', ' ', (string)$k)) ?>:</strong> <?= esc(is_scalar($v) ? (string)$v : json_encode($v)) ?></div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
+                            </td>
                             <td><?= esc($metric['evaluation'] ?? '—') ?></td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($metric['notes'] ?? '—') ?></td>
+                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($metric['coach_name'] ?? '—') ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -294,10 +374,92 @@ $statusLabel = match($alumno['status'] ?? 'active') {
             </div>
             <?php else: ?>
             <div class="card-jp-body">
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin métricas registradas.</p>
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px 0">
+                    <i class="bi bi-info-circle"></i>
+                    Sin métricas registradas todavía.
+                </p>
+                <details style="font-size:12px;color:var(--text-muted)">
+                    <summary style="cursor:pointer;font-weight:600;color:var(--text-h)">Ver plantilla de métricas (qué se puede guardar aquí)</summary>
+                    <div style="margin-top:10px;padding:10px 12px;background:var(--bg-card-inner,rgba(0,0,0,.04));border-radius:8px;line-height:1.6">
+                        En esta sección se pueden registrar valores periódicos del alumno —
+                        <strong style="color:var(--text-h)">físicos, técnicos, tácticos</strong> — para llevar
+                        un control de su progresión. Cada registro tiene <em>fecha</em>,
+                        <em>entrenador</em>, una <em>evaluación global</em>, <em>notas</em>
+                        libres y un objeto JSON <em>metrics</em> con pares clave/valor.
+                        <br><br>
+                        Ejemplo de campos típicos:
+                        <ul style="margin:8px 0 0 18px;padding:0">
+                            <li><code>weight_kg</code> — peso</li>
+                            <li><code>body_fat_pct</code> — % de grasa</li>
+                            <li><code>height_cm</code> — altura</li>
+                            <li><code>resting_hr</code> — frecuencia cardíaca en reposo</li>
+                            <li><code>vo2_max</code> — VO₂ máx estimado</li>
+                            <li><code>vertical_jump</code> — salto vertical (cm)</li>
+                            <li><code>sprint_30m_s</code> — sprint 30 m (s)</li>
+                            <li><code>test_technical</code> — resultado de test técnico</li>
+                            <li><code>category</code> — <code>"physical"</code> | <code>"technical"</code> | <code>"tactical"</code></li>
+                        </ul>
+                    </div>
+                </details>
             </div>
             <?php endif; ?>
         </div>
+
+        <!-- Próximas clases -->
+        <?php if (!empty($alumno['upcoming'])): ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-calendar3 me-2" style="color:var(--success)"></i>
+                    Próximas clases
+                </span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table-jp">
+                    <thead>
+                        <tr>
+                            <th>Clase</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sede</th>
+                            <th>Confirmación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($alumno['upcoming'] as $u): ?>
+                        <tr>
+                            <td style="font-weight:600;color:var(--text-h)">
+                                <a href="<?= base_url('clases/' . (int)$u['id']) ?>" style="color:inherit;text-decoration:none">
+                                    <?= esc($u['title'] ?? '—') ?>
+                                </a>
+                            </td>
+                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
+                                <?= !empty($u['session_date']) ? date('d/m/Y', strtotime($u['session_date'])) : '—' ?>
+                            </td>
+                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
+                                <?= esc($formatTime($u['start_time'] ?? null)) ?> – <?= esc($formatTime($u['end_time'] ?? null)) ?>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">
+                                <?= esc($u['location_name'] ?? $u['location_custom'] ?? '—') ?>
+                            </td>
+                            <td>
+                                <?php $att = $u['attendance'] ?? 'pending'; ?>
+                                <span class="badge-status <?= $att === 'confirmed' ? 'active' : ($att === 'declined' ? 'inactive' : 'inactive') ?>">
+                                    <?= match($att) {
+                                        'confirmed' => 'Confirmada',
+                                        'declined'  => 'Rechazada',
+                                        default     => 'Pendiente',
+                                    } ?>
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Asistencia reciente -->
         <div class="card-jp">
@@ -306,37 +468,49 @@ $statusLabel = match($alumno['status'] ?? 'active') {
                     <i class="bi bi-calendar-check-fill me-2" style="color:var(--accent)"></i>
                     Asistencia reciente
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['attendance']) ?> registro(s)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['attendance'] ?? []) ?> registro(s)</span>
             </div>
             <?php if (!empty($alumno['attendance'])): ?>
             <div class="table-responsive">
                 <table class="table-jp">
                     <thead>
                         <tr>
-                            <th>Sesión</th>
+                            <th>Clase</th>
                             <th>Fecha</th>
+                            <th>Sede</th>
                             <th>Estado</th>
-                            <th>Notas</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($alumno['attendance'] as $att): ?>
+                        <?php $a = $att['attendance'] ?? ''; ?>
                         <tr>
-                            <td style="font-weight:600;color:var(--text-h)"><?= esc($att['session_title'] ?? '—') ?></td>
+                            <td style="font-weight:600;color:var(--text-h)">
+                                <a href="<?= base_url('clases/' . (int)$att['session_id']) ?>" style="color:inherit;text-decoration:none">
+                                    <?= esc($att['session_title'] ?? '—') ?>
+                                </a>
+                            </td>
                             <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
-                                <?= !empty($att['start_datetime']) ? date('d/m/Y H:i', strtotime($att['start_datetime'])) : '—' ?>
+                                <?= !empty($att['session_date']) ? date('d/m/Y', strtotime($att['session_date'])) : '—' ?>
+                                <?php if (!empty($att['start_time'])): ?>
+                                    · <?= esc($formatTime($att['start_time'])) ?>
+                                <?php endif; ?>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">
+                                <?= esc($att['location_name'] ?? $att['location_custom'] ?? '—') ?>
                             </td>
                             <td>
-                                <span class="badge-status <?= ($att['status'] ?? '') === 'present' ? 'active' : 'inactive' ?>">
-                                    <?= match($att['status'] ?? '') {
-                                        'present' => 'Asistió',
-                                        'absent'  => 'Faltó',
-                                        'late'    => 'Tarde',
-                                        default   => ucfirst($att['status'] ?? '—'),
+                                <span class="badge-status <?= $a === 'present' ? 'active' : 'inactive' ?>">
+                                    <?= match($a) {
+                                        'present'   => 'Asistió',
+                                        'absent'    => 'Faltó',
+                                        'confirmed' => 'No registrada',
+                                        'pending'   => 'Sin respuesta',
+                                        'declined'  => 'Rechazada',
+                                        default     => ucfirst($a ?: '—'),
                                     } ?>
                                 </span>
                             </td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($att['notes'] ?? '—') ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -497,7 +671,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
 
 </div>
 
-<?= console_debug('PlayerController::show #' . ($alumno['id'] ?? '?'), [
+<?= console_debug('AlumnosController::show #' . ($alumno['id'] ?? '?'), [
     'id'          => $alumno['id'] ?? null,
     'name'        => $alumno['name'] ?? null,
     'email'       => $alumno['email'] ?? null,
