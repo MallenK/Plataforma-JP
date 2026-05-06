@@ -20,17 +20,35 @@ class ConversationModel extends Model
      */
     public function findOrCreate(int $userA, int $userB): array
     {
+        if ($userA <= 0 || $userB <= 0 || $userA === $userB) {
+            return [];
+        }
+
         [$u1, $u2] = $userA < $userB ? [$userA, $userB] : [$userB, $userA];
 
         $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
 
         if (!$conv) {
-            $now  = date('Y-m-d H:i:s');
-            $id   = $this->insert(['user1_id' => $u1, 'user2_id' => $u2, 'created_at' => $now], true);
+            $now = date('Y-m-d H:i:s');
+            try {
+                $id = $this->insert([
+                    'user1_id'   => $u1,
+                    'user2_id'   => $u2,
+                    'created_at' => $now,
+                ], true);
+            } catch (\Throwable $e) {
+                // Carrera concurrente: otro proceso creó la conversación. Reintentamos lectura.
+                $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
+                return $conv ?: [];
+            }
+            if (!$id) {
+                $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
+                return $conv ?: [];
+            }
             $conv = $this->find($id);
         }
 
-        return $conv;
+        return $conv ?: [];
     }
 
     /**

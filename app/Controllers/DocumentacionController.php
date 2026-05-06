@@ -23,14 +23,22 @@ class DocumentacionController extends BaseController
 
     public function index(?int $legacyId = null)
     {
-        $userId = $this->currentUserId();
-        $role   = $this->currentRole();
+        $userId = (int) $this->currentUserId();
+        $role   = (string) $this->currentRole();
 
-        // Garantizar carpeta personal del usuario autenticado
-        $this->docService->getOrCreatePersonalFolder($userId);
+        if ($userId <= 0 || $role === '') {
+            return redirect()->to('/login');
+        }
 
-        $folders         = $this->docService->getAccessibleFolders($userId, $role);
-        $writableFolders = $this->docService->getWritableFolders($userId, $role);
+        // Garantizar carpeta personal del usuario autenticado (silencioso si falla)
+        try {
+            $this->docService->getOrCreatePersonalFolder($userId);
+        } catch (\Throwable $e) {
+            log_message('warning', 'DocumentacionController::index getOrCreatePersonalFolder: ' . $e->getMessage());
+        }
+
+        $folders         = $this->docService->getAccessibleFolders($userId, $role) ?? [];
+        $writableFolders = $this->docService->getWritableFolders($userId, $role) ?? [];
 
         // Carpeta activa via query param
         $activeFolderId = (int)($this->request->getGet('folder') ?? 0);

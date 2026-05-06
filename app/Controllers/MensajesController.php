@@ -55,11 +55,14 @@ class MensajesController extends BaseController
 
     public function ajaxOpenConversation(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $userId    = $this->currentUserId();
-        $myRole    = $this->currentRole();
+        $userId    = (int) $this->currentUserId();
+        $myRole    = (string) $this->currentRole();
         $otherId   = (int) $this->request->getPost('other_user_id');
 
-        if (!$otherId || $otherId === $userId) {
+        if ($userId <= 0) {
+            return $this->jsonError('Sesión expirada. Vuelve a iniciar sesión.', 401);
+        }
+        if ($otherId <= 0 || $otherId === $userId) {
             return $this->jsonError('Usuario no válido.', 422);
         }
 
@@ -67,29 +70,40 @@ class MensajesController extends BaseController
         if (!$otherUser) {
             return $this->jsonError('Usuario no encontrado.', 404);
         }
+        if (($otherUser['status'] ?? 'active') !== 'active') {
+            return $this->jsonError('Este usuario no está activo.', 403);
+        }
 
         // Regla: jugador no puede chatear con jugador
         if (!$this->canChat($myRole, $otherUser['role'])) {
             return $this->jsonError('Los jugadores no pueden chatear entre sí.', 403);
         }
 
-        $conv = $this->convModel->findOrCreate($userId, $otherId);
+        try {
+            $conv = $this->convModel->findOrCreate($userId, $otherId);
+        } catch (\Throwable $e) {
+            log_message('error', 'MensajesController::ajaxOpenConversation findOrCreate failed: ' . $e->getMessage());
+            return $this->jsonError('No se pudo abrir la conversación.', 500);
+        }
 
-        // Marcar como leídos los mensajes de esta conversación
+        if (empty($conv['id'])) {
+            return $this->jsonError('No se pudo abrir la conversación.', 500);
+        }
+
         $this->msgModel->markReadInConversation($conv['id'], $userId);
 
         $messages = $this->msgModel->getForConversation($conv['id'], 50);
 
         return $this->response->setJSON([
-            'conversation_id' => $conv['id'],
+            'conversation_id' => (int) $conv['id'],
             'other_user'      => [
-                'id'     => $otherUser['id'],
+                'id'     => (int) $otherUser['id'],
                 'name'   => $otherUser['name'],
-                'avatar' => $otherUser['avatar'],
+                'avatar' => $otherUser['avatar'] ?? null,
                 'role'   => $otherUser['role'],
             ],
             'messages' => $messages,
-            'csrf'      => csrf_hash(),
+            'csrf'     => csrf_hash(),
         ]);
     }
 

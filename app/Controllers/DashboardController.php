@@ -17,8 +17,20 @@ class DashboardController extends BaseController
             }
         }
 
+        // Bienvenida solo la primera vez en la vida del usuario
+        $showWelcome = false;
+        $userRow     = $this->currentUserFromDB();
+        if ($userRow && empty($userRow['welcomed_at'])) {
+            $showWelcome = true;
+            \Config\Database::connect()
+                ->table('users')
+                ->where('id', $userId)
+                ->update(['welcomed_at' => date('Y-m-d H:i:s')]);
+        }
+
         return view('dashboard/index', [
-            'title' => 'Dashboard — JP Preparation',
+            'title'       => 'Dashboard — JP Preparation',
+            'showWelcome' => $showWelcome,
         ]);
     }
 

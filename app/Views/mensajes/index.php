@@ -262,6 +262,11 @@ $roleLabels = [
         stopPolling();
         showChatLoading();
 
+        if (!otherId || otherId <= 0) {
+            showChatError('Usuario no válido.');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('other_user_id', otherId);
         formData.append(CSRF_NAME, csrfVal());
@@ -271,11 +276,17 @@ $roleLabels = [
                 method: 'POST', body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json();
-            if (!res.ok) { showChatError(data.error ?? 'Error'); return; }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { showChatError(data.error ?? 'No se pudo abrir la conversación.'); return; }
 
             if (data.csrf) refreshCsrf(data.csrf);
-            activeConvId = data.conversation_id;
+
+            const cid = parseInt(data.conversation_id);
+            if (!cid || isNaN(cid)) {
+                showChatError('No se pudo abrir la conversación.');
+                return;
+            }
+            activeConvId = cid;
             document.getElementById('input-conv-id').value = activeConvId;
 
             // Cabecera
@@ -317,7 +328,10 @@ $roleLabels = [
     // ── Enviar mensaje ───────────────────────────────────────
     document.getElementById('form-message')?.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (!activeConvId) return;
+        if (!activeConvId) {
+            showToast('Selecciona o abre primero una conversación.', 'error');
+            return;
+        }
 
         const bodyInput = document.getElementById('msg-body');
         const fileInput = document.getElementById('msg-file');

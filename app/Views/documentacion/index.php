@@ -91,9 +91,6 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
     <?php foreach ($folders as $f):
         [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
         $isActive = $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
-        $canWrite = in_array($f['type'], ['public']) && !$isPlayer
-                 || ($f['type'] === 'personal' && (int)($f['owner_id'] ?? 0) === $userId)
-                 || ($f['type'] === 'internal');
     ?>
     <div class="col-6 col-md-4 col-lg-3">
         <a href="<?= base_url('documentacion?folder=' . $f['id']) ?>" style="text-decoration:none">
@@ -483,15 +480,6 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
     <?= csrf_field() ?>
 </form>
 <?php endif; ?>
-
-<?= console_debug('DocumentacionController::index', [
-    'role'            => $role,
-    'active_folder'   => $activeFolder ? ['id' => $activeFolder['id'], 'name' => $activeFolder['name'], 'type' => $activeFolder['type']] : null,
-    'folders_count'   => count($folders ?? []),
-    'files_count'     => count($files ?? []),
-    'writable_folders'=> count($writableFolders ?? []),
-    'folders'         => array_map(fn($f) => ['id' => $f['id'], 'name' => $f['name'], 'type' => $f['type'], 'files' => $f['files_count']], $folders ?? []),
-], collapsed: true) ?>
 
 <?= $this->endSection() ?>
 
