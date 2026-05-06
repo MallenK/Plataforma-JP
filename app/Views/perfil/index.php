@@ -19,7 +19,13 @@ $staffTitle  = trim((string)($user['staff_title'] ?? ''));
 
 $isSelf  = ((int)($user['id'] ?? 0) === (int)session('id'));
 $isAdmin = in_array(session('role'), ['superadmin', 'admin']);
-$canEdit = $isSelf || $isAdmin;
+
+// Usuario protegido (id=2 o email maestro): nadie lo puede editar
+$isProtected = ((int)($user['id'] ?? 0) === 2)
+    || (strtolower((string)($user['email'] ?? '')) === 'sergimallenweb@gmail.com');
+
+$canEdit       = !$isProtected && ($isSelf || $isAdmin);
+$canEditTitle  = !$isProtected && $isAdmin;
 
 $role         = $user['role'] ?? '';
 $isStaffRole  = in_array($role, ['staff', 'coach', 'admin'], true);
@@ -27,6 +33,10 @@ $showActivity = in_array($role, ['staff', 'coach'], true);
 $backUrl      = $isAdmin && !$isSelf
     ? ($isStaffRole ? base_url('configuracion?section=staff') : null)
     : null;
+
+$updateUrl = $isSelf
+    ? base_url('perfil/update')
+    : base_url('perfil/' . (int)$user['id'] . '/update');
 
 $uploadUrl = $isSelf
     ? base_url('avatar/upload')
@@ -185,40 +195,60 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title"><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>Datos personales</span>
+                <?php if ($isProtected): ?>
+                    <span style="font-size:11px;color:var(--text-muted)">
+                        <i class="bi bi-lock-fill"></i> Perfil protegido
+                    </span>
+                <?php endif; ?>
             </div>
-            <div class="card-jp-body">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-0">
-                            <label class="form-label">Nombre completo</label>
-                            <input type="text" class="form-control-jp" value="<?= esc($user['name'] ?? '') ?>" readonly>
+            <form action="<?= esc($updateUrl) ?>" method="POST">
+                <?= csrf_field() ?>
+                <div class="card-jp-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="form-label">Nombre completo</label>
+                                <input type="text" name="name" class="form-control-jp"
+                                       value="<?= esc(old('name', $user['name'] ?? '')) ?>"
+                                       <?= $canEdit ? 'required minlength="3" maxlength="150"' : 'readonly' ?>>
+                            </div>
                         </div>
+                        <div class="col-12 col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control-jp"
+                                       value="<?= esc(old('email', $user['email'] ?? '')) ?>"
+                                       <?= $canEdit ? 'required' : 'readonly' ?>>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="form-label">Rol</label>
+                                <input type="text" class="form-control-jp" value="<?= esc($roleLabel) ?>" readonly>
+                            </div>
+                        </div>
+                        <?php if ($isStaffRole): ?>
+                        <div class="col-12 col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="form-label">Cargo / puesto específico</label>
+                                <input type="text" name="staff_title" class="form-control-jp"
+                                       value="<?= esc(old('staff_title', $staffTitle)) ?>"
+                                       maxlength="100"
+                                       placeholder="Ej: Director técnico, Recepción..."
+                                       <?= $canEditTitle ? '' : 'readonly' ?>>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-0">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control-jp" value="<?= esc($user['email'] ?? '') ?>" readonly>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-0">
-                            <label class="form-label">Rol</label>
-                            <input type="text" class="form-control-jp" value="<?= esc($roleLabel) ?>" readonly>
-                        </div>
-                    </div>
-                    <?php if ($isStaffRole): ?>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-0">
-                            <label class="form-label">Cargo / puesto específico</label>
-                            <input type="text" class="form-control-jp"
-                                   value="<?= esc($staffTitle) ?>"
-                                   placeholder="<?= $staffTitle === '' ? 'Sin definir' : '' ?>"
-                                   readonly>
-                        </div>
+                    <?php if ($canEdit): ?>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn-jp btn-jp-primary">
+                            <i class="bi bi-check-lg"></i> Guardar cambios
+                        </button>
                     </div>
                     <?php endif; ?>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- Seguridad -->

@@ -116,6 +116,42 @@ abstract class BaseController extends Controller
     }
 
     // ----------------------------------------------------------------
+    // Protección del superadmin maestro
+    //
+    // El usuario con id=2 o email sergimallenweb@gmail.com es el
+    // superadmin "raíz" de la plataforma. Su perfil es intocable desde
+    // la propia plataforma: nadie (ni siquiera él mismo a través de la
+    // UI) puede modificar su nombre, email, contraseña, rol, avatar
+    // o estado. Se modifica solo a nivel de BD.
+    // ----------------------------------------------------------------
+
+    protected const PROTECTED_USER_ID    = 2;
+    protected const PROTECTED_USER_EMAIL = 'sergimallenweb@gmail.com';
+
+    /**
+     * Devuelve true si el usuario indicado está protegido contra
+     * cualquier modificación desde la plataforma.
+     */
+    protected function isProtectedUser($user): bool
+    {
+        if (is_int($user) || ctype_digit((string)$user)) {
+            $id = (int)$user;
+            if ($id === self::PROTECTED_USER_ID) {
+                return true;
+            }
+            $row = (new UserModel())->find($id);
+            return $row && strtolower((string)($row['email'] ?? '')) === self::PROTECTED_USER_EMAIL;
+        }
+
+        if (is_array($user)) {
+            return (int)($user['id'] ?? 0) === self::PROTECTED_USER_ID
+                || strtolower((string)($user['email'] ?? '')) === self::PROTECTED_USER_EMAIL;
+        }
+
+        return false;
+    }
+
+    // ----------------------------------------------------------------
     // Helpers de respuesta
     // ----------------------------------------------------------------
 

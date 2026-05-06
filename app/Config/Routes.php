@@ -486,6 +486,14 @@ $routes->get('perfil/(:num)', 'PerfilController::index/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->post('perfil/update', 'PerfilController::update', [
+    'filter' => 'auth',
+]);
+
+$routes->post('perfil/(:num)/update', 'PerfilController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ------------------------------------------------------------
 // NOTIFICACIONES
