@@ -22,6 +22,14 @@ class PerfilController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        // Inyecta KPIs de actividad si el rol los aprovecha (staff/coach)
+        if (in_array($user['role'] ?? '', ['staff', 'coach'], true)) {
+            $stats = (new \App\Services\CoachService())->getActivityStats((int)$user['id']);
+            $user['sessions_count'] = $stats['sessions_count'];
+            $user['upcoming_count'] = $stats['upcoming_count'];
+            $user['students_count'] = $stats['students_count'];
+        }
+
         return view('perfil/index', [
             'user'  => $user,
             'title' => 'Mi perfil',
