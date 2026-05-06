@@ -268,6 +268,11 @@ $sec  = $section;        // sección activa
                                             <div>
                                                 <div style="font-weight:600;color:var(--text-h)"><?= esc($u['name']) ?></div>
                                                 <div style="font-size:12px;color:var(--text-muted)"><?= esc($u['email']) ?></div>
+                                                <?php if (!empty($u['staff_title'])): ?>
+                                                    <div style="font-size:11px;color:var(--accent);font-weight:500;margin-top:2px">
+                                                        <i class="bi bi-briefcase-fill"></i> <?= esc($u['staff_title']) ?>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
@@ -297,32 +302,37 @@ $sec  = $section;        // sección activa
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-end">
-                                        <?php if ((int)$u['id'] !== (int)$currentUserId && $u['role'] !== 'superadmin'): ?>
-                                            <div class="d-flex gap-1 justify-content-end">
-                                            <?php if ($u['status'] === 'active'): ?>
-                                            <form action="/configuracion/staff/<?= $u['id'] ?>/deactivate" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Desactivar a <?= esc($u['name'], 'js') ?>?')">
-                                                <?= csrf_field() ?>
-                                                <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Desactivar">
-                                                    <i class="bi bi-person-x-fill"></i>
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <a href="<?= base_url('perfil/' . $u['id']) ?>"
+                                               class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"
+                                               title="Ver perfil">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </a>
+                                            <?php if ((int)$u['id'] !== (int)$currentUserId && $u['role'] !== 'superadmin'): ?>
+                                                <?php if ($u['status'] === 'active'): ?>
+                                                <form action="/configuracion/staff/<?= $u['id'] ?>/deactivate" method="POST" class="d-inline"
+                                                      onsubmit="return confirm('¿Desactivar a <?= esc($u['name'], 'js') ?>?')">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Desactivar">
+                                                        <i class="bi bi-person-x-fill"></i>
+                                                    </button>
+                                                </form>
+                                                <?php else: ?>
+                                                <form action="/configuracion/staff/<?= $u['id'] ?>/activate" method="POST" class="d-inline">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Reactivar">
+                                                        <i class="bi bi-person-check-fill"></i>
+                                                    </button>
+                                                </form>
+                                                <?php endif; ?>
+                                                <button type="button"
+                                                        class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
+                                                        title="Eliminar permanentemente"
+                                                        onclick="openDeleteStaffModal(<?= (int)$u['id'] ?>, '<?= esc($u['name'], 'js') ?>')">
+                                                    <i class="bi bi-trash3-fill"></i>
                                                 </button>
-                                            </form>
-                                            <?php else: ?>
-                                            <form action="/configuracion/staff/<?= $u['id'] ?>/activate" method="POST" class="d-inline">
-                                                <?= csrf_field() ?>
-                                                <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Reactivar">
-                                                    <i class="bi bi-person-check-fill"></i>
-                                                </button>
-                                            </form>
                                             <?php endif; ?>
-                                            <button type="button"
-                                                    class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
-                                                    title="Eliminar permanentemente"
-                                                    onclick="openDeleteStaffModal(<?= (int)$u['id'] ?>, '<?= esc($u['name'], 'js') ?>')">
-                                                <i class="bi bi-trash3-fill"></i>
-                                            </button>
-                                            </div>
-                                        <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

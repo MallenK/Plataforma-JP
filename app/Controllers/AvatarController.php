@@ -31,6 +31,11 @@ class AvatarController extends BaseController
             return redirect()->back();
         }
 
+        if ($this->isProtectedUser($userId)) {
+            session()->setFlashdata('error', 'Este perfil está protegido y su avatar no puede modificarse desde la plataforma.');
+            return redirect()->back();
+        }
+
         $file = $this->request->getFile('avatar');
 
         if (!$file || !$file->isValid() || $file->hasMoved()) {
@@ -88,6 +93,11 @@ class AvatarController extends BaseController
         $userId = $this->resolveTargetUser($targetId);
         if ($userId === null) {
             session()->setFlashdata('error', 'No tienes permiso para editar este avatar.');
+            return redirect()->back();
+        }
+
+        if ($this->isProtectedUser($userId)) {
+            session()->setFlashdata('error', 'Este perfil está protegido y su avatar no puede modificarse desde la plataforma.');
             return redirect()->back();
         }
 

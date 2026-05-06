@@ -7,6 +7,7 @@ $pageSubtitle = 'Perfil del entrenador';
 
 $name        = $coach['name']   ?? '?';
 $userAvatar  = $coach['avatar'] ?? null;
+$staffTitle  = trim((string)($coach['staff_title'] ?? ''));
 $isAdminUser = in_array(session('role'), ['superadmin', 'admin']);
 
 $statusLabel = match($coach['status'] ?? 'active') {
@@ -16,9 +17,18 @@ $statusLabel = match($coach['status'] ?? 'active') {
     default    => ucfirst($coach['status'] ?? ''),
 };
 
-$sessionsCount   = count($coach['sessions']    ?? []);
-$playersCount    = count($coach['players']     ?? []);
-$evalsCount      = count($coach['evaluations'] ?? []);
+$sessionsCount = (int)($coach['sessions_count'] ?? 0);
+$upcomingCount = (int)($coach['upcoming_count'] ?? 0);
+$playersCount  = (int)($coach['players_count']  ?? 0);
+
+$sessionsList = $coach['sessions'] ?? [];
+$upcomingList = $coach['upcoming'] ?? [];
+$playersList  = $coach['players']  ?? [];
+
+$formatTime = static function (?string $hms): string {
+    if (!$hms) return '';
+    return substr($hms, 0, 5);
+};
 ?>
 
 <?= $this->section('page_content') ?>
@@ -40,9 +50,11 @@ $evalsCount      = count($coach['evaluations'] ?? []);
         <a href="<?= base_url('entrenadores') ?>" class="btn-jp btn-jp-secondary">
             <i class="bi bi-arrow-left"></i> Listado
         </a>
+        <?php if ($isAdminUser): ?>
         <a href="<?= base_url('entrenadores/' . $coach['id'] . '/editar') ?>" class="btn-jp btn-jp-primary">
             <i class="bi bi-pencil"></i> Editar
         </a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -70,6 +82,11 @@ $evalsCount      = count($coach['evaluations'] ?? []);
                     <span class="badge-status <?= esc($coach['status'] ?? 'active') ?> mt-2 d-inline-block">
                         <?= esc($statusLabel) ?>
                     </span>
+                    <?php if ($staffTitle !== ''): ?>
+                        <div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:6px">
+                            <i class="bi bi-briefcase-fill"></i> <?= esc($staffTitle) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php if ($isAdminUser): ?>
@@ -124,16 +141,16 @@ $evalsCount      = count($coach['evaluations'] ?? []);
             <div class="card-jp-body">
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar3 me-2"></i>Sesiones dirigidas</span>
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar-check me-2"></i>Sesiones dirigidas</span>
                         <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $sessionsCount ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar3 me-2"></i>Próximas sesiones</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $upcomingCount ?></span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-people-fill me-2"></i>Alumnos trabajados</span>
                         <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $playersCount ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-graph-up-arrow me-2"></i>Evaluaciones</span>
-                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $evalsCount ?></span>
                     </div>
                 </div>
             </div>
@@ -144,42 +161,93 @@ $evalsCount      = count($coach['evaluations'] ?? []);
     <!-- ── Columna derecha: historial ───────────────────── -->
     <div class="col-12 col-lg-8 d-flex flex-column gap-3">
 
-        <!-- Sesiones dirigidas -->
+        <!-- Próximas sesiones -->
+        <?php if (!empty($upcomingList)): ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title">
-                    <i class="bi bi-calendar3 me-2" style="color:var(--accent)"></i>
-                    Últimas sesiones dirigidas
+                    <i class="bi bi-calendar3 me-2" style="color:var(--success)"></i>
+                    Próximas sesiones
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= $sessionsCount ?> registro(s)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
             </div>
-            <?php if (!empty($coach['sessions'])): ?>
             <div class="table-responsive">
                 <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Sesión</th>
-                            <th>Sede</th>
                             <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sede</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($upcomingList as $s): ?>
+                        <tr>
+                            <td style="font-weight:600;color:var(--text-h)"><?= esc($s['title'] ?? '—') ?></td>
+                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
+                                <?= !empty($s['session_date']) ? date('d/m/Y', strtotime($s['session_date'])) : '—' ?>
+                            </td>
+                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
+                                <?= esc($formatTime($s['start_time'] ?? null)) ?> – <?= esc($formatTime($s['end_time'] ?? null)) ?>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">
+                                <?= esc($s['location_name'] ?? $s['location_custom'] ?? '—') ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Últimas sesiones dirigidas -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-calendar-check me-2" style="color:var(--accent)"></i>
+                    Últimas sesiones dirigidas
+                </span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($sessionsList) ?> registro(s)</span>
+            </div>
+            <?php if (!empty($sessionsList)): ?>
+            <div class="table-responsive">
+                <table class="table-jp">
+                    <thead>
+                        <tr>
+                            <th>Sesión</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sede</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($coach['sessions'] as $s): ?>
+                        <?php foreach ($sessionsList as $s): ?>
                         <tr>
-                            <td style="font-weight:600;color:var(--text-h)"><?= esc($s['title'] ?? '—') ?></td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($s['location_name'] ?? '—') ?></td>
+                            <td style="font-weight:600;color:var(--text-h)">
+                                <a href="<?= base_url('clases/' . $s['id']) ?>" style="color:inherit;text-decoration:none">
+                                    <?= esc($s['title'] ?? '—') ?>
+                                </a>
+                            </td>
                             <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
-                                <?= !empty($s['start_datetime']) ? date('d/m/Y H:i', strtotime($s['start_datetime'])) : '—' ?>
+                                <?= !empty($s['session_date']) ? date('d/m/Y', strtotime($s['session_date'])) : '—' ?>
+                            </td>
+                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
+                                <?= esc($formatTime($s['start_time'] ?? null)) ?> – <?= esc($formatTime($s['end_time'] ?? null)) ?>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">
+                                <?= esc($s['location_name'] ?? $s['location_custom'] ?? '—') ?>
                             </td>
                             <td>
-                                <span class="badge-status <?= ($s['status'] ?? '') === 'scheduled' ? 'active' : (($s['status'] ?? '') === 'completed' ? 'inactive' : 'active') ?>">
-                                    <?= match($s['status'] ?? '') {
-                                        'scheduled'  => 'Programada',
-                                        'completed'  => 'Completada',
-                                        'cancelled'  => 'Cancelada',
-                                        'in_progress'=> 'En curso',
-                                        default      => ucfirst($s['status'] ?? '—'),
+                                <?php $st = $s['status'] ?? ''; ?>
+                                <span class="badge-status <?= $st === 'completed' ? 'active' : ($st === 'cancelled' ? 'inactive' : 'active') ?>">
+                                    <?= match($st) {
+                                        'scheduled' => 'Programada',
+                                        'completed' => 'Completada',
+                                        'cancelled' => 'Cancelada',
+                                        default     => ucfirst($st ?: '—'),
                                     } ?>
                                 </span>
                             </td>
@@ -195,113 +263,66 @@ $evalsCount      = count($coach['evaluations'] ?? []);
             <?php endif; ?>
         </div>
 
-        <!-- Alumnos trabajados -->
+        <!-- Alumnos trabajados — colapsable -->
         <div class="card-jp">
-            <div class="card-jp-header">
+            <div class="card-jp-header" style="cursor:pointer" onclick="document.getElementById('coachPlayersList').classList.toggle('d-none'); this.querySelector('.toggle-icon').classList.toggle('bi-chevron-down'); this.querySelector('.toggle-icon').classList.toggle('bi-chevron-up')">
                 <span class="card-jp-title">
                     <i class="bi bi-people-fill me-2" style="color:var(--success)"></i>
                     Alumnos trabajados
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= $playersCount ?> alumno(s)</span>
-            </div>
-            <?php if (!empty($coach['players'])): ?>
-            <div class="table-responsive">
-                <table class="table-jp">
-                    <thead>
-                        <tr>
-                            <th>Alumno</th>
-                            <th>Email</th>
-                            <th style="text-align:center">Evaluaciones</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($coach['players'] as $p): ?>
-                        <tr>
-                            <td>
-                                <div class="td-user">
-                                    <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
-                                    <div class="td-name"><?= esc($p['name']) ?></div>
-                                </div>
-                            </td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($p['email'] ?? '—') ?></td>
-                            <td style="text-align:center;font-weight:600;color:var(--text-h)"><?= (int)($p['evals_count'] ?? 0) ?></td>
-                            <td>
-                                <span class="badge-status <?= esc($p['status'] ?? 'active') ?>">
-                                    <?= match($p['status'] ?? 'active') {
-                                        'active'   => 'Activo',
-                                        'inactive' => 'Inactivo',
-                                        default    => ucfirst($p['status'] ?? ''),
-                                    } ?>
-                                </span>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-            <div class="card-jp-body">
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin alumnos evaluados todavía.</p>
-            </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Últimas evaluaciones -->
-        <div class="card-jp">
-            <div class="card-jp-header">
-                <span class="card-jp-title">
-                    <i class="bi bi-graph-up-arrow me-2" style="color:var(--accent)"></i>
-                    Últimas evaluaciones registradas
+                <span style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= $playersCount ?> alumno(s)</span>
+                    <i class="bi bi-chevron-down toggle-icon" style="font-size:14px;color:var(--text-muted)"></i>
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= $evalsCount ?> registro(s)</span>
             </div>
-            <?php if (!empty($coach['evaluations'])): ?>
-            <div class="table-responsive">
-                <table class="table-jp">
-                    <thead>
-                        <tr>
-                            <th>Alumno</th>
-                            <th>Fecha</th>
-                            <th>Evaluación</th>
-                            <th>Notas</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($coach['evaluations'] as $ev): ?>
-                        <tr>
-                            <td style="font-weight:600;color:var(--text-h)"><?= esc($ev['player_name'] ?? '—') ?></td>
-                            <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
-                                <?= !empty($ev['date']) ? date('d/m/Y', strtotime($ev['date'])) : '—' ?>
-                            </td>
-                            <td><?= esc($ev['evaluation'] ?? '—') ?></td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($ev['notes'] ?? '—') ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <div id="coachPlayersList" class="d-none">
+                <?php if (!empty($playersList)): ?>
+                <div class="table-responsive">
+                    <table class="table-jp">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>Email</th>
+                                <th style="text-align:center">Clases asistidas</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($playersList as $p): ?>
+                            <tr>
+                                <td>
+                                    <a href="<?= base_url('alumnos/' . $p['id']) ?>" style="color:inherit;text-decoration:none">
+                                        <div class="td-user">
+                                            <?= avatar_html($p['avatar'] ?? null, $p['name'], 'td-avatar') ?>
+                                            <div class="td-name"><?= esc($p['name']) ?></div>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td style="font-size:12px;color:var(--text-muted)"><?= esc($p['email'] ?? '—') ?></td>
+                                <td style="text-align:center;font-weight:600;color:var(--text-h)"><?= (int)($p['classes_count'] ?? 0) ?></td>
+                                <td>
+                                    <span class="badge-status <?= esc($p['status'] ?? 'active') ?>">
+                                        <?= match($p['status'] ?? 'active') {
+                                            'active'   => 'Activo',
+                                            'inactive' => 'Inactivo',
+                                            default    => ucfirst($p['status'] ?? ''),
+                                        } ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php else: ?>
+                <div class="card-jp-body">
+                    <p style="font-size:13px;color:var(--text-muted);margin:0">Sin alumnos atendidos todavía.</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php else: ?>
-            <div class="card-jp-body">
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin evaluaciones registradas.</p>
-            </div>
-            <?php endif; ?>
         </div>
 
     </div>
 </div>
-
-<?= console_debug('EntrenadoresController::show #' . ($coach['id'] ?? '?'), [
-    'id'               => $coach['id'] ?? null,
-    'name'             => $coach['name'] ?? null,
-    'email'            => $coach['email'] ?? null,
-    'status'           => $coach['status'] ?? null,
-    'sessions_count'   => $sessionsCount,
-    'players_count'    => $playersCount,
-    'evaluations_count'=> $evalsCount,
-    'sessions'         => $coach['sessions']    ?? [],
-    'players'          => $coach['players']     ?? [],
-    'evaluations'      => $coach['evaluations'] ?? [],
-]) ?>
 
 <?= $this->endSection() ?>
