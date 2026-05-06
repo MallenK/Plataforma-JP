@@ -9,7 +9,7 @@
     </div>
     <?php if ($canManage): ?>
     <a href="/clases/nueva" class="btn-jp btn-jp-primary">
-        <i class="bi bi-plus-lg me-1"></i>Nueva clase
+        <i class="bi bi-plus-lg me-1"></i>Nueva clase (avanzada)
     </a>
     <?php endif; ?>
 </div>
@@ -99,7 +99,7 @@
                 <button onclick="CAL.next()" title="Siguiente"><i class="bi bi-chevron-right"></i></button>
             </div>
             <?php if ($canManage): ?>
-            <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="openQuickCreate()">
+            <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open()">
                 <i class="bi bi-plus-lg me-1"></i>Añadir sesión
             </button>
             <?php endif; ?>
@@ -110,88 +110,14 @@
     </div>
 </div>
 
-<!-- ── Modal: quick-create ───────────────────────────────────── -->
 <?php if ($canManage): ?>
-<div id="modalQuickCreate" class="cs-modal-overlay d-none">
-    <div class="cs-modal" style="max-width:540px">
-        <div class="cs-modal-header">
-            <span><i class="bi bi-plus-circle-fill me-2" style="color:var(--accent)"></i>Nueva sesión rápida</span>
-            <button onclick="closeModal('modalQuickCreate')"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="cs-modal-body">
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Título <span style="color:var(--danger)">*</span></label>
-                    <input type="text" id="qc-title" class="form-control-jp" placeholder="Ej: Entrenamiento individual – Control">
-                </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label">Fecha <span style="color:var(--danger)">*</span></label>
-                    <input type="date" id="qc-date" class="form-control-jp" value="<?= date('Y-m-d') ?>">
-                </div>
-                <div class="col-6 col-md-4">
-                    <label class="form-label">Inicio <span style="color:var(--danger)">*</span></label>
-                    <input type="time" id="qc-start" class="form-control-jp">
-                </div>
-                <div class="col-6 col-md-4">
-                    <label class="form-label">Fin</label>
-                    <input type="time" id="qc-end" class="form-control-jp">
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Lugar (opcional)</label>
-                    <input type="text" id="qc-location" class="form-control-jp" placeholder="Instalación o descripción">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label">Entrenadores</label>
-                    <select id="qc-coach-sel" class="form-control-jp" onchange="qcAddCoach(this)">
-                        <option value="">Añadir entrenador…</option>
-                    </select>
-                    <div id="qc-coach-list" class="mt-2" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label">Jugadores</label>
-                    <select id="qc-player-sel" class="form-control-jp" onchange="qcAddPlayer(this)">
-                        <option value="">Añadir jugador…</option>
-                    </select>
-                    <div id="qc-player-list" class="mt-2" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-                </div>
-            </div>
-            <div id="qc-error" style="color:var(--danger);font-size:13px;margin-top:10px;display:none"></div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 20px;border-top:1px solid var(--border)">
-            <button class="btn-jp btn-jp-secondary" onclick="closeModal('modalQuickCreate')">Cancelar</button>
-            <button class="btn-jp btn-jp-primary" id="qc-submit" onclick="submitQuickCreate()">
-                <i class="bi bi-check-lg me-1"></i>Crear sesión
-            </button>
-        </div>
-    </div>
-</div>
+    <?= $this->include('clases/_modal_create') ?>
 <?php endif; ?>
+
+<?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <style>
-/* ── Modal ─────────────────────────────────────────────────────── */
-.cs-modal-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;
-    display:flex;align-items:center;justify-content:center;padding:16px;
-}
-.cs-modal {
-    background:var(--bg-card);border:1px solid var(--border);border-radius:12px;
-    width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);
-}
-.cs-modal-header {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;border-bottom:1px solid var(--border);
-    font-size:15px;font-weight:700;color:var(--text-h);
-}
-.cs-modal-header button {
-    background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;
-    width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;
-    transition:background .15s;
-}
-.cs-modal-header button:hover { background:var(--bg-app);color:var(--text-h); }
-.cs-modal-body { padding:20px;overflow-y:auto;flex:1; }
-
 /* ── Calendario Mensual ────────────────────────────────────────── */
 .cal-month-headers {
     display:grid;grid-template-columns:repeat(7,1fr);
@@ -262,47 +188,20 @@
 .cal-event-block:hover { filter:brightness(.92); }
 .cal-can-create { cursor:pointer; }
 .cal-can-create:hover { background:var(--accent-light) !important; }
-
-/* ── Tag chips para quick-create ───────────────────────────────── */
-.qc-tag {
-    display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
-    border-radius:20px;font-size:11.5px;font-weight:600;background:var(--accent-light);
-    color:var(--accent);
-}
-.qc-tag button {
-    background:none;border:none;cursor:pointer;color:var(--accent);
-    padding:0;font-size:12px;line-height:1;
-}
 </style>
 
+<script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
 <script>
 const canManage = <?= $canManage ? 'true' : 'false' ?>;
 const CSRF_NAME = '<?= csrf_token() ?>';
 const CSRF_HASH = '<?= csrf_hash() ?>';
-
-// ── Modal helpers ────────────────────────────────────────────────
-function openModal(id) {
-    document.getElementById(id)?.classList.remove('d-none');
-    document.body.style.overflow = 'hidden';
-}
-function closeModal(id) {
-    document.getElementById(id)?.classList.add('d-none');
-    document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape')
-        document.querySelectorAll('.cs-modal-overlay:not(.d-none)').forEach(m => closeModal(m.id));
-});
-document.querySelectorAll('.cs-modal-overlay').forEach(o =>
-    o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); })
-);
 
 // ── Calendarios ─────────────────────────────────────────────────
 const CAL = {
     view: 'month',
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
-    weekStart: null,   // Date string 'YYYY-MM-DD' (lunes de la semana)
+    weekStart: null,
     events: [],
 
     async load() {
@@ -360,13 +259,12 @@ const CAL = {
         this.load();
     },
 
-    // ── Vista mensual ───────────────────────────────────────────
     renderMonth() {
         const mn  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         document.getElementById('cal-label').textContent = mn[this.month - 1] + ' ' + this.year;
 
-        const first = new Date(this.year, this.month - 1, 1).getDay(); // 0=dom
-        const offset = (first + 6) % 7; // lunes=0
+        const first = new Date(this.year, this.month - 1, 1).getDay();
+        const offset = (first + 6) % 7;
         const daysInMonth = new Date(this.year, this.month, 0).getDate();
         const todayStr = this.fmt(new Date());
 
@@ -376,7 +274,6 @@ const CAL = {
         );
         html += '</div><div class="cal-month-grid">';
 
-        // Celdas vacías anteriores
         for (let i = 0; i < offset; i++) html += '<div class="cal-cell other"></div>';
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -403,7 +300,6 @@ const CAL = {
             html += '</div>';
         }
 
-        // Rellenar última fila
         const total = offset + daysInMonth;
         const fill  = (7 - (total % 7)) % 7;
         for (let i = 0; i < fill; i++) html += '<div class="cal-cell other"></div>';
@@ -412,7 +308,6 @@ const CAL = {
         document.getElementById('cal-grid').innerHTML = html;
     },
 
-    // ── Vista semanal ───────────────────────────────────────────
     renderWeek() {
         if (!this.weekStart) this.weekStart = this.getMonday(new Date());
 
@@ -432,13 +327,11 @@ const CAL = {
         document.getElementById('cal-label').textContent =
             `${ws.getDate()} ${mn[ws.getMonth()]} – ${we.getDate()} ${mn[we.getMonth()]} ${we.getFullYear()}`;
 
-        // Horas visibles: 7-22
         const HOUR_START = 7, HOUR_END = 22;
-        const SLOT_H = 56; // px por hora
+        const SLOT_H = 56;
 
         let html = '<div class="cal-week-wrap"><div class="cal-week-grid">';
 
-        // Cabeceras
         html += '<div class="cal-week-head time-col"></div>';
         days.forEach((d, i) => {
             const isT = dates[i] === todayStr;
@@ -448,11 +341,9 @@ const CAL = {
                      </div>`;
         });
 
-        // Filas de horas
         for (let h = HOUR_START; h < HOUR_END; h++) {
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
             dates.forEach((dateStr, di) => {
-                const slotDate = dateStr;
                 const dayEvts = this.events.filter(e => {
                     if (e.date !== dateStr) return false;
                     const eh = parseInt(e.start.split(':')[0]);
@@ -460,8 +351,8 @@ const CAL = {
                 });
 
                 html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
-                              data-date="${slotDate}" data-hour="${h}"
-                              onclick="handleSlotClick(event, '${slotDate}', ${h})">`;
+                              data-date="${dateStr}" data-hour="${h}"
+                              onclick="handleSlotClick(event, '${dateStr}', ${h})">`;
 
                 dayEvts.forEach(ev => {
                     const [sh, sm] = ev.start.split(':').map(Number);
@@ -486,7 +377,6 @@ const CAL = {
         document.getElementById('cal-grid').innerHTML = html;
     },
 
-    // ── Helpers ──────────────────────────────────────────────────
     getMonday(d) {
         const day  = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -499,156 +389,27 @@ const CAL = {
     weekStartMonth() { return this.weekStart ? parseInt(this.weekStart.split('-')[1]) : this.month; },
 };
 
-// Manejar clicks en celda mensual
 function handleCellClick(e, date) {
     if (e.target.closest('a')) return;
-    if (canManage) openQuickCreate(date);
+    if (canManage) ClaseModal.open({ date });
 }
-// Manejar clicks en slot semanal
 function handleSlotClick(e, date, hour) {
     if (e.target.closest('a')) return;
     if (canManage) {
         const h = String(hour).padStart(2,'0');
-        openQuickCreate(date, `${h}:00`);
+        ClaseModal.open({ date, time: `${h}:00` });
     }
 }
 
 // Inicializar
 CAL.load();
 
-// ────────────────────────────────────────────────────────────────
-// Quick Create Modal
-// ────────────────────────────────────────────────────────────────
-const qcCoaches  = new Map();
-const qcPlayers  = new Map();
-let   optionsFetched = false;
-
-async function openQuickCreate(date = null, time = null) {
-    if (!canManage) return;
-
-    if (!optionsFetched) {
-        try {
-            const res = await fetch('/clases/api/opciones');
-            const d   = await res.json();
-            const cSel = document.getElementById('qc-coach-sel');
-            const pSel = document.getElementById('qc-player-sel');
-            d.coaches.forEach(c => {
-                const o = document.createElement('option');
-                o.value = c.id; o.textContent = c.name;
-                o.dataset.name = c.name;
-                cSel.appendChild(o);
-            });
-            d.players.forEach(p => {
-                const o = document.createElement('option');
-                o.value = p.id; o.textContent = p.name;
-                o.dataset.name = p.name;
-                pSel.appendChild(o);
-            });
-            optionsFetched = true;
-        } catch(e) {}
-    }
-
-    if (date) document.getElementById('qc-date').value = date;
-    if (time) document.getElementById('qc-start').value = time;
-    document.getElementById('qc-error').style.display = 'none';
-    openModal('modalQuickCreate');
-}
-
-function qcAddCoach(sel) {
-    const id = parseInt(sel.value);
-    if (!id || qcCoaches.has(id)) { sel.value = ''; return; }
-    const name = sel.options[sel.selectedIndex].dataset.name;
-    qcCoaches.set(id, name);
-    sel.value = '';
-    renderQcTags('qc-coach-list', qcCoaches, () => qcCoaches.forEach((_, k) => {}));
-    renderQcTags('qc-coach-list', qcCoaches, id => qcCoaches.delete(id));
-}
-
-function qcAddPlayer(sel) {
-    const id = parseInt(sel.value);
-    if (!id || qcPlayers.has(id)) { sel.value = ''; return; }
-    const name = sel.options[sel.selectedIndex].dataset.name;
-    qcPlayers.set(id, name);
-    sel.value = '';
-    renderQcTags('qc-player-list', qcPlayers, id => qcPlayers.delete(id));
-}
-
-function renderQcTags(containerId, map, onRemove) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    map.forEach((name, id) => {
-        const tag = document.createElement('span');
-        tag.className = 'qc-tag';
-        tag.innerHTML = `${name} <button onclick="qcRemoveTag(${id}, '${containerId}')">×</button>`;
-        container.appendChild(tag);
-    });
-}
-
-function qcRemoveTag(id, containerId) {
-    if (containerId === 'qc-coach-list') qcCoaches.delete(id);
-    else qcPlayers.delete(id);
-    renderQcTags(containerId,
-        containerId === 'qc-coach-list' ? qcCoaches : qcPlayers,
-        i => containerId === 'qc-coach-list' ? qcCoaches.delete(i) : qcPlayers.delete(i)
-    );
-}
-
-async function submitQuickCreate() {
-    const title = document.getElementById('qc-title').value.trim();
-    const date  = document.getElementById('qc-date').value;
-    const start = document.getElementById('qc-start').value;
-    const errEl = document.getElementById('qc-error');
-
-    if (!title || !date || !start) {
-        errEl.textContent = 'Título, fecha y hora de inicio son obligatorios.';
-        errEl.style.display = 'block';
-        return;
-    }
-    errEl.style.display = 'none';
-
-    const btn = document.getElementById('qc-submit');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creando…';
-
-    const formData = new FormData();
-    formData.append(CSRF_NAME, CSRF_HASH);
-    formData.append('title', title);
-    formData.append('session_date', date);
-    formData.append('start_time', start);
-    formData.append('end_time', document.getElementById('qc-end').value);
-    formData.append('location_custom', document.getElementById('qc-location').value);
-    qcCoaches.forEach((_, id) => formData.append('coach_ids[]', id));
-    qcPlayers.forEach((_, id) => formData.append('player_ids[]', id));
-
-    try {
-        const res  = await fetch('/clases/rapida', { method: 'POST', body: formData });
-        const data = await res.json();
-
-        if (data.success) {
-            closeModal('modalQuickCreate');
-            // Limpiar form
-            document.getElementById('qc-title').value = '';
-            document.getElementById('qc-start').value = '';
-            document.getElementById('qc-end').value   = '';
-            document.getElementById('qc-location').value = '';
-            qcCoaches.clear(); qcPlayers.clear();
-            document.getElementById('qc-coach-list').innerHTML = '';
-            document.getElementById('qc-player-list').innerHTML = '';
-            // Recargar calendario
-            await CAL.load();
-        } else {
-            errEl.textContent = data.error || 'Error al crear la sesión.';
-            errEl.style.display = 'block';
-        }
-    } catch(e) {
-        errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
-        errEl.style.display = 'block';
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear sesión';
-}
+<?php if ($canManage): ?>
+ClaseModal.init({
+    csrfName: CSRF_NAME,
+    csrfHash: CSRF_HASH,
+    onCreated: () => CAL.load(),
+});
+<?php endif; ?>
 </script>
-<?= $this->endSection() ?>
-
 <?= $this->endSection() ?>

@@ -126,19 +126,54 @@ class ClasesService
         ];
     }
 
+    /**
+     * Punto de entrada AJAX único para crear clases.
+     * Soporta sesiones puntuales y recurrentes con todos los campos.
+     */
     public function quickCreate(array $data, int $userId): array
     {
-        if (empty(trim($data['title'] ?? '')) || empty($data['session_date'] ?? '') || empty($data['start_time'] ?? '')) {
-            return ['success' => false, 'error' => 'Título, fecha y hora de inicio son obligatorios.'];
+        $type = ($data['type'] ?? 'single') === 'recurring' ? 'recurring' : 'single';
+
+        if (empty(trim($data['title'] ?? ''))) {
+            return ['success' => false, 'error' => 'El título es obligatorio.'];
+        }
+        if (empty($data['start_time'] ?? '')) {
+            return ['success' => false, 'error' => 'La hora de inicio es obligatoria.'];
         }
 
-        $id = $this->insertSingle($data, $userId);
+        if ($type === 'recurring') {
+            $result = $this->createRecurring($data, $userId);
+            if (!$result['success']) {
+                return $result;
+            }
+            return [
+                'success'  => true,
+                'id'       => $result['id'],
+                'count'    => $result['count'] ?? 1,
+                'class_id' => $result['class_id'] ?? null,
+            ];
+        }
+
+        if (empty($data['session_date'] ?? '')) {
+            return ['success' => false, 'error' => 'La fecha es obligatoria.'];
+        }
+
+        try {
+            $id = $this->insertSingle($data, $userId);
+        } catch (\Throwable $e) {
+            log_message('error', 'ClasesService::quickCreate insert error: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Error al crear la sesión: ' . $e->getMessage()];
+        }
+
         if (!$id) {
-            return ['success' => false, 'error' => 'Error al crear la sesión.'];
+            $errors = $this->sessionModel->errors();
+            $msg    = !empty($errors) ? implode(' ', $errors) : 'Error al crear la sesión.';
+            log_message('error', 'ClasesService::quickCreate insert returned 0. Errors: ' . $msg);
+            return ['success' => false, 'error' => $msg];
         }
 
         $this->syncCoaches($id, $data['coach_ids'] ?? []);
-        $this->syncPlayers($id, $data['player_ids'] ?? [], []);
+        $this->syncPlayers($id, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
 
         $session = $this->sessionModel->find($id);
         return [
@@ -146,6 +181,7 @@ class ClasesService
             'id'      => $id,
             'title'   => $session['title'],
             'date'    => $session['session_date'],
+            'count'   => 1,
         ];
     }
 
@@ -157,23 +193,21 @@ class ClasesService
     {
         $isPlayer = in_array($role, ['alumno', 'player']);
 
-        if ($isPlayer) {
-                $weekCount = (int)$this->db->table('class_sessions cs')
-                    ->select('cs.id') // <-- Agregado por seguridad
-                    ->join('class_session_players csp', 'csp.session_id = cs.id')
-                    ->where('csp.user_id', $userId)
-                    ->where('cs.session_date >=', $weekStart)
-                    ->where('cs.session_date <=', $weekEnd)
-                    ->countAllResults();
+        $start = sprintf('%04d-%02d-01', $year, $month);
+        $end   = date('Y-m-t', strtotime($start));
 
-                $monthCount = (int)$this->db->table('class_sessions cs')
-                    ->select('cs.id') // <-- Agregado por seguridad
-                    ->join('class_session_players csp', 'csp.session_id = cs.id')
-                    ->where('csp.user_id', $userId)
-                    ->where('cs.session_date >=', $mStart)
-                    ->where('cs.session_date <=', $mEnd)
-                    ->countAllResults();
-            } else {
+        if ($isPlayer) {
+            $sessions = $this->db->table('class_sessions cs')
+                ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
+                ->join('class_session_players csp', 'csp.session_id = cs.id')
+                ->where('csp.user_id', $userId)
+                ->where('cs.session_date >=', $start)
+                ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
+                ->orderBy('cs.session_date', 'ASC')
+                ->orderBy('cs.start_time', 'ASC')
+                ->get()->getResultArray();
+        } else {
             $sessions = $this->sessionModel->getForMonth($year, $month);
         }
 

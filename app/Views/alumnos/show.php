@@ -190,6 +190,49 @@ $formatTime = static function (?string $hms): string {
             </div>
         </div>
 
+        <?php
+        // Acceso a generación de contraseña: admin/superadmin sobre alumno NO protegido
+        $isAlumnoProtected = (int)($alumno['id'] ?? 0) === 2
+            || strtolower($alumno['email'] ?? '') === 'sergimallenweb@gmail.com';
+        ?>
+        <?php if ($isAdminUser && !$isAlumnoProtected): ?>
+        <!-- Seguridad: generar nueva contraseña -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-shield-lock-fill me-2" style="color:var(--success)"></i>
+                    Seguridad
+                </span>
+            </div>
+            <div class="card-jp-body">
+                <?php if ($newPwd = session()->getFlashdata('new_password')): ?>
+                    <div class="alert-jp success" style="display:flex;align-items:center;gap:10px;font-size:13px">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>
+                            Nueva contraseña generada para
+                            <strong><?= esc(session()->getFlashdata('new_password_user') ?? $name) ?></strong>:
+                            <code style="background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:13px;margin-left:4px"><?= esc($newPwd) ?></code>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                                Cópiala ahora — no se mostrará otra vez.
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px">
+                    Genera una nueva contraseña aleatoria. La contraseña actual dejará de funcionar inmediatamente.
+                </div>
+                <form action="<?= base_url('perfil/' . (int)$alumno['id'] . '/reset-password') ?>"
+                      method="POST"
+                      onsubmit="return confirm('¿Generar una nueva contraseña para <?= esc($name, 'js') ?>?\n\nLa contraseña actual dejará de funcionar inmediatamente.')">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
+                        <i class="bi bi-key-fill"></i> Generar nueva contraseña
+                    </button>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div>
 
     <!-- ── Columna derecha: datos + historial ───────────── -->

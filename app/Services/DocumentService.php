@@ -163,8 +163,12 @@ class DocumentService
      * Crea o devuelve la carpeta personal del usuario.
      * Se llama en cada petición a /documentacion para garantizar que existe.
      */
-    public function getOrCreatePersonalFolder(int $userId): array
+    public function getOrCreatePersonalFolder(int $userId): ?array
     {
+        if ($userId <= 0) {
+            return null;
+        }
+
         $folder = $this->folderModel
             ->where('type', 'personal')
             ->where('owner_id', $userId)
@@ -174,18 +178,27 @@ class DocumentService
             return $folder;
         }
 
-        $folderId = $this->folderModel->insert([
-            'name'       => 'Mi carpeta',
-            'slug'       => 'personal-' . $userId,
-            'type'       => 'personal',
-            'icon'       => 'bi-person-fill',
-            'color'      => 'blue',
-            'owner_id'   => $userId,
-            'created_by' => $userId,
-            'status'     => 'active',
-        ], true);
+        try {
+            $folderId = $this->folderModel->insert([
+                'name'       => 'Mi carpeta',
+                'slug'       => 'personal-' . $userId,
+                'type'       => 'personal',
+                'icon'       => 'bi-person-fill',
+                'color'      => 'blue',
+                'owner_id'   => $userId,
+                'created_by' => $userId,
+                'status'     => 'active',
+            ], true);
+        } catch (\Throwable $e) {
+            log_message('warning', 'DocumentService::getOrCreatePersonalFolder insert failed: ' . $e->getMessage());
+            return null;
+        }
 
-        $this->ensureStorageDir('personal', $userId, $userId);
+        if (!$folderId) {
+            return null;
+        }
+
+        $this->ensureStorageDir('personal', (int) $folderId, $userId);
 
         return $this->folderModel->find($folderId);
     }
@@ -449,14 +462,17 @@ class DocumentService
             default    => $base . 'misc/',
         };
 
-        if (!is_dir($path)) {
-            mkdir($path, 0755, true);
-        }
-
-        // Proteger directorio con .htaccess si no existe
-        $htaccess = dirname($path) . '/.htaccess';
-        if (!file_exists($htaccess)) {
-            file_put_contents($htaccess, "Options -Indexes\nDeny from all\n");
+        try {
+            if (!is_dir($path)) {
+                @mkdir($path, 0755, true);
+            }
+            // Proteger directorio con .htaccess si no existe
+            $htaccess = dirname($path) . '/.htaccess';
+            if (!file_exists($htaccess)) {
+                @file_put_contents($htaccess, "Options -Indexes\nDeny from all\n");
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'DocumentService::ensureStorageDir failed: ' . $e->getMessage());
         }
     }
 

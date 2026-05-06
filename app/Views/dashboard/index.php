@@ -79,9 +79,9 @@
         </a>
     </div>
 </div>
-<?php else: ?>
+<?php elseif (!empty($showWelcome)): ?>
 
-<!-- Vista reducida para coach / staff / alumno -->
+<!-- Bienvenida (solo la primera vez en la vida del usuario) -->
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="card-jp">
@@ -121,7 +121,7 @@
                         <button class="calendar-view-tab" onclick="DBCAL.switchView('week', this)">Semana</button>
                     </div>
                     <?php if ($dbCanManage): ?>
-                    <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="dbOpenQuickCreate()">
+                    <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open()">
                         <i class="bi bi-plus-lg me-1"></i>Nueva clase
                     </button>
                     <?php endif; ?>
@@ -198,75 +198,15 @@
     </div>
 </div>
 
-<!-- ── Modal quick-create (Dashboard) ─────────────────────── -->
+<!-- ── Modal unificado de creación (Dashboard) ────────────── -->
 <?php if ($dbCanManage): ?>
-<div id="modalDbQuickCreate" class="cs-modal-overlay d-none">
-    <div class="cs-modal" style="max-width:500px">
-        <div class="cs-modal-header">
-            <span><i class="bi bi-plus-circle-fill me-2" style="color:var(--accent)"></i>Nueva sesión</span>
-            <button onclick="dbCloseModal()"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="cs-modal-body">
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Título <span style="color:var(--danger)">*</span></label>
-                    <input type="text" id="db-qc-title" class="form-control-jp" placeholder="Ej: Entrenamiento individual">
-                </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label">Fecha <span style="color:var(--danger)">*</span></label>
-                    <input type="date" id="db-qc-date" class="form-control-jp" value="<?= date('Y-m-d') ?>">
-                </div>
-                <div class="col-6 col-md-4">
-                    <label class="form-label">Inicio <span style="color:var(--danger)">*</span></label>
-                    <input type="time" id="db-qc-start" class="form-control-jp">
-                </div>
-                <div class="col-6 col-md-4">
-                    <label class="form-label">Fin</label>
-                    <input type="time" id="db-qc-end" class="form-control-jp">
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Lugar (opcional)</label>
-                    <input type="text" id="db-qc-location" class="form-control-jp" placeholder="Campo, instalación…">
-                </div>
-            </div>
-            <div id="db-qc-error" style="color:var(--danger);font-size:13px;margin-top:10px;display:none"></div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 20px;border-top:1px solid var(--border)">
-            <button class="btn-jp btn-jp-secondary" onclick="dbCloseModal()">Cancelar</button>
-            <button class="btn-jp btn-jp-primary" id="db-qc-btn" onclick="dbSubmitQuickCreate()">
-                <i class="bi bi-check-lg me-1"></i>Crear
-            </button>
-        </div>
-    </div>
-</div>
+    <?= $this->include('clases/_modal_create') ?>
 <?php endif; ?>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <style>
-.cs-modal-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;
-    display:flex;align-items:center;justify-content:center;padding:16px;
-}
-.cs-modal {
-    background:var(--bg-card);border:1px solid var(--border);border-radius:12px;
-    width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);
-}
-.cs-modal-header {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;border-bottom:1px solid var(--border);
-    font-size:15px;font-weight:700;color:var(--text-h);
-}
-.cs-modal-header button {
-    background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;
-    width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;
-    transition:background .15s;
-}
-.cs-modal-header button:hover { background:var(--bg-app);color:var(--text-h); }
-.cs-modal-body { padding:20px;overflow-y:auto;flex:1; }
-
 .cal-month-headers { display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg-app);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0; }
 .cal-day-header { padding:7px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
 .cal-month-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);overflow:hidden; }
@@ -434,61 +374,28 @@ const DBCAL = {
     fmt(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; },
 };
 
-function dbHandleClick(e, date) { if(e.target.closest('a'))return; if(dbCanManage) dbOpenQuickCreate(date); }
-function dbHandleSlot(e, date, hour) { if(e.target.closest('a'))return; if(dbCanManage) dbOpenQuickCreate(date, String(hour).padStart(2,'0')+':00'); }
-
-// ── Quick create (dashboard modal) ───────────────────────────
-function dbOpenQuickCreate(date=null, time=null) {
-    if(date) document.getElementById('db-qc-date').value = date;
-    if(time) document.getElementById('db-qc-start').value = time;
-    document.getElementById('db-qc-error').style.display = 'none';
-    document.getElementById('modalDbQuickCreate').classList.remove('d-none');
-    document.body.style.overflow = 'hidden';
+function dbHandleClick(e, date) {
+    if (e.target.closest('a')) return;
+    if (dbCanManage) ClaseModal.open({ date });
 }
-function dbCloseModal() {
-    document.getElementById('modalDbQuickCreate').classList.add('d-none');
-    document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => { if(e.key==='Escape') dbCloseModal(); });
-document.getElementById('modalDbQuickCreate')?.addEventListener('click', e => { if(e.target.id==='modalDbQuickCreate') dbCloseModal(); });
-
-async function dbSubmitQuickCreate() {
-    const title = document.getElementById('db-qc-title').value.trim();
-    const date  = document.getElementById('db-qc-date').value;
-    const start = document.getElementById('db-qc-start').value;
-    const errEl = document.getElementById('db-qc-error');
-    if (!title||!date||!start) { errEl.textContent='Título, fecha y hora son obligatorios.'; errEl.style.display='block'; return; }
-    errEl.style.display='none';
-    const btn = document.getElementById('db-qc-btn');
-    btn.disabled=true; btn.innerHTML='<i class="bi bi-hourglass-split me-1"></i>Creando…';
-    const fd = new FormData();
-    fd.append(DB_CSRF_NAME, DB_CSRF_HASH);
-    fd.append('title', title);
-    fd.append('session_date', date);
-    fd.append('start_time', start);
-    fd.append('end_time', document.getElementById('db-qc-end').value);
-    fd.append('location_custom', document.getElementById('db-qc-location').value);
-    try {
-        const res  = await fetch('/clases/rapida', {method:'POST',body:fd});
-        const data = await res.json();
-        if (data.success) {
-            dbCloseModal();
-            document.getElementById('db-qc-title').value='';
-            document.getElementById('db-qc-start').value='';
-            document.getElementById('db-qc-end').value='';
-            document.getElementById('db-qc-location').value='';
-            await DBCAL.load();
-        } else {
-            errEl.textContent = data.error||'Error al crear la sesión.';
-            errEl.style.display='block';
-        }
-    } catch(e) { errEl.textContent='Error de conexión.'; errEl.style.display='block'; }
-    btn.disabled=false; btn.innerHTML='<i class="bi bi-check-lg me-1"></i>Crear';
+function dbHandleSlot(e, date, hour) {
+    if (e.target.closest('a')) return;
+    if (dbCanManage) ClaseModal.open({ date, time: String(hour).padStart(2,'0') + ':00' });
 }
 
 // Inicializar
 DBCAL.load();
 </script>
+<?php if ($dbCanManage): ?>
+<script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
+<script>
+ClaseModal.init({
+    csrfName: DB_CSRF_NAME,
+    csrfHash: DB_CSRF_HASH,
+    onCreated: () => DBCAL.load(),
+});
+</script>
+<?php endif; ?>
 <?php if ($isAdmin): ?>
 <?= view('dashboard/scripts') ?>
 <?php endif; ?>
