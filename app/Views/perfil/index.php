@@ -9,15 +9,24 @@ $roleLabel = match($user['role'] ?? '') {
     'admin'      => 'Administrador',
     'coach'      => 'Entrenador',
     'alumno'     => 'Alumno',
+    'player'     => 'Alumno',
     'staff'      => 'Staff',
     default      => ucfirst($user['role'] ?? ''),
 };
-$name       = $user['name']   ?? '?';
-$userAvatar = $user['avatar'] ?? null;
+$name        = $user['name']   ?? '?';
+$userAvatar  = $user['avatar'] ?? null;
+$staffTitle  = trim((string)($user['staff_title'] ?? ''));
 
 $isSelf  = ((int)($user['id'] ?? 0) === (int)session('id'));
 $isAdmin = in_array(session('role'), ['superadmin', 'admin']);
 $canEdit = $isSelf || $isAdmin;
+
+$role         = $user['role'] ?? '';
+$isStaffRole  = in_array($role, ['staff', 'coach', 'admin'], true);
+$showActivity = in_array($role, ['staff', 'coach'], true);
+$backUrl      = $isAdmin && !$isSelf
+    ? ($isStaffRole ? base_url('configuracion?section=staff') : null)
+    : null;
 
 $uploadUrl = $isSelf
     ? base_url('avatar/upload')
@@ -25,6 +34,11 @@ $uploadUrl = $isSelf
 $deleteUrl = $isSelf
     ? base_url('avatar/delete')
     : base_url('avatar/delete/' . $user['id']);
+
+// Stats placeholders — se rellenarán cuando se reescriban CoachService/PlayerService
+$sessionsCount  = (int)($user['sessions_count']  ?? 0);
+$upcomingCount  = (int)($user['upcoming_count']  ?? 0);
+$studentsCount  = (int)($user['students_count']  ?? 0);
 ?>
 
 <?= $this->section('page_content') ?>
@@ -38,15 +52,22 @@ $deleteUrl = $isSelf
 
 <div class="page-header">
     <div class="page-header-text">
-        <h2>Perfil de usuario</h2>
-        <p>Información y configuración de la cuenta</p>
+        <h2><?= $isSelf ? 'Mi perfil' : esc($name) ?></h2>
+        <p><?= $isSelf ? 'Información y configuración de tu cuenta' : 'Perfil del usuario' ?></p>
     </div>
+    <?php if ($backUrl): ?>
+    <div class="d-flex gap-2">
+        <a href="<?= esc($backUrl) ?>" class="btn-jp btn-jp-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+    <?php endif; ?>
 </div>
 
 <div class="row g-3">
 
     <!-- Card principal -->
-    <div class="col-12 col-lg-4">
+    <div class="col-12 col-lg-4 d-flex flex-column gap-3">
         <div class="card-jp">
             <div class="profile-header">
 
@@ -66,6 +87,11 @@ $deleteUrl = $isSelf
                     <div class="profile-name"><?= esc($name) ?></div>
                     <div class="profile-email"><?= esc($user['email'] ?? '') ?></div>
                     <span class="badge-status active mt-2 d-inline-block"><?= esc($roleLabel) ?></span>
+                    <?php if ($staffTitle !== ''): ?>
+                        <div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:6px">
+                            <i class="bi bi-briefcase-fill"></i> <?= esc($staffTitle) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -122,6 +148,34 @@ $deleteUrl = $isSelf
                 </div>
             </div>
         </div>
+
+        <?php if ($showActivity): ?>
+        <!-- Stats de actividad (visible para staff/coach) -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-bar-chart-fill me-2" style="color:var(--accent)"></i>
+                    Actividad
+                </span>
+            </div>
+            <div class="card-jp-body">
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar-check me-2"></i>Sesiones dirigidas</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $sessionsCount ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-calendar3 me-2"></i>Próximas sesiones</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $upcomingCount ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-people-fill me-2"></i>Alumnos trabajados</span>
+                        <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= $studentsCount ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Información detallada -->
@@ -152,6 +206,17 @@ $deleteUrl = $isSelf
                             <input type="text" class="form-control-jp" value="<?= esc($roleLabel) ?>" readonly>
                         </div>
                     </div>
+                    <?php if ($isStaffRole): ?>
+                    <div class="col-12 col-md-6">
+                        <div class="form-group mb-0">
+                            <label class="form-label">Cargo / puesto específico</label>
+                            <input type="text" class="form-control-jp"
+                                   value="<?= esc($staffTitle) ?>"
+                                   placeholder="<?= $staffTitle === '' ? 'Sin definir' : '' ?>"
+                                   readonly>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -167,9 +232,11 @@ $deleteUrl = $isSelf
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Contraseña</div>
                         <div style="font-size:12px;color:var(--text-muted)">Última modificación desconocida</div>
                     </div>
+                    <?php if ($isSelf): ?>
                     <a href="<?= base_url('forgot-password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-key-fill"></i> Cambiar contraseña
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
