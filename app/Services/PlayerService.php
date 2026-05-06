@@ -112,8 +112,53 @@ class PlayerService
     }
 
     /**
-     * Perfil completo de un alumno: datos de users + player_profiles
-     * + planes + métricas recientes + asistencia reciente.
+     * KPIs de actividad de un alumno (clases asistidas + próximas).
+     *
+     * @return array{classes_count:int, upcoming_count:int, active_bonos:int}
+     */
+    public function getActivityStats(int $playerId): array
+    {
+        $db = \Config\Database::connect();
+        $today = date('Y-m-d');
+
+        $classesCount = $db->table('class_session_players csp')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->where('csp.user_id', $playerId)
+            ->where('csp.attendance', 'present')
+            ->where('cs.status', 'completed')
+            ->countAllResults();
+
+        $upcomingCount = $db->table('class_session_players csp')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->where('csp.user_id', $playerId)
+            ->where('cs.status', 'scheduled')
+            ->where('cs.session_date >=', $today)
+            ->countAllResults();
+
+        $activeBonos = $db->table('player_bonos')
+            ->where('player_id', $playerId)
+            ->where('sessions_remaining >', 0)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->countAllResults();
+
+        return [
+            'classes_count'  => $classesCount,
+            'upcoming_count' => $upcomingCount,
+            'active_bonos'   => $activeBonos,
+        ];
+    }
+
+    /**
+     * Perfil completo de un alumno:
+     *   - Datos de users + player_profiles
+     *   - KPIs de actividad
+     *   - Bonos asignados (player_bonos + bono_types)
+     *   - Métricas recientes (placeholder hasta el rediseño de player_metrics)
+     *   - Asistencia reciente (class_session_players + class_sessions)
+     *   - Próximas clases agendadas
      */
     public function getFullProfile(int $id): ?array
     {
@@ -129,25 +174,50 @@ class PlayerService
         }
 
         $db = \Config\Database::connect();
+        $today = date('Y-m-d');
 
-        $user['plans'] = $db->table('player_plans pp')
-            ->select('pp.*, pl.name as plan_name, pl.sessions_count, pl.price')
-            ->join('plans pl', 'pl.id = pp.plan_id')
-            ->where('pp.player_id', $id)
-            ->orderBy('pp.created_at', 'DESC')
+        // KPIs
+        $stats = $this->getActivityStats($id);
+        $user['classes_count']  = $stats['classes_count'];
+        $user['upcoming_count'] = $stats['upcoming_count'];
+        $user['active_bonos']   = $stats['active_bonos'];
+
+        // Planes / Bonos — historial completo del alumno
+        $user['plans'] = $db->table('player_bonos pb')
+            ->select('pb.id, pb.sessions_total, pb.sessions_remaining, pb.start_date, pb.expires_at,
+                      pb.notes, pb.created_at, bt.name AS bono_name, bt.price')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.player_id', $id)
+            ->orderBy('pb.created_at', 'DESC')
             ->get()->getResultArray();
 
-        $user['metrics'] = $db->table('player_metrics')
-            ->where('player_id', $id)
-            ->orderBy('date', 'DESC')
-            ->limit(5)
+        // Métricas — placeholder hasta el rediseño de player_metrics
+        $user['metrics'] = [];
+
+        // Asistencia reciente: clases COMPLETADAS donde el alumno tiene fila en class_session_players
+        $user['attendance'] = $db->table('class_session_players csp')
+            ->select('csp.attendance, csp.post_obs, cs.id AS session_id, cs.title AS session_title,
+                      cs.session_date, cs.start_time, cs.end_time, l.name AS location_name, cs.location_custom')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->join('locations l', 'l.id = cs.location_id', 'left')
+            ->where('csp.user_id', $id)
+            ->where('cs.status', 'completed')
+            ->orderBy('cs.session_date', 'DESC')
+            ->orderBy('cs.start_time', 'DESC')
+            ->limit(10)
             ->get()->getResultArray();
 
-        $user['attendance'] = $db->table('session_attendance sa')
-            ->select('sa.*, s.title as session_title, s.start_datetime')
-            ->join('sessions s', 's.id = sa.session_id')
-            ->where('sa.player_id', $id)
-            ->orderBy('s.start_datetime', 'DESC')
+        // Próximas clases agendadas para el alumno
+        $user['upcoming'] = $db->table('class_session_players csp')
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time,
+                      csp.attendance, l.name AS location_name, cs.location_custom')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->join('locations l', 'l.id = cs.location_id', 'left')
+            ->where('csp.user_id', $id)
+            ->where('cs.status', 'scheduled')
+            ->where('cs.session_date >=', $today)
+            ->orderBy('cs.session_date', 'ASC')
+            ->orderBy('cs.start_time', 'ASC')
             ->limit(10)
             ->get()->getResultArray();
 
