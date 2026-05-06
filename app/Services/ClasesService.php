@@ -259,8 +259,10 @@ class ClasesService
 
     /**
      * Al completar una sesión, descuenta 1 sesión del bono activo de cada
-     * jugador que NO esté marcado como 'absent'. Los jugadores sin bono
-     * simplemente no se ven afectados.
+     * jugador que asistió REALMENTE (attendance='present').
+     *
+     * No se descuenta a 'pending', 'confirmed', 'declined' ni 'absent':
+     * solo el 'present' representa una clase consumida por el alumno.
      */
     private function deductBonosForSession(int $sessionId): void
     {
@@ -268,7 +270,7 @@ class ClasesService
 
         $players = $this->db->table('class_session_players')
             ->where('session_id', $sessionId)
-            ->where('attendance !=', 'absent')
+            ->where('attendance', 'present')
             ->get()->getResultArray();
 
         foreach ($players as $player) {
