@@ -9,6 +9,11 @@ use App\Models\UserModel;
 
 class ConfiguracionService
 {
+    // Superadmin maestro: id=2 o email maestro. Su perfil es intocable
+    // desde la plataforma (rol, contraseña, datos, estado).
+    private const PROTECTED_USER_ID    = 2;
+    private const PROTECTED_USER_EMAIL = 'sergimallenweb@gmail.com';
+
     protected SettingsModel  $settings;
     protected LocationModel  $locations;
     protected BonoTypeModel  $bonoTypes;
@@ -20,6 +25,18 @@ class ConfiguracionService
         $this->locations = new LocationModel();
         $this->bonoTypes = new BonoTypeModel();
         $this->users     = new UserModel();
+    }
+
+    /**
+     * Devuelve true si el usuario es el superadmin maestro protegido.
+     */
+    private function isProtectedUser(int $userId): bool
+    {
+        if ($userId === self::PROTECTED_USER_ID) {
+            return true;
+        }
+        $u = $this->users->find($userId);
+        return $u && strtolower((string)($u['email'] ?? '')) === self::PROTECTED_USER_EMAIL;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -133,6 +150,7 @@ class ConfiguracionService
         $allowed = ['admin', 'staff', 'coach'];
         if (!in_array($newRole, $allowed))     return false;
         if ($userId === $byUserId)             return false;
+        if ($this->isProtectedUser($userId))   return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
@@ -152,6 +170,7 @@ class ConfiguracionService
     {
         if ($userId <= 0 || $byUserId <= 0) return false;
         if ($userId === $byUserId)          return false;
+        if ($this->isProtectedUser($userId)) return false;
 
         $user = $this->users->find($userId);
         if (!$user || $user['role'] === 'superadmin') return false;
@@ -173,6 +192,7 @@ class ConfiguracionService
     {
         if ($userId <= 0 || $byUserId <= 0) return ['success' => false, 'error' => 'ID inválido.'];
         if ($userId === $byUserId)          return ['success' => false, 'error' => 'No puedes eliminarte a ti mismo.'];
+        if ($this->isProtectedUser($userId)) return ['success' => false, 'error' => 'Este usuario está protegido y no puede eliminarse desde la plataforma.'];
 
         $user = $this->users->find($userId);
         if (!$user)                           return ['success' => false, 'error' => 'Usuario no encontrado.'];
@@ -214,6 +234,7 @@ class ConfiguracionService
     public function activateStaffUser(int $userId): bool
     {
         if ($userId <= 0) return false;
+        if ($this->isProtectedUser($userId)) return false;
 
         $user = $this->users->find($userId);
         if (!$user) return false;
