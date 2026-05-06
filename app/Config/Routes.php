@@ -494,6 +494,10 @@ $routes->post('perfil/(:num)/update', 'PerfilController::update/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->post('perfil/(:num)/reset-password', 'PerfilController::resetPassword/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ------------------------------------------------------------
 // NOTIFICACIONES

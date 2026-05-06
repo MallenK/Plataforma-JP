@@ -60,6 +60,35 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
 <div class="alert-jp error mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error')) ?></div>
 <?php endif; ?>
 
+<?php $newPassword = session()->getFlashdata('new_password'); if ($newPassword): ?>
+<div class="alert-jp warning mb-3" style="border-left:4px solid var(--accent)">
+    <div class="d-flex align-items-start gap-3">
+        <i class="bi bi-key-fill" style="font-size:20px;color:var(--accent);margin-top:2px"></i>
+        <div style="flex:1">
+            <div style="font-weight:600;color:var(--text-h);margin-bottom:4px">
+                Nueva contraseña generada
+                <?php $forName = session()->getFlashdata('new_password_user'); if ($forName): ?>
+                    para <?= esc($forName) ?>
+                <?php endif; ?>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+                Cópiala y entrégasela al usuario. Esta contraseña <strong>no se mostrará otra vez</strong>.
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <code id="newPwdValue"
+                      style="font-size:15px;font-weight:700;letter-spacing:1px;padding:6px 12px;background:#fff;border:1px solid var(--border);border-radius:6px;color:var(--accent-dark)">
+                    <?= esc($newPassword) ?>
+                </code>
+                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm"
+                        onclick="navigator.clipboard.writeText(document.getElementById('newPwdValue').textContent.trim()); this.innerHTML='<i class=\'bi bi-check-lg\'></i> Copiada'">
+                    <i class="bi bi-clipboard"></i> Copiar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="page-header">
     <div class="page-header-text">
         <h2><?= $isSelf ? 'Mi perfil' : esc($name) ?></h2>
@@ -260,12 +289,27 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Contraseña</div>
-                        <div style="font-size:12px;color:var(--text-muted)">Última modificación desconocida</div>
+                        <div style="font-size:12px;color:var(--text-muted)">
+                            <?php if ($isProtected): ?>
+                                <i class="bi bi-lock-fill"></i> Perfil protegido — no modificable desde la plataforma
+                            <?php else: ?>
+                                Última modificación desconocida
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <?php if ($isSelf): ?>
+                    <?php if ($isSelf && !$isProtected): ?>
                     <a href="<?= base_url('forgot-password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-key-fill"></i> Cambiar contraseña
                     </a>
+                    <?php elseif ($isAdmin && !$isSelf && !$isProtected): ?>
+                    <form action="<?= base_url('perfil/' . (int)$user['id'] . '/reset-password') ?>"
+                          method="POST"
+                          onsubmit="return confirm('¿Generar una nueva contraseña para <?= esc($name, 'js') ?>?\n\nLa contraseña actual dejará de funcionar inmediatamente.')">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
+                            <i class="bi bi-key-fill"></i> Generar nueva contraseña
+                        </button>
+                    </form>
                     <?php endif; ?>
                 </div>
             </div>

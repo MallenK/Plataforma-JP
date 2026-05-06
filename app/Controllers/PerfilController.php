@@ -108,4 +108,57 @@ class PerfilController extends BaseController
 
         return redirect()->to('/perfil/' . $targetId)->with('success', 'Perfil actualizado correctamente.');
     }
+
+    /**
+     * Genera una nueva contraseña aleatoria para un usuario.
+     * Solo accesible por admin/superadmin. La contraseña se muestra
+     * una única vez en pantalla (flashdata) para que el admin la
+     * comunique al usuario afectado.
+     *
+     * Restricciones:
+     *  - No se puede resetear la propia contraseña por esta vía (se usa /forgot-password)
+     *  - No se puede resetear al superadmin protegido (id=2 / email maestro)
+     */
+    public function resetPassword(int $id)
+    {
+        if (!$this->isAdmin()) {
+            return redirect()->to('/perfil')->with('error', 'No tienes permiso para esta acción.');
+        }
+
+        $actorId = $this->currentUserId();
+        if ($id === $actorId) {
+            return redirect()->to('/perfil/' . $id)
+                ->with('error', 'Para cambiar tu propia contraseña usa el flujo de recuperación.');
+        }
+
+        if ($this->isProtectedUser($id)) {
+            return redirect()->to('/perfil/' . $id)
+                ->with('error', 'Este perfil está protegido y su contraseña no puede modificarse desde la plataforma.');
+        }
+
+        $userModel = new \App\Models\UserModel();
+        $target    = $userModel->find($id);
+        if (!$target) {
+            return redirect()->to('/perfil')->with('error', 'Usuario no encontrado.');
+        }
+
+        $newPassword = 'Jp' . bin2hex(random_bytes(4)) . '!';
+
+        $ok = (bool) \Config\Database::connect()
+            ->table('users')
+            ->where('id', $id)
+            ->update([
+                'password'   => password_hash($newPassword, PASSWORD_BCRYPT),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+        if (!$ok) {
+            return redirect()->to('/perfil/' . $id)->with('error', 'No se pudo generar la nueva contraseña.');
+        }
+
+        return redirect()->to('/perfil/' . $id)
+            ->with('new_password', $newPassword)
+            ->with('new_password_user', $target['name'] ?? '')
+            ->with('success', 'Nueva contraseña generada. Cópiala ahora — no se mostrará otra vez.');
+    }
 }
