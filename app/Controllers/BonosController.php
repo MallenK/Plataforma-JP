@@ -32,10 +32,12 @@ class BonosController extends BaseController
         $filter = $this->request->getGet('filtro') ?? 'activos';
 
         $bonos = match($filter) {
-            'todos'       => $this->bonoModel->getAllWithDetails(),
-            'vencidos'    => $this->getExpiredBonos(),
-            'sin-asignar' => $this->getUnassignedBonos(),
-            default       => $this->bonoModel->getActiveBonosWithDetails(),
+            'todos'         => $this->bonoModel->getAllWithDetails(),
+            'vencidos'      => $this->getExpiredBonos(),
+            'sin-asignar'   => $this->getUnassignedBonos(),
+            'agotados'      => $this->getDepletedBonos(),
+            'casi-agotados' => $this->getLowSessionBonos(),
+            default         => $this->bonoModel->getActiveBonosWithDetails(),
         };
 
         return view('bonos/index', [
@@ -249,6 +251,43 @@ class BonosController extends BaseController
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.player_id IS NULL')
             ->orderBy('pb.created_at', 'DESC')
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Bonos asignados a un alumno con 0 sesiones restantes — necesitan renovación.
+     */
+    private function getDepletedBonos(): array
+    {
+        $db = \Config\Database::connect();
+
+        return $db->table('player_bonos pb')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->join('users u',       'u.id = pb.player_id')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.sessions_remaining', 0)
+            ->orderBy('pb.updated_at', 'DESC')
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Bonos asignados con exactamente 1 sesión restante (alerta).
+     */
+    private function getLowSessionBonos(): array
+    {
+        $today = date('Y-m-d');
+        $db    = \Config\Database::connect();
+
+        return $db->table('player_bonos pb')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->join('users u',       'u.id = pb.player_id')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.sessions_remaining', 1)
+            ->groupStart()
+                ->where('pb.expires_at IS NULL')
+                ->orWhere('pb.expires_at >=', $today)
+            ->groupEnd()
+            ->orderBy('pb.updated_at', 'DESC')
             ->get()->getResultArray();
     }
 

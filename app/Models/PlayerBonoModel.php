@@ -172,11 +172,30 @@ class PlayerBonoModel extends Model
             ->where('sessions_remaining >', 0)
             ->countAllResults();
 
+        // Bonos asignados con 0 sesiones (agotados pero no vencidos en fecha,
+        // o ya vencidos): el alumno necesita renovar.
+        $depleted = (int)$this->db->table('player_bonos')
+            ->where('player_id IS NOT NULL')
+            ->where('sessions_remaining', 0)
+            ->countAllResults();
+
+        // Bonos asignados con exactamente 1 sesión restante (alerta).
+        $lowSessions = (int)$this->db->table('player_bonos')
+            ->where('player_id IS NOT NULL')
+            ->where('sessions_remaining', 1)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->countAllResults();
+
         return [
             'active'            => $active,
             'issued_this_month' => $issuedThisMonth,
             'expiring_soon'     => $expiringSoon,
             'unassigned'        => $unassigned,
+            'depleted'          => $depleted,
+            'low_sessions'      => $lowSessions,
         ];
     }
 }

@@ -63,18 +63,20 @@
 
     <!-- Alertas -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="metric-card">
+        <a href="<?= base_url('bonos?filtro=agotados') ?>" style="text-decoration:none;color:inherit">
+        <div class="metric-card" style="cursor:pointer">
             <div class="metric-card-header">
-                <span class="metric-label">Alertas</span>
+                <span class="metric-label">Alertas de bonos</span>
                 <div class="metric-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
             </div>
             <div class="metric-value" id="alertas-count">—</div>
             <div class="metric-footer">
-                <span class="badge-trend down" id="alertas-trend"><i class="bi bi-arrow-up-short"></i>—</span>
-                <span class="metric-footer-label">acción requerida</span>
+                <span class="badge-trend down" id="alertas-trend"></span>
+                <span class="metric-footer-label">agotados / 1 sesión / por vencer</span>
             </div>
             <div class="metric-progress"><div class="metric-progress-bar" id="alertas-bar" style="width:0%;background:var(--danger)"></div></div>
         </div>
+        </a>
     </div>
 </div>
 <?php else: ?>

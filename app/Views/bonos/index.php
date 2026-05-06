@@ -34,7 +34,7 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
 
 <!-- Métricas -->
 <div class="row g-3 mb-3">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4 col-lg-2">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Bonos activos</span>
@@ -43,7 +43,7 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
             <div class="metric-value"><?= (int)($stats['active'] ?? 0) ?></div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4 col-lg-2">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Emitidos este mes</span>
@@ -52,7 +52,7 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
             <div class="metric-value"><?= (int)($stats['issued_this_month'] ?? 0) ?></div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4 col-lg-2">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Por vencer (7 días)</span>
@@ -61,7 +61,25 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
             <div class="metric-value"><?= (int)($stats['expiring_soon'] ?? 0) ?></div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="metric-card<?= (int)($stats['low_sessions'] ?? 0) > 0 ? ' alert-warning' : '' ?>" style="<?= (int)($stats['low_sessions'] ?? 0) > 0 ? 'border-color:#f59e0b' : '' ?>">
+            <div class="metric-card-header">
+                <span class="metric-label">Última sesión</span>
+                <div class="metric-icon" style="background:#f59e0b22;color:#f59e0b"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            </div>
+            <div class="metric-value"><?= (int)($stats['low_sessions'] ?? 0) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="metric-card<?= (int)($stats['depleted'] ?? 0) > 0 ? ' alert-danger' : '' ?>" style="<?= (int)($stats['depleted'] ?? 0) > 0 ? 'border-color:var(--danger)' : '' ?>">
+            <div class="metric-card-header">
+                <span class="metric-label">Agotados</span>
+                <div class="metric-icon" style="background:#dc262622;color:#dc2626"><i class="bi bi-x-octagon-fill"></i></div>
+            </div>
+            <div class="metric-value"><?= (int)($stats['depleted'] ?? 0) ?></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Sin asignar</span>
@@ -80,10 +98,12 @@ $errorBonoActivo = session()->getFlashdata('error_bono_activo');
             Bonos emitidos
         </span>
         <div class="calendar-view-tabs">
-            <a href="?filtro=activos"      class="calendar-view-tab <?= ($filtro ?? 'activos') === 'activos'      ? 'active' : '' ?>" style="text-decoration:none">Activos</a>
-            <a href="?filtro=sin-asignar"  class="calendar-view-tab <?= ($filtro ?? '') === 'sin-asignar'  ? 'active' : '' ?>" style="text-decoration:none">Sin asignar</a>
-            <a href="?filtro=vencidos"     class="calendar-view-tab <?= ($filtro ?? '') === 'vencidos'     ? 'active' : '' ?>" style="text-decoration:none">Vencidos</a>
-            <a href="?filtro=todos"        class="calendar-view-tab <?= ($filtro ?? '') === 'todos'        ? 'active' : '' ?>" style="text-decoration:none">Todos</a>
+            <a href="?filtro=activos"       class="calendar-view-tab <?= ($filtro ?? 'activos') === 'activos'       ? 'active' : '' ?>" style="text-decoration:none">Activos</a>
+            <a href="?filtro=casi-agotados" class="calendar-view-tab <?= ($filtro ?? '') === 'casi-agotados' ? 'active' : '' ?>" style="text-decoration:none">Última sesión</a>
+            <a href="?filtro=agotados"      class="calendar-view-tab <?= ($filtro ?? '') === 'agotados'      ? 'active' : '' ?>" style="text-decoration:none">Agotados</a>
+            <a href="?filtro=sin-asignar"   class="calendar-view-tab <?= ($filtro ?? '') === 'sin-asignar'   ? 'active' : '' ?>" style="text-decoration:none">Sin asignar</a>
+            <a href="?filtro=vencidos"      class="calendar-view-tab <?= ($filtro ?? '') === 'vencidos'      ? 'active' : '' ?>" style="text-decoration:none">Vencidos</a>
+            <a href="?filtro=todos"         class="calendar-view-tab <?= ($filtro ?? '') === 'todos'         ? 'active' : '' ?>" style="text-decoration:none">Todos</a>
         </div>
     </div>
 
