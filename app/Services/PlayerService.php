@@ -191,8 +191,9 @@ class PlayerService
             ->orderBy('pb.created_at', 'DESC')
             ->get()->getResultArray();
 
-        // Métricas — placeholder hasta el rediseño de player_metrics
-        $user['metrics'] = [];
+        // Métricas — últimas 5 desde player_metrics (tabla ya existente,
+        // ver app/Models/PlayerMetricModel.php para la plantilla del JSON).
+        $user['metrics'] = (new \App\Models\PlayerMetricModel())->getRecentForPlayer($id, 5);
 
         // Asistencia reciente: clases COMPLETADAS donde el alumno tiene fila en class_session_players
         $user['attendance'] = $db->table('class_session_players csp')

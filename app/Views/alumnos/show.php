@@ -321,7 +321,7 @@ $formatTime = static function (?string $hms): string {
                     <i class="bi bi-graph-up-arrow me-2" style="color:var(--success)"></i>
                     Últimas métricas
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['metrics']) ?> registro(s)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['metrics'] ?? []) ?> registro(s)</span>
             </div>
             <?php if (!empty($alumno['metrics'])): ?>
             <div class="table-responsive">
@@ -329,18 +329,43 @@ $formatTime = static function (?string $hms): string {
                     <thead>
                         <tr>
                             <th>Fecha</th>
+                            <th>Categoría</th>
+                            <th>Valores</th>
                             <th>Evaluación</th>
-                            <th>Notas</th>
+                            <th>Entrenador</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($alumno['metrics'] as $metric): ?>
+                        <?php
+                            $payload = [];
+                            if (!empty($metric['metrics'])) {
+                                $decoded = is_array($metric['metrics'])
+                                    ? $metric['metrics']
+                                    : json_decode($metric['metrics'], true);
+                                if (is_array($decoded)) $payload = $decoded;
+                            }
+                            $category = $payload['category'] ?? '—';
+                            unset($payload['category']);
+                        ?>
                         <tr>
                             <td style="white-space:nowrap;color:var(--text-muted);font-size:12px">
                                 <?= !empty($metric['date']) ? date('d/m/Y', strtotime($metric['date'])) : '—' ?>
                             </td>
+                            <td style="font-size:12px;color:var(--text-h);font-weight:600"><?= esc(ucfirst($category)) ?></td>
+                            <td>
+                                <?php if (empty($payload)): ?>
+                                    <span style="font-size:12px;color:var(--text-muted)">—</span>
+                                <?php else: ?>
+                                <div style="font-size:12px;color:var(--text-body);line-height:1.5">
+                                    <?php foreach ($payload as $k => $v): ?>
+                                        <div><strong style="color:var(--text-h);text-transform:capitalize"><?= esc(str_replace('_', ' ', (string)$k)) ?>:</strong> <?= esc(is_scalar($v) ? (string)$v : json_encode($v)) ?></div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
+                            </td>
                             <td><?= esc($metric['evaluation'] ?? '—') ?></td>
-                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($metric['notes'] ?? '—') ?></td>
+                            <td style="font-size:12px;color:var(--text-muted)"><?= esc($metric['coach_name'] ?? '—') ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -348,7 +373,33 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php else: ?>
             <div class="card-jp-body">
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin métricas registradas.</p>
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px 0">
+                    <i class="bi bi-info-circle"></i>
+                    Sin métricas registradas todavía.
+                </p>
+                <details style="font-size:12px;color:var(--text-muted)">
+                    <summary style="cursor:pointer;font-weight:600;color:var(--text-h)">Ver plantilla de métricas (qué se puede guardar aquí)</summary>
+                    <div style="margin-top:10px;padding:10px 12px;background:var(--bg-card-inner,rgba(0,0,0,.04));border-radius:8px;line-height:1.6">
+                        En esta sección se pueden registrar valores periódicos del alumno —
+                        <strong style="color:var(--text-h)">físicos, técnicos, tácticos</strong> — para llevar
+                        un control de su progresión. Cada registro tiene <em>fecha</em>,
+                        <em>entrenador</em>, una <em>evaluación global</em>, <em>notas</em>
+                        libres y un objeto JSON <em>metrics</em> con pares clave/valor.
+                        <br><br>
+                        Ejemplo de campos típicos:
+                        <ul style="margin:8px 0 0 18px;padding:0">
+                            <li><code>weight_kg</code> — peso</li>
+                            <li><code>body_fat_pct</code> — % de grasa</li>
+                            <li><code>height_cm</code> — altura</li>
+                            <li><code>resting_hr</code> — frecuencia cardíaca en reposo</li>
+                            <li><code>vo2_max</code> — VO₂ máx estimado</li>
+                            <li><code>vertical_jump</code> — salto vertical (cm)</li>
+                            <li><code>sprint_30m_s</code> — sprint 30 m (s)</li>
+                            <li><code>test_technical</code> — resultado de test técnico</li>
+                            <li><code>category</code> — <code>"physical"</code> | <code>"technical"</code> | <code>"tactical"</code></li>
+                        </ul>
+                    </div>
+                </details>
             </div>
             <?php endif; ?>
         </div>
