@@ -76,29 +76,29 @@ $routes->post('dashboard/stats', 'DashboardController::getStats', [
 //  /alumno/save          → guardar perfil — alumno + admin/superadmin
 // ------------------------------------------------------------
 
-$routes->get('/alumnos', 'PlayerController::index', [
+$routes->get('/alumnos', 'AlumnosController::index', [
     'filter' => ['auth', 'role:superadmin,admin,coach'],
 ]);
 
-$routes->get('/alumnos/nuevo', 'PlayerController::create', [
+$routes->get('/alumnos/nuevo', 'AlumnosController::create', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
-$routes->post('/alumnos/nuevo', 'PlayerController::store', [
+$routes->post('/alumnos/nuevo', 'AlumnosController::store', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-$routes->get('/alumnos/(:num)', 'PlayerController::show/$1', [
+$routes->get('/alumnos/(:num)', 'AlumnosController::show/$1', [
     'filter' => ['auth', 'role:superadmin,admin,coach'],
 ]);
 
-$routes->get('/alumnos/(:num)/editar', 'PlayerController::edit/$1', [
+$routes->get('/alumnos/(:num)/editar', 'AlumnosController::edit/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
-$routes->post('/alumnos/(:num)/editar', 'PlayerController::update/$1', [
+$routes->post('/alumnos/(:num)/editar', 'AlumnosController::update/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-$routes->post('/alumnos/(:num)/eliminar', 'PlayerController::destroy/$1', [
+$routes->post('/alumnos/(:num)/eliminar', 'AlumnosController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
@@ -112,11 +112,11 @@ $routes->post('/anotaciones/(:num)/eliminar', 'AnnotationController::destroy/$1'
     'filter' => 'auth',
 ]);
 
-$routes->get('/alumno', 'PlayerController::profile', [
+$routes->get('/alumno', 'AlumnosController::profile', [
     'filter' => ['auth', 'role:superadmin,admin,player'],
 ]);
 
-$routes->post('/alumno/save', 'PlayerController::saveProfile', [
+$routes->post('/alumno/save', 'AlumnosController::saveProfile', [
     'filter' => ['auth', 'role:superadmin,admin,player'],
 ]);
 

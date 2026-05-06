@@ -671,7 +671,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
 
 </div>
 
-<?= console_debug('PlayerController::show #' . ($alumno['id'] ?? '?'), [
+<?= console_debug('AlumnosController::show #' . ($alumno['id'] ?? '?'), [
     'id'          => $alumno['id'] ?? null,
     'name'        => $alumno['name'] ?? null,
     'email'       => $alumno['email'] ?? null,
