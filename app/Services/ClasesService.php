@@ -505,10 +505,11 @@ class ClasesService
             return ['success' => false, 'error' => 'No estás asignado a esta sesión.'];
         }
 
-        $this->playerModel->update($player['id'], [
-            'attendance'   => $status,
-            'responded_at' => date('Y-m-d H:i:s'),
-        ]);
+        $this->playerModel
+            ->where('session_id', $sessionId)
+            ->where('user_id', $userId)
+            ->set(['attendance' => $status, 'responded_at' => date('Y-m-d H:i:s')])
+            ->update();
 
         return ['success' => true];
     }
@@ -536,7 +537,7 @@ class ClasesService
                 $pu = [];
                 if (array_key_exists('pre', $obs))  $pu['pre_obs']  = $obs['pre']  ?: null;
                 if (array_key_exists('post', $obs)) $pu['post_obs'] = $obs['post'] ?: null;
-                if (!empty($pu)) $this->playerModel->update($player['id'], $pu);
+                if (!empty($pu)) $this->playerModel->where('session_id', $sessionId)->where('user_id', (int)$userId)->set($pu)->update();
             }
         }
 
@@ -560,7 +561,11 @@ class ClasesService
                 ->first();
 
             if ($player) {
-                $this->playerModel->update($player['id'], ['attendance' => $status]);
+                $this->playerModel
+                    ->where('session_id', $sessionId)
+                    ->where('user_id', (int)$userId)
+                    ->set(['attendance' => $status])
+                    ->update();
             }
         }
 
