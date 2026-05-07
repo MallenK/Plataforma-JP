@@ -1,6 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
+helper('avatar');
 $statusMap = [
     'scheduled' => ['Programada',  '#2563eb', 'bi-calendar-event-fill'],
     'completed' => ['Completada',  '#059669', 'bi-check-circle-fill'],

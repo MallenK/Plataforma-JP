@@ -1,6 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
+helper('avatar');
 // ── Helpers de vista ──────────────────────────────────────────────────────
 
 function roleBadge(string $role): string {

@@ -1,6 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
+helper('avatar');
 $pageTitle    = 'Alumnos';
 $pageSubtitle = 'Gestión de alumnos registrados';
 ?>

@@ -1,6 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
+helper('avatar');
 $pageTitle    = 'Entrenadores';
 $pageSubtitle = 'Gestión del equipo técnico';
 ?>
