@@ -277,7 +277,7 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
                             <?php foreach ($writableFolders as $wf): ?>
                             <?php
                                 $folderLabel = ($wf['type'] === 'personal' && !empty($wf['owner_name']))
-                                    ? 'Mi carpeta (' . $wf['owner_name'] . ')'
+                                    ? 'Carpeta ' . $wf['owner_name']
                                     : $wf['name'];
                             ?>
                             <option value="<?= $wf['id'] ?>"
