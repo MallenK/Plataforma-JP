@@ -262,9 +262,7 @@ $sec  = $section;        // sección activa
                                 <tr>
                                     <td>
                                         <div class="td-user">
-                                            <div class="td-avatar" style="background:var(--accent-dark)">
-                                                <?= strtoupper(mb_substr($u['name'], 0, 1)) ?>
-                                            </div>
+                                            <?= avatar_html($u['avatar'] ?? null, $u['name'], 'td-avatar') ?>
                                             <div>
                                                 <div style="font-weight:600;color:var(--text-h)"><?= esc($u['name']) ?></div>
                                                 <div style="font-size:12px;color:var(--text-muted)"><?= esc($u['email']) ?></div>

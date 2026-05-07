@@ -478,7 +478,7 @@ class ClasesService
     public function getPlayersForSession(int $sessionId): array
     {
         return $this->db->table('class_session_players csp')
-            ->select('csp.*, u.name, u.email, coach.name AS coach_name')
+            ->select('csp.*, u.name, u.email, u.avatar, coach.name AS coach_name')
             ->join('users u', 'u.id = csp.user_id')
             ->join('users coach', 'coach.id = csp.coach_id', 'left')
             ->where('csp.session_id', $sessionId)

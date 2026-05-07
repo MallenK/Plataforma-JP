@@ -88,7 +88,7 @@ $pageSubtitle = 'Gestión del equipo técnico';
                 >
                     <td>
                         <div class="td-user">
-                            <div class="td-avatar" style="background:var(--success)"><?= strtoupper(substr($c['name'], 0, 1)) ?></div>
+                            <?= avatar_html($c['avatar'] ?? null, $c['name'], 'td-avatar') ?>
                             <div>
                                 <div class="td-name"><?= esc($c['name']) ?></div>
                                 <div class="td-sub">Entrenador</div>

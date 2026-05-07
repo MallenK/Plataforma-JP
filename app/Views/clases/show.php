@@ -278,7 +278,7 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                         <tr>
                             <td>
                                 <div class="td-user">
-                                    <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
+                                    <?= avatar_html($p['avatar'] ?? null, $p['name'], 'td-avatar') ?>
                                     <div>
                                         <div class="td-name"><?= esc($p['name']) ?></div>
                                         <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44;font-size:10px">

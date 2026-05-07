@@ -101,7 +101,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
                 >
                     <td>
                         <div class="td-user">
-                            <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
+                            <?= avatar_html($p['avatar'] ?? null, $p['name'], 'td-avatar') ?>
                             <div>
                                 <div class="td-name"><?= esc($p['name']) ?></div>
                                 <?php if (!empty($p['position'])): ?>
