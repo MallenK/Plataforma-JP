@@ -275,9 +275,14 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
                         <select name="folder_id" class="form-control-jp" id="upload-folder-select" required>
                             <option value="">— Selecciona carpeta —</option>
                             <?php foreach ($writableFolders as $wf): ?>
+                            <?php
+                                $folderLabel = ($wf['type'] === 'personal' && !empty($wf['owner_name']))
+                                    ? 'Mi carpeta (' . $wf['owner_name'] . ')'
+                                    : $wf['name'];
+                            ?>
                             <option value="<?= $wf['id'] ?>"
                                 <?= $activeFolder && (int)$activeFolder['id'] === (int)$wf['id'] ? 'selected' : '' ?>>
-                                <?= esc($wf['name']) ?>
+                                <?= esc($folderLabel) ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
