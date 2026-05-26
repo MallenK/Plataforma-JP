@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\PlayerAnnotationModel;
 use App\Models\UserModel;
+use App\Services\DocumentService;
 
 class AnnotationController extends BaseController
 {
@@ -16,8 +17,7 @@ class AnnotationController extends BaseController
 
     /**
      * Crea una anotación para el jugador $playerId.
-     * Todos los roles pueden crear anotaciones públicas.
-     * Solo roles no-player pueden crear anotaciones internas.
+     * Permite adjuntar un archivo que se guarda en la carpeta personal del alumno.
      */
     public function store(int $playerId): \CodeIgniter\HTTP\RedirectResponse
     {
@@ -30,24 +30,61 @@ class AnnotationController extends BaseController
 
         $type    = $this->request->getPost('type') === 'internal' ? 'internal' : 'public';
         $content = trim($this->request->getPost('content') ?? '');
+        $role    = $this->currentRole();
 
         if ($content === '') {
             session()->setFlashdata('annotation_error', 'La anotación no puede estar vacía.');
             return $this->redirectBack($playerId);
         }
 
-        $role = $this->currentRole();
-
         if ($type === 'internal' && $role === 'player') {
             session()->setFlashdata('annotation_error', 'No tienes permiso para crear anotaciones internas.');
             return $this->redirectBack($playerId);
         }
 
+        // Manejar archivo adjunto opcional
+        $documentId = null;
+        $uploadedFile = $this->request->getFile('annotation_file');
+
+        if ($uploadedFile && $uploadedFile->isValid() && !$uploadedFile->hasMoved()) {
+            $docService     = new DocumentService();
+            $userId         = $this->currentUserId();
+            $personalFolder = $docService->getOrCreatePersonalFolder($playerId);
+
+            if ($personalFolder) {
+                $result = $docService->uploadFile(
+                    $uploadedFile,
+                    (int)$personalFolder['id'],
+                    $userId,
+                    $role,
+                    'Adjunto de observación'
+                );
+
+                if ($result['success']) {
+                    // Obtener el ID del último documento insertado
+                    $db  = \Config\Database::connect();
+                    $doc = $db->table('documents')
+                        ->where('folder_id', $personalFolder['id'])
+                        ->where('uploader_id', $userId)
+                        ->where('deleted_at IS NULL', null, false)
+                        ->orderBy('id', 'DESC')
+                        ->limit(1)
+                        ->get()->getRowArray();
+
+                    $documentId = $doc['id'] ?? null;
+                } else {
+                    session()->setFlashdata('annotation_error', 'Error al subir el archivo: ' . ($result['error'] ?? 'Error desconocido'));
+                    return $this->redirectBack($playerId);
+                }
+            }
+        }
+
         $this->model->insert([
-            'player_id' => $playerId,
-            'author_id' => $this->currentUserId(),
-            'type'      => $type,
-            'content'   => $content,
+            'player_id'   => $playerId,
+            'author_id'   => $this->currentUserId(),
+            'type'        => $type,
+            'content'     => $content,
+            'document_id' => $documentId,
         ]);
 
         session()->setFlashdata('annotation_success', 'Anotación añadida correctamente.');

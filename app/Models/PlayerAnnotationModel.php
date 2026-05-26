@@ -16,6 +16,7 @@ class PlayerAnnotationModel extends Model
         'author_id',
         'type',
         'content',
+        'document_id',
     ];
 
     /**
@@ -27,9 +28,12 @@ class PlayerAnnotationModel extends Model
         $placeholders = implode(',', array_fill(0, count($types), '?'));
 
         return $this->db->query(
-            "SELECT pa.*, u.name AS author_name, u.role AS author_role
+            "SELECT pa.*, u.name AS author_name, u.role AS author_role,
+                    d.name_original AS doc_name, d.extension AS doc_ext,
+                    d.size_bytes AS doc_size, d.mime_type AS doc_mime
              FROM player_annotations pa
              JOIN users u ON u.id = pa.author_id
+             LEFT JOIN documents d ON d.id = pa.document_id AND d.deleted_at IS NULL
              WHERE pa.player_id = ?
                AND pa.type IN ({$placeholders})
              ORDER BY pa.created_at DESC",

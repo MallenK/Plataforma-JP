@@ -78,14 +78,20 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
 
 <!-- ── Mi convocatoria (solo jugadores) ────────────────────── -->
 <?php if ($myPlayer): ?>
+<?php
+$myAttendance = $myPlayer['attendance'] ?? 'pending';
+[$aLabel, $aColor, $aIcon] = $attendanceMap[$myAttendance] ?? $attendanceMap['pending'];
+$hasStudentNote = !empty($myPlayer['student_note']);
+$sessionDate    = $session['session_date'] ?? '';
+$todayStr       = date('Y-m-d');
+$isToday        = $sessionDate === $todayStr;
+$pastCutoff     = $isToday && date('H:i') > '10:00';
+?>
 <div class="card-jp mb-3" style="border-left:3px solid <?= $statusColor ?>">
     <div class="card-jp-body">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
             <div>
-                <div style="font-weight:700;color:var(--text-h);margin-bottom:4px">Mi asistencia</div>
-                <?php
-                [$aLabel, $aColor, $aIcon] = $attendanceMap[$myPlayer['attendance']] ?? $attendanceMap['pending'];
-                ?>
+                <div style="font-weight:700;color:var(--text-h);margin-bottom:6px">Mi asistencia</div>
                 <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44">
                     <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
                 </span>
@@ -94,28 +100,48 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                         <i class="bi bi-person-workspace me-1"></i>Entrenador: <?= esc($myPlayer['coach_name']) ?>
                     </span>
                 <?php endif; ?>
-            </div>
-            <?php if ($session['status'] === 'scheduled'): ?>
-            <div class="d-flex gap-2">
-                <?php if ($myPlayer['attendance'] !== 'confirmed'): ?>
-                <form action="/clases/<?= $session['id'] ?>/confirmar" method="POST" style="margin:0">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="status" value="confirmed">
-                    <button class="btn-jp btn-jp-sm" style="background:#d1fae5;color:#065f46">
-                        <i class="bi bi-check-circle-fill me-1"></i>Confirmar
-                    </button>
-                </form>
+                <?php if (!empty($myPlayer['absence_reason'])): ?>
+                <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">
+                    <i class="bi bi-chat-left-text me-1" style="color:var(--danger)"></i>
+                    <strong style="color:var(--danger)">Motivo (admin):</strong> <?= esc($myPlayer['absence_reason']) ?>
+                </div>
                 <?php endif; ?>
-                <?php if ($myPlayer['attendance'] !== 'declined'): ?>
-                <form action="/clases/<?= $session['id'] ?>/confirmar" method="POST" style="margin:0">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="status" value="declined">
-                    <button class="btn-jp btn-jp-sm btn-jp-danger">
-                        <i class="bi bi-x-circle-fill me-1"></i>No puedo asistir
-                    </button>
-                </form>
+                <?php if ($hasStudentNote): ?>
+                <div style="margin-top:6px;font-size:12.5px;color:var(--text-muted)">
+                    <i class="bi bi-check-circle-fill me-1" style="color:#059669"></i>
+                    <strong style="color:#059669">Tu aviso enviado:</strong> <?= esc($myPlayer['student_note']) ?>
+                    <span style="font-size:11px;margin-left:4px">(<?= !empty($myPlayer['student_noted_at']) ? date('d/m H:i', strtotime($myPlayer['student_noted_at'])) : '' ?>)</span>
+                </div>
                 <?php endif; ?>
             </div>
+
+            <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
+            <div style="min-width:240px">
+                <?php if ($pastCutoff): ?>
+                <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <strong>Aviso tardío:</strong> Los avisos deben enviarse antes de las 10:00 del día de la clase. Tu aviso se registrará igualmente.
+                </div>
+                <?php elseif ($isToday): ?>
+                <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
+                    <i class="bi bi-clock-fill me-1"></i>
+                    Recuerda: los avisos deben enviarse <strong>antes de las 10:00</strong> del día de la clase.
+                </div>
+                <?php endif; ?>
+                <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" style="margin:0">
+                    <?= csrf_field() ?>
+                    <textarea name="student_note" class="form-control-jp mb-2" rows="2"
+                              placeholder="Motivo (opcional)…"
+                              style="resize:none;font-size:13px"></textarea>
+                    <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm w-100">
+                        <i class="bi bi-calendar-x-fill me-1"></i>Avisar que no puedo asistir
+                    </button>
+                </form>
+            </div>
+            <?php elseif ($session['status'] === 'scheduled' && $hasStudentNote): ?>
+            <span style="font-size:12px;color:#059669">
+                <i class="bi bi-check-circle-fill me-1"></i>Aviso enviado
+            </span>
             <?php endif; ?>
         </div>
     </div>
@@ -266,14 +292,16 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                     <thead>
                         <tr>
                             <th>Jugador</th>
-                            <th>Entrenador</th>
+                            <th>Aviso alumno</th>
                             <th>Asistencia</th>
-                            <th>Observaciones</th>
+                            <th>Motivo ausencia</th>
+                            <th>Obs.</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($session['players'] as $p):
                         [$aLabel, $aColor, $aIcon] = $attendanceMap[$p['attendance']] ?? $attendanceMap['pending'];
+                        $hasNote = !empty($p['student_note']);
                     ?>
                         <tr>
                             <td>
@@ -287,15 +315,38 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                                     </div>
                                 </div>
                             </td>
-                            <td style="font-size:13px;color:var(--text-muted)">
-                                <?= $p['coach_name'] ? esc($p['coach_name']) : '—' ?>
+                            <td style="font-size:12px;max-width:160px">
+                                <?php if ($hasNote): ?>
+                                <span title="<?= esc($p['student_note']) ?>"
+                                      style="display:inline-flex;align-items:center;gap:4px;color:#d97706;font-size:12px">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= esc($p['student_note']) ?></span>
+                                </span>
+                                <div style="font-size:10px;color:var(--text-muted)">
+                                    <?= !empty($p['student_noted_at']) ? date('d/m H:i', strtotime($p['student_noted_at'])) : '' ?>
+                                </div>
+                                <?php else: ?>
+                                <span style="color:var(--text-muted)">—</span>
+                                <?php endif; ?>
                             </td>
                             <td>
-                                <select name="attendance[<?= $p['user_id'] ?>]" class="form-control-jp" style="font-size:12px;padding:4px 8px;width:auto">
+                                <select name="attendance[<?= $p['user_id'] ?>]"
+                                        class="form-control-jp attendance-select"
+                                        data-uid="<?= $p['user_id'] ?>"
+                                        style="font-size:12px;padding:4px 8px;width:auto">
                                     <?php foreach (['pending' => 'Pendiente', 'present' => 'Presente', 'absent' => 'Ausente'] as $val => $lbl): ?>
                                         <option value="<?= $val ?>" <?= $p['attendance'] === $val ? 'selected' : '' ?>><?= $lbl ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </td>
+                            <td style="min-width:160px">
+                                <input type="text"
+                                       name="absence_reason[<?= $p['user_id'] ?>]"
+                                       class="form-control-jp absence-reason-field"
+                                       id="abs-reason-<?= $p['user_id'] ?>"
+                                       placeholder="Motivo…"
+                                       value="<?= esc($p['absence_reason'] ?? '') ?>"
+                                       style="font-size:12px;padding:4px 8px;<?= ($p['attendance'] !== 'absent') ? 'display:none' : '' ?>">
                             </td>
                             <td>
                                 <button type="button" onclick="openObsModal(<?= $p['user_id'] ?>, '<?= esc($p['name'], 'js') ?>', '<?= esc($p['pre_obs'] ?? '', 'js') ?>', '<?= esc($p['post_obs'] ?? '', 'js') ?>')"
@@ -399,11 +450,13 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
         <!-- Resumen de asistencia -->
         <?php if (!empty($session['players'])): ?>
         <?php
-        $totalP     = count($session['players']);
-        $confirmed  = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'confirmed'));
-        $present    = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'present'));
-        $declined   = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'declined'));
-        $pending    = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'pending'));
+        $totalP      = count($session['players']);
+        $confirmed   = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'confirmed'));
+        $present     = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'present'));
+        $absent      = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'absent'));
+        $declined    = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'declined'));
+        $pending     = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'pending'));
+        $withNote    = count(array_filter($session['players'], fn($p) => !empty($p['student_note'])));
         ?>
         <div class="card-jp mb-3">
             <div class="card-jp-header">
@@ -430,15 +483,27 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                         <strong><?= $present ?></strong>
                     </div>
                     <?php endif; ?>
+                    <?php if ($absent): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:var(--danger)"><i class="bi bi-person-x-fill me-1"></i>Ausentes</span>
+                        <strong><?= $absent ?></strong>
+                    </div>
+                    <?php endif; ?>
                     <?php if ($declined): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="color:var(--danger)"><i class="bi bi-x-circle-fill me-1"></i>Declinados</span>
+                        <span style="color:var(--danger)"><i class="bi bi-x-circle-fill me-1"></i>Avisaron ausencia</span>
                         <strong><?= $declined ?></strong>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($withNote): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:#d97706"><i class="bi bi-exclamation-triangle-fill me-1"></i>Con aviso alumno</span>
+                        <strong><?= $withNote ?></strong>
                     </div>
                     <?php endif; ?>
                     <?php if ($pending): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="color:#d97706"><i class="bi bi-clock-fill me-1"></i>Pendientes</span>
+                        <span style="color:#d97706"><i class="bi bi-clock-fill me-1"></i>Sin registrar</span>
                         <strong><?= $pending ?></strong>
                     </div>
                     <?php endif; ?>
@@ -596,6 +661,18 @@ document.addEventListener('keydown', e => {
 });
 document.querySelectorAll('.cs-modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
+});
+
+// Mostrar/ocultar campo motivo ausencia según selección
+document.querySelectorAll('.attendance-select').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+        const uid    = this.dataset.uid;
+        const field  = document.getElementById('abs-reason-' + uid);
+        if (field) {
+            field.style.display = this.value === 'absent' ? '' : 'none';
+            if (this.value !== 'absent') field.value = '';
+        }
+    });
 });
 
 function openObsModal(userId, name, preObs, postObs) {

@@ -80,11 +80,12 @@ class DocumentacionController extends BaseController
 
     public function upload()
     {
-        $userId   = $this->currentUserId();
-        $role     = $this->currentRole();
-        $folderId = (int)$this->request->getPost('folder_id');
-        $desc     = $this->request->getPost('description');
-        $file     = $this->request->getFile('archivo');
+        $userId     = $this->currentUserId();
+        $role       = $this->currentRole();
+        $folderId   = (int)$this->request->getPost('folder_id');
+        $desc       = $this->request->getPost('description');
+        $file       = $this->request->getFile('archivo');
+        $redirectTo = $this->request->getPost('redirect_to') ?: null;
 
         $result = $this->docService->uploadFile($file, $folderId, $userId, $role, $desc);
 
@@ -92,6 +93,10 @@ class DocumentacionController extends BaseController
             session()->setFlashdata('upload_error', $result['error']);
         } else {
             session()->setFlashdata('success', 'Archivo subido correctamente.');
+        }
+
+        if ($redirectTo && preg_match('#^/[a-zA-Z0-9/_-]#', $redirectTo)) {
+            return redirect()->to($redirectTo);
         }
 
         return redirect()->to('/documentacion?folder=' . $folderId);

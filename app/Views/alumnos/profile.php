@@ -3,13 +3,19 @@
 <?= $this->section('page_content') ?>
 
 <?php
-$canEdit = in_array(session('role'), ['admin', 'superadmin', 'player']);
-$pos     = esc($profile['position'] ?? '—');
-$level   = match($profile['level'] ?? '') {
-    'beginner'     => 'Principiante',
-    'intermediate' => 'Intermedio',
-    'advanced'     => 'Avanzado',
-    default        => '—',
+$canEdit       = in_array(session('role'), ['admin', 'superadmin', 'player']);
+$pos           = esc($profile['position'] ?? '—');
+$categoryLabel = match($profile['category'] ?? '') {
+    'prebenjamin' => 'Prebenjamín',
+    'benjamin'    => 'Benjamín',
+    'alevin'      => 'Alevín',
+    'infantil'    => 'Infantil',
+    'cadete'      => 'Cadete',
+    'juvenil'     => 'Juvenil',
+    'junior'      => 'Júnior',
+    'senior'      => 'Sénior',
+    'veterano'    => 'Veterano',
+    default       => '—',
 };
 ?>
 
@@ -40,10 +46,10 @@ $level   = match($profile['level'] ?? '') {
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Nivel</span>
-                <div class="metric-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+                <span class="metric-label">Categoría</span>
+                <div class="metric-icon green"><i class="bi bi-trophy-fill"></i></div>
             </div>
-            <div class="metric-value" style="font-size:20px"><?= $level ?></div>
+            <div class="metric-value" style="font-size:20px"><?= $categoryLabel ?></div>
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -109,8 +115,20 @@ $level   = match($profile['level'] ?? '') {
                     </div>
                     <div class="col-12 col-md-6">
                         <div class="form-group mb-0">
-                            <label class="form-label">Nivel</label>
-                            <input type="text" class="form-control-jp" value="<?= $level ?>" readonly>
+                            <label class="form-label">Categoría</label>
+                            <input type="text" class="form-control-jp" value="<?= $categoryLabel ?>" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="form-group mb-0">
+                            <label class="form-label">Equipo</label>
+                            <input type="text" class="form-control-jp" value="<?= esc($profile['team'] ?? '—') ?>" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="form-group mb-0">
+                            <label class="form-label">Liga</label>
+                            <input type="text" class="form-control-jp" value="<?= esc($profile['league'] ?? '—') ?>" readonly>
                         </div>
                     </div>
                 </div>

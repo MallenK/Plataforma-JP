@@ -221,7 +221,33 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Confirmar asistencia (jugador)
+    //  Avisar ausencia (jugador)
+    // ────────────────────────────────────────────────────────────────
+
+    public function notifyAbsence(int $id)
+    {
+        $note   = trim($this->request->getPost('student_note') ?? '');
+        $result = $this->clasesService->notifyAbsence(
+            $this->currentUserId(),
+            $id,
+            $note
+        );
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'Error al registrar el aviso.');
+        } else {
+            $msg = 'Tu aviso de ausencia ha sido registrado.';
+            if ($result['lateNotice'] ?? false) {
+                $msg .= ' Nota: el aviso se ha enviado después de las 10:00 del día de la clase.';
+            }
+            session()->setFlashdata('success', $msg);
+        }
+
+        return redirect()->to('/clases/' . $id);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Confirmar asistencia (jugador, mantenido por compatibilidad)
     // ────────────────────────────────────────────────────────────────
 
     public function respond(int $id)
@@ -261,7 +287,8 @@ class ClasesController extends BaseController
     {
         $this->clasesService->updateAttendance(
             $id,
-            $this->request->getPost('attendance') ?? []
+            $this->request->getPost('attendance') ?? [],
+            $this->request->getPost('absence_reason') ?? []
         );
         session()->setFlashdata('success', 'Asistencia registrada.');
         return redirect()->to('/clases/' . $id);

@@ -16,6 +16,25 @@ $levelLabel = match($alumno['level'] ?? '') {
     default        => '—',
 };
 
+$categoryLabel = match($alumno['category'] ?? '') {
+    'prebenjamin' => 'Prebenjamín',
+    'benjamin'    => 'Benjamín',
+    'alevin'      => 'Alevín',
+    'infantil'    => 'Infantil',
+    'cadete'      => 'Cadete',
+    'juvenil'     => 'Juvenil',
+    'junior'      => 'Júnior',
+    'senior'      => 'Sénior',
+    'veterano'    => 'Veterano',
+    default       => '—',
+};
+
+// Edad calculada desde birth_date
+$age = null;
+if (!empty($alumno['birth_date'])) {
+    $age = (int)(new \DateTime($alumno['birth_date']))->diff(new \DateTime())->y;
+}
+
 $statusLabel = match($alumno['status'] ?? 'active') {
     'active'   => 'Activo',
     'inactive' => 'Inactivo',
@@ -141,6 +160,30 @@ $formatTime = static function (?string $hms): string {
                         </span>
                     </div>
                     <?php endif; ?>
+                    <?php if ($age !== null): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Edad</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= $age ?> años</span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($alumno['category'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Categoría</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($categoryLabel) ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($alumno['team'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Equipo</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($alumno['team']) ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($alumno['league'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Liga</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($alumno['league']) ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -252,10 +295,10 @@ $formatTime = static function (?string $hms): string {
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-card-header">
-                        <span class="metric-label">Nivel</span>
-                        <div class="metric-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+                        <span class="metric-label">Categoría</span>
+                        <div class="metric-icon green"><i class="bi bi-trophy-fill"></i></div>
                     </div>
-                    <div class="metric-value" style="font-size:18px"><?= esc($levelLabel) ?></div>
+                    <div class="metric-value" style="font-size:18px"><?= esc($categoryLabel) ?></div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
@@ -566,6 +609,125 @@ $formatTime = static function (?string $hms): string {
             <?php endif; ?>
         </div>
 
+        <!-- Documentos del alumno -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-folder-fill me-2" style="color:var(--accent)"></i>
+                    Documentos
+                </span>
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['recent_documents'] ?? []) ?> reciente(s)</span>
+                    <?php if (!empty($alumno['personal_folder'])): ?>
+                    <a href="<?= base_url('documentacion?folder=' . (int)$alumno['personal_folder']['id']) ?>"
+                       class="btn-jp btn-jp-secondary btn-jp-sm" style="font-size:11px">
+                        <i class="bi bi-folder2-open me-1"></i>Ver todos
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if (!empty($alumno['recent_documents'])): ?>
+            <?php
+            function docIconShow(string $ext): array {
+                return match(true) {
+                    $ext === 'pdf'                                    => ['bi-file-earmark-pdf-fill',   '#e53e3e'],
+                    in_array($ext, ['doc','docx'])                    => ['bi-file-earmark-word-fill',  '#3182ce'],
+                    in_array($ext, ['xls','xlsx'])                    => ['bi-file-earmark-excel-fill', '#38a169'],
+                    in_array($ext, ['ppt','pptx'])                    => ['bi-file-earmark-ppt-fill',   '#dd6b20'],
+                    in_array($ext, ['jpg','jpeg','png','gif','webp']) => ['bi-file-earmark-image-fill', '#805ad5'],
+                    in_array($ext, ['mp4','mov','avi','webm'])        => ['bi-file-earmark-play-fill',  '#00b5d8'],
+                    default                                           => ['bi-file-earmark-fill',       'var(--text-muted)'],
+                };
+            }
+            $previewDocExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
+            ?>
+            <div class="table-responsive">
+                <table class="table-jp">
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Fecha</th>
+                            <th style="text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($alumno['recent_documents'] as $rdoc):
+                        [$dicon, $dcolor] = docIconShow($rdoc['extension'] ?? '');
+                        $canPreviewDoc = in_array($rdoc['extension'] ?? '', $previewDocExts);
+                    ?>
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi <?= esc($dicon) ?>" style="font-size:18px;color:<?= $dcolor ?>;flex-shrink:0"></i>
+                                <div>
+                                    <div style="font-weight:600;color:var(--text-h);font-size:13px"><?= esc($rdoc['name_original']) ?></div>
+                                    <?php if (!empty($rdoc['description'])): ?>
+                                    <div style="font-size:11px;color:var(--text-muted)"><?= esc($rdoc['description']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">
+                            <?= date('d/m/Y', strtotime($rdoc['created_at'])) ?>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <?php if ($canPreviewDoc): ?>
+                                <a href="<?= base_url('documentacion/file/' . (int)$rdoc['id'] . '/preview') ?>"
+                                   target="_blank"
+                                   class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <?php endif; ?>
+                                <a href="<?= base_url('documentacion/file/' . (int)$rdoc['id'] . '/download') ?>"
+                                   class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php if ($isAdminUser && !empty($alumno['personal_folder'])): ?>
+            <!-- Admin puede subir directamente desde el perfil -->
+            <div class="card-jp-body" style="border-top:1px solid var(--border)">
+                <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data"
+                      class="d-flex gap-2 align-items-center flex-wrap">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="folder_id" value="<?= (int)$alumno['personal_folder']['id'] ?>">
+                    <input type="hidden" name="redirect_to" value="/alumnos/<?= (int)$alumno['id'] ?>">
+                    <input type="file" name="archivo" class="form-control-jp" style="flex:1;min-width:200px"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
+                    <input type="text" name="description" class="form-control-jp" placeholder="Descripción (opcional)" style="flex:1;min-width:160px">
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="white-space:nowrap">
+                        <i class="bi bi-cloud-upload-fill me-1"></i>Subir
+                    </button>
+                </form>
+            </div>
+            <?php endif; ?>
+            <?php else: ?>
+            <div class="card-jp-body">
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px 0">Sin documentos recientes.</p>
+                <?php if ($isAdminUser && !empty($alumno['personal_folder'])): ?>
+                <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data"
+                      class="d-flex gap-2 align-items-center flex-wrap">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="folder_id" value="<?= (int)$alumno['personal_folder']['id'] ?>">
+                    <input type="hidden" name="redirect_to" value="/alumnos/<?= (int)$alumno['id'] ?>">
+                    <input type="file" name="archivo" class="form-control-jp" style="flex:1;min-width:200px"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
+                    <input type="text" name="description" class="form-control-jp" placeholder="Descripción (opcional)" style="flex:1;min-width:160px">
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="white-space:nowrap">
+                        <i class="bi bi-cloud-upload-fill me-1"></i>Subir primer documento
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
     </div>
 </div>
 
@@ -605,6 +767,23 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                 ?>
                 <div style="background:var(--bg-card-inner,rgba(0,0,0,.04));border-radius:8px;padding:12px 14px;position:relative">
                     <div style="font-size:13.5px;color:var(--text-body);line-height:1.55;white-space:pre-wrap"><?= nl2br(esc($ann['content'])) ?></div>
+                    <?php if (!empty($ann['document_id']) && !empty($ann['doc_name'])): ?>
+                    <div style="margin-top:8px;padding:6px 10px;background:var(--bg-app);border-radius:6px;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-paperclip" style="color:var(--accent)"></i>
+                        <span><?= esc($ann['doc_name']) ?></span>
+                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/download') ?>"
+                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar" style="padding:2px 5px">
+                            <i class="bi bi-download" style="font-size:11px"></i>
+                        </a>
+                        <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
+                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/preview') ?>"
+                           target="_blank"
+                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
+                            <i class="bi bi-eye" style="font-size:11px"></i>
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
                         <span style="font-size:11px;color:var(--text-muted)">
                             <i class="bi bi-person-fill me-1"></i><?= esc($ann['author_name']) ?>
@@ -630,7 +809,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
 
         <!-- Formulario nueva anotación pública -->
         <div class="card-jp-body" style="border-top:1px solid var(--border)">
-            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post">
+            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="type" value="public">
                 <div class="form-group mb-2">
@@ -638,8 +817,15 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                               placeholder="Añadir anotación..." required
                               style="resize:vertical;min-height:64px"></textarea>
                 </div>
-                <div class="text-end">
-                    <button type="submit" class="btn-jp btn-jp-primary" style="padding:6px 16px;font-size:13px">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <label style="font-size:12px;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:5px">
+                        <i class="bi bi-paperclip" style="color:var(--accent)"></i>
+                        <span id="ann-pub-filename">Adjuntar archivo (opcional)</span>
+                        <input type="file" name="annotation_file" style="display:none"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm"
+                               onchange="document.getElementById('ann-pub-filename').textContent = this.files[0]?.name || 'Adjuntar archivo (opcional)'">
+                    </label>
+                    <button type="submit" class="btn-jp btn-jp-primary ms-auto" style="padding:6px 16px;font-size:13px">
                         <i class="bi bi-plus-circle me-1"></i>Añadir anotación
                     </button>
                 </div>
@@ -669,6 +855,23 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                 ?>
                 <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:12px 14px;position:relative">
                     <div style="font-size:13.5px;color:var(--text-body);line-height:1.55;white-space:pre-wrap"><?= nl2br(esc($ann['content'])) ?></div>
+                    <?php if (!empty($ann['document_id']) && !empty($ann['doc_name'])): ?>
+                    <div style="margin-top:8px;padding:6px 10px;background:var(--bg-app);border-radius:6px;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-paperclip" style="color:#f59e0b"></i>
+                        <span><?= esc($ann['doc_name']) ?></span>
+                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/download') ?>"
+                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar" style="padding:2px 5px">
+                            <i class="bi bi-download" style="font-size:11px"></i>
+                        </a>
+                        <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
+                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/preview') ?>"
+                           target="_blank"
+                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
+                            <i class="bi bi-eye" style="font-size:11px"></i>
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
                         <span style="font-size:11px;color:var(--text-muted)">
                             <i class="bi bi-person-fill me-1"></i><?= esc($ann['author_name']) ?>
@@ -694,7 +897,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
 
         <!-- Formulario nueva nota interna -->
         <div class="card-jp-body" style="border-top:1px solid var(--border)">
-            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post">
+            <form action="<?= base_url('alumnos/' . $alumno['id'] . '/anotaciones') ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="type" value="internal">
                 <div class="form-group mb-2">
@@ -702,8 +905,15 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                               placeholder="Añadir nota interna..." required
                               style="resize:vertical;min-height:64px"></textarea>
                 </div>
-                <div class="text-end">
-                    <button type="submit" class="btn-jp btn-jp-primary" style="padding:6px 16px;font-size:13px;background:var(--warning,#f59e0b);border-color:var(--warning,#f59e0b)">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <label style="font-size:12px;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:5px">
+                        <i class="bi bi-paperclip" style="color:#f59e0b"></i>
+                        <span id="ann-int-filename">Adjuntar archivo (opcional)</span>
+                        <input type="file" name="annotation_file" style="display:none"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm"
+                               onchange="document.getElementById('ann-int-filename').textContent = this.files[0]?.name || 'Adjuntar archivo (opcional)'">
+                    </label>
+                    <button type="submit" class="btn-jp btn-jp-primary ms-auto" style="padding:6px 16px;font-size:13px;background:var(--warning,#f59e0b);border-color:var(--warning,#f59e0b)">
                         <i class="bi bi-shield-plus me-1"></i>Añadir nota interna
                     </button>
                 </div>

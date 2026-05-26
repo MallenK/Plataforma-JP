@@ -487,7 +487,58 @@ class ClasesService
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Confirmaciones de asistencia
+    //  Aviso de ausencia del alumno
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * El alumno indica que no puede asistir, opcionalmente con un motivo.
+     * Se advierte si se notifica después de las 10:00 del día de la clase,
+     * pero igualmente se registra el aviso (el rechazo de guardar es opcional
+     * según la regla de negocio; aquí dejamos pasar con advertencia).
+     */
+    public function notifyAbsence(int $userId, int $sessionId, string $note): array
+    {
+        $player = $this->playerModel
+            ->where('session_id', $sessionId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$player) {
+            return ['success' => false, 'error' => 'No estás asignado a esta sesión.'];
+        }
+
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
+        }
+
+        if ($session['status'] !== 'scheduled') {
+            return ['success' => false, 'error' => 'No se puede notificar ausencia en una sesión que no está programada.'];
+        }
+
+        $now = new \DateTime();
+        $sessionDate = $session['session_date'];
+        $todayStr    = $now->format('Y-m-d');
+        $lateNotice  = false;
+
+        if ($sessionDate === $todayStr && $now->format('H:i') > '10:00') {
+            $lateNotice = true;
+        }
+
+        $this->playerModel->update($player['id'], [
+            'student_note'      => $note ?: null,
+            'student_noted_at'  => date('Y-m-d H:i:s'),
+        ]);
+
+        return [
+            'success'    => true,
+            'lateNotice' => $lateNotice,
+        ];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Confirmaciones de asistencia (mantenido por compatibilidad,
+    //  redirige a notifyAbsence para jugadores)
     // ────────────────────────────────────────────────────────────────
 
     public function respondToSession(int $userId, int $sessionId, string $status): array
@@ -547,7 +598,12 @@ class ClasesService
     //  Control de asistencia (admin/coach marca presente/ausente)
     // ────────────────────────────────────────────────────────────────
 
-    public function updateAttendance(int $sessionId, array $attendanceMap): bool
+    /**
+     * Guarda asistencia y motivo de ausencia por jugador.
+     * $attendanceMap: [userId => status]
+     * $absenceReasons: [userId => reason]
+     */
+    public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = []): bool
     {
         $valid = ['present', 'absent', 'pending', 'confirmed', 'declined'];
 
@@ -560,7 +616,13 @@ class ClasesService
                 ->first();
 
             if ($player) {
-                $this->playerModel->update($player['id'], ['attendance' => $status]);
+                $update = ['attendance' => $status];
+                if ($status === 'absent') {
+                    $update['absence_reason'] = ($absenceReasons[$userId] ?? '') ?: null;
+                } else {
+                    $update['absence_reason'] = null;
+                }
+                $this->playerModel->update($player['id'], $update);
             }
         }
 

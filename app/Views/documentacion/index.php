@@ -87,10 +87,15 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 <?php /* ── Grid de carpetas ───────────────────────────────────── */ ?>
 
 <?php if (!empty($folders)): ?>
-<div class="row g-3 mb-3">
-    <?php foreach ($folders as $f):
-        [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
-        $isActive = $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
+<?php
+// Agrupar carpetas por tipo para mejor organización visual
+$fPublic   = array_filter($folders, fn($f) => $f['type'] === 'public');
+$fInternal = array_filter($folders, fn($f) => $f['type'] === 'internal');
+$fPersonal = array_filter($folders, fn($f) => $f['type'] === 'personal');
+
+function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
+    [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
+    $isActive = $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
     ?>
     <div class="col-6 col-md-4 col-lg-3">
         <a href="<?= base_url('documentacion?folder=' . $f['id']) ?>" style="text-decoration:none">
@@ -118,7 +123,7 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
                     </div>
                     <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px">
                         <?= $f['type'] === 'personal'
-                            ? 'Carpeta de ' . esc($f['owner_name'] ?? $f['name'])
+                            ? esc($f['owner_name'] ?? $f['name'])
                             : esc($f['name']) ?>
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
@@ -131,8 +136,28 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
             </div>
         </a>
     </div>
-    <?php endforeach; ?>
+    <?php
+}
+?>
+
+<?php if (!empty($fPublic) || !empty($fInternal)): ?>
+<div class="row g-3 mb-3">
+    <?php foreach ($fPublic as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+    <?php foreach ($fInternal as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
 </div>
+<?php endif; ?>
+
+<?php if (!empty($fPersonal)): ?>
+<div style="margin-bottom:8px">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
+        <i class="bi bi-person-fill me-1"></i>Carpetas personales de alumnos
+    </span>
+</div>
+<div class="row g-3 mb-3">
+    <?php foreach ($fPersonal as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+</div>
+<?php endif; ?>
+
 <?php endif; ?>
 
 

@@ -127,13 +127,31 @@ $pageSubtitle = esc($alumno['name'] ?? '');
 
                         <div class="col-12 col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Nivel</label>
-                                <select name="level" class="form-control-jp">
+                                <label class="form-label">Categoría</label>
+                                <select name="category" class="form-control-jp">
                                     <option value="">— Sin especificar —</option>
-                                    <option value="beginner"     <?= ($alumno['level'] ?? '') === 'beginner'     ? 'selected' : '' ?>>Principiante</option>
-                                    <option value="intermediate" <?= ($alumno['level'] ?? '') === 'intermediate' ? 'selected' : '' ?>>Intermedio</option>
-                                    <option value="advanced"     <?= ($alumno['level'] ?? '') === 'advanced'     ? 'selected' : '' ?>>Avanzado</option>
+                                    <?php foreach (['prebenjamin'=>'Prebenjamín','benjamin'=>'Benjamín','alevin'=>'Alevín','infantil'=>'Infantil','cadete'=>'Cadete','juvenil'=>'Juvenil','junior'=>'Júnior','senior'=>'Sénior','veterano'=>'Veterano'] as $val => $lbl): ?>
+                                    <option value="<?= $val ?>" <?= ($alumno['category'] ?? '') === $val ? 'selected' : '' ?>><?= $lbl ?></option>
+                                    <?php endforeach; ?>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Equipo</label>
+                                <input type="text" name="team" class="form-control-jp"
+                                    placeholder="Ej: CD Juventud A"
+                                    value="<?= esc($alumno['team'] ?? '') ?>">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Liga</label>
+                                <input type="text" name="league" class="form-control-jp"
+                                    placeholder="Ej: Liga Autonómica Juvenil"
+                                    value="<?= esc($alumno['league'] ?? '') ?>">
                             </div>
                         </div>
 

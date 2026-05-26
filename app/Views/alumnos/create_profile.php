@@ -74,12 +74,37 @@ $isEditing = !empty($profile);
 
                         <div class="col-12 col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Nivel</label>
-                                <select name="level" class="form-control-jp">
-                                    <option value="beginner"     <?= ($profile['level'] ?? '') === 'beginner'     ? 'selected' : '' ?>>Principiante</option>
-                                    <option value="intermediate" <?= ($profile['level'] ?? '') === 'intermediate' ? 'selected' : '' ?>>Intermedio</option>
-                                    <option value="advanced"     <?= ($profile['level'] ?? '') === 'advanced'     ? 'selected' : '' ?>>Avanzado</option>
+                                <label class="form-label">Categoría</label>
+                                <select name="category" class="form-control-jp">
+                                    <option value="">— Sin especificar —</option>
+                                    <option value="prebenjamin" <?= ($profile['category'] ?? '') === 'prebenjamin' ? 'selected' : '' ?>>Prebenjamín</option>
+                                    <option value="benjamin"    <?= ($profile['category'] ?? '') === 'benjamin'    ? 'selected' : '' ?>>Benjamín</option>
+                                    <option value="alevin"      <?= ($profile['category'] ?? '') === 'alevin'      ? 'selected' : '' ?>>Alevín</option>
+                                    <option value="infantil"    <?= ($profile['category'] ?? '') === 'infantil'    ? 'selected' : '' ?>>Infantil</option>
+                                    <option value="cadete"      <?= ($profile['category'] ?? '') === 'cadete'      ? 'selected' : '' ?>>Cadete</option>
+                                    <option value="juvenil"     <?= ($profile['category'] ?? '') === 'juvenil'     ? 'selected' : '' ?>>Juvenil</option>
+                                    <option value="junior"      <?= ($profile['category'] ?? '') === 'junior'      ? 'selected' : '' ?>>Júnior</option>
+                                    <option value="senior"      <?= ($profile['category'] ?? '') === 'senior'      ? 'selected' : '' ?>>Sénior</option>
+                                    <option value="veterano"    <?= ($profile['category'] ?? '') === 'veterano'    ? 'selected' : '' ?>>Veterano</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Equipo</label>
+                                <input type="text" name="team" class="form-control-jp"
+                                    placeholder="Ej: CD Juvenil A"
+                                    value="<?= esc($profile['team'] ?? '') ?>">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Liga</label>
+                                <input type="text" name="league" class="form-control-jp"
+                                    placeholder="Ej: Liga Autonómica"
+                                    value="<?= esc($profile['league'] ?? '') ?>">
                             </div>
                         </div>
 

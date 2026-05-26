@@ -163,7 +163,10 @@ class PlayerService
     public function getFullProfile(int $id): ?array
     {
         $user = $this->userModel
-            ->select('users.*, player_profiles.id as profile_id, player_profiles.birth_date, player_profiles.height, player_profiles.weight, player_profiles.position, player_profiles.level, player_profiles.medical_notes')
+            ->select('users.*, player_profiles.id as profile_id, player_profiles.birth_date,
+                      player_profiles.height, player_profiles.weight, player_profiles.position,
+                      player_profiles.level, player_profiles.category, player_profiles.team,
+                      player_profiles.league, player_profiles.medical_notes')
             ->join('player_profiles', 'player_profiles.player_id = users.id', 'left')
             ->where('users.id', $id)
             ->where('users.role', 'player')
@@ -225,6 +228,16 @@ class PlayerService
             ->orderBy('cs.start_time', 'ASC')
             ->limit(10)
             ->get()->getResultArray();
+
+        // Últimos documentos de la carpeta personal del alumno
+        $docService = new \App\Services\DocumentService();
+        $personalFolder = $docService->getOrCreatePersonalFolder($id);
+        $user['personal_folder']   = $personalFolder;
+        $user['recent_documents']  = $personalFolder
+            ? $docService->getFolderFiles((int)$personalFolder['id'])
+            : [];
+        // Limitar a los 5 más recientes
+        $user['recent_documents'] = array_slice($user['recent_documents'], 0, 5);
 
         return $user;
     }

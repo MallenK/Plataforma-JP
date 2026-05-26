@@ -198,7 +198,12 @@ $routes->get('clases/(:num)', 'ClasesController::show/$1', [
     'filter' => 'auth',
 ]);
 
-// ── Confirmar asistencia (jugador convocado) ───────────────
+// ── Avisar ausencia (jugador convocado) ────────────────────
+$routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Confirmar asistencia (jugador convocado, mantenido) ────
 $routes->post('clases/(:num)/confirmar', 'ClasesController::respond/$1', [
     'filter' => 'auth',
 ]);

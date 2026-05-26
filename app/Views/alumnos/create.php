@@ -124,13 +124,37 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
 
                         <div class="col-12 col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Nivel</label>
-                                <select name="level" class="form-control-jp">
+                                <label class="form-label">Categoría</label>
+                                <select name="category" class="form-control-jp">
                                     <option value="">— Sin especificar —</option>
-                                    <option value="beginner"     <?= old('level') === 'beginner'     ? 'selected' : '' ?>>Principiante</option>
-                                    <option value="intermediate" <?= old('level') === 'intermediate' ? 'selected' : '' ?>>Intermedio</option>
-                                    <option value="advanced"     <?= old('level') === 'advanced'     ? 'selected' : '' ?>>Avanzado</option>
+                                    <option value="prebenjamin" <?= old('category') === 'prebenjamin' ? 'selected' : '' ?>>Prebenjamín</option>
+                                    <option value="benjamin"    <?= old('category') === 'benjamin'    ? 'selected' : '' ?>>Benjamín</option>
+                                    <option value="alevin"      <?= old('category') === 'alevin'      ? 'selected' : '' ?>>Alevín</option>
+                                    <option value="infantil"    <?= old('category') === 'infantil'    ? 'selected' : '' ?>>Infantil</option>
+                                    <option value="cadete"      <?= old('category') === 'cadete'      ? 'selected' : '' ?>>Cadete</option>
+                                    <option value="juvenil"     <?= old('category') === 'juvenil'     ? 'selected' : '' ?>>Juvenil</option>
+                                    <option value="junior"      <?= old('category') === 'junior'      ? 'selected' : '' ?>>Júnior</option>
+                                    <option value="senior"      <?= old('category') === 'senior'      ? 'selected' : '' ?>>Sénior</option>
+                                    <option value="veterano"    <?= old('category') === 'veterano'    ? 'selected' : '' ?>>Veterano</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Equipo</label>
+                                <input type="text" name="team" class="form-control-jp"
+                                    placeholder="Ej: CD Juvenil A"
+                                    value="<?= esc(old('team')) ?>">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Liga</label>
+                                <input type="text" name="league" class="form-control-jp"
+                                    placeholder="Ej: Liga Autonómica"
+                                    value="<?= esc(old('league')) ?>">
                             </div>
                         </div>
 

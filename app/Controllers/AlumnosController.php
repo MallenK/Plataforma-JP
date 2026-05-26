@@ -80,6 +80,9 @@ class AlumnosController extends BaseController
             'weight'        => $this->request->getPost('weight'),
             'position'      => $this->request->getPost('position'),
             'level'         => $this->request->getPost('level'),
+            'category'      => $this->request->getPost('category') ?: null,
+            'team'          => $this->request->getPost('team') ?: null,
+            'league'        => $this->request->getPost('league') ?: null,
             'medical_notes' => $this->request->getPost('medical_notes'),
         ];
 
@@ -124,6 +127,9 @@ class AlumnosController extends BaseController
             'weight'        => $this->request->getPost('weight') ?: null,
             'position'      => $this->request->getPost('position') ?: null,
             'level'         => $this->request->getPost('level') ?: null,
+            'category'      => $this->request->getPost('category') ?: null,
+            'team'          => $this->request->getPost('team') ?: null,
+            'league'        => $this->request->getPost('league') ?: null,
             'medical_notes' => $this->request->getPost('medical_notes') ?: null,
         ], fn($v) => $v !== null);
 
@@ -196,6 +202,9 @@ class AlumnosController extends BaseController
             'weight'        => $this->request->getPost('weight') ?: null,
             'position'      => $this->request->getPost('position') ?: null,
             'level'         => $this->request->getPost('level') ?: null,
+            'category'      => $this->request->getPost('category') ?: null,
+            'team'          => $this->request->getPost('team') ?: null,
+            'league'        => $this->request->getPost('league') ?: null,
             'medical_notes' => $this->request->getPost('medical_notes') ?: null,
         ];
 

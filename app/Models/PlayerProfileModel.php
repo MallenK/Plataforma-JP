@@ -14,7 +14,10 @@ class PlayerProfileModel extends Model
         'weight',
         'position',
         'level',
-        'medical_notes'
+        'category',
+        'team',
+        'league',
+        'medical_notes',
     ];
 }
 
