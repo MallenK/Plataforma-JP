@@ -6,9 +6,10 @@ use CodeIgniter\Model;
 
 class ClassSessionCoachModel extends Model
 {
-    protected $table         = 'class_session_coaches';
-    protected $primaryKey    = 'session_id';
-    protected $returnType    = 'array';
-    protected $useTimestamps  = false;
-    protected $allowedFields = ['session_id', 'user_id'];
+    protected $table            = 'class_session_coaches';
+    protected $primaryKey       = 'session_id';
+    protected $useAutoIncrement = false;
+    protected $returnType       = 'array';
+    protected $useTimestamps    = false;
+    protected $allowedFields    = ['session_id', 'user_id'];
 }

@@ -172,8 +172,12 @@ class ClasesService
             return ['success' => false, 'error' => $msg];
         }
 
-        $this->syncCoaches($id, $data['coach_ids'] ?? []);
-        $this->syncPlayers($id, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
+        try {
+            $this->syncCoaches($id, $data['coach_ids'] ?? []);
+            $this->syncPlayers($id, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
+        } catch (\Throwable $e) {
+            log_message('error', 'ClasesService::quickCreate sync error (session=' . $id . '): ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+        }
 
         $session = $this->sessionModel->find($id);
         return [
@@ -754,7 +758,13 @@ class ClasesService
         $this->db->table('class_session_coaches')->where('session_id', $sessionId)->delete();
 
         foreach (array_unique(array_filter(array_map('intval', (array)$userIds))) as $uid) {
-            $this->coachModel->insert(['session_id' => $sessionId, 'user_id' => $uid]);
+            $this->db->table('class_session_coaches')->insert([
+                'session_id' => $sessionId,
+                'user_id'    => $uid,
+            ]);
+            if ($this->db->affectedRows() === 0) {
+                log_message('error', 'syncCoaches: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
+            }
         }
     }
 
@@ -762,14 +772,20 @@ class ClasesService
     {
         $this->db->table('class_session_players')->where('session_id', $sessionId)->delete();
 
+        $now = date('Y-m-d H:i:s');
         foreach (array_unique(array_filter(array_map('intval', (array)$userIds))) as $uid) {
             $coachId = isset($coachMap[$uid]) ? ((int)$coachMap[$uid] ?: null) : null;
-            $this->playerModel->insert([
+            $this->db->table('class_session_players')->insert([
                 'session_id' => $sessionId,
                 'user_id'    => $uid,
                 'coach_id'   => $coachId,
                 'attendance' => 'pending',
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
+            if ($this->db->affectedRows() === 0) {
+                log_message('error', 'syncPlayers: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
+            }
         }
     }
 
