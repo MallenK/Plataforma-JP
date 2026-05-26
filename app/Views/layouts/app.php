@@ -20,4 +20,6 @@
 
 </div>
 
+<?= view('partials/tutorial_init') ?>
+
 <?= $this->endSection() ?>

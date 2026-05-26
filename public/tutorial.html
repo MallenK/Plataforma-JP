@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JP Preparation — Manual de Usuario</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ── RESET Y BASE ───────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: #f0f2f5;
+    color: #1e293b;
+    line-height: 1.6;
+  }
+
+  /* ── IMPRESIÓN ──────────────────────────────────────────── */
+  @media print {
+    body { background: #fff; font-size: 12px; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    .section-card { break-inside: avoid; }
+    .cover { height: 100vh; page-break-after: always; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* ── WRAPPER ────────────────────────────────────────────── */
+  .doc-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── BARRA SUPERIOR (solo pantalla) ─────────────────────── */
+  .top-bar {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    font-size: 13px;
+  }
+  .top-bar strong { color: #60a5fa; }
+  .print-btn {
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .print-btn:hover { background: #2563eb; }
+
+  /* ── PORTADA ────────────────────────────────────────────── */
+  .cover {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    border-radius: 16px;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '⚽';
+    position: absolute;
+    font-size: 320px;
+    opacity: .04;
+    top: -60px;
+    right: -60px;
+    line-height: 1;
+  }
+  .cover-badge {
+    background: rgba(59,130,246,.25);
+    border: 1px solid rgba(59,130,246,.4);
+    color: #93c5fd;
+    padding: 6px 18px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .cover h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    color: #f1f5f9;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  .cover h1 span { color: #60a5fa; }
+  .cover-sub {
+    font-size: 18px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-bottom: 32px;
+  }
+  .cover-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 40px;
+  }
+  .cover-role-pill {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    color: #cbd5e1;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .cover-meta {
+    color: #64748b;
+    font-size: 12px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 20px;
+    width: 100%;
+  }
+
+  /* ── ÍNDICE ─────────────────────────────────────────────── */
+  .toc {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .toc h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li {
+    padding: 6px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .toc-list li:last-child { border-bottom: none; }
+  .toc-list a {
+    color: #334155;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+  .toc-list a:hover { color: #3b82f6; }
+  .toc-section { font-weight: 700; font-size: 14px; color: #0f172a; }
+  .toc-sub { padding-left: 20px; }
+  .toc-page { color: #94a3b8; font-size: 12px; flex-shrink: 0; }
+
+  /* ── SECCIÓN / ROL ──────────────────────────────────────── */
+  .role-section { margin-bottom: 56px; }
+  .role-header {
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .role-icon {
+    width: 60px; height: 60px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .role-header-text h2 {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .role-header-text p {
+    font-size: 14px;
+    opacity: .8;
+    line-height: 1.5;
+  }
+  .role-access-label {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.2);
+  }
+
+  /* Colores por rol */
+  .role-player  { background: linear-gradient(135deg, #1e3a5f, #0f172a); color: #e2e8f0; }
+  .role-player  .role-icon { background: rgba(59,130,246,.25); color: #60a5fa; }
+
+  .role-coach   { background: linear-gradient(135deg, #1c3a2f, #0f172a); color: #e2e8f0; }
+  .role-coach   .role-icon { background: rgba(16,185,129,.25); color: #34d399; }
+
+  .role-staff   { background: linear-gradient(135deg, #2d1b4e, #0f172a); color: #e2e8f0; }
+  .role-staff   .role-icon { background: rgba(139,92,246,.25); color: #a78bfa; }
+
+  .role-admin   { background: linear-gradient(135deg, #1e3a1e, #0f172a); color: #e2e8f0; }
+  .role-admin   .role-icon { background: rgba(245,158,11,.25); color: #fbbf24; }
+
+  .role-super   { background: linear-gradient(135deg, #3a1e1e, #0f172a); color: #e2e8f0; }
+  .role-super   .role-icon { background: rgba(239,68,68,.25); color: #f87171; }
+
+  /* ── CARDS DE SECCIÓN ───────────────────────────────────── */
+  .section-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 8px rgba(0,0,0,.06);
+    border-left: 4px solid transparent;
+  }
+  .section-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .section-card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .section-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .section-card-url {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .section-card p {
+    color: #475569;
+    font-size: 13.5px;
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+  .section-card p:last-child { margin-bottom: 0; }
+
+  /* ── STEPS DENTRO DE CARD ───────────────────────────────── */
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .steps-list li {
+    counter-increment: step;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13.5px;
+    color: #334155;
+  }
+  .steps-list li::before {
+    content: counter(step);
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  .steps-list li.important::before {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  /* ── BADGES / TAGS ──────────────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+  .badge-green  { background: #d1fae5; color: #065f46; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-yellow { background: #fef3c7; color: #92400e; }
+  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+
+  /* ── GRID ────────────────────────────────────────────────── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── ALERTAS / TIPS ─────────────────────────────────────── */
+  .tip {
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .tip-info    { background: #eff6ff; border-left: 3px solid #3b82f6; color: #1e40af; }
+  .tip-warn    { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; }
+  .tip-success { background: #f0fdf4; border-left: 3px solid #22c55e; color: #14532d; }
+  .tip-danger  { background: #fef2f2; border-left: 3px solid #ef4444; color: #991b1b; }
+
+  /* ── TABLA ───────────────────────────────────────────────── */
+  .perm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 10px;
+  }
+  .perm-table th {
+    background: #f8fafc;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .perm-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #374151;
+  }
+  .perm-table tr:last-child td { border-bottom: none; }
+  .check { color: #16a34a; font-weight: 700; }
+  .cross { color: #dc2626; font-weight: 700; }
+
+  /* ── SEPARADOR DE SECCIÓN ────────────────────────────────── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0 28px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+  .section-divider::before, .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+
+  /* ── FOOTER ──────────────────────────────────────────────── */
+  .doc-footer {
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    padding-top: 32px;
+    border-top: 1px solid #e2e8f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Barra superior de pantalla -->
+<div class="top-bar no-print">
+  <div><strong>JP Preparation</strong> — Manual de Usuario · v1.0 · 2026</div>
+  <button class="print-btn" onclick="window.print()">
+    🖨️ Imprimir / Guardar PDF
+  </button>
+</div>
+
+<div class="doc-wrap">
+
+  <!-- ══════════════════════════════════════════════════════════
+       PORTADA
+  ══════════════════════════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-badge">Manual de Usuario · Versión 1.0</div>
+    <h1>JP <span>Preparation</span></h1>
+    <p class="cover-sub">Guía completa de la plataforma de gestión deportiva</p>
+    <div class="cover-roles">
+      <span class="cover-role-pill">⚽ Alumno</span>
+      <span class="cover-role-pill">🏆 Entrenador</span>
+      <span class="cover-role-pill">📋 Staff</span>
+      <span class="cover-role-pill">🛠️ Administrador</span>
+      <span class="cover-role-pill">⚡ Superadmin</span>
+    </div>
+    <div class="cover-meta">
+      Plataforma JP Preparation &nbsp;·&nbsp; Mayo 2026 &nbsp;·&nbsp; Documento confidencial de uso interno
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ÍNDICE
+  ══════════════════════════════════════════════════════════ -->
+  <div class="toc" id="indice">
+    <h2>📑 Índice de contenidos</h2>
+    <ul class="toc-list">
+      <li><a href="#intro" class="toc-section">1. Introducción y acceso</a></li>
+      <li><a href="#roles" class="toc-section">2. Roles y permisos</a></li>
+      <li class="toc-sub"><a href="#role-player">2.1 Alumno (Player)</a></li>
+      <li class="toc-sub"><a href="#role-coach">2.2 Entrenador (Coach)</a></li>
+      <li class="toc-sub"><a href="#role-staff">2.3 Staff</a></li>
+      <li class="toc-sub"><a href="#role-admin">2.4 Administrador</a></li>
+      <li class="toc-sub"><a href="#role-super">2.5 Superadministrador</a></li>
+      <li><a href="#modulos" class="toc-section">3. Módulos de la plataforma</a></li>
+      <li class="toc-sub"><a href="#mod-dashboard">3.1 Dashboard</a></li>
+      <li class="toc-sub"><a href="#mod-alumnos">3.2 Alumnos</a></li>
+      <li class="toc-sub"><a href="#mod-clases">3.3 Clases y Calendario</a></li>
+      <li class="toc-sub"><a href="#mod-bonos">3.4 Bonos</a></li>
+      <li class="toc-sub"><a href="#mod-docs">3.5 Documentación</a></li>
+      <li class="toc-sub"><a href="#mod-mensajes">3.6 Mensajes</a></li>
+      <li class="toc-sub"><a href="#mod-notif">3.7 Notificaciones</a></li>
+      <li class="toc-sub"><a href="#mod-compras">3.8 Lista de compras</a></li>
+      <li class="toc-sub"><a href="#mod-config">3.9 Configuración</a></li>
+      <li><a href="#faq" class="toc-section">4. Preguntas frecuentes</a></li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       1. INTRODUCCIÓN
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section-divider" id="intro">1. Introducción y acceso</div>
+
+  <div class="section-card" style="border-color:#3b82f6">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#dbeafe;color:#1d4ed8">🌐</div>
+      <h3>¿Qué es JP Preparation?</h3>
+    </div>
+    <p>JP Preparation es una plataforma web de gestión integral para academias de fútbol. Centraliza en un único sistema: la gestión de alumnos, el calendario de sesiones, el control de asistencia, los bonos, la documentación interna y la comunicación entre todos los miembros.</p>
+    <p>Está diseñada para ser usada simultáneamente por todos los roles de la academia: alumnos, entrenadores, personal administrativo y dirección.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="section-card" style="border-color:#10b981">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#d1fae5;color:#065f46">🔐</div>
+        <h3>Primer acceso</h3>
+      </div>
+      <ol class="steps-list">
+        <li>Abre el navegador y accede a la URL de la plataforma.</li>
+        <li>Introduce el <strong>email</strong> y la <strong>contraseña</strong> que te ha proporcionado el administrador.</li>
+        <li>Si es tu primer acceso, la contraseña inicial te la habrá comunicado el equipo técnico.</li>
+        <li>Una vez dentro, cambia tu contraseña desde <em>Mi perfil</em>.</li>
+      </ol>
+    </div>
+    <div class="section-card" style="border-color:#f59e0b">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fef3c7;color:#d97706">🔑</div>
+        <h3>Recuperar contraseña</h3>
+      </div>
+      <ol class="steps-list">
+        <li>En la pantalla de login, haz clic en <strong>«¿Olvidaste tu contraseña?»</strong>.</li>
+        <li>Introduce tu email y recibirás un enlace de restablecimiento.</li>
+        <li>El enlace caduca en 60 minutos.</li>
+        <li>Si no recibes el email, contacta con el administrador.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="section-card" style="border-color:#6366f1">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#ede9fe;color:#5b21b6">🧭</div>
+      <h3>Navegación general</h3>
+    </div>
+    <p>La interfaz se divide en tres zonas principales:</p>
+    <div class="grid-2">
+      <div>
+        <p><strong>Barra lateral izquierda:</strong> menú de navegación con todos los módulos accesibles según tu rol. Los módulos a los que no tienes acceso no aparecen.</p>
+        <p><strong>Barra superior:</strong> muestra el título de la página actual, el icono de mensajes, la campana de notificaciones, tu avatar y nombre, y el botón <strong>?</strong> para el tutorial.</p>
+      </div>
+      <div>
+        <p><strong>Área de contenido:</strong> zona central donde se muestra cada módulo.</p>
+        <div class="tip tip-info">
+          <span class="tip-icon">💡</span>
+          <span>El botón <strong>?</strong> en la barra superior siempre está disponible para relanzar el tutorial interactivo adaptado a tu rol.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       2. ROLES Y PERMISOS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section-divider" id="roles">2. Roles y permisos</div>
+
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#f1f5f9;color:#374151">🔒</div>
+      <h3>Tabla resumen de permisos</h3>
+    </div>
+    <table class="perm-table">
+      <thead>
+        <tr>
+          <th>Módulo</th>
+          <th>Alumno</th>
+          <th>Coach</th>
+          <th>Staff</th>
+          <th>Admin</th>
+          <th>Superadmin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Dashboard</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Mi ficha (alumno)</td><td class="check">✓ (propia)</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Alumnos (listado)</td><td class="cross">—</td><td class="check">✓ (lectura)</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Alumnos (crear/editar)</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Entrenadores</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Clases (ver)</td><td class="check">✓ (propias)</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Clases (crear/editar)</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Asistencia (marcar)</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Avisar ausencia</td><td class="check">✓</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td></tr>
+        <tr><td>Bonos</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Documentación (ver)</td><td class="check">✓ (personal+pública)</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Documentación (subir)</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Documentación (carpetas)</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Mensajes</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Notificaciones (recibir)</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Notificaciones (enviar grupal)</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Lista de compras</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Gestionar compras</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Configuración</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Gestión de staff</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROL: ALUMNO
+  ══════════════════════════════════════════════════════════ -->
+  <div id="role-player" class="role-section">
+    <div class="role-header role-player">
+      <div class="role-icon">⚽</div>
+      <div class="role-header-text">
+        <h2>Alumno (Player)</h2>
+        <p>El alumno accede a su información personal, consulta sus sesiones, gestiona sus documentos y se comunica con el equipo técnico.</p>
+        <span class="role-access-label">Acceso: /alumno · /clases · /documentacion · /mensajes · /notificaciones · /perfil</span>
+      </div>
+    </div>
+
+    <div class="section-card" id="player-ficha" style="border-color:#3b82f6">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#dbeafe;color:#1d4ed8">👤</div>
+        <h3>Mi ficha técnica</h3>
+        <span class="section-card-url">/alumno</span>
+      </div>
+      <p>Tu ficha muestra toda tu información deportiva: <strong>categoría</strong> (alevín, cadete, juvenil…), <strong>equipo</strong>, <strong>liga</strong>, posición, altura, peso y notas médicas.</p>
+      <ol class="steps-list">
+        <li>Ve a <strong>Mi ficha</strong> desde la barra lateral.</li>
+        <li>Haz clic en <strong>«Editar ficha»</strong> para actualizar tus datos.</li>
+        <li>Rellena o modifica los campos que necesites y guarda los cambios.</li>
+        <li>Los datos de altura, peso y posición son especialmente importantes para el equipo técnico.</li>
+      </ol>
+      <div class="tip tip-info">
+        <span class="tip-icon">💡</span>
+        <span>Las <strong>notas médicas</strong> son solo visibles para el personal de la academia, nunca para otros alumnos.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#06b6d4">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#cffafe;color:#0e7490">📅</div>
+        <h3>Mis sesiones de entrenamiento</h3>
+        <span class="section-card-url">/clases</span>
+      </div>
+      <p>El <strong>calendario de clases</strong> muestra únicamente las sesiones a las que estás convocado. Los colores indican el estado:</p>
+      <div class="grid-2">
+        <div>
+          <p><span class="badge badge-blue">● Programada</span> — Sesión pendiente de realizar.<br>
+          <span class="badge badge-green">● Completada</span> — Ya realizada.<br>
+          <span class="badge badge-gray">● Cancelada</span> — No se realizará.</p>
+        </div>
+        <div>
+          <p>Haz clic sobre cualquier sesión para ver su detalle: hora, lugar, objetivo del entrenamiento y estado de tu asistencia.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#ef4444">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fee2e2;color:#991b1b">🚫</div>
+        <h3>Avisar una ausencia</h3>
+        <span class="section-card-url">/clases/:id</span>
+      </div>
+      <p>Si no puedes asistir a una sesión, puedes notificarlo directamente desde el detalle de esa sesión:</p>
+      <ol class="steps-list">
+        <li>Entra en el <strong>detalle de la sesión</strong> desde el calendario.</li>
+        <li>En la sección <em>«Tu convocatoria»</em>, verás el formulario de aviso de ausencia.</li>
+        <li>Escribe el motivo (opcional) y envía el aviso.</li>
+        <li>El entrenador recibirá tu notificación.</li>
+        <li class="important">Si avisas <strong>después de las 10:00 del mismo día</strong> de la sesión, aparecerá un aviso indicándolo, aunque el aviso igualmente se registra.</li>
+      </ol>
+      <div class="tip tip-warn">
+        <span class="tip-icon">⚠️</span>
+        <span>Solo puedes avisar ausencias en sesiones con estado <strong>«Programada»</strong>. Una vez completada o cancelada, ya no es posible.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#f97316">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#ffedd5;color:#c2410c">📁</div>
+        <h3>Mis documentos</h3>
+        <span class="section-card-url">/documentacion</span>
+      </div>
+      <p>En Documentación tienes acceso a:</p>
+      <p><strong>Carpeta personal:</strong> archivos que el equipo técnico ha subido para ti (contratos, planes, informes). También aparece en tu ficha de alumno como acceso rápido.</p>
+      <p><strong>Carpetas públicas:</strong> material formativo de la academia disponible para todos los alumnos.</p>
+      <ol class="steps-list">
+        <li>Selecciona una carpeta en el panel lateral izquierdo.</li>
+        <li>Haz clic en el nombre del archivo para <strong>previsualizar</strong> (PDF, imágenes) o en el icono de descarga para guardarlo.</li>
+      </ol>
+    </div>
+
+    <div class="section-card" style="border-color:#10b981">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#d1fae5;color:#065f46">💬</div>
+        <h3>Mensajes y notificaciones</h3>
+        <span class="section-card-url">/mensajes · /notificaciones</span>
+      </div>
+      <p><strong>Mensajes:</strong> chat directo con tu entrenador o el personal de la academia. Puedes enviar texto y archivos adjuntos. Las conversaciones son privadas.</p>
+      <p><strong>Notificaciones:</strong> la campana 🔔 en la barra superior se ilumina cuando recibes una nueva notificación. Haz clic para ver el resumen, o ve a <em>Notificaciones</em> para ver el historial completo.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROL: COACH
+  ══════════════════════════════════════════════════════════ -->
+  <div id="role-coach" class="role-section page-break">
+    <div class="role-header role-coach">
+      <div class="role-icon">🏆</div>
+      <div class="role-header-text">
+        <h2>Entrenador (Coach)</h2>
+        <p>El entrenador gestiona sus grupos, controla la asistencia, añade observaciones sobre los alumnos y se comunica con la academia.</p>
+        <span class="role-access-label">Acceso: /alumnos · /clases · /documentacion · /mensajes · /notificaciones · /compras</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#10b981">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#d1fae5;color:#065f46">👥</div>
+        <h3>Gestión de alumnos</h3>
+        <span class="section-card-url">/alumnos</span>
+      </div>
+      <p>El listado de alumnos muestra todos los jugadores de la academia. Desde aquí puedes entrar en la ficha individual de cada alumno para consultar su información completa.</p>
+      <div class="tip tip-info">
+        <span class="tip-icon">💡</span>
+        <span>Como coach puedes <strong>ver y anotar</strong>, pero no crear ni eliminar alumnos. Esa función es exclusiva de Admin.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#06b6d4">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#cffafe;color:#0e7490">📋</div>
+        <h3>Ficha del alumno</h3>
+        <span class="section-card-url">/alumnos/:id</span>
+      </div>
+      <p>La ficha del alumno incluye:</p>
+      <div class="grid-2">
+        <div>
+          <p>✦ Datos deportivos (categoría, equipo, liga, edad)</p>
+          <p>✦ Historial de sesiones y asistencia</p>
+          <p>✦ Bonos activos y sesiones restantes</p>
+        </div>
+        <div>
+          <p>✦ Anotaciones públicas e internas</p>
+          <p>✦ Documentos personales del alumno</p>
+          <p>✦ Métricas de rendimiento</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#f97316">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#ffedd5;color:#c2410c">📝</div>
+        <h3>Anotaciones sobre un alumno</h3>
+        <span class="section-card-url">/alumnos/:id#anotaciones</span>
+      </div>
+      <p>Las anotaciones son notas que el entrenador (u otro miembro del staff) añade sobre el alumno.</p>
+      <div class="grid-2">
+        <div>
+          <p><span class="badge badge-blue">Pública</span><br>El alumno puede verla desde su panel. Ideal para feedback motivacional o técnico.</p>
+        </div>
+        <div>
+          <p><span class="badge badge-red">Interna</span><br>Solo visible para el staff. Para notas de seguimiento confidenciales.</p>
+        </div>
+      </div>
+      <ol class="steps-list">
+        <li>Entra en la ficha del alumno.</li>
+        <li>Desplázate hasta la sección <em>«Anotaciones»</em>.</li>
+        <li>Selecciona el tipo (pública / interna), escribe el texto y, si quieres, adjunta un archivo.</li>
+        <li>Haz clic en <strong>«Añadir»</strong>. El archivo se guarda automáticamente en la carpeta personal del alumno.</li>
+      </ol>
+    </div>
+
+    <div class="section-card" style="border-color:#3b82f6">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#dbeafe;color:#1d4ed8">📅</div>
+        <h3>Crear una sesión</h3>
+        <span class="section-card-url">/clases</span>
+      </div>
+      <p>Hay dos formas de crear una sesión:</p>
+      <p><strong>Clase rápida:</strong> haz clic en <em>«+ Nueva clase rápida»</em> en el dashboard o en el calendario. Rellena el formulario emergente con los datos básicos.</p>
+      <p><strong>Sesión completa:</strong> desde <em>Clases → Nueva sesión</em>. Incluye campos adicionales: sede, objetivo, notas previas, notas posteriores, y opción de <strong>recurrencia semanal</strong>.</p>
+      <div class="tip tip-info">
+        <span class="tip-icon">💡</span>
+        <span>Las sesiones recurrentes generan automáticamente todas las instancias hasta la fecha de fin indicada.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#10b981">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#d1fae5;color:#065f46">✅</div>
+        <h3>Control de asistencia</h3>
+        <span class="section-card-url">/clases/:id</span>
+      </div>
+      <p>Dentro del detalle de una sesión, la tabla de alumnos convocados incluye:</p>
+      <div class="grid-2">
+        <div>
+          <p><span class="badge badge-green">Presente</span> — Asistió a la sesión.<br>
+          <span class="badge badge-red">Ausente</span> — No asistió.<br>
+          <span class="badge badge-gray">Pendiente</span> — Sin registrar aún.</p>
+        </div>
+        <div>
+          <p>Si un alumno envió un aviso de ausencia, verás su nota en la columna <em>«Aviso alumno»</em>. Puedes registrar un <strong>motivo de ausencia</strong> en el campo correspondiente al marcar como ausente.</p>
+        </div>
+      </div>
+      <ol class="steps-list">
+        <li>Selecciona el estado de cada alumno en el desplegable de asistencia.</li>
+        <li>Si marcas <em>Ausente</em>, aparece un campo para escribir el motivo.</li>
+        <li>Haz clic en <strong>«Guardar asistencia»</strong>.</li>
+        <li>Cuando hayas registrado todo, marca la sesión como <strong>«Completada»</strong>.</li>
+        <li class="important">Al completar la sesión, el sistema descuenta automáticamente un bono a cada alumno marcado como <strong>presente</strong>.</li>
+      </ol>
+      <div class="tip tip-success">
+        <span class="tip-icon">✅</span>
+        <span>El descuento de bono es automático al completar la sesión. No necesitas hacerlo manualmente.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROL: STAFF
+  ══════════════════════════════════════════════════════════ -->
+  <div id="role-staff" class="role-section page-break">
+    <div class="role-header role-staff">
+      <div class="role-icon">📋</div>
+      <div class="role-header-text">
+        <h2>Staff</h2>
+        <p>El personal de apoyo tiene acceso a las funciones administrativas: alumnos, clases, documentación, compras y comunicaciones.</p>
+        <span class="role-access-label">Acceso: /alumnos (lectura) · /clases · /documentacion · /compras · /mensajes</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#8b5cf6">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#ede9fe;color:#5b21b6">🏫</div>
+        <h3>Funciones principales del Staff</h3>
+      </div>
+      <p>El rol Staff tiene acceso similar al Coach en la mayoría de módulos, con algunas diferencias:</p>
+      <table class="perm-table">
+        <thead><tr><th>Acción</th><th>Staff</th><th>Coach</th></tr></thead>
+        <tbody>
+          <tr><td>Ver listado de alumnos</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Crear/editar alumnos</td><td class="cross">—</td><td class="cross">—</td></tr>
+          <tr><td>Añadir anotaciones</td><td class="check">✓ (públicas)</td><td class="check">✓ (públicas + internas)</td></tr>
+          <tr><td>Gestionar sesiones</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Enviar notificaciones grupales</td><td class="cross">—</td><td class="check">✓</td></tr>
+          <tr><td>Lista de compras</td><td class="check">✓ (crear solicitudes)</td><td class="check">✓ (crear solicitudes)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card" style="border-color:#ef4444">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fee2e2;color:#991b1b">🛒</div>
+        <h3>Lista de compras</h3>
+        <span class="section-card-url">/compras</span>
+      </div>
+      <p>El Staff puede <strong>crear solicitudes de material</strong> para que el administrador las gestione:</p>
+      <ol class="steps-list">
+        <li>Ve a <strong>Compras</strong> en el menú lateral.</li>
+        <li>Haz clic en <strong>«+ Nueva solicitud»</strong>.</li>
+        <li>Rellena: nombre del artículo, descripción, categoría, precio estimado, prioridad y URL del producto (opcional).</li>
+        <li>Envía la solicitud. Aparecerá en estado <span class="badge badge-yellow">Pendiente</span> hasta que el administrador la revise.</li>
+      </ol>
+      <p>Los estados posibles son: <span class="badge badge-yellow">Pendiente</span> <span class="badge badge-blue">En revisión</span> <span class="badge badge-green">Aprobado</span> <span class="badge badge-red">Denegado</span> <span class="badge badge-purple">Comprado</span> <span class="badge badge-gray">Cancelado</span></p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROL: ADMIN
+  ══════════════════════════════════════════════════════════ -->
+  <div id="role-admin" class="role-section page-break">
+    <div class="role-header role-admin">
+      <div class="role-icon">🛠️</div>
+      <div class="role-header-text">
+        <h2>Administrador</h2>
+        <p>Acceso completo a la gestión de la academia: alumnos, entrenadores, sesiones, bonos, documentación, configuración y comunicaciones.</p>
+        <span class="role-access-label">Acceso total · excepto gestión de otros superadmins</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#f59e0b">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fef3c7;color:#d97706">👥</div>
+        <h3>Crear un nuevo alumno</h3>
+        <span class="section-card-url">/alumnos/nuevo</span>
+      </div>
+      <ol class="steps-list">
+        <li>Ve a <strong>Alumnos → Nuevo alumno</strong>.</li>
+        <li>Introduce el <strong>nombre completo</strong> y el <strong>email</strong> del alumno.</li>
+        <li>Opcionalmente, rellena los datos de la ficha técnica: fecha de nacimiento, posición, categoría, equipo, liga, notas médicas.</li>
+        <li>Haz clic en <strong>«Crear alumno»</strong>. El sistema genera automáticamente una contraseña inicial que se muestra una sola vez — cópiala y entrégasela al alumno.</li>
+        <li>El alumno también obtiene su <strong>carpeta personal de documentos</strong> automáticamente.</li>
+      </ol>
+      <div class="tip tip-warn">
+        <span class="tip-icon">⚠️</span>
+        <span>La contraseña inicial solo se muestra una vez. Si la pierdes, deberás resetearla desde <em>Perfil del alumno → Resetear contraseña</em>.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#3b82f6">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#dbeafe;color:#1d4ed8">🎫</div>
+        <h3>Gestión de bonos</h3>
+        <span class="section-card-url">/bonos</span>
+      </div>
+      <p>Los bonos son paquetes de sesiones que se asignan a alumnos individuales.</p>
+      <div class="grid-2">
+        <div>
+          <p><strong>Crear tipo de bono:</strong> desde <em>Configuración → Facturación</em> defines los tipos disponibles (nombre, número de sesiones, precio, validez en días).</p>
+        </div>
+        <div>
+          <p><strong>Asignar bono a alumno:</strong> desde <em>Bonos → Asignar</em> seleccionas el alumno y el tipo de bono. Opcionalmente añades notas.</p>
+        </div>
+      </div>
+      <div class="tip tip-success">
+        <span class="tip-icon">✅</span>
+        <span>El sistema usa <strong>cola FIFO</strong>: si un alumno tiene varios bonos activos, se descuenta primero el más antiguo.</span>
+      </div>
+      <div class="tip tip-info">
+        <span class="tip-icon">💡</span>
+        <span>El descuento es automático al <strong>completar una sesión</strong>, solo para los alumnos marcados como <strong>presente</strong>.</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#10b981">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#d1fae5;color:#065f46">📁</div>
+        <h3>Gestión de documentación</h3>
+        <span class="section-card-url">/documentacion</span>
+      </div>
+      <p>El administrador gestiona tres tipos de carpetas:</p>
+      <table class="perm-table">
+        <thead><tr><th>Tipo</th><th>Quién puede ver</th><th>Quién puede subir</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-blue">Pública</span></td><td>Todos (excl. alumnos sin cuenta)</td><td>Admin + quienes tengan permiso</td></tr>
+          <tr><td><span class="badge badge-purple">Personal</span></td><td>El alumno propietario + Admin</td><td>Admin + Superadmin</td></tr>
+          <tr><td><span class="badge badge-red">Interna</span></td><td>Usuarios con permiso explícito</td><td>Usuarios con permiso de escritura</td></tr>
+        </tbody>
+      </table>
+      <ol class="steps-list" style="margin-top:14px">
+        <li>Para <strong>crear una carpeta</strong>: botón <em>«+ Nueva carpeta»</em>, elige tipo, nombre, icono y color.</li>
+        <li>Para <strong>subir archivos</strong>: selecciona la carpeta, arrastra el archivo o usa el botón <em>«Subir archivo»</em>.</li>
+        <li>Para <strong>dar permisos</strong> en carpetas internas: entra en la carpeta y usa el botón <em>«Gestionar permisos»</em>.</li>
+      </ol>
+    </div>
+
+    <div class="section-card" style="border-color:#6366f1">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#ede9fe;color:#5b21b6">⚙️</div>
+        <h3>Configuración de la academia</h3>
+        <span class="section-card-url">/configuracion</span>
+      </div>
+      <p>La sección de Configuración se divide en pestañas:</p>
+      <div class="grid-2">
+        <div>
+          <p><strong>General:</strong> nombre de la academia, logo, información de contacto.</p>
+          <p><strong>Staff:</strong> crear nuevos miembros del equipo (admin, coach, staff), cambiar roles, activar/desactivar cuentas.</p>
+          <p><strong>Sedes:</strong> gestionar los espacios donde se realizan las sesiones.</p>
+        </div>
+        <div>
+          <p><strong>Facturación:</strong> tipos de bono disponibles (nombre, sesiones, precio, validez).</p>
+          <p><strong>Notificaciones:</strong> configurar el servidor SMTP y los disparadores de email automático.</p>
+          <p><strong>Seguridad:</strong> políticas de contraseña y sesión.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#f97316">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#ffedd5;color:#c2410c">📢</div>
+        <h3>Enviar notificaciones</h3>
+        <span class="section-card-url">/notificaciones</span>
+      </div>
+      <p>Las notificaciones son diferentes de los mensajes directos. Sirven para comunicados formales.</p>
+      <ol class="steps-list">
+        <li>Ve a <strong>Notificaciones → Enviar nueva</strong>.</li>
+        <li>Elige si es <strong>individual</strong> (selecciona el destinatario) o <strong>grupal</strong> (todos los alumnos, todos los coaches, todos los usuarios, etc.).</li>
+        <li>Escribe el título y el cuerpo del mensaje.</li>
+        <li>Opcionalmente, adjunta un archivo (PDF, imagen, etc.).</li>
+        <li>Envía. El destinatario verá la notificación en la campana y en la sección de notificaciones.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROL: SUPERADMIN
+  ══════════════════════════════════════════════════════════ -->
+  <div id="role-super" class="role-section page-break">
+    <div class="role-header role-super">
+      <div class="role-icon">⚡</div>
+      <div class="role-header-text">
+        <h2>Superadministrador</h2>
+        <p>Acceso total a todos los módulos y configuraciones de la plataforma, incluidos ajustes de seguridad, SMTP y gestión completa de usuarios.</p>
+        <span class="role-access-label">Acceso total · sin restricciones</span>
+      </div>
+    </div>
+
+    <div class="section-card" style="border-color:#ef4444">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fee2e2;color:#991b1b">🔑</div>
+        <h3>Diferencias con Administrador</h3>
+      </div>
+      <table class="perm-table">
+        <thead><tr><th>Función</th><th>Admin</th><th>Superadmin</th></tr></thead>
+        <tbody>
+          <tr><td>Crear cuenta Superadmin</td><td class="cross">—</td><td class="check">✓</td></tr>
+          <tr><td>Modificar cualquier usuario</td><td class="check">✓ (no superadmins)</td><td class="check">✓ (todos)</td></tr>
+          <tr><td>Configuración de seguridad</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Configuración SMTP</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Acceder al perfil de cualquier user</td><td class="check">✓ (no superadmins)</td><td class="check">✓ (todos)</td></tr>
+          <tr><td>Todo lo demás</td><td class="check">✓</td><td class="check">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card" style="border-color:#f59e0b">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#fef3c7;color:#d97706">👤</div>
+        <h3>Acceder al perfil de otro usuario</h3>
+        <span class="section-card-url">/perfil/:id</span>
+      </div>
+      <p>El Superadmin puede gestionar las credenciales de cualquier usuario accediendo directamente a su perfil:</p>
+      <ol class="steps-list">
+        <li>Navega a <code>/perfil/{id}</code> donde <code>{id}</code> es el ID del usuario.</li>
+        <li>Desde allí puedes cambiar su email, nombre, avatar y resetear su contraseña.</li>
+        <li>También puedes hacerlo desde la ficha del alumno o desde <em>Configuración → Staff</em> para el personal.</li>
+      </ol>
+    </div>
+
+    <div class="section-card" style="border-color:#06b6d4">
+      <div class="section-card-header">
+        <div class="section-card-icon" style="background:#cffafe;color:#0e7490">📧</div>
+        <h3>Configurar SMTP</h3>
+        <span class="section-card-url">/configuracion → Notificaciones</span>
+      </div>
+      <ol class="steps-list">
+        <li>Ve a <strong>Configuración → Notificaciones → SMTP</strong>.</li>
+        <li>Introduce: host, puerto, usuario, contraseña y nombre del remitente.</li>
+        <li>Activa el cifrado (TLS/SSL según tu proveedor).</li>
+        <li>Usa el botón <strong>«Enviar email de prueba»</strong> para verificar que la configuración es correcta.</li>
+      </ol>
+      <div class="tip tip-warn">
+        <span class="tip-icon">⚠️</span>
+        <span>Si el SMTP no está configurado, la recuperación de contraseña por email y las notificaciones automáticas no funcionarán.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       3. MÓDULOS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section-divider" id="modulos">3. Módulos de la plataforma</div>
+
+  <div id="mod-dashboard" class="section-card" style="border-color:#3b82f6">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#dbeafe;color:#1d4ed8">📊</div>
+      <h3>Dashboard</h3>
+      <span class="section-card-url">/dashboard</span>
+    </div>
+    <p>El panel principal varía según el rol. Para <strong>Admin/Superadmin</strong> muestra estadísticas completas: alumnos activos, sesiones esta semana, bonos activos y próximos vencimientos. Incluye acceso rápido para crear sesiones.</p>
+    <p>Para <strong>Coach/Staff</strong> muestra el calendario semanal y los alumnos asignados. Para <strong>Alumnos</strong> muestra las próximas sesiones, bonos restantes y últimas notificaciones.</p>
+  </div>
+
+  <div id="mod-alumnos" class="section-card" style="border-color:#8b5cf6">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#ede9fe;color:#5b21b6">👥</div>
+      <h3>Módulo Alumnos</h3>
+      <span class="section-card-url">/alumnos</span>
+    </div>
+    <p>Gestión completa del registro de jugadores. La ficha de cada alumno incluye: datos de acceso, perfil deportivo completo (categoría, equipo, liga, posición, medidas físicas), historial de sesiones, bonos asignados, documentos personales y anotaciones del equipo técnico.</p>
+  </div>
+
+  <div id="mod-clases" class="section-card" style="border-color:#06b6d4">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#cffafe;color:#0e7490">📅</div>
+      <h3>Módulo Clases</h3>
+      <span class="section-card-url">/clases</span>
+    </div>
+    <p>Calendario interactivo de sesiones de entrenamiento. Soporta sesiones puntuales y recurrentes (semanal por días). Control de asistencia por alumno con estados: pendiente, presente, ausente. Sistema de avisos de ausencia por parte del alumno con control de hora límite (10:00). Descuento automático de bonos al completar una sesión.</p>
+  </div>
+
+  <div id="mod-bonos" class="section-card" style="border-color:#f59e0b">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#fef3c7;color:#d97706">🎫</div>
+      <h3>Módulo Bonos</h3>
+      <span class="section-card-url">/bonos</span>
+    </div>
+    <p>Sistema de paquetes de sesiones (bonos) con cola FIFO. Permite crear tipos de bono con diferentes cantidades de sesiones, precios y validez. Los bonos se asignan individualmente a cada alumno y se descuentan automáticamente al completar una sesión (solo para alumnos presentes).</p>
+  </div>
+
+  <div id="mod-docs" class="section-card" style="border-color:#f97316">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#ffedd5;color:#c2410c">📁</div>
+      <h3>Módulo Documentación</h3>
+      <span class="section-card-url">/documentacion</span>
+    </div>
+    <p>Sistema de gestión documental con tres tipos de carpetas (pública, personal, interna). Soporta previsualización en navegador de PDFs e imágenes. Cada alumno tiene una carpeta personal automática. Los adjuntos de anotaciones también se guardan aquí.</p>
+  </div>
+
+  <div id="mod-mensajes" class="section-card" style="border-color:#10b981">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#d1fae5;color:#065f46">💬</div>
+      <h3>Módulo Mensajes</h3>
+      <span class="section-card-url">/mensajes</span>
+    </div>
+    <p>Chat directo entre dos usuarios de la plataforma. Soporta texto y archivos adjuntos. Las conversaciones son privadas y persistentes. El badge en la barra superior indica mensajes no leídos. Actualización en tiempo real mediante polling.</p>
+  </div>
+
+  <div id="mod-notif" class="section-card" style="border-color:#6366f1">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#ede9fe;color:#5b21b6">🔔</div>
+      <h3>Módulo Notificaciones</h3>
+      <span class="section-card-url">/notificaciones</span>
+    </div>
+    <p>Sistema de notificaciones internas (individuales o grupales por rol). Permite adjuntar archivos. El historial completo se consulta en la sección de notificaciones. La campana en la barra superior muestra el contador en tiempo real.</p>
+  </div>
+
+  <div id="mod-compras" class="section-card" style="border-color:#ef4444">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#fee2e2;color:#991b1b">🛒</div>
+      <h3>Módulo Lista de Compras</h3>
+      <span class="section-card-url">/compras</span>
+    </div>
+    <p>Sistema de gestión de solicitudes de material. Cualquier miembro no-alumno puede crear solicitudes. Los administradores las revisan, aprueban, deniegan o marcan como compradas. Incluye categorías, prioridades y comentarios administrativos.</p>
+  </div>
+
+  <div id="mod-config" class="section-card" style="border-color:#6b7280">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#f1f5f9;color:#374151">⚙️</div>
+      <h3>Módulo Configuración</h3>
+      <span class="section-card-url">/configuracion</span>
+    </div>
+    <p>Panel centralizado de configuración: datos generales de la academia, gestión de staff (crear/roles/activar-desactivar), sedes, tipos de bono, SMTP para emails automáticos, ajustes de seguridad y configuración de la web pública.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       4. FAQ
+  ══════════════════════════════════════════════════════════ -->
+  <div class="section-divider" id="faq">4. Preguntas frecuentes</div>
+
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-card-icon" style="background:#f1f5f9;color:#374151">❓</div>
+      <h3>Preguntas frecuentes</h3>
+    </div>
+
+    <p><strong>¿Por qué no veo el módulo X en el menú?</strong><br>
+    Solo aparecen los módulos a los que tienes acceso según tu rol. Si crees que deberías tener acceso a algo, contacta con el administrador.</p>
+
+    <p><strong>¿Cuándo se descuenta un bono?</strong><br>
+    El bono se descuenta automáticamente cuando el entrenador o administrador marca la sesión como <em>«Completada»</em>, y solo para los alumnos marcados como <em>«Presente»</em> en esa sesión.</p>
+
+    <p><strong>¿Puedo ver cuántos bonos me quedan?</strong><br>
+    Sí. En tu ficha de alumno (o en la ficha del alumno si eres admin/coach) aparece el número de sesiones restantes en el bono activo.</p>
+
+    <p><strong>¿Qué pasa si aviso una ausencia tarde?</strong><br>
+    Si avisas después de las 10:00 del mismo día de la sesión, la plataforma te mostrará un aviso indicándolo. El aviso igualmente se registra y el entrenador lo recibe.</p>
+
+    <p><strong>¿Las anotaciones internas las puede ver el alumno?</strong><br>
+    No. Las anotaciones de tipo <em>Interno</em> solo son visibles para el personal (admin, superadmin, coach, staff). El alumno solo ve las <em>Públicas</em>.</p>
+
+    <p><strong>¿Cómo cambio mi contraseña?</strong><br>
+    Ve a <em>Mi perfil</em> (clic en tu nombre/avatar en la barra superior) y usa el formulario de cambio de contraseña.</p>
+
+    <p><strong>¿Puedo recuperar un archivo eliminado?</strong><br>
+    Los archivos eliminados usan soft-delete. Contacta con el administrador para recuperar un archivo eliminado recientemente.</p>
+
+    <p><strong>¿Cómo obtengo el tutorial interactivo?</strong><br>
+    Haz clic en el botón <strong>?</strong> de la barra superior en cualquier momento para relanzar el tutorial adaptado a tu rol.</p>
+  </div>
+
+  <div class="doc-footer">
+    <p>JP Preparation — Manual de Usuario v1.0 · Mayo 2026</p>
+    <p style="margin-top:6px">Para soporte técnico, contacta con el administrador de la plataforma.</p>
+  </div>
+
+</div>
+</body>
+</html>
