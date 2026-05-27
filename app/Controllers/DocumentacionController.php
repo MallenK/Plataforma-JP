@@ -42,7 +42,7 @@ class DocumentacionController extends BaseController
             try {
                 $this->docService->ensureAllPersonalFolders();
             } catch (\Throwable $e) {
-                log_message('warning', 'DocumentacionController::index ensureAllPersonalFolders: ' . $e->getMessage());
+                log_message('error', 'DocumentacionController::index ensureAllPersonalFolders: ' . $e->getMessage());
             }
         }
 

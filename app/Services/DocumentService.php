@@ -211,21 +211,28 @@ class DocumentService
     {
         $db = \Config\Database::connect();
 
-        // Usuarios activos que aún no tienen carpeta personal
-        $users = $db->table('users u')
-            ->select('u.id')
-            ->where('u.status', 'active')
-            ->whereNotIn('u.id', function($subquery) {
-                $subquery->select('owner_id')
-                         ->from('document_folders')
-                         ->where('type', 'personal')
-                         ->where('status', 'active')
-                         ->where('owner_id IS NOT NULL', null, false);
-            })
+        // Query 1: IDs de usuarios activos
+        $allUsers = $db->table('users')
+            ->select('id')
+            ->where('status', 'active')
             ->get()->getResultArray();
 
-        foreach ($users as $user) {
-            $this->getOrCreatePersonalFolder((int)$user['id']);
+        // Query 2: owner_ids que ya tienen carpeta personal activa
+        $existing = $db->table('document_folders')
+            ->select('owner_id')
+            ->where('type', 'personal')
+            ->where('status', 'active')
+            ->where('owner_id IS NOT NULL', null, false)
+            ->get()->getResultArray();
+
+        $existingOwnerIds = array_column($existing, 'owner_id');
+
+        // Crear solo las que faltan
+        foreach ($allUsers as $user) {
+            $uid = (int)$user['id'];
+            if ($uid > 0 && !in_array((string)$uid, array_map('strval', $existingOwnerIds))) {
+                $this->getOrCreatePersonalFolder($uid);
+            }
         }
     }
 

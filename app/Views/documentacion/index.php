@@ -506,6 +506,28 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 </form>
 <?php endif; ?>
 
+<?php
+// Datos de usuarios vs carpetas personales (solo para el debug)
+$dbDebug = \Config\Database::connect();
+$allUsersDebug = $dbDebug->table('users')
+    ->select('id, name, email, role, status')
+    ->where('status', 'active')
+    ->orderBy('role')->orderBy('name')
+    ->get()->getResultArray();
+
+$personalFolderOwners = array_map('intval', array_column(
+    array_filter($folders, fn($f) => $f['type'] === 'personal'),
+    'owner_id'
+));
+
+$usersDebugMapped = array_map(fn($u) => [
+    'id'           => (int)$u['id'],
+    'nombre'       => $u['name'],
+    'email'        => $u['email'],
+    'rol'          => $u['role'],
+    'tiene_carpeta'=> in_array((int)$u['id'], $personalFolderOwners) ? 'SÍ' : '⚠ NO',
+], $allUsersDebug);
+?>
 <?= console_debug('DocumentacionController::index', [
     'viewer_id'              => $userId,
     'viewer_role'            => $role,
@@ -515,12 +537,14 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
         ? ['id' => (int)$activeFolder['id'], 'nombre' => $activeFolder['name'], 'tipo' => $activeFolder['type'], 'propietario' => $activeFolder['owner_name'] ?? null]
         : null,
     'archivos_en_carpeta'    => $activeFolder ? count($files) : null,
+    'usuarios_vs_carpetas'   => $usersDebugMapped,
     'carpetas'               => array_map(fn($f) => [
-        'id'         => (int)$f['id'],
-        'nombre'     => $f['type'] === 'personal' ? ($f['owner_name'] ?? $f['name']) : $f['name'],
-        'tipo'       => $f['type'],
-        'propietario'=> $f['owner_name'] ?? null,
-        'archivos'   => (int)($f['files_count'] ?? 0),
+        'id'          => (int)$f['id'],
+        'folder_name' => $f['name'],
+        'owner_id'    => (int)($f['owner_id'] ?? 0),
+        'owner_name'  => $f['owner_name'] ?? null,
+        'tipo'        => $f['type'],
+        'archivos'    => (int)($f['files_count'] ?? 0),
     ], $folders),
     'archivos'               => $activeFolder
         ? array_map(fn($f) => [
