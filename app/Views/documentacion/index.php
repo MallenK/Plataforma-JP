@@ -86,17 +86,45 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 
 <?php /* ── Grid de carpetas ───────────────────────────────────── */ ?>
 
-<?php if (!empty($folders)): ?>
+<?php if (!empty($folders) || ($isAdmin && !empty($allUsers))): ?>
 <?php
 $fPublic   = array_filter($folders, fn($f) => $f['type'] === 'public');
 $fInternal = array_filter($folders, fn($f) => $f['type'] === 'internal');
 $fPersonal = array_filter($folders, fn($f) => $f['type'] === 'personal');
 
 // Agrupar carpetas personales por rol del propietario
+// Para admin/superadmin: incluir todos los usuarios, con o sin carpeta
 $personalByRole = [];
-foreach ($fPersonal as $f) {
-    $ownerRole = $f['owner_role'] ?? 'other';
-    $personalByRole[$ownerRole][] = $f;
+if ($isAdmin && !empty($allUsers)) {
+    $personalFolderByOwner = [];
+    foreach ($fPersonal as $f) {
+        $personalFolderByOwner[(int)($f['owner_id'] ?? 0)] = $f;
+    }
+    foreach ($allUsers as $u) {
+        $uid     = (int)$u['id'];
+        $roleKey = $u['role'];
+        if (isset($personalFolderByOwner[$uid])) {
+            $personalByRole[$roleKey][] = $personalFolderByOwner[$uid];
+        } else {
+            $personalByRole[$roleKey][] = [
+                'id'          => null,
+                'type'        => 'personal',
+                'owner_id'    => $uid,
+                'owner_name'  => $u['name'],
+                'owner_role'  => $u['role'],
+                'name'        => $u['name'],
+                'files_count' => 0,
+                'icon'        => 'bi-person-fill',
+                'color'       => 'blue',
+                'no_folder'   => true,
+            ];
+        }
+    }
+} else {
+    foreach ($fPersonal as $f) {
+        $ownerRole = $f['owner_role'] ?? 'other';
+        $personalByRole[$ownerRole][] = $f;
+    }
 }
 
 // Orden y etiquetas de los grupos de rol
@@ -110,46 +138,55 @@ $roleGroups = [
 
 function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
-    $isActive = $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
+    $noFolder = !empty($f['no_folder']);
+    $isActive = !$noFolder && $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
     ?>
     <div class="col-6 col-md-4 col-lg-3">
+        <?php if ($noFolder): ?>
+        <div class="card-jp" style="opacity:0.5;cursor:default" title="Sin carpeta asignada">
+        <?php else: ?>
         <a href="<?= base_url('documentacion?folder=' . $f['id']) ?>" style="text-decoration:none">
-            <div class="card-jp <?= $isActive ? 'card-jp-active' : '' ?>" style="cursor:pointer;<?= $isActive ? 'border-color:var(--accent);' : '' ?>">
-                <div class="card-jp-body py-3 text-center" style="position:relative">
-                    <?php if ($isAdmin && in_array($f['type'], ['public','internal'])): ?>
-                    <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px" onclick="event.preventDefault()">
-                        <?php if ($f['type'] === 'internal'): ?>
-                        <button class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"
-                            title="Gestionar permisos"
-                            onclick="openPermissionsModal(<?= $f['id'] ?>)">
-                            <i class="bi bi-key-fill"></i>
-                        </button>
-                        <?php endif; ?>
-                        <button class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
-                            title="Eliminar carpeta"
-                            onclick="deleteFolder(<?= $f['id'] ?>, '<?= esc($f['name']) ?>')">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </div>
+        <div class="card-jp <?= $isActive ? 'card-jp-active' : '' ?>" style="cursor:pointer;<?= $isActive ? 'border-color:var(--accent);' : '' ?>">
+        <?php endif; ?>
+            <div class="card-jp-body py-3 text-center" style="position:relative">
+                <?php if (!$noFolder && $isAdmin && in_array($f['type'], ['public','internal'])): ?>
+                <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px" onclick="event.preventDefault()">
+                    <?php if ($f['type'] === 'internal'): ?>
+                    <button class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"
+                        title="Gestionar permisos"
+                        onclick="openPermissionsModal(<?= $f['id'] ?>)">
+                        <i class="bi bi-key-fill"></i>
+                    </button>
                     <?php endif; ?>
-
-                    <div class="metric-icon <?= esc($f['color'] ?? 'blue') ?> mx-auto mb-2">
-                        <i class="bi <?= esc($f['icon'] ?? 'bi-folder-fill') ?>"></i>
-                    </div>
-                    <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">
-                        <?= $f['type'] === 'personal'
-                            ? esc($f['owner_name'] ?? $f['name'])
-                            : esc($f['name']) ?>
-                    </div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
-                        <?= (int)($f['files_count'] ?? 0) ?> archivo(s)
-                    </div>
-                    <span class="badge-status <?= esc($typeBadge) ?>" style="font-size:10px">
-                        <?= esc($typeLabel) ?>
-                    </span>
+                    <button class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
+                        title="Eliminar carpeta"
+                        onclick="deleteFolder(<?= $f['id'] ?>, '<?= esc($f['name']) ?>')">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
                 </div>
+                <?php endif; ?>
+
+                <div class="metric-icon <?= esc($f['color'] ?? 'blue') ?> mx-auto mb-2">
+                    <i class="bi <?= esc($f['icon'] ?? 'bi-folder-fill') ?>"></i>
+                </div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">
+                    <?= $f['type'] === 'personal'
+                        ? esc($f['owner_name'] ?? $f['name'])
+                        : esc($f['name']) ?>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
+                    <?= $noFolder ? '—' : (int)($f['files_count'] ?? 0) . ' archivo(s)' ?>
+                </div>
+                <span class="badge-status <?= $noFolder ? 'inactive' : esc($typeBadge) ?>" style="font-size:10px">
+                    <?= $noFolder ? 'Sin carpeta' : esc($typeLabel) ?>
+                </span>
             </div>
+        <?php if ($noFolder): ?>
+        </div>
+        <?php else: ?>
+        </div>
         </a>
+        <?php endif; ?>
     </div>
     <?php
 }
@@ -178,7 +215,12 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 <?php // Carpetas personales de roles no contemplados en $roleGroups ?>
 <?php
 $knownRoles = array_keys($roleGroups);
-$fPersonalOther = array_filter($fPersonal, fn($f) => !in_array($f['owner_role'] ?? '', $knownRoles));
+$fPersonalOther = [];
+foreach ($personalByRole as $rk => $entries) {
+    if (!in_array($rk, $knownRoles)) {
+        $fPersonalOther = array_merge($fPersonalOther, $entries);
+    }
+}
 ?>
 <?php if (!empty($fPersonalOther)): ?>
 <div style="margin-bottom:8px;margin-top:4px">

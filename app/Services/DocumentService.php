@@ -448,6 +448,19 @@ class DocumentService
     // ════════════════════════════════════════════════════════════════
 
     /**
+     * Todos los usuarios activos (para la vista de admin/superadmin).
+     */
+    public function getAllUsers(): array
+    {
+        return (new UserModel())
+            ->where('status', 'active')
+            ->select('id, name, email, role')
+            ->orderBy('role')
+            ->orderBy('name')
+            ->findAll();
+    }
+
+    /**
      * Usuarios que pueden recibir permisos en carpetas internas (nunca player).
      */
     public function getAssignableUsers(): array

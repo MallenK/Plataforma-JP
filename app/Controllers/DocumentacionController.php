@@ -72,6 +72,11 @@ class DocumentacionController extends BaseController
             $folderPermissions = $this->docService->getFolderPermissions($activeFolderId);
         }
 
+        // Lista completa de usuarios para la vista de admin/superadmin
+        $allUsers = in_array($role, ['admin', 'superadmin'])
+            ? $this->docService->getAllUsers()
+            : [];
+
         return view('documentacion/index', [
             'title'             => 'Documentación — JP Preparation',
             'folders'           => $folders,
@@ -80,6 +85,7 @@ class DocumentacionController extends BaseController
             'writableFolders'   => $writableFolders,
             'assignableUsers'   => $assignableUsers,
             'folderPermissions' => $folderPermissions,
+            'allUsers'          => $allUsers,
         ]);
     }
 
