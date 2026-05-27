@@ -59,6 +59,11 @@ class DocumentService
 
     /**
      * Comprueba si un usuario puede VER una carpeta.
+     *
+     * Reglas:
+     * - public:   todos los roles
+     * - personal: propietario | admin/superadmin | (coach/staff si el propietario es player)
+     * - internal: no-player + (admin/superadmin | permiso explícito)
      */
     public function canAccessFolder(int $folderId, int $userId, string $role): bool
     {
@@ -68,9 +73,11 @@ class DocumentService
         }
 
         return match($folder['type']) {
-            'public'   => $role !== 'player',
+            'public'   => true,
             'personal' => (int)$folder['owner_id'] === $userId
-                           || in_array($role, ['admin', 'superadmin']),
+                           || in_array($role, ['admin', 'superadmin'])
+                           || (in_array($role, ['coach', 'staff'])
+                               && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player'),
             'internal' => $role !== 'player'
                            && (in_array($role, ['admin', 'superadmin'])
                                || $this->permModel->hasReadPermission($folderId, $userId)),
@@ -80,6 +87,11 @@ class DocumentService
 
     /**
      * Comprueba si un usuario puede SUBIR archivos a una carpeta.
+     *
+     * Reglas:
+     * - public:   admin/superadmin/coach/staff (jugadores no suben a públicas)
+     * - personal: propietario | admin/superadmin | (coach/staff si el propietario es player)
+     * - internal: admin/superadmin | permiso explícito de escritura
      */
     public function canWriteToFolder(int $folderId, int $userId, string $role): bool
     {
@@ -90,9 +102,11 @@ class DocumentService
         $folder = $this->folderModel->find($folderId);
 
         return match($folder['type']) {
-            'public'   => $role !== 'player',
+            'public'   => in_array($role, ['admin', 'superadmin', 'coach', 'staff']),
             'personal' => (int)$folder['owner_id'] === $userId
-                           || in_array($role, ['admin', 'superadmin']),
+                           || in_array($role, ['admin', 'superadmin'])
+                           || (in_array($role, ['coach', 'staff'])
+                               && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player'),
             'internal' => in_array($role, ['admin', 'superadmin'])
                            || $this->permModel->hasWritePermission($folderId, $userId),
             default    => false,
@@ -116,15 +130,19 @@ class DocumentService
             ->where('df.status', 'active');
 
         if ($role === 'player') {
-            $builder->where('df.type', 'personal')
-                    ->where('df.owner_id', $userId);
+            // Carpetas públicas + carpeta personal propia
+            $builder->where(
+                "(df.type = 'public' OR (df.type = 'personal' AND df.owner_id = {$userId}))",
+                null, false
+            );
         } elseif (in_array($role, ['admin', 'superadmin'])) {
             // Ve todo
         } else {
-            // Coach / staff: públicas + personal propia + internas asignadas
+            // Coach / staff: públicas + personal propia + carpetas personales de jugadores + internas asignadas
             $builder->where(
                 "(df.type = 'public'
                   OR (df.type = 'personal' AND df.owner_id = {$userId})
+                  OR (df.type = 'personal' AND u.role = 'player')
                   OR (df.type = 'internal' AND EXISTS (
                         SELECT 1 FROM folder_permissions fp
                         WHERE fp.folder_id = df.id
@@ -420,7 +438,11 @@ class DocumentService
 
     /**
      * Elimina un archivo (soft delete).
-     * Puede eliminar: el uploader de su propio archivo, o admin/superadmin.
+     *
+     * Reglas:
+     * - Admin/superadmin: puede borrar cualquier documento.
+     * - Player: puede borrar sus propios documentos, nunca en carpeta pública.
+     * - Staff/Coach: no pueden borrar (sus documentos solo los borra el admin).
      */
     public function deleteFile(int $fileId, int $userId, string $role): bool
     {
@@ -433,10 +455,21 @@ class DocumentService
             return false;
         }
 
-        $canDelete = in_array($role, ['admin', 'superadmin'])
-                  || (int)$doc['uploader_id'] === $userId;
+        if (in_array($role, ['admin', 'superadmin'])) {
+            return (bool) $this->docModel->update($fileId, ['deleted_at' => date('Y-m-d H:i:s')]);
+        }
 
-        if (!$canDelete) {
+        // Solo jugadores pueden borrar sus propios documentos, y no en carpetas públicas
+        if ($role !== 'player') {
+            return false;
+        }
+
+        $folder = $this->folderModel->find($doc['folder_id']);
+        if ($folder['type'] === 'public') {
+            return false;
+        }
+
+        if ((int)$doc['uploader_id'] !== $userId) {
             return false;
         }
 
@@ -532,6 +565,19 @@ class DocumentService
         } catch (\Throwable $e) {
             log_message('warning', 'DocumentService::ensureStorageDir failed: ' . $e->getMessage());
         }
+    }
+
+    private function getFolderOwnerRole(int $ownerId): string
+    {
+        if ($ownerId <= 0) {
+            return '';
+        }
+        $row = \Config\Database::connect()
+            ->table('users')
+            ->select('role')
+            ->where('id', $ownerId)
+            ->get()->getRow();
+        return $row ? (string)$row->role : '';
     }
 
     private function generateSlug(string $name): string

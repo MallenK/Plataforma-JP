@@ -270,7 +270,10 @@ foreach ($personalByRole as $rk => $entries) {
                 <?php foreach ($files as $f):
                     [$icon, $color] = fileIcon($f['extension']);
                     $canPreview = in_array($f['extension'], $previewExts);
-                    $canDelete  = $isAdmin || (int)$f['uploader_id'] === $userId;
+                    $canDelete  = $isAdmin
+                        || ($role === 'player'
+                            && (int)$f['uploader_id'] === $userId
+                            && $activeFolder['type'] !== 'public');
                 ?>
                 <tr>
                     <td>
