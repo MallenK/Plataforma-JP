@@ -241,11 +241,11 @@ $categoryLabel = match($profile['category'] ?? '') {
                         <td>
                             <div class="d-flex gap-1 justify-content-end">
                                 <?php if ($canPreview): ?>
-                                <a href="<?= base_url('documentacion/file/' . (int)$doc['id'] . '/preview') ?>"
-                                   target="_blank"
-                                   class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
+                                <button type="button"
+                                        onclick="openDocPreview(<?= (int)$doc['id'] ?>, <?= json_encode($doc['name_original']) ?>, '<?= esc($doc['extension'] ?? '') ?>')"
+                                        class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
                                     <i class="bi bi-eye"></i>
-                                </a>
+                                </button>
                                 <?php endif; ?>
                                 <a href="<?= base_url('documentacion/file/' . (int)$doc['id'] . '/download') ?>"
                                    class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar">

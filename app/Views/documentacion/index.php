@@ -303,11 +303,11 @@ foreach ($personalByRole as $rk => $entries) {
                     <td>
                         <div class="d-flex gap-1 justify-content-end">
                             <?php if ($canPreview): ?>
-                            <a href="<?= base_url('documentacion/file/' . $f['id'] . '/preview') ?>"
-                               target="_blank"
-                               class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
+                            <button type="button"
+                                    onclick="openDocPreview(<?= (int)$f['id'] ?>, <?= json_encode($f['name_original']) ?>, '<?= esc($f['extension']) ?>')"
+                                    class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
                                 <i class="bi bi-eye"></i>
-                            </a>
+                            </button>
                             <?php endif; ?>
                             <a href="<?= base_url('documentacion/file/' . $f['id'] . '/download') ?>"
                                class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar">

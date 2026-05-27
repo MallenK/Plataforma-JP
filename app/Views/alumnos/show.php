@@ -673,11 +673,11 @@ $formatTime = static function (?string $hms): string {
                         <td>
                             <div class="d-flex gap-1 justify-content-end">
                                 <?php if ($canPreviewDoc): ?>
-                                <a href="<?= base_url('documentacion/file/' . (int)$rdoc['id'] . '/preview') ?>"
-                                   target="_blank"
-                                   class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
+                                <button type="button"
+                                        onclick="openDocPreview(<?= (int)$rdoc['id'] ?>, <?= json_encode($rdoc['name_original']) ?>, '<?= esc($rdoc['extension'] ?? '') ?>')"
+                                        class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
                                     <i class="bi bi-eye"></i>
-                                </a>
+                                </button>
                                 <?php endif; ?>
                                 <a href="<?= base_url('documentacion/file/' . (int)$rdoc['id'] . '/download') ?>"
                                    class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar">
@@ -776,11 +776,11 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                             <i class="bi bi-download" style="font-size:11px"></i>
                         </a>
                         <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
-                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/preview') ?>"
-                           target="_blank"
-                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
+                        <button type="button"
+                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= json_encode($ann['doc_name']) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
+                                class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
                             <i class="bi bi-eye" style="font-size:11px"></i>
-                        </a>
+                        </button>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
@@ -864,11 +864,11 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                             <i class="bi bi-download" style="font-size:11px"></i>
                         </a>
                         <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
-                        <a href="<?= base_url('documentacion/file/' . (int)$ann['document_id'] . '/preview') ?>"
-                           target="_blank"
-                           class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
+                        <button type="button"
+                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= json_encode($ann['doc_name']) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
+                                class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
                             <i class="bi bi-eye" style="font-size:11px"></i>
-                        </a>
+                        </button>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
