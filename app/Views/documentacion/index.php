@@ -506,6 +506,34 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 </form>
 <?php endif; ?>
 
+<?= console_debug('DocumentacionController::index', [
+    'viewer_id'              => $userId,
+    'viewer_role'            => $role,
+    'total_carpetas'         => count($folders),
+    'carpetas_con_escritura' => count($writableFolders),
+    'carpeta_activa'         => $activeFolder
+        ? ['id' => (int)$activeFolder['id'], 'nombre' => $activeFolder['name'], 'tipo' => $activeFolder['type'], 'propietario' => $activeFolder['owner_name'] ?? null]
+        : null,
+    'archivos_en_carpeta'    => $activeFolder ? count($files) : null,
+    'carpetas'               => array_map(fn($f) => [
+        'id'         => (int)$f['id'],
+        'nombre'     => $f['type'] === 'personal' ? ($f['owner_name'] ?? $f['name']) : $f['name'],
+        'tipo'       => $f['type'],
+        'propietario'=> $f['owner_name'] ?? null,
+        'archivos'   => (int)($f['files_count'] ?? 0),
+    ], $folders),
+    'archivos'               => $activeFolder
+        ? array_map(fn($f) => [
+            'id'        => (int)$f['id'],
+            'nombre'    => $f['name_original'],
+            'extension' => $f['extension'],
+            'tamaño'    => $f['size_bytes'],
+            'subido_por'=> $f['uploader_name'] ?? null,
+            'fecha'     => $f['created_at'],
+        ], $files)
+        : [],
+]) ?>
+
 <?= $this->endSection() ?>
 
 
