@@ -88,10 +88,25 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 
 <?php if (!empty($folders)): ?>
 <?php
-// Agrupar carpetas por tipo para mejor organización visual
 $fPublic   = array_filter($folders, fn($f) => $f['type'] === 'public');
 $fInternal = array_filter($folders, fn($f) => $f['type'] === 'internal');
 $fPersonal = array_filter($folders, fn($f) => $f['type'] === 'personal');
+
+// Agrupar carpetas personales por rol del propietario
+$personalByRole = [];
+foreach ($fPersonal as $f) {
+    $ownerRole = $f['owner_role'] ?? 'other';
+    $personalByRole[$ownerRole][] = $f;
+}
+
+// Orden y etiquetas de los grupos de rol
+$roleGroups = [
+    'player'     => ['Jugadores',      'bi-dribbble',         'var(--accent)'],
+    'coach'      => ['Entrenadores',   'bi-whistle-fill',     '#38a169'],
+    'staff'      => ['Staff',          'bi-briefcase-fill',   '#dd6b20'],
+    'admin'      => ['Administración', 'bi-shield-fill',      '#805ad5'],
+    'superadmin' => ['Superadmin',     'bi-shield-lock-fill', '#e53e3e'],
+];
 
 function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
@@ -121,7 +136,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                     <div class="metric-icon <?= esc($f['color'] ?? 'blue') ?> mx-auto mb-2">
                         <i class="bi <?= esc($f['icon'] ?? 'bi-folder-fill') ?>"></i>
                     </div>
-                    <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">
                         <?= $f['type'] === 'personal'
                             ? esc($f['owner_name'] ?? $f['name'])
                             : esc($f['name']) ?>
@@ -147,14 +162,32 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 </div>
 <?php endif; ?>
 
-<?php if (!empty($fPersonal)): ?>
-<div style="margin-bottom:8px">
+<?php foreach ($roleGroups as $roleKey => [$roleLabel, $roleIcon, $roleColor]): ?>
+<?php if (!empty($personalByRole[$roleKey])): ?>
+<div style="margin-bottom:8px;margin-top:4px">
     <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
-        <i class="bi bi-person-fill me-1"></i>Carpetas personales
+        <i class="bi <?= $roleIcon ?> me-1" style="color:<?= $roleColor ?>"></i><?= $roleLabel ?>
     </span>
 </div>
 <div class="row g-3 mb-3">
-    <?php foreach ($fPersonal as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+    <?php foreach ($personalByRole[$roleKey] as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+</div>
+<?php endif; ?>
+<?php endforeach; ?>
+
+<?php // Carpetas personales de roles no contemplados en $roleGroups ?>
+<?php
+$knownRoles = array_keys($roleGroups);
+$fPersonalOther = array_filter($fPersonal, fn($f) => !in_array($f['owner_role'] ?? '', $knownRoles));
+?>
+<?php if (!empty($fPersonalOther)): ?>
+<div style="margin-bottom:8px;margin-top:4px">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
+        <i class="bi bi-person-fill me-1"></i>Otros
+    </span>
+</div>
+<div class="row g-3 mb-3">
+    <?php foreach ($fPersonalOther as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -540,9 +573,9 @@ $usersDebugMapped = array_map(fn($u) => [
     'usuarios_vs_carpetas'   => $usersDebugMapped,
     'carpetas'               => array_map(fn($f) => [
         'id'          => (int)$f['id'],
-        'folder_name' => $f['name'],
         'owner_id'    => (int)($f['owner_id'] ?? 0),
         'owner_name'  => $f['owner_name'] ?? null,
+        'owner_role'  => $f['owner_role'] ?? null,
         'tipo'        => $f['type'],
         'archivos'    => (int)($f['files_count'] ?? 0),
     ], $folders),
