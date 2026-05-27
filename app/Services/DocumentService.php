@@ -204,6 +204,32 @@ class DocumentService
     }
 
     /**
+     * Garantiza que todos los usuarios activos tienen carpeta personal.
+     * Solo debe llamarse con rol admin/superadmin.
+     */
+    public function ensureAllPersonalFolders(): void
+    {
+        $db = \Config\Database::connect();
+
+        // Usuarios activos que aún no tienen carpeta personal
+        $users = $db->table('users u')
+            ->select('u.id')
+            ->where('u.status', 'active')
+            ->whereNotIn('u.id', function($subquery) {
+                $subquery->select('owner_id')
+                         ->from('document_folders')
+                         ->where('type', 'personal')
+                         ->where('status', 'active')
+                         ->where('owner_id IS NOT NULL', null, false);
+            })
+            ->get()->getResultArray();
+
+        foreach ($users as $user) {
+            $this->getOrCreatePersonalFolder((int)$user['id']);
+        }
+    }
+
+    /**
      * Crea una carpeta pública o interna. Solo admin/superadmin.
      */
     public function createFolder(array $data, int $createdBy): array

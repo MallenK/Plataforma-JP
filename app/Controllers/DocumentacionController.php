@@ -30,11 +30,20 @@ class DocumentacionController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Garantizar carpeta personal del usuario autenticado (silencioso si falla)
+        // Garantizar carpeta personal del usuario autenticado
         try {
             $this->docService->getOrCreatePersonalFolder($userId);
         } catch (\Throwable $e) {
             log_message('warning', 'DocumentacionController::index getOrCreatePersonalFolder: ' . $e->getMessage());
+        }
+
+        // Admin/superadmin: asegurar que todos los usuarios tienen carpeta personal
+        if (in_array($role, ['admin', 'superadmin'])) {
+            try {
+                $this->docService->ensureAllPersonalFolders();
+            } catch (\Throwable $e) {
+                log_message('warning', 'DocumentacionController::index ensureAllPersonalFolders: ' . $e->getMessage());
+            }
         }
 
         $folders         = $this->docService->getAccessibleFolders($userId, $role) ?? [];

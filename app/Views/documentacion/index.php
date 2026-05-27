@@ -150,7 +150,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 <?php if (!empty($fPersonal)): ?>
 <div style="margin-bottom:8px">
     <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
-        <i class="bi bi-person-fill me-1"></i>Carpetas personales de alumnos
+        <i class="bi bi-person-fill me-1"></i>Carpetas personales
     </span>
 </div>
 <div class="row g-3 mb-3">
