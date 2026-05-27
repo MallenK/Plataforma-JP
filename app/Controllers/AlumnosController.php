@@ -58,11 +58,19 @@ class AlumnosController extends BaseController
         $role  = $this->currentRole();
         $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
 
+        $docService     = new \App\Services\DocumentService();
+        $personalFolder = $docService->getOrCreatePersonalFolder($userId);
+        $documents      = $personalFolder
+            ? $docService->getFolderFiles((int)$personalFolder['id'])
+            : [];
+
         return view('alumnos/profile', [
-            'title'       => 'Mi ficha — JP Preparation',
-            'profile'     => $profile,
-            'annotations' => $annotationModel->getForPlayer($userId, $types),
-            'canInternal' => $role !== 'player',
+            'title'          => 'Mi ficha — JP Preparation',
+            'profile'        => $profile,
+            'annotations'    => $annotationModel->getForPlayer($userId, $types),
+            'canInternal'    => $role !== 'player',
+            'personalFolder' => $personalFolder,
+            'documents'      => $documents,
         ]);
     }
 
