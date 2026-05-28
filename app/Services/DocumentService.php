@@ -247,10 +247,11 @@ class DocumentService
             ->where('status', 'active')
             ->get()->getResultArray();
 
-        // Owner IDs que YA tienen carpeta personal (activa o inactiva)
+        // Owner IDs que YA tienen carpeta personal ACTIVA
         $existing = $db->table('document_folders')
             ->select('owner_id')
             ->where('type', 'personal')
+            ->where('status', 'active')
             ->where('owner_id IS NOT NULL', null, false)
             ->get()->getResultArray();
 

@@ -220,6 +220,56 @@ class DocumentacionController extends BaseController
     //  Permisos de carpetas internas (solo admin/superadmin)
     // ────────────────────────────────────────────────────────────────
 
+    // ────────────────────────────────────────────────────────────────
+    //  API JSON: archivos de una carpeta (para el modal)
+    // ────────────────────────────────────────────────────────────────
+
+    public function folderFiles(int $id)
+    {
+        $userId = (int) $this->currentUserId();
+        $role   = (string) $this->currentRole();
+
+        if (!$this->docService->canAccessFolder($id, $userId, $role)) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Sin acceso']);
+        }
+
+        $folder   = $this->docService->getFolder($id);
+        $files    = $this->docService->getFolderFiles($id);
+        $canWrite = $this->docService->canWriteToFolder($id, $userId, $role);
+
+        return $this->response->setJSON([
+            'folder'   => $folder,
+            'files'    => $files,
+            'canWrite' => $canWrite,
+        ]);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Admin: crear carpeta personal para un usuario concreto
+    // ────────────────────────────────────────────────────────────────
+
+    public function createPersonalFolder(int $userId)
+    {
+        if (!$this->isAdmin()) {
+            session()->setFlashdata('error', 'Sin permiso.');
+            return redirect()->to('/documentacion');
+        }
+
+        $folder = $this->docService->getOrCreatePersonalFolder($userId);
+
+        if ($folder) {
+            session()->setFlashdata('success', 'Carpeta personal creada correctamente.');
+        } else {
+            session()->setFlashdata('error', 'No se pudo crear la carpeta. Revisa los logs.');
+        }
+
+        return redirect()->to('/documentacion');
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Permisos de carpetas internas (solo admin/superadmin)
+    // ────────────────────────────────────────────────────────────────
+
     public function savePermissions(int $folderId)
     {
         $raw = $this->request->getPost('perms') ?? [];

@@ -67,7 +67,7 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 <div class="page-header">
     <div class="page-header-text">
         <h2>Documentación</h2>
-        <p><?= $activeFolder ? esc($activeFolder['name']) : 'Archivos y recursos' ?></p>
+        <p>Archivos y recursos</p>
     </div>
     <div class="d-flex gap-2">
         <?php if ($isAdmin): ?>
@@ -139,18 +139,37 @@ $roleGroups = [
 function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
     $noFolder = !empty($f['no_folder']);
-    $isActive = !$noFolder && $activeFolder && (int)$activeFolder['id'] === (int)$f['id'];
     ?>
     <div class="col-6 col-md-4 col-lg-3">
         <?php if ($noFolder): ?>
-        <div class="card-jp" style="opacity:0.5;cursor:default" title="Sin carpeta asignada">
-        <?php else: ?>
-        <a href="<?= base_url('documentacion?folder=' . $f['id']) ?>" style="text-decoration:none">
-        <div class="card-jp <?= $isActive ? 'card-jp-active' : '' ?>" style="cursor:pointer;<?= $isActive ? 'border-color:var(--accent);' : '' ?>">
-        <?php endif; ?>
+        <div class="card-jp" style="opacity:0.6;cursor:default" title="Sin carpeta asignada">
             <div class="card-jp-body py-3 text-center" style="position:relative">
-                <?php if (!$noFolder && $isAdmin && in_array($f['type'], ['public','internal'])): ?>
-                <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px" onclick="event.preventDefault()">
+                <?php if ($isAdmin): ?>
+                <div style="position:absolute;top:8px;right:8px" onclick="event.stopPropagation()">
+                    <form method="post" action="<?= base_url('documentacion/folder/user/' . (int)$f['owner_id'] . '/create') ?>"
+                          onsubmit="return confirm('¿Crear carpeta personal para <?= esc(($f['owner_name'] ?? 'este usuario'), 'js') ?>?')">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Crear carpeta">
+                            <i class="bi bi-folder-plus"></i>
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
+                <div class="metric-icon blue mx-auto mb-2">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-h);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">
+                    <?= esc($f['owner_name'] ?? $f['name'] ?? '—') ?>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">—</div>
+                <span class="badge-status inactive" style="font-size:10px">Sin carpeta</span>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="card-jp" style="cursor:pointer" onclick="openFolderModal(<?= (int)$f['id'] ?>)">
+            <div class="card-jp-body py-3 text-center" style="position:relative">
+                <?php if ($isAdmin && in_array($f['type'], ['public','internal'])): ?>
+                <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px" onclick="event.stopPropagation()">
                     <?php if ($f['type'] === 'internal'): ?>
                     <button class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"
                         title="Gestionar permisos"
@@ -160,12 +179,11 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                     <?php endif; ?>
                     <button class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon"
                         title="Eliminar carpeta"
-                        onclick="deleteFolder(<?= $f['id'] ?>, '<?= esc($f['name']) ?>')">
+                        onclick="deleteFolder(<?= $f['id'] ?>, '<?= esc($f['name'], 'js') ?>')">
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 </div>
                 <?php endif; ?>
-
                 <div class="metric-icon <?= esc($f['color'] ?? 'blue') ?> mx-auto mb-2">
                     <i class="bi <?= esc($f['icon'] ?? 'bi-folder-fill') ?>"></i>
                 </div>
@@ -175,17 +193,13 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                         : esc($f['name']) ?>
                 </div>
                 <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
-                    <?= $noFolder ? '—' : (int)($f['files_count'] ?? 0) . ' archivo(s)' ?>
+                    <?= (int)($f['files_count'] ?? 0) ?> archivo(s)
                 </div>
-                <span class="badge-status <?= $noFolder ? 'inactive' : esc($typeBadge) ?>" style="font-size:10px">
-                    <?= $noFolder ? 'Sin carpeta' : esc($typeLabel) ?>
+                <span class="badge-status <?= esc($typeBadge) ?>" style="font-size:10px">
+                    <?= esc($typeLabel) ?>
                 </span>
             </div>
-        <?php if ($noFolder): ?>
         </div>
-        <?php else: ?>
-        </div>
-        </a>
         <?php endif; ?>
     </div>
     <?php
@@ -236,129 +250,47 @@ foreach ($personalByRole as $rk => $entries) {
 <?php endif; ?>
 
 
-<?php /* ── Lista de archivos ──────────────────────────────────── */ ?>
-
-<div class="card-jp">
-    <?php if ($activeFolder): ?>
-
-    <div class="card-jp-header">
-        <span class="card-jp-title">
-            <i class="bi <?= esc($activeFolder['icon'] ?? 'bi-folder2-open') ?> me-2" style="color:var(--accent)"></i>
-            <?= esc($activeFolder['name']) ?>
-        </span>
-        <div class="d-flex align-items-center gap-3">
-            <span style="font-size:12px;color:var(--text-muted)"><?= count($files) ?> archivo(s)</span>
-            <a href="<?= base_url('documentacion') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
-                <i class="bi bi-x-lg"></i>
-            </a>
-        </div>
-    </div>
-
-    <?php if (!empty($files)): ?>
-    <div class="table-responsive">
-        <table class="table-jp" id="files-table">
-            <thead>
-                <tr>
-                    <th>Archivo</th>
-                    <th>Tamaño</th>
-                    <th>Subido por</th>
-                    <th>Fecha</th>
-                    <th style="text-align:right">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($files as $f):
-                    [$icon, $color] = fileIcon($f['extension']);
-                    $canPreview = in_array($f['extension'], $previewExts);
-                    $canDelete  = $isAdmin
-                        || ($role === 'player'
-                            && (int)$f['uploader_id'] === $userId
-                            && $activeFolder['type'] !== 'public');
-                ?>
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi <?= esc($icon) ?>" style="font-size:20px;color:<?= $color ?>;flex-shrink:0"></i>
-                            <div>
-                                <div style="font-weight:600;color:var(--text-h);font-size:13.5px">
-                                    <?= esc($f['name_original']) ?>
-                                </div>
-                                <?php if (!empty($f['description'])): ?>
-                                <div style="font-size:11px;color:var(--text-muted)">
-                                    <?= esc($f['description']) ?>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">
-                        <?= fmtBytes((int)$f['size_bytes']) ?>
-                    </td>
-                    <td style="font-size:12px;color:var(--text-muted)">
-                        <?= esc($f['uploader_name'] ?? '—') ?>
-                    </td>
-                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">
-                        <?= date('d/m/Y H:i', strtotime($f['created_at'])) ?>
-                    </td>
-                    <td>
-                        <div class="d-flex gap-1 justify-content-end">
-                            <?php if ($canPreview): ?>
-                            <button type="button"
-                                    onclick="openDocPreview(<?= (int)$f['id'] ?>, <?= json_encode($f['name_original']) ?>, '<?= esc($f['extension']) ?>')"
-                                    class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <?php endif; ?>
-                            <a href="<?= base_url('documentacion/file/' . $f['id'] . '/download') ?>"
-                               class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar">
-                                <i class="bi bi-download"></i>
-                            </a>
-                            <?php if ($canDelete): ?>
-                            <form method="post" action="<?= base_url('documentacion/file/' . $f['id'] . '/delete') ?>"
-                                  style="display:inline"
-                                  onsubmit="return confirm('¿Eliminar «<?= esc($f['name_original']) ?>»?')">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
-                            </form>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-
-    <?php else: ?>
-    <div class="empty-state">
-        <i class="bi bi-folder2-open"></i>
-        <h3>Carpeta vacía</h3>
-        <p>Todavía no hay archivos en esta carpeta.</p>
-        <?php if (!empty($writableFolders)): ?>
-        <button class="btn-jp btn-jp-primary" onclick="openUploadModal(<?= $activeFolder['id'] ?>)">
-            <i class="bi bi-cloud-upload-fill"></i> Subir primer archivo
-        </button>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
-
-    <?php else: ?>
-
-    <div class="empty-state">
-        <i class="bi bi-folder2-open"></i>
-        <h3>Selecciona una carpeta</h3>
-        <p>Haz clic en una carpeta para ver sus archivos.</p>
-    </div>
-
-    <?php endif; ?>
-</div>
-
-
 <?php /* ═══════════════════════════════════════════════════════════
        MODALES
        ═══════════════════════════════════════════════════════════ */ ?>
+
+<?php /* ── Modal: Archivos de carpeta (carga via AJAX) ──────── */ ?>
+<div class="modal-overlay" id="modal-folder-files">
+    <div class="modal-box" style="max-width:700px;width:95%">
+        <div class="modal-header">
+            <span class="card-jp-title" id="modal-folder-title">
+                <i class="bi bi-folder2-open me-2" style="color:var(--accent)"></i>
+                <span id="modal-folder-name">Cargando...</span>
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <span id="modal-folder-count" style="font-size:12px;color:var(--text-muted)"></span>
+                <button onclick="closeModal('modal-folder-files')" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div id="modal-folder-body" style="min-height:120px;padding:16px">
+            <div style="text-align:center;padding:40px 0;color:var(--text-muted)">
+                <i class="bi bi-hourglass-split" style="font-size:28px"></i>
+                <p style="margin-top:8px;font-size:13px">Cargando archivos...</p>
+            </div>
+        </div>
+        <div id="modal-folder-upload" style="display:none;border-top:1px solid var(--border);padding:16px">
+            <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data"
+                  class="d-flex gap-2 align-items-center flex-wrap">
+                <?= csrf_field() ?>
+                <input type="hidden" name="folder_id" id="modal-upload-folder-id" value="">
+                <input type="hidden" name="redirect_to" value="/documentacion">
+                <input type="file" name="archivo" class="form-control-jp" style="flex:1;min-width:180px"
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
+                <input type="text" name="description" class="form-control-jp" placeholder="Descripción" style="flex:1;min-width:140px">
+                <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="white-space:nowrap">
+                    <i class="bi bi-cloud-upload-fill me-1"></i>Subir
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 
 
 <?php /* ── Modal: Subir archivo ──────────────────────────────── */ ?>
@@ -746,7 +678,6 @@ document.getElementById('form-upload')?.addEventListener('submit', function() {
     if (progress) progress.style.display = 'block';
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Subiendo...'; }
 
-    // Animar barra al 90% (el 100% se logra con la redirección del servidor)
     if (bar) {
         let w = 0;
         const interval = setInterval(() => {
@@ -757,20 +688,94 @@ document.getElementById('form-upload')?.addEventListener('submit', function() {
     }
 });
 
-// ── Búsqueda en tabla de archivos ────────────────────────────────────
-(function () {
-    const tbl = document.getElementById('files-table');
-    if (!tbl) return;
+// ── Modal de archivos de carpeta (AJAX) ─────────────────────────────
+function openFolderModal(folderId) {
+    const body  = document.getElementById('modal-folder-body');
+    const title = document.getElementById('modal-folder-name');
+    const count = document.getElementById('modal-folder-count');
+    const uploadBox = document.getElementById('modal-folder-upload');
 
-    const searchBar = document.querySelector('#search-files');
-    if (!searchBar) return;
+    title.textContent = 'Cargando...';
+    count.textContent = '';
+    uploadBox.style.display = 'none';
+    body.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><i class="bi bi-hourglass-split" style="font-size:28px"></i><p style="margin-top:8px;font-size:13px">Cargando archivos...</p></div>';
 
-    searchBar.addEventListener('input', function () {
-        const q = this.value.toLowerCase();
-        tbl.querySelectorAll('tbody tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-        });
+    openModal('modal-folder-files');
+
+    fetch('/documentacion/folder/' + folderId + '/files', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { body.innerHTML = '<p style="color:var(--danger);padding:16px">' + data.error + '</p>'; return; }
+
+        const folder = data.folder;
+        const files  = data.files || [];
+
+        title.textContent = folder.type === 'personal'
+            ? (folder.owner_name || folder.name)
+            : folder.name;
+        count.textContent = files.length + ' archivo(s)';
+
+        const previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
+
+        if (files.length === 0) {
+            body.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--text-muted)"><i class="bi bi-folder2-open" style="font-size:32px"></i><p style="margin-top:10px;font-size:13px">Carpeta vacía</p></div>';
+        } else {
+            let rows = files.map(f => {
+                const ext = (f.extension || '').toLowerCase();
+                const canPreview = previewExts.includes(ext);
+                const previewBtn = canPreview
+                    ? `<a href="/documentacion/file/${f.id}/preview" target="_blank" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver"><i class="bi bi-eye"></i></a>`
+                    : '';
+                const size = fmtBytes(parseInt(f.size_bytes) || 0);
+                const date = f.created_at ? new Date(f.created_at).toLocaleDateString('es-ES') : '—';
+                return `<tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <i class="bi bi-file-earmark-fill" style="font-size:18px;color:var(--text-muted);flex-shrink:0"></i>
+                            <div>
+                                <div style="font-weight:600;color:var(--text-h);font-size:13px">${escHtml(f.name_original)}</div>
+                                ${f.description ? `<div style="font-size:11px;color:var(--text-muted)">${escHtml(f.description)}</div>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${size}</td>
+                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${date}</td>
+                    <td>
+                        <div style="display:flex;gap:4px;justify-content:flex-end">
+                            ${previewBtn}
+                            <a href="/documentacion/file/${f.id}/download" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar"><i class="bi bi-download"></i></a>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            body.innerHTML = `<div class="table-responsive"><table class="table-jp">
+                <thead><tr><th>Archivo</th><th>Tamaño</th><th>Fecha</th><th style="text-align:right">Acciones</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table></div>`;
+        }
+
+        if (data.canWrite) {
+            document.getElementById('modal-upload-folder-id').value = folderId;
+            uploadBox.style.display = 'block';
+        }
+    })
+    .catch(() => {
+        body.innerHTML = '<p style="color:var(--danger);padding:16px">Error al cargar los archivos.</p>';
     });
-})();
+}
+
+function fmtBytes(b) {
+    if (b >= 1073741824) return (b/1073741824).toFixed(1) + ' GB';
+    if (b >= 1048576)    return (b/1048576).toFixed(1) + ' MB';
+    if (b >= 1024)       return (b/1024).toFixed(1) + ' KB';
+    return b + ' B';
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 <?= $this->endSection() ?>

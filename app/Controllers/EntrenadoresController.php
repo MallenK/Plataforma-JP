@@ -78,9 +78,15 @@ class EntrenadoresController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        $docService     = new \App\Services\DocumentService();
+        $personalFolder = $docService->getOrCreatePersonalFolder($id);
+        $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
+
         return view('entrenadores/show', [
-            'title' => esc($coach['name']) . ' — JP Preparation',
-            'coach' => $coach,
+            'title'          => esc($coach['name']) . ' — JP Preparation',
+            'coach'          => $coach,
+            'personalFolder' => $personalFolder,
+            'documents'      => $documents,
         ]);
     }
 

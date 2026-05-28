@@ -30,9 +30,15 @@ class PerfilController extends BaseController
             $user['students_count'] = $stats['students_count'];
         }
 
+        $docService     = new \App\Services\DocumentService();
+        $personalFolder = $docService->getOrCreatePersonalFolder((int)$user['id']);
+        $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
+
         return view('perfil/index', [
-            'user'  => $user,
-            'title' => 'Mi perfil',
+            'user'           => $user,
+            'title'          => 'Mi perfil',
+            'personalFolder' => $personalFolder,
+            'documents'      => $documents,
         ]);
     }
 

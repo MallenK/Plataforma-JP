@@ -381,6 +381,16 @@ $routes->post('documentacion/upload', 'DocumentacionController::upload', [
     'filter' => 'auth',
 ]);
 
+// ── API JSON de archivos (modal) ────────────────────────────────────
+$routes->get('documentacion/folder/(:num)/files', 'DocumentacionController::folderFiles/$1', [
+    'filter' => 'auth',
+]);
+
+// ── Admin: crear carpeta personal para un usuario ───────────────────
+$routes->post('documentacion/folder/user/(:num)/create', 'DocumentacionController::createPersonalFolder/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 // ── Gestión de carpetas (solo admin/superadmin) ────────────────────
 $routes->post('documentacion/folder/create', 'DocumentacionController::createFolder', [
     'filter' => ['auth', 'role:superadmin,admin'],
