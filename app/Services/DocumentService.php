@@ -76,8 +76,7 @@ class DocumentService
             'public'   => true,
             'personal' => (int)$folder['owner_id'] === $userId
                            || in_array($role, ['admin', 'superadmin'])
-                           || (in_array($role, ['coach', 'staff'])
-                               && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player'),
+                           || in_array($role, ['coach', 'staff']),
             'internal' => $role !== 'player'
                            && (in_array($role, ['admin', 'superadmin'])
                                || $this->permModel->hasReadPermission($folderId, $userId)),
@@ -138,11 +137,10 @@ class DocumentService
         } elseif (in_array($role, ['admin', 'superadmin'])) {
             // Ve todo
         } else {
-            // Coach / staff: públicas + personal propia + carpetas personales de jugadores + internas asignadas
+            // Coach / staff: públicas + todas las carpetas personales + internas asignadas
             $builder->where(
                 "(df.type = 'public'
-                  OR (df.type = 'personal' AND df.owner_id = {$userId})
-                  OR (df.type = 'personal' AND u.role = 'player')
+                  OR df.type = 'personal'
                   OR (df.type = 'internal' AND EXISTS (
                         SELECT 1 FROM folder_permissions fp
                         WHERE fp.folder_id = df.id
