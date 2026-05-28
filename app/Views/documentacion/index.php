@@ -105,19 +105,6 @@ if ($isAdmin && !empty($allUsers)) {
         $roleKey = $u['role'];
         if (isset($personalFolderByOwner[$uid])) {
             $personalByRole[$roleKey][] = $personalFolderByOwner[$uid];
-        } else {
-            $personalByRole[$roleKey][] = [
-                'id'          => null,
-                'type'        => 'personal',
-                'owner_id'    => $uid,
-                'owner_name'  => $u['name'],
-                'owner_role'  => $u['role'],
-                'name'        => $u['name'],
-                'files_count' => 0,
-                'icon'        => 'bi-person-fill',
-                'color'       => 'blue',
-                'no_folder'   => true,
-            ];
         }
     }
 } else {
@@ -515,58 +502,6 @@ foreach ($personalByRole as $rk => $entries) {
     <?= csrf_field() ?>
 </form>
 <?php endif; ?>
-
-<?php
-// Datos de usuarios vs carpetas personales (solo para el debug)
-$dbDebug = \Config\Database::connect();
-$allUsersDebug = $dbDebug->table('users')
-    ->select('id, name, email, role, status')
-    ->where('status', 'active')
-    ->orderBy('role')->orderBy('name')
-    ->get()->getResultArray();
-
-$personalFolderOwners = array_map('intval', array_column(
-    array_filter($folders, fn($f) => $f['type'] === 'personal'),
-    'owner_id'
-));
-
-$usersDebugMapped = array_map(fn($u) => [
-    'id'           => (int)$u['id'],
-    'nombre'       => $u['name'],
-    'email'        => $u['email'],
-    'rol'          => $u['role'],
-    'tiene_carpeta'=> in_array((int)$u['id'], $personalFolderOwners) ? 'SÍ' : '⚠ NO',
-], $allUsersDebug);
-?>
-<?= console_debug('DocumentacionController::index', [
-    'viewer_id'              => $userId,
-    'viewer_role'            => $role,
-    'total_carpetas'         => count($folders),
-    'carpetas_con_escritura' => count($writableFolders),
-    'carpeta_activa'         => $activeFolder
-        ? ['id' => (int)$activeFolder['id'], 'nombre' => $activeFolder['name'], 'tipo' => $activeFolder['type'], 'propietario' => $activeFolder['owner_name'] ?? null]
-        : null,
-    'archivos_en_carpeta'    => $activeFolder ? count($files) : null,
-    'usuarios_vs_carpetas'   => $usersDebugMapped,
-    'carpetas'               => array_map(fn($f) => [
-        'id'          => (int)$f['id'],
-        'owner_id'    => (int)($f['owner_id'] ?? 0),
-        'owner_name'  => $f['owner_name'] ?? null,
-        'owner_role'  => $f['owner_role'] ?? null,
-        'tipo'        => $f['type'],
-        'archivos'    => (int)($f['files_count'] ?? 0),
-    ], $folders),
-    'archivos'               => $activeFolder
-        ? array_map(fn($f) => [
-            'id'        => (int)$f['id'],
-            'nombre'    => $f['name_original'],
-            'extension' => $f['extension'],
-            'tamaño'    => $f['size_bytes'],
-            'subido_por'=> $f['uploader_name'] ?? null,
-            'fecha'     => $f['created_at'],
-        ], $files)
-        : [],
-]) ?>
 
 <?= $this->endSection() ?>
 
