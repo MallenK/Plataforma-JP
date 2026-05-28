@@ -201,12 +201,14 @@ class DocumentService
             return $folder;
         }
 
-        // Generar slug único (puede haber conflicto de slugs huérfanos)
-        $slug = 'personal-' . $userId;
+        // Slug con sufijo único garantizado para evitar colisiones
+        $baseSlug = 'personal-' . $userId;
+        $slug     = $baseSlug;
         if ($this->folderModel->where('slug', $slug)->first()) {
-            $slug = 'personal-' . $userId . '-' . substr(md5((string)$userId . microtime()), 0, 6);
+            $slug = $baseSlug . '-' . substr(uniqid('', true), -8);
         }
 
+        $folderId = null;
         try {
             $folderId = $this->folderModel->insert([
                 'name'       => 'Mi carpeta',
@@ -219,12 +221,12 @@ class DocumentService
                 'status'     => 'active',
             ], true);
         } catch (\Throwable $e) {
-            log_message('error', 'DocumentService::getOrCreatePersonalFolder insert failed uid=' . $userId . ': ' . $e->getMessage());
+            log_message('error', "getOrCreatePersonalFolder insert uid={$userId} slug={$slug}: " . $e->getMessage());
             return null;
         }
 
         if (!$folderId) {
-            log_message('error', 'DocumentService::getOrCreatePersonalFolder insert returned falsy uid=' . $userId);
+            log_message('error', "getOrCreatePersonalFolder insert returned falsy uid={$userId}");
             return null;
         }
 
@@ -234,33 +236,27 @@ class DocumentService
     }
 
     /**
-     * Garantiza que todos los usuarios activos tienen carpeta personal activa.
+     * Garantiza que TODOS los usuarios tienen carpeta personal activa.
+     * Sin filtros de status — ningún usuario queda sin carpeta.
      * Solo debe llamarse con rol admin/superadmin.
      */
     public function ensureAllPersonalFolders(): void
     {
         $db = \Config\Database::connect();
 
-        // Todos los usuarios activos
         $allUsers = $db->table('users')
             ->select('id')
-            ->where('status', 'active')
             ->get()->getResultArray();
-
-        // Owner IDs que YA tienen carpeta personal ACTIVA
-        $existing = $db->table('document_folders')
-            ->select('owner_id')
-            ->where('type', 'personal')
-            ->where('status', 'active')
-            ->where('owner_id IS NOT NULL', null, false)
-            ->get()->getResultArray();
-
-        $existingOwnerIds = array_map('intval', array_column($existing, 'owner_id'));
 
         foreach ($allUsers as $user) {
             $uid = (int)$user['id'];
-            if ($uid > 0 && !in_array($uid, $existingOwnerIds, true)) {
+            if ($uid <= 0) {
+                continue;
+            }
+            try {
                 $this->getOrCreatePersonalFolder($uid);
+            } catch (\Throwable $e) {
+                log_message('error', "ensureAllPersonalFolders: fallo uid={$uid} — " . $e->getMessage());
             }
         }
     }
