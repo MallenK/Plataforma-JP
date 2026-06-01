@@ -7,11 +7,18 @@
         <h2>Clases y Calendario</h2>
         <p>Sesiones de entrenamiento programadas</p>
     </div>
-    <?php if ($canManage): ?>
-    <a href="/clases/nueva" class="btn-jp btn-jp-primary">
-        <i class="bi bi-plus-lg me-1"></i>Nueva clase (avanzada)
-    </a>
-    <?php endif; ?>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <?php if ($isAdminRole ?? false): ?>
+        <a href="/pasar-lista" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
+            <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar Lista
+        </a>
+        <?php endif; ?>
+        <?php if ($canManage): ?>
+        <a href="/clases/nueva" class="btn-jp btn-jp-primary">
+            <i class="bi bi-plus-lg me-1"></i>Nueva clase (avanzada)
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if ($flash = session()->getFlashdata('success')): ?>
@@ -86,6 +93,7 @@
             <div class="calendar-view-tabs">
                 <button class="calendar-view-tab active" onclick="CAL.switchView('month', this)">Mes</button>
                 <button class="calendar-view-tab" onclick="CAL.switchView('week', this)">Semana</button>
+                <button class="calendar-view-tab" onclick="CAL.switchView('day', this)">Día</button>
             </div>
         </div>
     </div>
@@ -113,6 +121,7 @@
 <?php if ($canManage): ?>
     <?= $this->include('clases/_modal_create') ?>
 <?php endif; ?>
+
 
 <?= $this->endSection() ?>
 
@@ -188,6 +197,12 @@
 .cal-event-block:hover { filter:brightness(.92); }
 .cal-can-create { cursor:pointer; }
 .cal-can-create:hover { background:var(--accent-light) !important; }
+
+/* ── Calendario Día ────────────────────────────────────────────── */
+.cal-day-grid {
+    display:grid;grid-template-columns:48px 1fr;
+    min-width:280px;
+}
 </style>
 
 <script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
@@ -202,12 +217,18 @@ const CAL = {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
     weekStart: null,
+    day: null,
     events: [],
 
     async load() {
-        const url = this.view === 'month'
-            ? `/clases/api/calendario?year=${this.year}&month=${this.month}`
-            : `/clases/api/calendario?year=${this.weekStartYear()}&month=${this.weekStartMonth()}`;
+        let year = this.year, month = this.month;
+        if (this.view === 'week') {
+            year = this.weekStartYear(); month = this.weekStartMonth();
+        } else if (this.view === 'day' && this.day) {
+            const p = this.day.split('-');
+            year = parseInt(p[0]); month = parseInt(p[1]);
+        }
+        const url = `/clases/api/calendario?year=${year}&month=${month}`;
         try {
             const res = await fetch(url);
             this.events = await res.json();
@@ -216,26 +237,31 @@ const CAL = {
     },
 
     render() {
-        this.view === 'month' ? this.renderMonth() : this.renderWeek();
+        if (this.view === 'month') this.renderMonth();
+        else if (this.view === 'week') this.renderWeek();
+        else this.renderDay();
     },
 
     switchView(v, btn) {
         this.view = v;
         document.querySelectorAll('.calendar-view-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if (v === 'week' && !this.weekStart) {
-            this.weekStart = this.getMonday(new Date());
-        }
+        if (v === 'week' && !this.weekStart) this.weekStart = this.getMonday(new Date());
+        if (v === 'day'  && !this.day)       this.day = this.fmt(new Date());
         this.load();
     },
 
     prev() {
         if (this.view === 'month') {
             if (--this.month < 1) { this.month = 12; this.year--; }
-        } else {
+        } else if (this.view === 'week') {
             const d = new Date(this.weekStart + 'T00:00:00');
             d.setDate(d.getDate() - 7);
             this.weekStart = this.fmt(d);
+        } else {
+            const d = new Date(this.day + 'T00:00:00');
+            d.setDate(d.getDate() - 1);
+            this.day = this.fmt(d);
         }
         this.load();
     },
@@ -243,10 +269,14 @@ const CAL = {
     next() {
         if (this.view === 'month') {
             if (++this.month > 12) { this.month = 1; this.year++; }
-        } else {
+        } else if (this.view === 'week') {
             const d = new Date(this.weekStart + 'T00:00:00');
             d.setDate(d.getDate() + 7);
             this.weekStart = this.fmt(d);
+        } else {
+            const d = new Date(this.day + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            this.day = this.fmt(d);
         }
         this.load();
     },
@@ -256,6 +286,7 @@ const CAL = {
         this.year = n.getFullYear();
         this.month = n.getMonth() + 1;
         this.weekStart = this.getMonday(n);
+        this.day = this.fmt(n);
         this.load();
     },
 
@@ -377,6 +408,54 @@ const CAL = {
         document.getElementById('cal-grid').innerHTML = html;
     },
 
+    renderDay() {
+        if (!this.day) this.day = this.fmt(new Date());
+        const d        = new Date(this.day + 'T00:00:00');
+        const dnames   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        const mn       = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const todayStr = this.fmt(new Date());
+        const isToday  = this.day === todayStr;
+
+        document.getElementById('cal-label').textContent =
+            `${dnames[d.getDay()]}, ${d.getDate()} de ${mn[d.getMonth()]} ${d.getFullYear()}`;
+
+        const HOUR_START = 7, HOUR_END = 22, SLOT_H = 56;
+        const dayEvts = this.events.filter(e => e.date === this.day);
+
+        let html = '<div class="cal-week-wrap"><div class="cal-day-grid">';
+
+        html += '<div class="cal-week-head time-col"></div>';
+        html += `<div class="cal-week-head${isToday ? ' cal-wday-today' : ''}">
+                    <div class="cal-wday-name">${dnames[d.getDay()].substring(0,3)}</div>
+                    <div class="cal-wday-num">${d.getDate()}</div>
+                 </div>`;
+
+        for (let h = HOUR_START; h < HOUR_END; h++) {
+            html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
+            const slotEvts = dayEvts.filter(e => parseInt(e.start.split(':')[0]) === h);
+            html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
+                         data-date="${this.day}" data-hour="${h}"
+                         onclick="handleSlotClick(event, '${this.day}', ${h})">`;
+            slotEvts.forEach(ev => {
+                const [sh, sm] = ev.start.split(':').map(Number);
+                const [eh2, em] = (ev.end || ev.start).split(':').map(Number);
+                const topPx   = (sm / 60) * SLOT_H;
+                const durMin  = (eh2 * 60 + em) - (sh * 60 + sm);
+                const heightPx = Math.max((durMin / 60) * SLOT_H, 22);
+                html += `<a href="/clases/${ev.id}" class="cal-event-block"
+                            style="top:${topPx}px;height:${heightPx}px;background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
+                            title="${ev.title} ${ev.start}–${ev.end}"
+                            onclick="event.stopPropagation()">
+                            ${ev.start} ${ev.title}
+                         </a>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div></div>';
+        document.getElementById('cal-grid').innerHTML = html;
+    },
+
     getMonday(d) {
         const day  = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -391,7 +470,17 @@ const CAL = {
 
 function handleCellClick(e, date) {
     if (e.target.closest('a')) return;
-    if (canManage) ClaseModal.open({ date });
+    if (canManage) {
+        ClaseModal.open({ date });
+    } else {
+        // Non-managers: click month cell → jump to day view
+        const btn = document.querySelector('.calendar-view-tab:last-child');
+        CAL.day = date;
+        CAL.view = 'day';
+        document.querySelectorAll('.calendar-view-tab').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        CAL.load();
+    }
 }
 function handleSlotClick(e, date, hour) {
     if (e.target.closest('a')) return;

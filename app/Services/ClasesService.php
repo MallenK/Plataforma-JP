@@ -288,13 +288,7 @@ class ClasesService
 
     public function markComplete(int $id): bool
     {
-        $ok = (bool)$this->sessionModel->update($id, ['status' => 'completed']);
-
-        if ($ok) {
-            $this->deductBonosForSession($id);
-        }
-
-        return $ok;
+        return (bool)$this->sessionModel->update($id, ['status' => 'completed']);
     }
 
     /**
@@ -399,6 +393,255 @@ class ClasesService
         ], $recipients);
     }
 
+    /**
+     * Admin descuenta manualmente 1 sesión del bono activo de un jugador.
+     * Solo válido si el jugador tiene attendance='present' y el bono aún no fue descontado.
+     */
+    public function deductBonoForPlayer(int $sessionId, int $playerId): array
+    {
+        $player = $this->playerModel
+            ->where('session_id', $sessionId)
+            ->where('user_id', $playerId)
+            ->first();
+
+        if (!$player) {
+            return ['success' => false, 'error' => 'Jugador no asignado a esta sesión.'];
+        }
+
+        if ($player['attendance'] !== 'present') {
+            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes.'];
+        }
+
+        if (!empty($player['bono_deducted_at'])) {
+            return ['success' => false, 'error' => 'El bono de este jugador ya fue descontado para esta sesión.'];
+        }
+
+        $bonoModel = new PlayerBonoModel();
+        $bono      = $bonoModel->deductSessionDetailed($playerId);
+
+        if ($bono === null) {
+            return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+        }
+
+        $this->playerModel->update($player['id'], [
+            'bono_deducted_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $remaining = (int)$bono['sessions_remaining'];
+        if ($remaining === 1 || $remaining === 0) {
+            $this->emitBonoLowSessionsNotification($playerId, $bono);
+        }
+
+        $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
+        $bonoName  = $typeRow['name'] ?? null;
+
+        return [
+            'success'            => true,
+            'sessions_remaining' => $remaining,
+            'bono_name'          => $bonoName,
+        ];
+    }
+
+    /**
+     * Historial de sesiones completadas con resumen de asistencia y estado de bonos.
+     */
+    public function getAttendanceHistorial(int $limit = 50): array
+    {
+        $sessions = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
+            ->where('cs.status', 'completed')
+            ->orderBy('cs.session_date', 'DESC')
+            ->orderBy('cs.start_time', 'DESC')
+            ->limit($limit)
+            ->get()->getResultArray();
+
+        $bonoModel = new PlayerBonoModel();
+
+        foreach ($sessions as &$s) {
+            $sid = (int)$s['id'];
+
+            // Coaches
+            $s['coaches'] = $this->db->table('class_session_coaches csc')
+                ->select('u.name')
+                ->join('users u', 'u.id = csc.user_id')
+                ->where('csc.session_id', $sid)
+                ->get()->getResultArray();
+
+            // Jugadores con estado bono actual
+            $players = $this->db->table('class_session_players csp')
+                ->select('csp.user_id, csp.attendance, csp.absence_reason, csp.bono_deducted_at, u.name')
+                ->join('users u', 'u.id = csp.user_id')
+                ->where('csp.session_id', $sid)
+                ->orderBy('u.name')
+                ->get()->getResultArray();
+
+            $counts = ['present' => 0, 'absent' => 0, 'pending' => 0, 'other' => 0];
+            $today = date('Y-m-d');
+            foreach ($players as &$p) {
+                $activeBono = $this->db->table('player_bonos pb')
+                    ->select('pb.sessions_remaining, bt.name AS bono_name')
+                    ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+                    ->where('pb.player_id', (int)$p['user_id'])
+                    ->where('pb.sessions_remaining >', 0)
+                    ->groupStart()
+                        ->where('pb.expires_at IS NULL')
+                        ->orWhere('pb.expires_at >=', $today)
+                    ->groupEnd()
+                    ->orderBy('pb.created_at', 'ASC')
+                    ->get()->getRowArray();
+                $p['sessions_remaining'] = $activeBono ? (int)$activeBono['sessions_remaining'] : null;
+                $p['bono_name']          = $activeBono ? $activeBono['bono_name'] : null;
+
+                if ($p['attendance'] === 'present')      $counts['present']++;
+                elseif ($p['attendance'] === 'absent')   $counts['absent']++;
+                elseif ($p['attendance'] === 'pending')  $counts['pending']++;
+                else                                     $counts['other']++;
+            }
+            unset($p);
+
+            $s['players']       = $players;
+            $s['player_counts'] = $counts;
+        }
+        unset($s);
+
+        return $sessions;
+    }
+
+    /**
+     * Devuelve todas las sesiones de una semana, agrupadas por día.
+     * $weekOffset: 0 = semana actual, -1 = semana anterior, etc.
+     * $search: filtra por nombre de alumno o entrenador (parcial, case-insensitive).
+     */
+    public function getWeekSessions(int $weekOffset = 0, string $search = ''): array
+    {
+        $monday = new \DateTime('monday this week');
+        if ($weekOffset !== 0) {
+            $monday->modify(($weekOffset > 0 ? '+' : '') . $weekOffset . ' weeks');
+        }
+        $sunday = clone $monday;
+        $sunday->modify('+6 days');
+
+        $weekStart = $monday->format('Y-m-d');
+        $weekEnd   = $sunday->format('Y-m-d');
+
+        // Obtener sesiones del período
+        $sessions = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.lista_pasada_at, cs.lista_pasada_by, u.name AS lista_pasada_by_name')
+            ->join('users u', 'u.id = cs.lista_pasada_by', 'left')
+            ->where('cs.session_date >=', $weekStart)
+            ->where('cs.session_date <=', $weekEnd)
+            ->where('cs.status !=', 'cancelled')
+            ->orderBy('cs.session_date', 'ASC')
+            ->orderBy('cs.start_time', 'ASC')
+            ->get()->getResultArray();
+
+        $today  = date('Y-m-d');
+        $search = strtolower(trim($search));
+
+        foreach ($sessions as &$s) {
+            $sid = (int)$s['id'];
+
+            $s['coaches'] = $this->db->table('class_session_coaches csc')
+                ->select('csc.user_id, u.name')
+                ->join('users u', 'u.id = csc.user_id')
+                ->where('csc.session_id', $sid)
+                ->orderBy('u.name')
+                ->get()->getResultArray();
+
+            $players = $this->db->table('class_session_players csp')
+                ->select('csp.id AS csp_id, csp.user_id, csp.attendance, csp.absence_reason, csp.absence_notes, csp.bono_deducted_at, u.name, u.email')
+                ->join('users u', 'u.id = csp.user_id')
+                ->where('csp.session_id', $sid)
+                ->orderBy('u.name')
+                ->get()->getResultArray();
+
+            // Enriquecer con bono activo
+            foreach ($players as &$p) {
+                $activeBono = $this->db->table('player_bonos pb')
+                    ->select('pb.sessions_remaining, bt.name AS bono_name')
+                    ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+                    ->where('pb.player_id', (int)$p['user_id'])
+                    ->where('pb.sessions_remaining >', 0)
+                    ->groupStart()
+                        ->where('pb.expires_at IS NULL')
+                        ->orWhere('pb.expires_at >=', $today)
+                    ->groupEnd()
+                    ->orderBy('pb.created_at', 'ASC')
+                    ->get()->getRowArray();
+                $p['sessions_remaining'] = $activeBono ? (int)$activeBono['sessions_remaining'] : null;
+                $p['bono_name']          = $activeBono ? $activeBono['bono_name'] : null;
+            }
+            unset($p);
+
+            $s['players'] = $players;
+
+            // Contadores
+            $counts = ['present' => 0, 'absent' => 0, 'pending' => 0];
+            foreach ($players as $p) {
+                if (isset($counts[$p['attendance']])) $counts[$p['attendance']]++;
+                else $counts['pending']++;
+            }
+            $s['player_counts'] = $counts;
+        }
+        unset($s);
+
+        // Filtrar por búsqueda (alumno o entrenador)
+        if ($search !== '') {
+            $sessions = array_filter($sessions, function ($s) use ($search) {
+                foreach ($s['players'] as $p) {
+                    if (str_contains(strtolower($p['name']), $search)) return true;
+                }
+                foreach ($s['coaches'] as $c) {
+                    if (str_contains(strtolower($c['name']), $search)) return true;
+                }
+                return false;
+            });
+            $sessions = array_values($sessions);
+        }
+
+        // Agrupar por día
+        $byDay = [];
+        foreach ($sessions as $s) {
+            $day = $s['session_date'];
+            if (!isset($byDay[$day])) $byDay[$day] = [];
+            $byDay[$day][] = $s;
+        }
+
+        // Asegurar todos los días de la semana (incluso sin sesiones)
+        $result = [];
+        $cursor = clone $monday;
+        for ($i = 0; $i < 7; $i++) {
+            $key = $cursor->format('Y-m-d');
+            $result[$key] = $byDay[$key] ?? [];
+            $cursor->modify('+1 day');
+        }
+
+        return [
+            'week_start' => $weekStart,
+            'week_end'   => $weekEnd,
+            'week_offset' => $weekOffset,
+            'by_day'     => $result,
+        ];
+    }
+
+    /**
+     * Marca una sesión como "lista pasada" por el admin.
+     * También guarda asistencia si se pasa un attendanceMap.
+     */
+    public function markListaPasada(int $sessionId, int $adminId, array $attendanceMap = [], array $absenceReasons = [], array $absenceNotes = []): array
+    {
+        if (!empty($attendanceMap)) {
+            $this->updateAttendance($sessionId, $attendanceMap, $absenceReasons, $absenceNotes);
+        }
+
+        $this->sessionModel->update($sessionId, [
+            'lista_pasada_at' => date('Y-m-d H:i:s'),
+            'lista_pasada_by' => $adminId,
+        ]);
+
+        return ['success' => true];
+    }
+
     public function cancelSession(int $id): bool
     {
         return (bool)$this->sessionModel->update($id, ['status' => 'cancelled']);
@@ -440,7 +683,7 @@ class ClasesService
     public function getCoachesForSession(int $sessionId): array
     {
         return $this->db->table('class_session_coaches csc')
-            ->select('csc.id, csc.user_id, u.name, u.email')
+            ->select('csc.session_id, csc.user_id, u.name, u.email')
             ->join('users u', 'u.id = csc.user_id')
             ->where('csc.session_id', $sessionId)
             ->orderBy('u.name')
@@ -460,11 +703,15 @@ class ClasesService
             return ['success' => false, 'error' => 'El jugador ya está en esta sesión.'];
         }
 
-        $this->playerModel->insert([
+        $now = date('Y-m-d H:i:s');
+        $this->db->table('class_session_players')->insert([
+            'id'         => $this->nextPlayerRowId(),
             'session_id' => $sessionId,
             'user_id'    => $userId,
             'coach_id'   => ($data['coach_id'] ?? '') ?: null,
             'attendance' => 'pending',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         return ['success' => true];
@@ -605,9 +852,10 @@ class ClasesService
     /**
      * Guarda asistencia y motivo de ausencia por jugador.
      * $attendanceMap: [userId => status]
-     * $absenceReasons: [userId => reason]
+     * $absenceReasons: [userId => reason]  (valor predefinido)
+     * $absenceNotes: [userId => notes]     (texto libre adicional)
      */
-    public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = []): bool
+    public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = [], array $absenceNotes = []): bool
     {
         $valid = ['present', 'absent', 'pending', 'confirmed', 'declined'];
 
@@ -623,8 +871,10 @@ class ClasesService
                 $update = ['attendance' => $status];
                 if ($status === 'absent') {
                     $update['absence_reason'] = ($absenceReasons[$userId] ?? '') ?: null;
+                    $update['absence_notes']  = ($absenceNotes[$userId] ?? '') ?: null;
                 } else {
                     $update['absence_reason'] = null;
+                    $update['absence_notes']  = null;
                 }
                 $this->playerModel->update($player['id'], $update);
             }
@@ -776,6 +1026,7 @@ class ClasesService
         foreach (array_unique(array_filter(array_map('intval', (array)$userIds))) as $uid) {
             $coachId = isset($coachMap[$uid]) ? ((int)$coachMap[$uid] ?: null) : null;
             $this->db->table('class_session_players')->insert([
+                'id'         => $this->nextPlayerRowId(),
                 'session_id' => $sessionId,
                 'user_id'    => $uid,
                 'coach_id'   => $coachId,
@@ -787,6 +1038,12 @@ class ClasesService
                 log_message('error', 'syncPlayers: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
             }
         }
+    }
+
+    private function nextPlayerRowId(): int
+    {
+        $row = $this->db->query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM class_session_players')->getRowArray();
+        return (int)($row['next_id'] ?? 1);
     }
 
     private function statusColor(string $status): string

@@ -26,14 +26,16 @@ class ClasesController extends BaseController
         $userId    = $this->currentUserId();
         $role      = session('role');
         $canManage = in_array($role, ['superadmin', 'admin', 'staff', 'coach']);
+        $isAdminRole = in_array($role, ['superadmin', 'admin']);
 
         return view('clases/index', [
-            'title'      => 'Clases — JP Preparation',
-            'stats'      => $this->clasesService->getStats($userId, $role),
-            'isAdmin'    => $this->isAdmin(),
-            'canManage'  => $canManage,
+            'title'         => 'Clases — JP Preparation',
+            'stats'         => $this->clasesService->getStats($userId, $role),
+            'isAdmin'       => $this->isAdmin(),
+            'canManage'     => $canManage,
+            'isAdminRole'   => $isAdminRole,
             'currentUserId' => $userId,
-            'role'       => $role,
+            'role'          => $role,
         ]);
     }
 
@@ -288,10 +290,96 @@ class ClasesController extends BaseController
         $this->clasesService->updateAttendance(
             $id,
             $this->request->getPost('attendance') ?? [],
-            $this->request->getPost('absence_reason') ?? []
+            $this->request->getPost('absence_reason') ?? [],
+            $this->request->getPost('absence_notes') ?? []
         );
         session()->setFlashdata('success', 'Asistencia registrada.');
         return redirect()->to('/clases/' . $id);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Pasar Lista — Vista semanal (admin/superadmin)
+    // ────────────────────────────────────────────────────────────────
+
+    public function pasarListaIndex()
+    {
+        $weekOffset = (int)($this->request->getGet('semana') ?? 0);
+        $search     = trim($this->request->getGet('buscar') ?? '');
+
+        $data = $this->clasesService->getWeekSessions($weekOffset, $search);
+
+        return view('clases/pasar_lista_semanal', [
+            'title'          => 'Pasar Lista — JP Preparation',
+            'isAdmin'        => $this->isAdmin(),
+            'weekData'       => $data,
+            'search'         => $search,
+            'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
+        ]);
+    }
+
+    public function guardarListaPasada(int $id)
+    {
+        $result = $this->clasesService->markListaPasada(
+            $id,
+            $this->currentUserId(),
+            $this->request->getPost('attendance') ?? [],
+            $this->request->getPost('absence_reason') ?? [],
+            $this->request->getPost('absence_notes') ?? []
+        );
+
+        $semana = $this->request->getPost('semana') ?? 0;
+        $buscar = $this->request->getPost('buscar') ?? '';
+        $qs     = http_build_query(array_filter(['semana' => $semana, 'buscar' => $buscar]));
+
+        session()->setFlashdata('success', 'Lista guardada correctamente.');
+        return redirect()->to('/pasar-lista' . ($qs ? '?' . $qs : ''));
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Pasar Lista — por sesión individual (admin/superadmin)
+    // ────────────────────────────────────────────────────────────────
+
+    public function pasarLista(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        // Añadir bono activo a cada jugador
+        $bonoModel = new \App\Models\PlayerBonoModel();
+        $db        = \Config\Database::connect();
+        $today     = date('Y-m-d');
+
+        foreach ($session['players'] as &$p) {
+            $activeBono = $db->table('player_bonos pb')
+                ->select('pb.id, pb.sessions_remaining, pb.expires_at, bt.name AS bono_name')
+                ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+                ->where('pb.player_id', (int)$p['user_id'])
+                ->where('pb.sessions_remaining >', 0)
+                ->groupStart()
+                    ->where('pb.expires_at IS NULL')
+                    ->orWhere('pb.expires_at >=', $today)
+                ->groupEnd()
+                ->orderBy('pb.created_at', 'ASC')
+                ->get()->getRowArray();
+
+            $p['active_bono'] = $activeBono ?: null;
+        }
+        unset($p);
+
+        return view('clases/pasar_lista', [
+            'title'         => 'Pasar Lista — ' . esc($session['title']),
+            'session'       => $session,
+            'isAdmin'       => $this->isAdmin(),
+            'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
+        ]);
+    }
+
+    public function deductBono(int $id, int $playerId)
+    {
+        $result = $this->clasesService->deductBonoForPlayer($id, $playerId);
+        return $this->response->setJSON($result);
     }
 
     // ────────────────────────────────────────────────────────────────

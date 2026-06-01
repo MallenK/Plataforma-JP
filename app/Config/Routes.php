@@ -249,6 +249,22 @@ $routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::remove
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
+// ── Pasar Lista — Vista semanal ────────────────────────────
+$routes->get('pasar-lista', 'ClasesController::pasarListaIndex', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('clases/(:num)/lista-guardar', 'ClasesController::guardarListaPasada/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// ── Pasar Lista — por sesión ───────────────────────────────
+$routes->get('clases/(:num)/lista', 'ClasesController::pasarLista/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('clases/(:num)/jugadores/(:num)/descontar-bono', 'ClasesController::deductBono/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ------------------------------------------------------------
 // BONOS

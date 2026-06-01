@@ -38,6 +38,13 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
 
     <?php if ($canManage): ?>
     <div class="d-flex gap-2 flex-wrap">
+        <?php if (in_array(session('role'), ['admin', 'superadmin'])): ?>
+        <a href="/clases/<?= $session['id'] ?>/lista"
+           class="btn-jp btn-jp-sm"
+           style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
+            <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar Lista
+        </a>
+        <?php endif; ?>
         <?php if ($session['status'] === 'scheduled'): ?>
         <form action="/clases/<?= $session['id'] ?>/completar" method="POST" style="margin:0">
             <?= csrf_field() ?>
