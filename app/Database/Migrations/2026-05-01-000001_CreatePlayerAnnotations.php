@@ -10,8 +10,8 @@ class CreatePlayerAnnotations extends Migration
     {
         $this->forge->addField([
             'id'        => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
-            'player_id' => ['type' => 'INT', 'unsigned' => true],
-            'author_id' => ['type' => 'INT', 'unsigned' => true],
+            'player_id' => ['type' => 'INT'],
+            'author_id' => ['type' => 'INT'],
             'type'      => [
                 'type'       => 'ENUM',
                 'constraint' => ['public', 'internal'],
@@ -25,9 +25,6 @@ class CreatePlayerAnnotations extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addKey('player_id');
         $this->forge->addKey('type');
-
-        $this->forge->addForeignKey('player_id', 'users', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('author_id', 'users', 'id', 'CASCADE', 'CASCADE');
 
         $this->forge->createTable('player_annotations', true);
     }

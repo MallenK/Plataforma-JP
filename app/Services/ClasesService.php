@@ -642,6 +642,35 @@ class ClasesService
         return ['success' => true];
     }
 
+    public function completarDiaRapido(string $date, int $adminId): array
+    {
+        $sessions = $this->db->table('class_sessions')
+            ->select('id')
+            ->where('session_date', $date)
+            ->where('status !=', 'cancelled')
+            ->where('lista_pasada_at IS NULL')
+            ->get()->getResultArray();
+
+        $done = 0;
+        foreach ($sessions as $s) {
+            $sid     = (int)$s['id'];
+            $players = $this->db->table('class_session_players')
+                ->select('user_id')
+                ->where('session_id', $sid)
+                ->get()->getResultArray();
+
+            $attendanceMap = [];
+            foreach ($players as $p) {
+                $attendanceMap[(int)$p['user_id']] = 'present';
+            }
+
+            $this->markListaPasada($sid, $adminId, $attendanceMap);
+            $done++;
+        }
+
+        return ['success' => true, 'sessions_completed' => $done];
+    }
+
     public function cancelSession(int $id): bool
     {
         return (bool)$this->sessionModel->update($id, ['status' => 'cancelled']);

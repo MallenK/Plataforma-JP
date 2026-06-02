@@ -30,15 +30,38 @@ class PerfilController extends BaseController
             $user['students_count'] = $stats['students_count'];
         }
 
+        // Para alumnos: cargar perfil completo (stats, bonos, asistencia)
+        $playerFullProfile = null;
+        if ($user['role'] === 'player') {
+            $playerFullProfile = (new \App\Services\PlayerService())->getFullProfile((int)$user['id']);
+            if ($playerFullProfile) {
+                // Mezclar stats de actividad en $user
+                $user['classes_count']  = $playerFullProfile['classes_count']  ?? 0;
+                $user['upcoming_count'] = $playerFullProfile['upcoming_count'] ?? 0;
+                $user['active_bonos']   = $playerFullProfile['active_bonos']   ?? 0;
+            }
+        }
+
         $docService     = new \App\Services\DocumentService();
         $personalFolder = $docService->getOrCreatePersonalFolder((int)$user['id']);
         $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
 
+        // Anotaciones para alumnos
+        $annotations = [];
+        if ($user['role'] === 'player') {
+            $annModel = new \App\Models\PlayerAnnotationModel();
+            // Admin ve todas; el propio alumno solo ve las públicas
+            $types = $this->isAdmin() ? ['public', 'internal'] : ['public'];
+            $annotations = $annModel->getForPlayer((int)$user['id'], $types);
+        }
+
         return view('perfil/index', [
-            'user'           => $user,
-            'title'          => 'Mi perfil',
-            'personalFolder' => $personalFolder,
-            'documents'      => $documents,
+            'user'              => $user,
+            'title'             => 'Mi perfil',
+            'personalFolder'    => $personalFolder,
+            'documents'         => $documents,
+            'playerFullProfile' => $playerFullProfile,
+            'annotations'       => $annotations,
         ]);
     }
 

@@ -126,7 +126,7 @@ class AnnotationController extends BaseController
         $role = $this->currentRole();
 
         if ($role === 'player') {
-            return redirect()->to('/alumno');
+            return redirect()->to('/perfil#anotaciones');
         }
 
         return redirect()->to('/alumnos/' . $playerId . '#anotaciones');

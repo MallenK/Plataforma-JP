@@ -18,7 +18,14 @@ $attendanceOpts = [
     'declined' => ['Declinado',  '#6b7280'],
 ];
 
-// Contar cuántas sesiones de la semana tienen lista pendiente (status!='cancelled' y lista_pasada_at IS NULL)
+$attBorderColors = [
+    'present'  => '#059669',
+    'absent'   => '#dc2626',
+    'confirmed'=> '#2563eb',
+    'declined' => '#9ca3af',
+    'pending'  => 'var(--border-color)',
+];
+
 $totalSessions = 0;
 $pendingLista  = 0;
 foreach ($byDay as $sessions) {
@@ -66,7 +73,6 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
 <!-- ── Barra de navegación de semana + buscador ──────────────── -->
 <div class="card-jp mb-4" style="padding:16px 20px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between">
-        <!-- Navegación semana -->
         <div style="display:flex;align-items:center;gap:8px">
             <a href="/pasar-lista?semana=<?= $weekOffset - 1 ?><?= $search ? '&buscar=' . urlencode($search) : '' ?>"
                class="btn-jp btn-jp-secondary btn-jp-sm" style="padding:6px 10px">
@@ -89,7 +95,6 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
             <?php endif; ?>
         </div>
 
-        <!-- Buscador -->
         <form method="GET" action="/pasar-lista" style="display:flex;gap:8px;align-items:center">
             <?php if ($weekOffset !== 0): ?>
             <input type="hidden" name="semana" value="<?= $weekOffset ?>">
@@ -122,7 +127,9 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
     $dateLabel = date('d/m', strtotime($date));
     $dayIdx++;
 
-    if (empty($sessions)) continue; // ocultar días sin sesiones (a menos que sea hoy)
+    if (empty($sessions)) continue;
+
+    $dayPending = array_sum(array_map(fn($s) => empty($s['lista_pasada_at']) ? 1 : 0, $sessions));
 ?>
 
 <div class="card-jp mb-3" id="day-<?= $date ?>" style="<?= $isToday ? 'border-left:4px solid var(--accent)' : '' ?>">
@@ -138,14 +145,19 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
         </div>
         <span style="font-size:12px;color:var(--text-muted)"><?= count($sessions) ?> sesión<?= count($sessions) !== 1 ? 'es' : '' ?></span>
 
-        <!-- Resumen del día -->
-        <?php
-        $dayPending = array_sum(array_map(fn($s) => empty($s['lista_pasada_at']) ? 1 : 0, $sessions));
-        ?>
         <?php if ($dayPending > 0): ?>
-        <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;margin-left:auto">
-            <i class="bi bi-hourglass-split me-1"></i><?= $dayPending ?> pendiente<?= $dayPending !== 1 ? 's' : '' ?>
-        </span>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
+            <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600">
+                <i class="bi bi-hourglass-split me-1"></i><?= $dayPending ?> pendiente<?= $dayPending !== 1 ? 's' : '' ?>
+            </span>
+            <button type="button"
+                    class="btn-jp btn-jp-sm btn-completar-dia"
+                    data-date="<?= $date ?>"
+                    data-label="<?= esc($dayLabel . ' ' . $dateLabel) ?>"
+                    style="font-size:11px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
+                <i class="bi bi-lightning-fill me-1"></i>Completar día
+            </button>
+        </div>
         <?php else: ?>
         <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;margin-left:auto">
             <i class="bi bi-check-all me-1"></i>Completado
@@ -177,7 +189,6 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
                 <?php endif; ?>
             </div>
 
-            <!-- Estado lista -->
             <?php if ($listaPasada): ?>
             <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap">
                 <i class="bi bi-check-circle-fill me-1"></i>Lista pasada
@@ -187,12 +198,11 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
                 <?php endif; ?>
             </span>
             <?php else: ?>
-            <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap">
+            <span class="session-pending-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap">
                 <i class="bi bi-hourglass-split me-1"></i>Pendiente
             </span>
             <?php endif; ?>
 
-            <!-- Resumen asistencia -->
             <?php if (!empty($s['players'])): ?>
             <div style="display:flex;gap:8px;font-size:12px">
                 <span style="color:#059669;font-weight:600"><i class="bi bi-person-check-fill me-1"></i><?= $s['player_counts']['present'] ?></span>
@@ -216,100 +226,92 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
             <input type="hidden" name="semana" value="<?= $weekOffset ?>">
             <?php if ($search): ?><input type="hidden" name="buscar" value="<?= esc($search) ?>"><?php endif; ?>
 
-            <div style="overflow-x:auto">
-            <table class="table-jp" style="min-width:620px">
-                <thead>
-                    <tr>
-                        <th style="width:26%">Alumno</th>
-                        <th style="width:17%">Asistencia</th>
-                        <th style="width:17%">Razón ausencia</th>
-                        <th style="width:22%">Nota</th>
-                        <th style="width:18%;text-align:center">Bono</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($s['players'] as $p): ?>
-                <?php
-                    $uid      = (int)$p['user_id'];
-                    $att      = $p['attendance'] ?? 'pending';
-                    $isAbsent = ($att === 'absent');
-                    $isPresent= ($att === 'present');
-                    $deducted = !empty($p['bono_deducted_at']);
-                    $formId   = 's' . $s['id'] . 'u' . $uid;
-                ?>
-                <tr data-form="<?= $formId ?>">
-                    <td>
-                        <div style="font-weight:600;font-size:0.9rem"><?= esc($p['name']) ?></div>
-                        <?php if (!empty($p['student_note'])): ?>
-                        <div style="font-size:11px;color:#d97706;margin-top:2px">
-                            <i class="bi bi-chat-left-text-fill me-1"></i><?= esc($p['student_note']) ?>
-                        </div>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <select name="attendance[<?= $uid ?>]"
-                                class="form-select-jp att-sel"
-                                data-formid="<?= $formId ?>"
-                                data-uid="<?= $uid ?>"
-                                style="font-size:12px;width:100%">
-                            <?php foreach ($attendanceOpts as $val => [$lbl, $col]): ?>
-                            <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>>
-                                <?= $lbl ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                    <td id="abs-<?= $formId ?>" style="<?= !$isAbsent ? 'opacity:.4;pointer-events:none' : '' ?>">
-                        <select name="absence_reason[<?= $uid ?>]" class="form-select-jp" style="font-size:12px;width:100%">
-                            <option value="">— Motivo —</option>
-                            <?php foreach ($absenceReasons as $r): ?>
-                            <option value="<?= esc($r) ?>" <?= ($p['absence_reason'] ?? '') === $r ? 'selected' : '' ?>>
-                                <?= esc($r) ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                    <td id="note-<?= $formId ?>" style="<?= !$isAbsent ? 'opacity:.4;pointer-events:none' : '' ?>">
-                        <input type="text"
-                               name="absence_notes[<?= $uid ?>]"
-                               class="form-control-jp"
-                               placeholder="Nota opcional…"
-                               value="<?= esc($p['absence_notes'] ?? '') ?>"
-                               style="font-size:12px;width:100%">
-                    </td>
-                    <td style="text-align:center">
-                        <?php if ($p['sessions_remaining'] !== null): ?>
-                        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                            <span class="bono-rem-<?= $formId ?>"
-                                  style="font-weight:800;font-size:1rem;color:<?= ($p['sessions_remaining'] <= 1) ? '#dc2626' : '#059669' ?>">
-                                <?= $p['sessions_remaining'] ?>
-                            </span>
-                            <span style="font-size:10px;color:var(--text-muted)"><?= esc($p['bono_name'] ?? '') ?></span>
-                            <?php if ($deducted): ?>
-                            <span style="font-size:10px;color:#059669;font-weight:600">
-                                <i class="bi bi-check-circle-fill"></i> Descontado
-                            </span>
-                            <?php elseif ($isPresent): ?>
-                            <button type="button"
-                                    class="btn-jp btn-jp-sm btn-deduct-week"
-                                    data-session="<?= $s['id'] ?>"
-                                    data-player="<?= $uid ?>"
-                                    data-formid="<?= $formId ?>"
-                                    style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-size:10px;padding:2px 7px">
-                                <i class="bi bi-dash-circle-fill me-1"></i>Descontar
-                            </button>
-                            <?php else: ?>
-                            <span class="bono-hint-<?= $formId ?>" style="font-size:10px;color:var(--text-muted)">Marcar presente</span>
-                            <?php endif; ?>
-                        </div>
-                        <?php else: ?>
-                        <span style="font-size:11px;color:var(--text-muted)">Sin bono</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+            <!-- Grid de alumnos -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px 20px">
+            <?php foreach ($s['players'] as $p): ?>
+            <?php
+                $uid       = (int)$p['user_id'];
+                $att       = $p['attendance'] ?? 'pending';
+                $isAbsent  = ($att === 'absent');
+                $isPresent = ($att === 'present');
+                $deducted  = !empty($p['bono_deducted_at']);
+                $formId    = 's' . $s['id'] . 'u' . $uid;
+                $cardBorder = $attBorderColors[$att] ?? 'var(--border-color)';
+            ?>
+            <div id="card-<?= $formId ?>"
+                 style="border:2px solid <?= $cardBorder ?>;border-radius:10px;padding:12px;background:var(--bg-card);display:flex;flex-direction:column;gap:8px;transition:border-color .15s">
+
+                <!-- Nombre -->
+                <div>
+                    <div style="font-weight:700;font-size:0.9rem;color:var(--text-h)"><?= esc($p['name']) ?></div>
+                    <?php if (!empty($p['student_note'])): ?>
+                    <div style="font-size:11px;color:#d97706;margin-top:2px">
+                        <i class="bi bi-chat-left-text-fill me-1"></i><?= esc($p['student_note']) ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Asistencia -->
+                <select name="attendance[<?= $uid ?>]"
+                        class="form-select-jp att-sel"
+                        data-formid="<?= $formId ?>"
+                        data-uid="<?= $uid ?>"
+                        style="font-size:12px;width:100%">
+                    <?php foreach ($attendanceOpts as $val => [$lbl, $col]): ?>
+                    <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>>
+                        <?= $lbl ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <!-- Campos ausencia (solo si ausente) -->
+                <div id="abs-<?= $formId ?>" style="display:<?= $isAbsent ? 'flex' : 'none' ?>;flex-direction:column;gap:6px">
+                    <select name="absence_reason[<?= $uid ?>]" class="form-select-jp" style="font-size:11px;width:100%">
+                        <option value="">— Motivo —</option>
+                        <?php foreach ($absenceReasons as $r): ?>
+                        <option value="<?= esc($r) ?>" <?= ($p['absence_reason'] ?? '') === $r ? 'selected' : '' ?>>
+                            <?= esc($r) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="text"
+                           name="absence_notes[<?= $uid ?>]"
+                           class="form-control-jp"
+                           placeholder="Nota opcional…"
+                           value="<?= esc($p['absence_notes'] ?? '') ?>"
+                           style="font-size:11px;width:100%">
+                </div>
+
+                <!-- Bono -->
+                <div style="margin-top:auto;padding-top:8px;border-top:1px solid var(--border-color);text-align:center">
+                <?php if ($p['sessions_remaining'] !== null): ?>
+                    <span class="bono-rem-<?= $formId ?>"
+                          style="font-weight:800;font-size:1.1rem;display:block;color:<?= ($p['sessions_remaining'] <= 1) ? '#dc2626' : '#059669' ?>">
+                        <?= $p['sessions_remaining'] ?>
+                    </span>
+                    <span style="font-size:10px;color:var(--text-muted);display:block"><?= esc($p['bono_name'] ?? '') ?></span>
+                    <?php if ($deducted): ?>
+                    <span style="font-size:10px;color:#059669;font-weight:600;display:block;margin-top:3px">
+                        <i class="bi bi-check-circle-fill"></i> Descontado
+                    </span>
+                    <?php elseif ($isPresent): ?>
+                    <button type="button"
+                            class="btn-jp btn-jp-sm btn-deduct-week"
+                            data-session="<?= $s['id'] ?>"
+                            data-player="<?= $uid ?>"
+                            data-formid="<?= $formId ?>"
+                            style="margin-top:4px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-size:10px;padding:2px 7px">
+                        <i class="bi bi-dash-circle-fill me-1"></i>Descontar
+                    </button>
+                    <?php else: ?>
+                    <span class="bono-hint-<?= $formId ?>" style="font-size:10px;color:var(--text-muted);display:block;margin-top:3px">Marcar presente</span>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <span style="font-size:11px;color:var(--text-muted)">Sin bono</span>
+                <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
             </div>
 
             <div style="padding:12px 20px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border-color)">
@@ -339,6 +341,9 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
 
 <script>
 (function () {
+    var CSRF_NAME  = '<?= csrf_token() ?>';
+    var CSRF_HASH  = '<?= csrf_hash() ?>';
+
     // Toggle apertura de sesión
     window.toggleSession = function(id) {
         var el      = document.getElementById(id);
@@ -351,7 +356,7 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
 
     // Auto-abrir sesiones pendientes de lista
     document.querySelectorAll('.session-block').forEach(function(block) {
-        var badge = block.querySelector('[style*="Pendiente"]');
+        var badge = block.querySelector('.session-pending-badge');
         if (badge) {
             var toggle = block.querySelector('[onclick^="toggleSession"]');
             if (toggle) {
@@ -361,20 +366,32 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
         }
     });
 
-    // Toggle razón/nota según asistencia
+    var attBorderColors = {
+        present:   '#059669',
+        absent:    '#dc2626',
+        confirmed: '#2563eb',
+        declined:  '#9ca3af',
+        pending:   ''
+    };
+
+    // Toggle ausencia + color borde tarjeta
     document.querySelectorAll('.att-sel').forEach(function(sel) {
         sel.addEventListener('change', function() {
             var fid    = this.dataset.formid;
-            var uid    = this.dataset.uid;
             var isAbs  = this.value === 'absent';
             var isPres = this.value === 'present';
 
-            var absEl  = document.getElementById('abs-' + fid);
-            var noteEl = document.getElementById('note-' + fid);
-            if (absEl)  { absEl.style.opacity  = isAbs ? '1' : '0.4'; absEl.style.pointerEvents  = isAbs ? '' : 'none'; }
-            if (noteEl) { noteEl.style.opacity = isAbs ? '1' : '0.4'; noteEl.style.pointerEvents = isAbs ? '' : 'none'; }
+            // Campos ausencia
+            var absEl = document.getElementById('abs-' + fid);
+            if (absEl) absEl.style.display = isAbs ? 'flex' : 'none';
 
-            // Mostrar/ocultar botón descontar bono
+            // Color borde tarjeta
+            var card = document.getElementById('card-' + fid);
+            if (card) {
+                card.style.borderColor = attBorderColors[this.value] || 'var(--border-color)';
+            }
+
+            // Bono: mostrar/ocultar botón descontar
             var btn  = document.querySelector('.btn-deduct-week[data-formid="' + fid + '"]');
             var hint = document.querySelector('.bono-hint-' + fid);
             if (btn)  btn.style.display  = isPres ? '' : 'none';
@@ -404,7 +421,7 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
             fetch('/clases/' + sessionId + '/jugadores/' + playerId + '/descontar-bono', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ <?= json_encode(csrf_token()) ?>: '<?= csrf_hash() ?>' })
+                body: JSON.stringify({ [CSRF_NAME]: CSRF_HASH })
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -414,7 +431,7 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
                         remEl.textContent = data.sessions_remaining;
                         remEl.style.color = data.sessions_remaining <= 1 ? '#dc2626' : '#059669';
                     }
-                    self.outerHTML = '<span style="font-size:10px;color:#059669;font-weight:600"><i class="bi bi-check-circle-fill"></i> Descontado</span>';
+                    self.outerHTML = '<span style="font-size:10px;color:#059669;font-weight:600;display:block;margin-top:3px"><i class="bi bi-check-circle-fill"></i> Descontado</span>';
                 } else {
                     alert(data.error || 'Error.');
                     self.disabled = false;
@@ -425,6 +442,45 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
                 alert('Error de red.');
                 self.disabled = false;
                 self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar';
+            });
+        });
+    });
+
+    // Completar día rápido
+    document.querySelectorAll('.btn-completar-dia').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var date  = this.dataset.date;
+            var label = this.dataset.label;
+            var self  = this;
+
+            if (!confirm('¿Marcar todos los alumnos como Presente y completar todas las sesiones pendientes de ' + label + '?\n\nEsta acción no descuenta bonos.')) return;
+
+            self.disabled = true;
+            self.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Guardando…';
+
+            var body = new URLSearchParams();
+            body.append('date', date);
+            body.append(CSRF_NAME, CSRF_HASH);
+
+            fetch('/pasar-lista/completar-dia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: body.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Error al completar el día.');
+                    self.disabled = false;
+                    self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
+                }
+            })
+            .catch(function() {
+                alert('Error de red.');
+                self.disabled = false;
+                self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
             });
         });
     });

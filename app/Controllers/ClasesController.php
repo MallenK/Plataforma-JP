@@ -335,6 +335,17 @@ class ClasesController extends BaseController
         return redirect()->to('/pasar-lista' . ($qs ? '?' . $qs : ''));
     }
 
+    public function completarDiaRapido()
+    {
+        $date = $this->request->getPost('date');
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Fecha inválida']);
+        }
+
+        $result = $this->clasesService->completarDiaRapido($date, $this->currentUserId());
+        return $this->response->setJSON($result);
+    }
+
     // ────────────────────────────────────────────────────────────────
     //  Pasar Lista — por sesión individual (admin/superadmin)
     // ────────────────────────────────────────────────────────────────

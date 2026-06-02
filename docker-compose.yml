@@ -21,6 +21,7 @@ services:
     environment:
       MYSQL_DATABASE: jp_preparation
       MYSQL_ROOT_PASSWORD: Qwaszx12345_
+      MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
     volumes:

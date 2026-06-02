@@ -11,7 +11,7 @@ class DashboardController extends BaseController
         $role   = $this->currentRole();
 
         // Alumnos sin ficha → redirigir a crear perfil
-        if ($role === 'alumno') {
+        if ($role === 'player') {
             if (!$this->playerService->hasProfile($userId)) {
                 return redirect()->to('/alumno');
             }
@@ -28,9 +28,15 @@ class DashboardController extends BaseController
                 ->update(['welcomed_at' => date('Y-m-d H:i:s')]);
         }
 
+        $playerFullProfile = null;
+        if ($role === 'player') {
+            $playerFullProfile = $this->playerService->getFullProfile($userId);
+        }
+
         return view('dashboard/index', [
-            'title'       => 'Dashboard — JP Preparation',
-            'showWelcome' => $showWelcome,
+            'title'             => 'Dashboard — JP Preparation',
+            'showWelcome'       => $showWelcome,
+            'playerFullProfile' => $playerFullProfile,
         ]);
     }
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\UserModel;
 use App\Models\PlayerProfileModel;
+use App\Services\DocumentService;
 
 class PlayerService
 {
@@ -79,6 +80,8 @@ class PlayerService
             $profileData['player_id'] = $userId;
             $this->profileModel->insert($profileData);
         }
+
+        (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
 
         return ['success' => true, 'userId' => $userId, 'errors' => []];
     }
