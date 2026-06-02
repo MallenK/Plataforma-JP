@@ -697,8 +697,10 @@ class ClasesService
 
     public function addCoach(int $sessionId, int $userId): array
     {
-        if ($this->coachModel->where('session_id', $sessionId)->where('user_id', $userId)->first()) {
-            return ['success' => false, 'error' => 'El entrenador ya está asignado a esta sesión.'];
+        // Max 1 coach per session
+        $count = (int)$this->coachModel->where('session_id', $sessionId)->countAllResults();
+        if ($count >= 1) {
+            return ['success' => false, 'error' => 'Solo se permite 1 entrenador por sesión.'];
         }
         $this->coachModel->insert(['session_id' => $sessionId, 'user_id' => $userId]);
         return ['success' => true];
@@ -1052,15 +1054,35 @@ class ClasesService
     {
         $this->db->table('class_session_coaches')->where('session_id', $sessionId)->delete();
 
-        foreach (array_unique(array_filter(array_map('intval', (array)$userIds))) as $uid) {
-            $this->db->table('class_session_coaches')->insert([
-                'session_id' => $sessionId,
-                'user_id'    => $uid,
-            ]);
-            if ($this->db->affectedRows() === 0) {
-                log_message('error', 'syncCoaches: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
-            }
+        // Max 1 coach per session — take only the first valid ID
+        $filtered = array_values(array_unique(array_filter(array_map('intval', (array)$userIds))));
+        if (empty($filtered)) return;
+
+        $uid = $filtered[0];
+        $this->db->table('class_session_coaches')->insert([
+            'session_id' => $sessionId,
+            'user_id'    => $uid,
+        ]);
+        if ($this->db->affectedRows() === 0) {
+            log_message('error', 'syncCoaches: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
         }
+    }
+
+    public function checkLocationConflict(int $locationId, string $date, string $startTime, string $endTime, ?int $excludeSessionId = null): array
+    {
+        $builder = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.start_time, cs.end_time')
+            ->where('cs.location_id', $locationId)
+            ->where('cs.session_date', $date)
+            ->where('cs.status !=', 'cancelled')
+            ->where('cs.start_time <', $endTime)
+            ->where('cs.end_time >', $startTime);
+
+        if ($excludeSessionId) {
+            $builder->where('cs.id !=', $excludeSessionId);
+        }
+
+        return $builder->get()->getResultArray();
     }
 
     private function syncPlayers(int $sessionId, array $userIds, array $coachMap): void

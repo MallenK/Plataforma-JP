@@ -10,3 +10,5 @@ writable/uploads/
 .claude/
 nul
 app/Database/Database/
+public/uploads/
+build/

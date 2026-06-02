@@ -179,6 +179,9 @@ $routes->get('clases/api/calendario', 'ClasesController::calendario', [
 $routes->get('clases/api/opciones', 'ClasesController::opciones', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
+$routes->get('clases/api/check-location', 'ClasesController::checkLocation', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 
 // ── Crear ──────────────────────────────────────────────────
 $routes->get('clases/nueva', 'ClasesController::create', [

@@ -67,6 +67,26 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  AJAX: comprobar conflicto de instalación
+    // ────────────────────────────────────────────────────────────────
+
+    public function checkLocation(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $locationId = (int)$this->request->getGet('location_id');
+        $date       = $this->request->getGet('date')  ?? '';
+        $start      = $this->request->getGet('start') ?? '';
+        $end        = $this->request->getGet('end')   ?? '';
+        $excludeId  = (int)($this->request->getGet('exclude') ?? 0) ?: null;
+
+        if (!$locationId || !$date || !$start || !$end) {
+            return $this->response->setJSON(['conflicts' => []]);
+        }
+
+        $conflicts = $this->clasesService->checkLocationConflict($locationId, $date, $start, $end, $excludeId);
+        return $this->response->setJSON(['conflicts' => $conflicts]);
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Crear
     // ────────────────────────────────────────────────────────────────
 

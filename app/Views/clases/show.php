@@ -23,6 +23,10 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
 
 <div class="page-header">
 
+    <a href="/clases" class="btn-jp btn-jp-secondary btn-jp-sm" style="margin-right:8px">
+        <i class="bi bi-arrow-left me-1"></i>Clases
+    </a>
+
     <?php if ($canManage): ?>
     <div class="d-flex gap-2 flex-wrap">
         <?php if (in_array(session('role'), ['admin', 'superadmin'])): ?>

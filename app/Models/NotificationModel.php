@@ -68,6 +68,23 @@ class NotificationModel extends Model
     }
 
     /**
+     * Devuelve las notificaciones enviadas por un usuario (para admins/superadmins).
+     */
+    public function getSentByUser(int $userId, int $limit = 20, int $offset = 0): array
+    {
+        return $this->db->table('notifications n')
+            ->select('n.*, COUNT(nr.id) AS recipient_count,
+                      SUM(nr.read_at IS NOT NULL) AS read_count')
+            ->join('notification_recipients nr', 'nr.notification_id = n.id', 'left')
+            ->where('n.sender_id', $userId)
+            ->groupBy('n.id')
+            ->orderBy('n.created_at', 'DESC')
+            ->limit($limit, $offset)
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
      * Marca como leída una notificación específica para un usuario.
      */
     public function markRead(int $userId, int $notificationId): void

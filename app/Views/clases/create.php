@@ -26,6 +26,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 
 <?= $this->section('page_content') ?>
 
+<div class="page-header">
+    <a href="<?= $isEdit ? '/clases/' . $session['id'] : '/clases' ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+        <i class="bi bi-arrow-left me-1"></i><?= $isEdit ? 'Volver a sesión' : 'Clases' ?>
+    </a>
+</div>
 
 <?php if ($flash = session()->getFlashdata('error')): ?>
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
@@ -236,7 +241,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label">Instalación (de la lista)</label>
-                            <select name="location_id" class="form-control-jp">
+                            <select name="location_id" id="location_id" class="form-control-jp">
                                 <option value="">— Seleccionar instalación —</option>
                                 <?php foreach ($locationOptions as $loc): ?>
                                     <option value="<?= $loc['id'] ?>"
@@ -252,6 +257,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                    value="<?= $v('location_custom') ?>"
                                    placeholder="Ej: Estadio Municipal, Campo 3">
                         </div>
+                    </div>
+                    <!-- Aviso conflicto de instalación -->
+                    <div id="location-conflict-warn" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Instalación ocupada:</strong> <span id="location-conflict-detail"></span>
                     </div>
                 </div>
             </div>
@@ -482,6 +492,52 @@ function removePlayer(id) {
     document.getElementById('player-' + id)?.remove();
     if (!addedPlayers.size) document.getElementById('playerEmpty').style.display = '';
 }
+
+// ── Aviso conflicto instalación ───────────────────────────────
+(function() {
+    var EXCLUDE_ID = <?= $isEdit ? (int)$session['id'] : 'null' ?>;
+
+    function checkLocationConflict() {
+        var locId = document.getElementById('location_id')?.value;
+        var date  = document.querySelector('[name="session_date"]')?.value;
+        var start = document.querySelector('[name="start_time"]')?.value;
+        var end   = document.querySelector('[name="end_time"]')?.value;
+        var warn  = document.getElementById('location-conflict-warn');
+
+        if (!locId || !date || !start || !end) { if (warn) warn.style.display = 'none'; return; }
+
+        var url = '/clases/api/check-location?location_id=' + encodeURIComponent(locId)
+                + '&date='  + encodeURIComponent(date)
+                + '&start=' + encodeURIComponent(start)
+                + '&end='   + encodeURIComponent(end)
+                + (EXCLUDE_ID ? '&exclude=' + EXCLUDE_ID : '');
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!warn) return;
+                var conflicts = data.conflicts ?? [];
+                if (conflicts.length === 0) {
+                    warn.style.display = 'none';
+                } else {
+                    var detail = conflicts.map(function(c) {
+                        return '"' + c.title + '" (' + c.start_time.substring(0,5) + '–' + c.end_time.substring(0,5) + ')';
+                    }).join(', ');
+                    document.getElementById('location-conflict-detail').textContent = detail;
+                    warn.style.display = '';
+                }
+            })
+            .catch(function() {});
+    }
+
+    var triggers = ['location_id', 'session_date', 'start_time', 'end_time'];
+    triggers.forEach(function(name) {
+        var el = document.getElementById(name) || document.querySelector('[name="' + name + '"]');
+        if (el) el.addEventListener('change', checkLocationConflict);
+    });
+    // Check on load if editing
+    if (EXCLUDE_ID) checkLocationConflict();
+})();
 </script>
 <?= $this->endSection() ?>
 
