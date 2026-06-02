@@ -17,10 +17,6 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Bonos</h2>
-        <p>Membresías y bonos de entrenamiento</p>
-    </div>
     <div class="d-flex gap-2">
         <a href="<?= base_url('configuracion?section=facturacion') ?>" class="btn-jp btn-jp-secondary">
             <i class="bi bi-gear"></i> Tipos de bono

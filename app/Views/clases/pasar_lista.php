@@ -19,33 +19,6 @@ $attendanceOpts = [
 
 <?= $this->section('page_content') ?>
 
-<div class="page-header">
-    <div class="page-header-text">
-        <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <i class="bi bi-clipboard2-check-fill me-1" style="color:#7c3aed"></i>
-            Pasar Lista
-            <span style="font-weight:400;color:var(--text-muted);font-size:1rem">—
-                <?= esc($session['title']) ?>
-            </span>
-            <span class="badge-status" style="background:<?= $statusColor ?>22;color:<?= $statusColor ?>;border:1px solid <?= $statusColor ?>44;font-size:12px">
-                <i class="bi <?= $statusIcon ?> me-1"></i><?= $statusLabel ?>
-            </span>
-        </h2>
-        <p style="color:var(--text-muted);margin:4px 0 0">
-            <a href="/clases/<?= $session['id'] ?>" style="color:var(--text-muted);text-decoration:none">
-                <i class="bi bi-arrow-left me-1"></i>Volver al detalle de la clase
-            </a>
-            &nbsp;·&nbsp;
-            <i class="bi bi-calendar3 me-1"></i><?= date('d/m/Y', strtotime($session['session_date'])) ?>
-            &nbsp;·&nbsp;
-            <i class="bi bi-clock me-1"></i><?= substr($session['start_time'], 0, 5) ?>–<?= substr($session['end_time'], 0, 5) ?>
-            <?php if (!empty($session['coaches'])): ?>
-            &nbsp;·&nbsp;
-            <i class="bi bi-person-badge me-1"></i><?= esc(implode(', ', array_column($session['coaches'], 'name'))) ?>
-            <?php endif; ?>
-        </p>
-    </div>
-</div>
 
 <?php if (session()->getFlashdata('success')): ?>
 <div class="alert-jp alert-jp-success mb-4"><?= session()->getFlashdata('success') ?></div>

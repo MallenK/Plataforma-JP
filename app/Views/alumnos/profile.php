@@ -20,10 +20,6 @@ $categoryLabel = match($profile['category'] ?? '') {
 ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Mi ficha técnica</h2>
-        <p>Datos deportivos del alumno</p>
-    </div>
     <?php if ($canEdit): ?>
     <a href="/alumno?edit=1" class="btn-jp btn-jp-secondary">
         <i class="bi bi-pencil"></i> Editar ficha

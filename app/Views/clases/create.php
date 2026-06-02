@@ -26,17 +26,6 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 
 <?= $this->section('page_content') ?>
 
-<div class="page-header">
-    <div class="page-header-text">
-        <h2><?= $isEdit ? 'Editar sesión' : 'Nueva clase' ?></h2>
-        <p>
-            <a href="<?= $isEdit ? '/clases/' . $session['id'] : '/clases' ?>"
-               style="color:var(--text-muted);text-decoration:none">
-                <i class="bi bi-arrow-left me-1"></i>Volver
-            </a>
-        </p>
-    </div>
-</div>
 
 <?php if ($flash = session()->getFlashdata('error')): ?>
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
@@ -106,6 +95,32 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                 <div style="font-size:12px;color:var(--text-muted)">Varios días a la semana</div>
                             </div>
                         </label>
+                    </div>
+                    <!-- Formato de clase: individual o pareja -->
+                    <div class="mb-3">
+                        <label style="font-size:13px;font-weight:600;color:var(--text-h);display:block;margin-bottom:8px">
+                            Formato de clase
+                        </label>
+                        <div class="d-flex gap-3">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
+                                <input type="radio" name="class_format" value="individual"
+                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'individual' ? 'checked' : '' ?>
+                                       style="accent-color:var(--accent)">
+                                <div>
+                                    <div style="font-weight:700;color:var(--text-h)">Individual</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">1 alumno</div>
+                                </div>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
+                                <input type="radio" name="class_format" value="pareja"
+                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'pareja' ? 'checked' : '' ?>
+                                       style="accent-color:var(--accent)">
+                                <div>
+                                    <div style="font-weight:700;color:var(--text-h)">Pareja</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">2 alumnos</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Puntual -->

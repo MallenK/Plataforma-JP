@@ -47,9 +47,12 @@ class AnnotationController extends BaseController
         $uploadedFile = $this->request->getFile('annotation_file');
 
         if ($uploadedFile && $uploadedFile->isValid() && !$uploadedFile->hasMoved()) {
-            $docService     = new DocumentService();
-            $userId         = $this->currentUserId();
-            $personalFolder = $docService->getOrCreatePersonalFolder($playerId);
+            $docService = new DocumentService();
+            $userId     = $this->currentUserId();
+            // Internal annotations: store file in author's folder so players can't see it.
+            // Public annotations: store in player's folder so they can access it.
+            $folderId_owner = $type === 'internal' ? $userId : $playerId;
+            $personalFolder = $docService->getOrCreatePersonalFolder($folderId_owner);
 
             if ($personalFolder) {
                 $result = $docService->uploadFile(

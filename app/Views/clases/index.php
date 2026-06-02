@@ -3,10 +3,6 @@
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Clases y Calendario</h2>
-        <p>Sesiones de entrenamiento programadas</p>
-    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <?php if ($isAdminRole ?? false): ?>
         <a href="/pasar-lista" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">

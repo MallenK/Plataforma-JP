@@ -19,10 +19,6 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
 <?php endif; ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Nuevo alumno</h2>
-        <p>Crea la cuenta y ficha técnica del alumno</p>
-    </div>
     <a href="<?= base_url('alumnos') ?>" class="btn-jp btn-jp-secondary">
         <i class="bi bi-arrow-left"></i> Volver al listado
     </a>

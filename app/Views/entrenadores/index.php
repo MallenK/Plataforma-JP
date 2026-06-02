@@ -32,10 +32,6 @@ $pageSubtitle = 'Gestión del equipo técnico';
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Entrenadores</h2>
-        <p>Equipo técnico de la academia</p>
-    </div>
     <div class="d-flex gap-2">
         <a href="<?= base_url('entrenadores/nuevo') ?>" class="btn-jp btn-jp-primary">
             <i class="bi bi-person-plus-fill"></i> Nuevo entrenador

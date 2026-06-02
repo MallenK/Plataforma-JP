@@ -27,10 +27,6 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
 <?php endif; ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Detalle de bono</h2>
-        <p><?= $unassigned ? 'Sin asignar' : esc($bono['player_name']) ?> — <?= esc($bono['bono_name']) ?></p>
-    </div>
     <a href="<?= base_url('bonos') ?>" class="btn-jp btn-jp-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>

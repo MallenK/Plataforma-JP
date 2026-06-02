@@ -52,6 +52,7 @@ class ClasesService
 
     private function insertSingle(array $data, int $userId, ?int $classId = null): int
     {
+        $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
         return (int)$this->sessionModel->insert([
             'class_id'        => $classId ?? ($data['class_id'] ?? null),
             'title'           => trim($data['title']),
@@ -65,6 +66,7 @@ class ClasesService
             'post_notes'      => ($data['post_notes'] ?? '') ?: null,
             'status'          => 'scheduled',
             'created_by'      => $userId,
+            'class_format'    => $fmt,
         ]);
     }
 
@@ -77,10 +79,12 @@ class ClasesService
         }
 
         // Guardar plantilla
+        $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
         $classId = (int)$this->classModel->insert([
             'title'                   => trim($data['title']),
             'description'             => ($data['description'] ?? '') ?: null,
             'type'                    => 'recurring',
+            'class_format'            => $fmt,
             'recurrence_days'         => json_encode($days),
             'recurrence_start'        => $data['recurrence_start'],
             'recurrence_end'          => $data['recurrence_end'],
@@ -732,11 +736,16 @@ class ClasesService
             return ['success' => false, 'error' => 'El jugador ya está en esta sesión.'];
         }
 
+        $session = $this->sessionModel->find($sessionId);
+        $fmt = $session['class_format'] ?? 'individual';
+        $maxPlayers = $fmt === 'pareja' ? 2 : 1;
+
         $currentCount = $this->db->table('class_session_players')
             ->where('session_id', $sessionId)
             ->countAllResults();
-        if ($currentCount >= 2) {
-            return ['success' => false, 'error' => 'Las clases son individuales: máximo 2 alumnos por sesión.'];
+        if ($currentCount >= $maxPlayers) {
+            $label = $maxPlayers === 1 ? '1 alumno (clase individual)' : '2 alumnos (clase en pareja)';
+            return ['success' => false, 'error' => "Sesión completa: máximo {$label}."];
         }
 
         $now = date('Y-m-d H:i:s');

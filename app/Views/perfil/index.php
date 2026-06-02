@@ -119,10 +119,6 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
 <?php endif; ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2><?= $isSelf ? 'Mi perfil' : esc($name) ?></h2>
-        <p><?= $isSelf ? 'Información y configuración de tu cuenta' : 'Perfil del usuario' ?></p>
-    </div>
     <?php if ($backUrl): ?>
     <div class="d-flex gap-2">
         <a href="<?= esc($backUrl) ?>" class="btn-jp btn-jp-secondary">

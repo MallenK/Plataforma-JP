@@ -17,9 +17,10 @@ class CreatePlayerAnnotations extends Migration
                 'constraint' => ['public', 'internal'],
                 'default'    => 'public',
             ],
-            'content'    => ['type' => 'TEXT'],
-            'created_at' => ['type' => 'DATETIME', 'null' => true],
-            'updated_at' => ['type' => 'DATETIME', 'null' => true],
+            'content'     => ['type' => 'TEXT'],
+            'document_id' => ['type' => 'INT', 'unsigned' => true, 'null' => true, 'default' => null],
+            'created_at'  => ['type' => 'DATETIME', 'null' => true],
+            'updated_at'  => ['type' => 'DATETIME', 'null' => true],
         ]);
 
         $this->forge->addKey('id', true);

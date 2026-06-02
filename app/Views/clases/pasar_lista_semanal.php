@@ -41,17 +41,6 @@ $weekLabel = date('d/m', strtotime($weekStart)) . ' – ' . date('d/m/Y', strtot
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <i class="bi bi-clipboard2-check-fill" style="color:#7c3aed"></i>
-            Pasar Lista
-        </h2>
-        <p style="color:var(--text-muted);margin:4px 0 0">
-            <a href="/clases" style="color:var(--text-muted);text-decoration:none">
-                <i class="bi bi-arrow-left me-1"></i>Volver a Clases
-            </a>
-        </p>
-    </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <?php if ($pendingLista > 0): ?>
         <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">

@@ -41,12 +41,6 @@ $sec  = $section;        // sección activa
 
 <?= $this->section('page_content') ?>
 
-<div class="page-header">
-    <div class="page-header-text">
-        <h2>Configuración</h2>
-        <p><?= $isAdmin ? 'Gestión completa de la plataforma JP Preparation' : 'Información general de la academia' ?></p>
-    </div>
-</div>
 
 <?php if ($flash = session()->getFlashdata('success')): ?>
     <div class="alert-jp success mb-3"><i class="bi bi-check-circle-fill me-2"></i><?= esc($flash) ?></div>

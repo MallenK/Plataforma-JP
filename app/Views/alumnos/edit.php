@@ -8,10 +8,6 @@ $pageSubtitle = esc($alumno['name'] ?? '');
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Editar alumno</h2>
-        <p><?= esc($alumno['name']) ?></p>
-    </div>
     <div class="d-flex gap-2">
         <a href="<?= base_url('alumnos/' . $alumno['id']) ?>" class="btn-jp btn-jp-secondary">
             <i class="bi bi-arrow-left"></i> Ver perfil

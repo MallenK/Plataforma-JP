@@ -77,10 +77,6 @@ $formatTime = static function (?string $hms): string {
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="page-header-text">
-        <h2><?= esc($name) ?></h2>
-        <p>Perfil completo del alumno</p>
-    </div>
     <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
     <div class="d-flex gap-2">
         <a href="<?= base_url('alumnos') ?>" class="btn-jp btn-jp-secondary">

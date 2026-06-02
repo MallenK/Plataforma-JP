@@ -51,7 +51,7 @@ class AuthController extends BaseController
             'name' => $this->request->getPost('name'),
             'email' => strtolower(trim($this->request->getPost('email'))),
             'password' => $this->request->getPost('password'),
-            'role' => 'alumno'
+            'role' => 'player'
         ], true);
 
         if ($userId) {

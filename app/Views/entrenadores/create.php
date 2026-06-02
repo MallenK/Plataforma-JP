@@ -19,10 +19,6 @@ $pageSubtitle = 'Añadir miembro al equipo técnico';
 <?php endif; ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Nuevo entrenador</h2>
-        <p>Añade un nuevo miembro al equipo técnico</p>
-    </div>
     <a href="<?= base_url('entrenadores') ?>" class="btn-jp btn-jp-secondary">
         <i class="bi bi-arrow-left"></i> Volver al listado
     </a>
