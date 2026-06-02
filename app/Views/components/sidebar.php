@@ -95,16 +95,6 @@ $canManage    = $isAdmin || $isStaff || $isCoach;
             </li>
             <?php endif; ?>
 
-            <!-- Compras — admin, superadmin, coach, staff -->
-            <?php if ($canManage): ?>
-            <li class="sidebar-nav-item">
-                <a href="<?= base_url('compras') ?>"
-                   class="sidebar-nav-link <?= sidebarActive('/compras', $currentUri) ?>">
-                    <i class="bi bi-cart-fill"></i>
-                    Compras
-                </a>
-            </li>
-            <?php endif; ?>
 
             <!-- Mensajes — todos los roles -->
             <li class="sidebar-nav-item">

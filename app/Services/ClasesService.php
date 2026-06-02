@@ -732,6 +732,13 @@ class ClasesService
             return ['success' => false, 'error' => 'El jugador ya está en esta sesión.'];
         }
 
+        $currentCount = $this->db->table('class_session_players')
+            ->where('session_id', $sessionId)
+            ->countAllResults();
+        if ($currentCount >= 2) {
+            return ['success' => false, 'error' => 'Las clases son individuales: máximo 2 alumnos por sesión.'];
+        }
+
         $now = date('Y-m-d H:i:s');
         $this->db->table('class_session_players')->insert([
             'id'         => $this->nextPlayerRowId(),

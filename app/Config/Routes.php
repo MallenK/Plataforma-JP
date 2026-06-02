@@ -606,29 +606,10 @@ $routes->get('mensajes/download/(:num)', 'MensajesController::download/$1', [
 
 
 // ------------------------------------------------------------
-// COMPRAS (LISTA DE COMPRAS)
-//
-//  GET  /compras              → listado general — todos los no-jugadores
-//  POST /compras/store        → crear solicitud — todos los no-jugadores
-//  POST /compras/:id/estado   → cambiar estado + comentario — admin, superadmin
-//  POST /compras/:id/eliminar → eliminar solicitud — admin, superadmin
+// COMPRAS — sección desactivada temporalmente
 // ------------------------------------------------------------
-
-$routes->get('compras', 'ComprasController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
-]);
-
-$routes->post('compras/store', 'ComprasController::store', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
-]);
-
-$routes->post('compras/(:num)/estado', 'ComprasController::updateStatus/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-$routes->post('compras/(:num)/eliminar', 'ComprasController::destroy/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
+$routes->get('compras', function () { return redirect()->to('/dashboard'); }, ['filter' => 'auth']);
+$routes->post('compras/(:any)', function () { return redirect()->to('/dashboard'); }, ['filter' => 'auth']);
 
 
 // ------------------------------------------------------------
