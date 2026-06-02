@@ -6,6 +6,7 @@ use App\Models\SettingsModel;
 use App\Models\LocationModel;
 use App\Models\BonoTypeModel;
 use App\Models\UserModel;
+use App\Services\DocumentService;
 
 class ConfiguracionService
 {
@@ -128,6 +129,8 @@ class ConfiguracionService
             $db->table('users')->where('email', $email)->delete();
             return ['success' => false, 'error' => 'Error al recuperar el id del usuario creado.'];
         }
+
+        (new DocumentService())->getOrCreatePersonalFolder($id);
 
         return [
             'success'  => true,

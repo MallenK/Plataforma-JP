@@ -288,6 +288,7 @@ $roleLabels = [
             }
             activeConvId = cid;
             document.getElementById('input-conv-id').value = activeConvId;
+            setActiveConvItem(cid);
 
             // Cabecera
             const ou = data.other_user;
@@ -402,6 +403,7 @@ $roleLabels = [
 
     // ── Polling de mensajes nuevos ───────────────────────────
     function startPolling() {
+        pollConversations(); // update sidebar immediately (adds new conv item if needed)
         pollTimer = setInterval(pollMessages, 3000);
         pollConvTimer = setInterval(pollConversations, 10000);
     }
@@ -570,11 +572,16 @@ $roleLabels = [
     }
 
     function showChatLoading() {
+        document.getElementById('chat-empty').classList.add('d-none');
+        document.getElementById('chat-messages').classList.remove('d-none');
         document.getElementById('chat-messages-inner').innerHTML =
             '<div class="chat-loading" id="chat-loading" style="display:flex"><div class="spinner-border spinner-border-sm text-muted"></div></div>';
     }
 
     function showChatError(msg) {
+        document.getElementById('chat-empty').classList.add('d-none');
+        document.getElementById('chat-messages').classList.remove('d-none');
+        document.getElementById('chat-input-bar').classList.add('d-none');
         document.getElementById('chat-messages-inner').innerHTML =
             '<div class="text-center text-danger py-4"><i class="bi bi-exclamation-circle me-1"></i>' + escHtml(msg) + '</div>';
     }

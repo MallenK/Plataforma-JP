@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Services\AuthService;
+use App\Services\DocumentService;
 use App\Models\UserModel;
 
 class AuthController extends BaseController
@@ -46,12 +47,16 @@ class AuthController extends BaseController
 
         $model = new UserModel();
 
-        $model->insert([
+        $userId = $model->insert([
             'name' => $this->request->getPost('name'),
             'email' => strtolower(trim($this->request->getPost('email'))),
             'password' => $this->request->getPost('password'),
-            'role' => 'alumno'
-        ]);
+            'role' => 'player'
+        ], true);
+
+        if ($userId) {
+            (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
+        }
 
         return $this->response->setJSON([
             'status' => 'success'

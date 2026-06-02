@@ -16,7 +16,7 @@ class ClassSessionModel extends Model
         'class_id', 'title', 'session_date', 'start_time', 'end_time',
         'location_id', 'location_custom', 'focus',
         'pre_notes', 'post_notes', 'status', 'created_by',
-        'lista_pasada_at', 'lista_pasada_by',
+        'lista_pasada_at', 'lista_pasada_by', 'class_format',
     ];
 
     // ── Date-range queries ────────────────────────────────────

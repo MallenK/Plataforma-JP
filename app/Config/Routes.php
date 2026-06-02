@@ -106,10 +106,10 @@ $routes->post('/alumnos/(:num)/eliminar', 'AlumnosController::destroy/$1', [
 //  POST /alumnos/:id/anotaciones        → crear anotación — todos los roles
 //  POST /anotaciones/:id/eliminar       → eliminar — autor, admin, superadmin
 $routes->post('/alumnos/(:num)/anotaciones', 'AnnotationController::store/$1', [
-    'filter' => 'auth',
+    'filter' => ['auth', 'role:superadmin,admin,coach'],
 ]);
 $routes->post('/anotaciones/(:num)/eliminar', 'AnnotationController::destroy/$1', [
-    'filter' => 'auth',
+    'filter' => ['auth', 'role:superadmin,admin,coach'],
 ]);
 
 $routes->get('/alumno', 'AlumnosController::profile', [
@@ -177,6 +177,9 @@ $routes->get('clases/api/calendario', 'ClasesController::calendario', [
     'filter' => 'auth',
 ]);
 $routes->get('clases/api/opciones', 'ClasesController::opciones', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->get('clases/api/check-location', 'ClasesController::checkLocation', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
@@ -254,6 +257,9 @@ $routes->get('pasar-lista', 'ClasesController::pasarListaIndex', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->post('clases/(:num)/lista-guardar', 'ClasesController::guardarListaPasada/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('pasar-lista/completar-dia', 'ClasesController::completarDiaRapido', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
@@ -603,29 +609,10 @@ $routes->get('mensajes/download/(:num)', 'MensajesController::download/$1', [
 
 
 // ------------------------------------------------------------
-// COMPRAS (LISTA DE COMPRAS)
-//
-//  GET  /compras              → listado general — todos los no-jugadores
-//  POST /compras/store        → crear solicitud — todos los no-jugadores
-//  POST /compras/:id/estado   → cambiar estado + comentario — admin, superadmin
-//  POST /compras/:id/eliminar → eliminar solicitud — admin, superadmin
+// COMPRAS — sección desactivada temporalmente
 // ------------------------------------------------------------
-
-$routes->get('compras', 'ComprasController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
-]);
-
-$routes->post('compras/store', 'ComprasController::store', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
-]);
-
-$routes->post('compras/(:num)/estado', 'ComprasController::updateStatus/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
-$routes->post('compras/(:num)/eliminar', 'ComprasController::destroy/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
+$routes->get('compras', function () { return redirect()->to('/dashboard'); }, ['filter' => 'auth']);
+$routes->post('compras/(:any)', function () { return redirect()->to('/dashboard'); }, ['filter' => 'auth']);
 
 
 // ------------------------------------------------------------

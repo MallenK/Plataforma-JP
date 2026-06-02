@@ -22,19 +22,10 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <?= esc($session['title']) ?>
-            <span class="badge-status" style="background:<?= $statusColor ?>22;color:<?= $statusColor ?>;border:1px solid <?= $statusColor ?>44;font-size:12px">
-                <i class="bi <?= $statusIcon ?> me-1"></i><?= $statusLabel ?>
-            </span>
-        </h2>
-        <p>
-            <a href="/clases" style="color:var(--text-muted);text-decoration:none">
-                <i class="bi bi-arrow-left me-1"></i>Volver al calendario
-            </a>
-        </p>
-    </div>
+
+    <a href="/clases" class="btn-jp btn-jp-secondary btn-jp-sm" style="margin-right:8px">
+        <i class="bi bi-arrow-left me-1"></i>Clases
+    </a>
 
     <?php if ($canManage): ?>
     <div class="d-flex gap-2 flex-wrap">
@@ -519,16 +510,28 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         </div>
         <?php endif; ?>
 
-        <!-- Añadir jugador (admin/coach) -->
+        <!-- Añadir alumno (admin/coach) — límite según class_format -->
         <?php if ($canManage && $session['status'] === 'scheduled'): ?>
+        <?php
+            $playerCount = count($session['players']);
+            $fmt = $session['class_format'] ?? 'individual';
+            $maxPlayers = $fmt === 'pareja' ? 2 : 1;
+            $fmtLabel   = $fmt === 'pareja' ? 'Pareja' : 'Individual';
+        ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
                     <i class="bi bi-person-plus-fill me-2" style="color:var(--accent)"></i>
-                    Añadir jugador
+                    Añadir alumno
+                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px">(<?= $playerCount ?>/<?= $maxPlayers ?> · <?= $fmtLabel ?>)</span>
                 </span>
             </div>
             <div class="card-jp-body">
+                <?php if ($playerCount >= $maxPlayers): ?>
+                <p style="font-size:13px;color:var(--text-muted);margin:0;text-align:center">
+                    <i class="bi bi-lock-fill me-1"></i>Sesión completa — máximo <?= $maxPlayers ?> alumno<?= $maxPlayers > 1 ? 's' : '' ?> (<?= $fmtLabel ?>).
+                </p>
+                <?php else: ?>
                 <form action="/clases/<?= $session['id'] ?>/jugadores/add" method="POST">
                     <?= csrf_field() ?>
                     <select name="user_id" class="form-control-jp mb-2" required>
@@ -550,9 +553,10 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
-                        <i class="bi bi-plus-lg me-1"></i>Añadir jugador
+                        <i class="bi bi-plus-lg me-1"></i>Añadir alumno
                     </button>
                 </form>
+                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>

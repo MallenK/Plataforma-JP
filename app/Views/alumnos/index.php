@@ -32,10 +32,6 @@ $pageSubtitle = 'Gestión de alumnos registrados';
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Alumnos</h2>
-        <p>Listado de todos los alumnos de la academia</p>
-    </div>
     <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
     <div class="d-flex gap-2">
         <a href="<?= base_url('alumnos/nuevo') ?>" class="btn-jp btn-jp-primary">

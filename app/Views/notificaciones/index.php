@@ -8,6 +8,8 @@ $role         = session('role');
 $csrfName     = csrf_token();
 $csrfHash     = csrf_hash();
 $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
+$canSeeSent   = $canSeeSent ?? false;
+$sentNotifications = $sentNotifications ?? [];
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -29,13 +31,40 @@ $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
     </div>
 </div>
 
-<!-- Lista de notificaciones -->
-<div class="card border-0 shadow-sm" style="border-radius:var(--radius)">
+<?php if ($canSeeSent): ?>
+<!-- Tabs recibidas / enviadas -->
+<ul class="nav nav-tabs mb-0" id="notif-tabs" role="tablist" style="border-bottom:none">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-recv" data-bs-toggle="tab"
+                data-bs-target="#pane-recv" type="button" role="tab">
+            <i class="bi bi-inbox me-1"></i>Recibidas
+            <?php if ($unread > 0): ?>
+            <span class="badge bg-danger ms-1" style="font-size:10px"><?= $unread ?></span>
+            <?php endif; ?>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-sent" data-bs-toggle="tab"
+                data-bs-target="#pane-sent" type="button" role="tab">
+            <i class="bi bi-send me-1"></i>Enviadas
+            <?php if (!empty($sentNotifications)): ?>
+            <span class="badge bg-secondary ms-1" style="font-size:10px"><?= count($sentNotifications) ?></span>
+            <?php endif; ?>
+        </button>
+    </li>
+</ul>
+<?php endif; ?>
+
+<div class="tab-content">
+
+<!-- ── Recibidas ──────────────────────────────────────────────── -->
+<div class="tab-pane fade show active" id="pane-recv" role="tabpanel">
+<div class="card border-0 shadow-sm" style="border-radius:<?= $canSeeSent ? '0 var(--radius) var(--radius) var(--radius)' : 'var(--radius)' ?>">
     <div class="card-body p-0">
         <?php if (empty($notifications)): ?>
         <div class="text-center py-5 text-muted">
             <i class="bi bi-bell-slash" style="font-size:2.5rem;opacity:.3"></i>
-            <p class="mt-3">No tienes notificaciones aún.</p>
+            <p class="mt-3">No tienes notificaciones recibidas aún.</p>
         </div>
         <?php else: ?>
         <ul class="list-unstyled mb-0" id="notif-list">
@@ -86,6 +115,69 @@ $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
         <?php endif; ?>
     </div>
 </div>
+</div>
+
+<?php if ($canSeeSent): ?>
+<!-- ── Enviadas ───────────────────────────────────────────────── -->
+<div class="tab-pane fade" id="pane-sent" role="tabpanel">
+<div class="card border-0 shadow-sm" style="border-radius:0 var(--radius) var(--radius) var(--radius)">
+    <div class="card-body p-0">
+        <?php if (empty($sentNotifications)): ?>
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-send" style="font-size:2.5rem;opacity:.3"></i>
+            <p class="mt-3">No has enviado ninguna notificación aún.</p>
+        </div>
+        <?php else: ?>
+        <ul class="list-unstyled mb-0">
+            <?php foreach ($sentNotifications as $n): ?>
+            <?php
+                $isGroup  = $n['type'] === 'group';
+                $timeAgo  = timeAgo($n['created_at']);
+                $rcpTotal = (int)($n['recipient_count'] ?? 0);
+                $rcpRead  = (int)($n['read_count'] ?? 0);
+            ?>
+            <li class="notif-item" data-id="<?= $n['id'] ?>">
+
+                <div class="notif-avatar-wrap">
+                    <span class="notif-avatar d-flex align-items-center justify-content-center bg-primary text-white"
+                          style="font-size:1rem">
+                        <i class="bi bi-<?= $isGroup ? 'people-fill' : 'person-fill' ?>"></i>
+                    </span>
+                </div>
+
+                <div class="notif-body">
+                    <div class="notif-header">
+                        <span class="notif-sender">
+                            <?= $isGroup ? 'Grupal' : 'Individual' ?>
+                            <span class="badge bg-light text-secondary ms-1 fw-normal" style="font-size:10px">
+                                <?= $rcpRead ?>/<?= $rcpTotal ?> leídas
+                            </span>
+                        </span>
+                        <span class="notif-time"><?= esc($timeAgo) ?></span>
+                    </div>
+                    <div class="notif-title"><?= esc($n['title']) ?></div>
+                    <div class="notif-text"><?= nl2br(esc($n['body'])) ?></div>
+
+                    <?php if ($n['file_name']): ?>
+                    <a href="<?= base_url('notificaciones/' . $n['id'] . '/download') ?>"
+                       class="notif-file-link">
+                        <i class="bi bi-paperclip me-1"></i><?= esc($n['file_name']) ?>
+                        <?php if ($n['file_size']): ?>
+                        <span class="text-muted">(<?= formatBytes((int)$n['file_size']) ?>)</span>
+                        <?php endif; ?>
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+    </div>
+</div>
+</div>
+<?php endif; ?>
+
+</div><!-- /.tab-content -->
 
 <!-- ── Modal: nueva notificación ──────────────────────────────── -->
 <div class="modal fade" id="modalNotif" tabindex="-1" aria-labelledby="modalNotifLabel" aria-hidden="true">
@@ -282,6 +374,7 @@ $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
             const data = await res.json();
 
             if (res.ok && data.ok) {
+                if (data.csrf) refreshCsrf(data.csrf);
                 bootstrap.Modal.getInstance(document.getElementById('modalNotif')).hide();
                 this.reset();
                 document.getElementById('notif-file-preview')?.classList.add('d-none');

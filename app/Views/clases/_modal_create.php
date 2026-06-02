@@ -38,6 +38,27 @@ $btnId   = $btnId   ?? 'cm-submit';
                            placeholder="Ej: Entrenamiento individual – Control y pase">
                 </div>
 
+                <!-- Formato de clase -->
+                <div class="col-12">
+                    <label class="form-label">Formato</label>
+                    <div style="display:flex;gap:10px">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;flex:1">
+                            <input type="radio" name="cm-class-format" value="individual" checked style="accent-color:var(--accent)">
+                            <div>
+                                <div style="font-weight:700;font-size:13px">Individual</div>
+                                <div style="font-size:11px;color:var(--text-muted)">1 alumno</div>
+                            </div>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;flex:1">
+                            <input type="radio" name="cm-class-format" value="pareja" style="accent-color:var(--accent)">
+                            <div>
+                                <div style="font-weight:700;font-size:13px">Pareja</div>
+                                <div style="font-size:11px;color:var(--text-muted)">2 alumnos</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Sesión puntual: fecha -->
                 <div class="col-12 col-md-12 cm-block-single">
                     <label class="form-label">Fecha <span style="color:var(--danger)">*</span></label>

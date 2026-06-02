@@ -42,10 +42,6 @@ $formatTime = static function (?string $hms): string {
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="page-header-text">
-        <h2><?= esc($name) ?></h2>
-        <p>Perfil del entrenador</p>
-    </div>
     <div class="d-flex gap-2">
         <a href="<?= base_url('entrenadores') ?>" class="btn-jp btn-jp-secondary">
             <i class="bi bi-arrow-left"></i> Listado

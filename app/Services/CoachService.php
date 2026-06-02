@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\UserModel;
+use App\Services\DocumentService;
 
 /**
  * CoachService
@@ -87,6 +88,8 @@ class CoachService
         if ($userId === false) {
             return ['success' => false, 'userId' => null, 'errors' => $this->userModel->errors()];
         }
+
+        (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
 
         return ['success' => true, 'userId' => $userId, 'errors' => []];
     }

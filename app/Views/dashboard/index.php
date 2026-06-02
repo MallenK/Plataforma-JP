@@ -1,10 +1,97 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('page_content') ?>
+<?php helper('avatar'); ?>
 
 <?php $role = session('role'); $isAdmin = in_array($role, ['superadmin', 'admin']); ?>
 
 <!-- ── Métricas ──────────────────────────────────────────── -->
+<?php if ($role === 'player' && !empty($playerFullProfile)): ?>
+<?php
+$dbPfp = $playerFullProfile;
+$dbToday = date('Y-m-d');
+// Bono activo FIFO
+$dbActiveBono = null;
+foreach ($dbPfp['plans'] ?? [] as $p) {
+    if ((int)$p['sessions_remaining'] > 0 && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)) {
+        if ((int)$p['id'] === (int)($dbPfp['active_bono_id'] ?? 0)) { $dbActiveBono = $p; break; }
+    }
+}
+if (!$dbActiveBono) {
+    foreach ($dbPfp['plans'] ?? [] as $p) {
+        if ((int)$p['sessions_remaining'] > 0 && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)) {
+            $dbActiveBono = $p; break;
+        }
+    }
+}
+$dbActiveRem   = (int)($dbActiveBono['sessions_remaining'] ?? 0);
+$dbActiveTotal = (int)($dbActiveBono['sessions_total']     ?? 0);
+$dbCatLabel = match($dbPfp['category'] ?? '') {
+    'prebenjamin' => 'Prebenjamín', 'benjamin' => 'Benjamín', 'alevin' => 'Alevín',
+    'infantil' => 'Infantil', 'cadete' => 'Cadete', 'juvenil' => 'Juvenil',
+    'junior' => 'Júnior', 'senior' => 'Sénior', 'veterano' => 'Veterano', default => '—',
+};
+$dbLevelLabel = match($dbPfp['level'] ?? '') {
+    'beginner' => 'Principiante', 'intermediate' => 'Intermedio', 'advanced' => 'Avanzado', default => '—',
+};
+$dbAge = null;
+if (!empty($dbPfp['birth_date'])) {
+    $dbAge = (int)(new \DateTime($dbPfp['birth_date']))->diff(new \DateTime())->y;
+}
+$dbRemPct   = $dbActiveTotal > 0 ? min(100, round($dbActiveRem / $dbActiveTotal * 100)) : 0;
+$dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' : 'var(--success)');
+?>
+<!-- Métricas del player -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-sm-3">
+        <div class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Clases asistidas</span>
+                <div class="metric-icon blue"><i class="bi bi-calendar-check-fill"></i></div>
+            </div>
+            <div class="metric-value"><?= (int)($dbPfp['classes_count'] ?? 0) ?></div>
+            <div class="metric-footer"><span class="metric-footer-label">total historial</span></div>
+            <div class="metric-progress"><div class="metric-progress-bar" style="width:100%;background:var(--accent)"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Próximas clases</span>
+                <div class="metric-icon green"><i class="bi bi-calendar3"></i></div>
+            </div>
+            <div class="metric-value"><?= (int)($dbPfp['upcoming_count'] ?? 0) ?></div>
+            <div class="metric-footer"><span class="metric-footer-label">programadas</span></div>
+            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, (int)($dbPfp['upcoming_count'] ?? 0) * 20) ?>%;background:var(--success)"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Sesiones bono</span>
+                <div class="metric-icon orange"><i class="bi bi-ticket-perforated-fill"></i></div>
+            </div>
+            <div class="metric-value" style="color:<?= $dbRemColor ?>"><?= $dbActiveBono ? $dbActiveRem : '—' ?></div>
+            <div class="metric-footer">
+                <span class="metric-footer-label"><?= $dbActiveBono ? 'de ' . $dbActiveTotal . ' restantes' : 'sin bono activo' ?></span>
+            </div>
+            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= $dbRemPct ?>%;background:<?= $dbRemColor ?>"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Bonos activos</span>
+                <div class="metric-icon" style="background:rgba(139,92,246,.15);color:#8b5cf6"><i class="bi bi-collection-fill"></i></div>
+            </div>
+            <div class="metric-value"><?= (int)($dbPfp['active_bonos'] ?? 0) ?></div>
+            <div class="metric-footer"><span class="metric-footer-label">con sesiones</span></div>
+            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, (int)($dbPfp['active_bonos'] ?? 0) * 25) ?>%;background:#8b5cf6"></div></div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if ($isAdmin): ?>
 <div
     class="row g-3 mb-4"
@@ -91,7 +178,7 @@
                     Bienvenido, <?= esc(session('name')) ?>
                 </h5>
                 <p style="color:var(--text-muted);margin:0">
-                    <?php if ($role === 'alumno'): ?>
+                    <?php if ($role === 'player'): ?>
                         Accede a tu <a href="<?= base_url('alumno') ?>">ficha</a> o consulta la <a href="<?= base_url('documentacion') ?>">documentación</a>.
                     <?php elseif ($role === 'coach'): ?>
                         Gestiona tus alumnos desde <a href="<?= base_url('alumnos') ?>">Alumnos</a> o revisa las <a href="<?= base_url('clases') ?>">Clases</a>.
@@ -119,6 +206,7 @@
                     <div class="calendar-view-tabs">
                         <button class="calendar-view-tab active" onclick="DBCAL.switchView('month', this)">Mes</button>
                         <button class="calendar-view-tab" onclick="DBCAL.switchView('week', this)">Semana</button>
+                        <button class="calendar-view-tab" onclick="DBCAL.switchView('day', this)">Día</button>
                     </div>
                     <?php if ($dbCanManage): ?>
                     <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open()">
@@ -179,20 +267,220 @@
         </div>
         <?php endif; ?>
 
-        <?php if ($role === 'alumno'): ?>
+        <?php if ($role === 'player' && !empty($playerFullProfile)): ?>
+
+        <!-- ── Tarjeta de identidad ────────────────────── -->
+        <div class="card-jp">
+            <div class="card-jp-body" style="padding:16px">
+                <div class="d-flex gap-3 align-items-center mb-3">
+                    <?= avatar_html($dbPfp['avatar'] ?? null, $dbPfp['name'] ?? '?', 'profile-avatar-md') ?>
+                    <div style="min-width:0">
+                        <div style="font-size:15px;font-weight:700;color:var(--text-h);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= esc($dbPfp['name'] ?? '—') ?></div>
+                        <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= esc($dbPfp['email'] ?? '') ?></div>
+                        <div class="d-flex gap-1 mt-1 flex-wrap">
+                            <span class="badge-status active">Activo</span>
+                            <?php if (!empty($dbPfp['category'])): ?>
+                            <span style="font-size:10px;background:var(--accent-light,#e0edff);color:var(--accent);border-radius:4px;padding:2px 7px;font-weight:600"><?= esc($dbCatLabel) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($dbPfp['level'])): ?>
+                            <span style="font-size:10px;background:rgba(245,158,11,.12);color:#d97706;border-radius:4px;padding:2px 7px;font-weight:600"><?= esc($dbLevelLabel) ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2" style="font-size:13px">
+                    <?php if (!empty($dbPfp['position'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:var(--text-muted)"><i class="bi bi-geo-alt me-1"></i>Posición</span>
+                        <span style="font-weight:600;color:var(--text-h)"><?= esc($dbPfp['position']) ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($dbPfp['team'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:var(--text-muted)"><i class="bi bi-shield-fill me-1"></i>Equipo</span>
+                        <span style="font-weight:600;color:var(--text-h)"><?= esc($dbPfp['team']) ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($dbPfp['league'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:var(--text-muted)"><i class="bi bi-trophy me-1"></i>Liga</span>
+                        <span style="font-weight:600;color:var(--text-h)"><?= esc($dbPfp['league']) ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($dbAge !== null): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:var(--text-muted)"><i class="bi bi-cake2 me-1"></i>Edad</span>
+                        <span style="font-weight:600;color:var(--text-h)"><?= $dbAge ?> años</span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($dbPfp['height']) || !empty($dbPfp['weight'])): ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:var(--text-muted)"><i class="bi bi-person me-1"></i>Físico</span>
+                        <span style="font-weight:600;color:var(--text-h)">
+                            <?= !empty($dbPfp['height']) ? esc($dbPfp['height']) . ' cm' : '' ?>
+                            <?= (!empty($dbPfp['height']) && !empty($dbPfp['weight'])) ? ' · ' : '' ?>
+                            <?= !empty($dbPfp['weight']) ? esc($dbPfp['weight']) . ' kg' : '' ?>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <a href="<?= base_url('alumno') ?>" class="btn-jp btn-jp-primary btn-jp-sm flex-grow-1 justify-content-center">
+                        <i class="bi bi-person-badge-fill"></i> Mi ficha
+                    </a>
+                    <a href="<?= base_url('perfil') ?>" class="btn-jp btn-jp-secondary btn-jp-sm flex-grow-1 justify-content-center">
+                        <i class="bi bi-gear-fill"></i> Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Bono activo destacado ───────────────────── -->
+        <?php if ($dbActiveBono): ?>
+        <?php
+        $dbExpDays = null;
+        if (!empty($dbActiveBono['expires_at'])) {
+            $dbExpDays = (int)(new \DateTime())->diff(new \DateTime($dbActiveBono['expires_at']))->days;
+            if ($dbActiveBono['expires_at'] < $dbToday) $dbExpDays = -1;
+        }
+        ?>
         <div class="card-jp">
             <div class="card-jp-header">
-                <span class="card-jp-title">Mi espacio</span>
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>Bono activo
+                </span>
+                <a href="<?= base_url('perfil') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todos</a>
             </div>
-            <div class="card-jp-body d-flex flex-column gap-2">
-                <a href="<?= base_url('alumno') ?>" class="btn-jp btn-jp-primary w-100 justify-content-center">
-                    <i class="bi bi-person-badge-fill"></i> Ver mi ficha
+            <div class="card-jp-body">
+                <div style="font-size:13px;font-weight:700;color:var(--text-h);margin-bottom:8px"><?= esc($dbActiveBono['bono_name'] ?? '—') ?></div>
+
+                <!-- Sesiones grandes -->
+                <div class="d-flex align-items-end gap-2 mb-2">
+                    <span style="font-size:40px;font-weight:800;line-height:1;color:<?= $dbRemColor ?>"><?= $dbActiveRem ?></span>
+                    <span style="font-size:14px;color:var(--text-muted);padding-bottom:4px">/ <?= $dbActiveTotal ?> sesiones</span>
+                </div>
+
+                <!-- Barra de progreso gruesa -->
+                <div style="height:10px;background:var(--border);border-radius:5px;margin-bottom:8px">
+                    <div style="height:10px;border-radius:5px;background:<?= $dbRemColor ?>;width:<?= $dbRemPct ?>%;transition:width .4s"></div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center" style="font-size:12px">
+                    <?php if (!empty($dbActiveBono['start_date'])): ?>
+                    <span style="color:var(--text-muted)">Desde <?= date('d/m/Y', strtotime($dbActiveBono['start_date'])) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($dbActiveBono['expires_at'])): ?>
+                    <span style="color:<?= ($dbExpDays !== null && $dbExpDays <= 7) ? 'var(--danger)' : 'var(--text-muted)' ?>;font-weight:<?= ($dbExpDays !== null && $dbExpDays <= 7) ? '700' : '400' ?>">
+                        <?php if ($dbExpDays !== null && $dbExpDays <= 7 && $dbExpDays >= 0): ?>
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Vence en <?= $dbExpDays ?> días
+                        <?php else: ?>
+                            Vence <?= date('d/m/Y', strtotime($dbActiveBono['expires_at'])) ?>
+                        <?php endif; ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($dbRemPct <= 25 && $dbActiveRem > 0): ?>
+                <div style="margin-top:8px;padding:6px 10px;background:rgba(239,68,68,.08);border-radius:6px;font-size:12px;color:var(--danger);font-weight:600">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>Quedan pocas sesiones. Renueva tu bono pronto.
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Otros bonos activos -->
+        <?php
+        $dbOtherActive = array_filter($dbPfp['plans'] ?? [], function($p) use ($dbToday, $dbActiveBono) {
+            return (int)$p['sessions_remaining'] > 0
+                && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)
+                && (int)$p['id'] !== (int)($dbActiveBono['id'] ?? 0);
+        });
+        ?>
+        <?php if (!empty($dbOtherActive)): ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-collection-fill me-2" style="color:#8b5cf6"></i>Otros bonos
+                </span>
+            </div>
+            <div class="card-jp-body d-flex flex-column gap-3">
+                <?php foreach (array_slice($dbOtherActive, 0, 3) as $dbPlan):
+                    $dbPRem   = (int)($dbPlan['sessions_remaining'] ?? 0);
+                    $dbPTotal = (int)($dbPlan['sessions_total']     ?? 0);
+                    $dbPPct   = $dbPTotal > 0 ? min(100, round($dbPRem / $dbPTotal * 100)) : 0;
+                    $dbPColor = $dbPPct <= 25 ? 'var(--danger)' : ($dbPPct <= 50 ? '#f97316' : 'var(--accent)');
+                ?>
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size:12px;font-weight:600;color:var(--text-h)"><?= esc($dbPlan['bono_name'] ?? '—') ?></span>
+                        <span style="font-size:12px;font-weight:700;color:<?= $dbPColor ?>"><?= $dbPRem ?>/<?= $dbPTotal ?></span>
+                    </div>
+                    <div style="height:5px;background:var(--border);border-radius:3px">
+                        <div style="height:5px;border-radius:3px;background:<?= $dbPColor ?>;width:<?= $dbPPct ?>%"></div>
+                    </div>
+                    <?php if (!empty($dbPlan['expires_at'])): ?>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Vence: <?= date('d/m/Y', strtotime($dbPlan['expires_at'])) ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <!-- ── Próximas clases del player ─────────────── -->
+        <?php if (!empty($dbPfp['upcoming'])): ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-collection-play-fill me-2" style="color:var(--accent)"></i>Próximas clases
+                </span>
+                <a href="<?= base_url('clases') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todas</a>
+            </div>
+            <div class="card-jp-body py-1">
+                <?php foreach (array_slice($dbPfp['upcoming'], 0, 4) as $up):
+                    $upDate = !empty($up['session_date']) ? new \DateTime($up['session_date']) : null;
+                    $mn = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                ?>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                    <?php if ($upDate): ?>
+                    <div style="min-width:38px;text-align:center;background:var(--accent-light,#e0edff);color:var(--accent);border-radius:6px;padding:4px 0;font-size:12px;font-weight:700;flex-shrink:0">
+                        <?= $upDate->format('d') ?><br>
+                        <span style="font-size:10px"><?= $mn[(int)$upDate->format('n') - 1] ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <div style="flex:1;min-width:0">
+                        <a href="<?= base_url('clases/' . (int)$up['id']) ?>" style="font-size:13px;font-weight:600;color:var(--text-h);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                            <?= esc($up['title'] ?? '—') ?>
+                        </a>
+                        <div style="font-size:11px;color:var(--text-muted)">
+                            <?= !empty($up['start_time']) ? substr($up['start_time'], 0, 5) : '' ?>
+                            <?= (!empty($up['start_time']) && !empty($up['end_time'])) ? '–' . substr($up['end_time'], 0, 5) : '' ?>
+                            <?php $loc = $up['location_name'] ?? $up['location_custom'] ?? ''; if ($loc): ?>
+                            · <?= esc($loc) ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- ── Acceso rápido docs ──────────────────────── -->
+        <div class="card-jp">
+            <div class="card-jp-body d-flex gap-2">
+                <a href="<?= base_url('documentacion') ?>" class="btn-jp btn-jp-secondary btn-jp-sm flex-grow-1 justify-content-center">
+                    <i class="bi bi-folder2-open"></i> Documentos
                 </a>
-                <a href="<?= base_url('documentacion') ?>" class="btn-jp btn-jp-secondary w-100 justify-content-center">
-                    <i class="bi bi-folder2-open"></i> Documentación
+                <a href="<?= base_url('mensajes') ?>" class="btn-jp btn-jp-secondary btn-jp-sm flex-grow-1 justify-content-center">
+                    <i class="bi bi-chat-dots"></i> Mensajes
                 </a>
             </div>
         </div>
+
         <?php endif; ?>
 
     </div>
@@ -229,6 +517,7 @@
 .cal-time-label { font-size:10px;color:var(--text-muted);padding:2px 4px 0;border-right:1px solid var(--border);border-bottom:1px solid #f1f5f9;height:52px;text-align:right; }
 .cal-hour-slot { position:relative;border-bottom:1px solid #f1f5f9;height:52px; }
 .cal-event-block { position:absolute;left:2px;right:2px;border-radius:4px;padding:2px 5px;font-size:10.5px;font-weight:600;text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;z-index:1; }
+.cal-day-grid { display:grid;grid-template-columns:48px 1fr;min-width:200px; }
 </style>
 <script>
 const DB_CSRF_NAME = '<?= csrf_token() ?>';
@@ -241,10 +530,19 @@ const DBCAL = {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
     weekStart: null,
+    day: null,
     events: [],
 
     async load() {
-        const url = `/clases/api/calendario?year=${this.year}&month=${this.month}`;
+        let year = this.year, month = this.month;
+        if (this.view === 'week') {
+            year = this.weekStart ? parseInt(this.weekStart.split('-')[0]) : this.year;
+            month = this.weekStart ? parseInt(this.weekStart.split('-')[1]) : this.month;
+        } else if (this.view === 'day' && this.day) {
+            const p = this.day.split('-');
+            year = parseInt(p[0]); month = parseInt(p[1]);
+        }
+        const url = `/clases/api/calendario?year=${year}&month=${month}`;
         try {
             const res = await fetch(url);
             this.events = await res.json();
@@ -253,29 +551,36 @@ const DBCAL = {
         this.loadProximas();
     },
 
-    render() { this.view === 'month' ? this.renderMonth() : this.renderWeek(); },
+    render() {
+        if (this.view === 'month') this.renderMonth();
+        else if (this.view === 'week') this.renderWeek();
+        else this.renderDay();
+    },
 
     switchView(v, btn) {
         this.view = v;
         document.querySelectorAll('.calendar-view-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         if (v === 'week' && !this.weekStart) this.weekStart = this.getMonday(new Date());
-        this.render();
+        if (v === 'day'  && !this.day)       this.day = this.fmt(new Date());
+        this.load();
     },
 
     prev() {
         if (this.view === 'month') { if (--this.month < 1) { this.month = 12; this.year--; } }
-        else { const d = new Date(this.weekStart+'T00:00:00'); d.setDate(d.getDate()-7); this.weekStart = this.fmt(d); }
+        else if (this.view === 'week') { const d = new Date(this.weekStart+'T00:00:00'); d.setDate(d.getDate()-7); this.weekStart = this.fmt(d); }
+        else { const d = new Date(this.day+'T00:00:00'); d.setDate(d.getDate()-1); this.day = this.fmt(d); }
         this.load();
     },
     next() {
         if (this.view === 'month') { if (++this.month > 12) { this.month = 1; this.year++; } }
-        else { const d = new Date(this.weekStart+'T00:00:00'); d.setDate(d.getDate()+7); this.weekStart = this.fmt(d); }
+        else if (this.view === 'week') { const d = new Date(this.weekStart+'T00:00:00'); d.setDate(d.getDate()+7); this.weekStart = this.fmt(d); }
+        else { const d = new Date(this.day+'T00:00:00'); d.setDate(d.getDate()+1); this.day = this.fmt(d); }
         this.load();
     },
     today() {
         const n = new Date(); this.year = n.getFullYear(); this.month = n.getMonth()+1;
-        this.weekStart = this.getMonday(n); this.load();
+        this.weekStart = this.getMonday(n); this.day = this.fmt(n); this.load();
     },
 
     renderMonth() {
@@ -368,6 +673,41 @@ const DBCAL = {
                 </div>`;
             }).join('');
         } catch(e) {}
+    },
+
+    renderDay() {
+        if (!this.day) this.day = this.fmt(new Date());
+        const d        = new Date(this.day+'T00:00:00');
+        const dnames   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        const mn       = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const todayStr = this.fmt(new Date());
+        const isToday  = this.day === todayStr;
+
+        document.getElementById('db-cal-label').textContent =
+            `${dnames[d.getDay()]}, ${d.getDate()} de ${mn[d.getMonth()]} ${d.getFullYear()}`;
+
+        const HS=7, HE=20, SH=52;
+        const dayEvts = this.events.filter(e => e.date === this.day);
+
+        let html='<div class="cal-week-wrap"><div class="cal-day-grid">';
+        html+=`<div class="cal-week-head time-col"></div>`;
+        html+=`<div class="cal-week-head${isToday?' cal-wday-today':''}"><div class="cal-wday-name">${dnames[d.getDay()].substring(0,3)}</div><div class="cal-wday-num">${d.getDate()}</div></div>`;
+
+        for(let h=HS;h<HE;h++){
+            html+=`<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
+            const slotEvts=dayEvts.filter(e=>parseInt(e.start.split(':')[0])===h);
+            html+=`<div class="cal-hour-slot${dbCanManage?' cal-can-create':''}" onclick="dbHandleSlot(event,'${this.day}',${h})">`;
+            slotEvts.forEach(ev=>{
+                const [sh2,sm]=ev.start.split(':').map(Number);
+                const [eh2,em]=(ev.end||ev.start).split(':').map(Number);
+                const top=(sm/60)*SH;
+                const dur=Math.max(((eh2*60+em)-(sh2*60+sm))/60*SH,20);
+                html+=`<a href="/clases/${ev.id}" class="cal-event-block" style="top:${top}px;height:${dur}px;background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" onclick="event.stopPropagation()">${ev.start} ${ev.title}</a>`;
+            });
+            html+='</div>';
+        }
+        html+='</div></div>';
+        document.getElementById('db-cal-grid').innerHTML = html;
     },
 
     getMonday(d) { const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return this.fmt(new Date(d.setDate(diff))); },

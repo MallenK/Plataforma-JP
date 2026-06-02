@@ -291,6 +291,7 @@
         const fd = new FormData();
         if (opts.csrfName) fd.append(opts.csrfName, opts.csrfHash);
         fd.append('type',         currentType);
+        fd.append('class_format', document.querySelector('input[name="cm-class-format"]:checked')?.value || 'individual');
         fd.append('title',        title);
         fd.append('start_time',   start);
         fd.append('end_time',     end);

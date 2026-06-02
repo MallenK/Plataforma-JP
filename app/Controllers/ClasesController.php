@@ -67,6 +67,26 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  AJAX: comprobar conflicto de instalación
+    // ────────────────────────────────────────────────────────────────
+
+    public function checkLocation(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $locationId = (int)$this->request->getGet('location_id');
+        $date       = $this->request->getGet('date')  ?? '';
+        $start      = $this->request->getGet('start') ?? '';
+        $end        = $this->request->getGet('end')   ?? '';
+        $excludeId  = (int)($this->request->getGet('exclude') ?? 0) ?: null;
+
+        if (!$locationId || !$date || !$start || !$end) {
+            return $this->response->setJSON(['conflicts' => []]);
+        }
+
+        $conflicts = $this->clasesService->checkLocationConflict($locationId, $date, $start, $end, $excludeId);
+        return $this->response->setJSON(['conflicts' => $conflicts]);
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Crear
     // ────────────────────────────────────────────────────────────────
 
@@ -333,6 +353,17 @@ class ClasesController extends BaseController
 
         session()->setFlashdata('success', 'Lista guardada correctamente.');
         return redirect()->to('/pasar-lista' . ($qs ? '?' . $qs : ''));
+    }
+
+    public function completarDiaRapido()
+    {
+        $date = $this->request->getPost('date');
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Fecha inválida']);
+        }
+
+        $result = $this->clasesService->completarDiaRapido($date, $this->currentUserId());
+        return $this->response->setJSON($result);
     }
 
     // ────────────────────────────────────────────────────────────────

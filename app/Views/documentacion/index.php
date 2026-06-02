@@ -65,10 +65,6 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 <?php /* ── Cabecera ─────────────────────────────────────────────── */ ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2>Documentación</h2>
-        <p>Archivos y recursos</p>
-    </div>
     <div class="d-flex gap-2">
         <?php if ($isAdmin): ?>
         <button class="btn-jp btn-jp-secondary" onclick="openModal('modal-new-folder')">
@@ -83,6 +79,39 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
     </div>
 </div>
 
+<?php /* ── Barra de búsqueda y filtros ─────────────────────────────── */ ?>
+<div class="card-jp mb-4" style="padding:14px 16px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="position:relative;flex:1;min-width:180px">
+            <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px"></i>
+            <input type="text" id="doc-search" placeholder="Buscar carpeta o archivo…"
+                   style="width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-card);color:var(--text-h)">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="doc-filters">
+            <button class="doc-filter-btn active" data-filter="all"
+                    style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color);background:var(--accent);color:#fff">
+                Todos
+            </button>
+            <button class="doc-filter-btn" data-filter="public"
+                    style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-h)">
+                Públicas
+            </button>
+            <?php if (!$isPlayer): ?>
+            <button class="doc-filter-btn" data-filter="personal"
+                    style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-h)">
+                Personales
+            </button>
+            <?php if ($isAdmin): ?>
+            <button class="doc-filter-btn" data-filter="internal"
+                    style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-h)">
+                Internas
+            </button>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <span id="doc-count" style="font-size:12px;color:var(--text-muted);white-space:nowrap"></span>
+    </div>
+</div>
 
 <?php /* ── Grid de carpetas ───────────────────────────────────── */ ?>
 
@@ -126,8 +155,11 @@ $roleGroups = [
 function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
     $noFolder = !empty($f['no_folder']);
+    $cardName = strtolower($f['owner_name'] ?? $f['name'] ?? '');
     ?>
-    <div class="col-6 col-md-4 col-lg-3">
+    <div class="col-6 col-md-4 col-lg-3 doc-folder-item"
+         data-type="<?= esc($f['type']) ?>"
+         data-name="<?= esc($cardName) ?>">
         <?php if ($noFolder): ?>
         <div class="card-jp" style="opacity:0.6;cursor:default" title="Sin carpeta asignada">
             <div class="card-jp-body py-3 text-center" style="position:relative">
@@ -194,7 +226,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 ?>
 
 <?php if (!empty($fPublic) || !empty($fInternal)): ?>
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3 doc-section-group">
     <?php foreach ($fPublic as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
     <?php foreach ($fInternal as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
 </div>
@@ -202,6 +234,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 
 <?php foreach ($roleGroups as $roleKey => [$roleLabel, $roleIcon, $roleColor]): ?>
 <?php if (!empty($personalByRole[$roleKey])): ?>
+<div class="doc-section-group">
 <div style="margin-bottom:8px;margin-top:4px">
     <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
         <i class="bi <?= $roleIcon ?> me-1" style="color:<?= $roleColor ?>"></i><?= $roleLabel ?>
@@ -209,6 +242,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 </div>
 <div class="row g-3 mb-3">
     <?php foreach ($personalByRole[$roleKey] as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+</div>
 </div>
 <?php endif; ?>
 <?php endforeach; ?>
@@ -712,5 +746,52 @@ function fmtBytes(b) {
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Buscador + filtros de carpetas ───────────────────────────
+(function () {
+    const searchInput = document.getElementById('doc-search');
+    const filterBtns  = document.querySelectorAll('.doc-filter-btn');
+    const countEl     = document.getElementById('doc-count');
+    let activeFilter  = 'all';
+
+    function applyFilters() {
+        const q = (searchInput.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('.doc-folder-item');
+        let visible = 0;
+
+        items.forEach(item => {
+            const type = item.dataset.type || '';
+            const name = item.dataset.name || '';
+            const matchFilter = activeFilter === 'all' || type === activeFilter;
+            const matchSearch = !q || name.includes(q);
+            const show = matchFilter && matchSearch;
+            item.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        countEl.textContent = visible + ' carpeta' + (visible !== 1 ? 's' : '');
+
+        // Hide empty section headers
+        document.querySelectorAll('.doc-section-group').forEach(group => {
+            const hasVisible = [...group.querySelectorAll('.doc-folder-item')].some(i => i.style.display !== 'none');
+            group.style.display = hasVisible ? '' : 'none';
+        });
+    }
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeFilter = btn.dataset.filter;
+            filterBtns.forEach(b => {
+                b.style.background = b === btn ? 'var(--accent)' : 'var(--bg-card)';
+                b.style.color = b === btn ? '#fff' : 'var(--text-h)';
+            });
+            applyFilters();
+        });
+    });
+
+    applyFilters();
+})();
 </script>
 <?= $this->endSection() ?>

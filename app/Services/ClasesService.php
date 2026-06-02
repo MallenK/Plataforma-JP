@@ -52,6 +52,7 @@ class ClasesService
 
     private function insertSingle(array $data, int $userId, ?int $classId = null): int
     {
+        $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
         return (int)$this->sessionModel->insert([
             'class_id'        => $classId ?? ($data['class_id'] ?? null),
             'title'           => trim($data['title']),
@@ -65,6 +66,7 @@ class ClasesService
             'post_notes'      => ($data['post_notes'] ?? '') ?: null,
             'status'          => 'scheduled',
             'created_by'      => $userId,
+            'class_format'    => $fmt,
         ]);
     }
 
@@ -77,10 +79,12 @@ class ClasesService
         }
 
         // Guardar plantilla
+        $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
         $classId = (int)$this->classModel->insert([
             'title'                   => trim($data['title']),
             'description'             => ($data['description'] ?? '') ?: null,
             'type'                    => 'recurring',
+            'class_format'            => $fmt,
             'recurrence_days'         => json_encode($days),
             'recurrence_start'        => $data['recurrence_start'],
             'recurrence_end'          => $data['recurrence_end'],
@@ -642,6 +646,35 @@ class ClasesService
         return ['success' => true];
     }
 
+    public function completarDiaRapido(string $date, int $adminId): array
+    {
+        $sessions = $this->db->table('class_sessions')
+            ->select('id')
+            ->where('session_date', $date)
+            ->where('status !=', 'cancelled')
+            ->where('lista_pasada_at IS NULL')
+            ->get()->getResultArray();
+
+        $done = 0;
+        foreach ($sessions as $s) {
+            $sid     = (int)$s['id'];
+            $players = $this->db->table('class_session_players')
+                ->select('user_id')
+                ->where('session_id', $sid)
+                ->get()->getResultArray();
+
+            $attendanceMap = [];
+            foreach ($players as $p) {
+                $attendanceMap[(int)$p['user_id']] = 'present';
+            }
+
+            $this->markListaPasada($sid, $adminId, $attendanceMap);
+            $done++;
+        }
+
+        return ['success' => true, 'sessions_completed' => $done];
+    }
+
     public function cancelSession(int $id): bool
     {
         return (bool)$this->sessionModel->update($id, ['status' => 'cancelled']);
@@ -664,8 +697,10 @@ class ClasesService
 
     public function addCoach(int $sessionId, int $userId): array
     {
-        if ($this->coachModel->where('session_id', $sessionId)->where('user_id', $userId)->first()) {
-            return ['success' => false, 'error' => 'El entrenador ya está asignado a esta sesión.'];
+        // Max 1 coach per session
+        $count = (int)$this->coachModel->where('session_id', $sessionId)->countAllResults();
+        if ($count >= 1) {
+            return ['success' => false, 'error' => 'Solo se permite 1 entrenador por sesión.'];
         }
         $this->coachModel->insert(['session_id' => $sessionId, 'user_id' => $userId]);
         return ['success' => true];
@@ -701,6 +736,18 @@ class ClasesService
 
         if ($this->playerModel->where('session_id', $sessionId)->where('user_id', $userId)->first()) {
             return ['success' => false, 'error' => 'El jugador ya está en esta sesión.'];
+        }
+
+        $session = $this->sessionModel->find($sessionId);
+        $fmt = $session['class_format'] ?? 'individual';
+        $maxPlayers = $fmt === 'pareja' ? 2 : 1;
+
+        $currentCount = $this->db->table('class_session_players')
+            ->where('session_id', $sessionId)
+            ->countAllResults();
+        if ($currentCount >= $maxPlayers) {
+            $label = $maxPlayers === 1 ? '1 alumno (clase individual)' : '2 alumnos (clase en pareja)';
+            return ['success' => false, 'error' => "Sesión completa: máximo {$label}."];
         }
 
         $now = date('Y-m-d H:i:s');
@@ -1007,15 +1054,35 @@ class ClasesService
     {
         $this->db->table('class_session_coaches')->where('session_id', $sessionId)->delete();
 
-        foreach (array_unique(array_filter(array_map('intval', (array)$userIds))) as $uid) {
-            $this->db->table('class_session_coaches')->insert([
-                'session_id' => $sessionId,
-                'user_id'    => $uid,
-            ]);
-            if ($this->db->affectedRows() === 0) {
-                log_message('error', 'syncCoaches: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
-            }
+        // Max 1 coach per session — take only the first valid ID
+        $filtered = array_values(array_unique(array_filter(array_map('intval', (array)$userIds))));
+        if (empty($filtered)) return;
+
+        $uid = $filtered[0];
+        $this->db->table('class_session_coaches')->insert([
+            'session_id' => $sessionId,
+            'user_id'    => $uid,
+        ]);
+        if ($this->db->affectedRows() === 0) {
+            log_message('error', 'syncCoaches: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
         }
+    }
+
+    public function checkLocationConflict(int $locationId, string $date, string $startTime, string $endTime, ?int $excludeSessionId = null): array
+    {
+        $builder = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.start_time, cs.end_time')
+            ->where('cs.location_id', $locationId)
+            ->where('cs.session_date', $date)
+            ->where('cs.status !=', 'cancelled')
+            ->where('cs.start_time <', $endTime)
+            ->where('cs.end_time >', $startTime);
+
+        if ($excludeSessionId) {
+            $builder->where('cs.id !=', $excludeSessionId);
+        }
+
+        return $builder->get()->getResultArray();
     }
 
     private function syncPlayers(int $sessionId, array $userIds, array $coachMap): void

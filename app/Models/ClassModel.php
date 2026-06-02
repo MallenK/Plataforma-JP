@@ -14,7 +14,7 @@ class ClassModel extends Model
     protected $useTimestamps  = true;
 
     protected $allowedFields = [
-        'title', 'description', 'type',
+        'title', 'description', 'type', 'class_format',
         'recurrence_days', 'recurrence_start', 'recurrence_end',
         'recurrence_time_start', 'recurrence_time_end',
         'default_location_id', 'default_location_custom', 'default_focus',

@@ -27,15 +27,9 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
-    <div class="page-header-text">
-        <h2><?= $isEdit ? 'Editar sesión' : 'Nueva clase' ?></h2>
-        <p>
-            <a href="<?= $isEdit ? '/clases/' . $session['id'] : '/clases' ?>"
-               style="color:var(--text-muted);text-decoration:none">
-                <i class="bi bi-arrow-left me-1"></i>Volver
-            </a>
-        </p>
-    </div>
+    <a href="<?= $isEdit ? '/clases/' . $session['id'] : '/clases' ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+        <i class="bi bi-arrow-left me-1"></i><?= $isEdit ? 'Volver a sesión' : 'Clases' ?>
+    </a>
 </div>
 
 <?php if ($flash = session()->getFlashdata('error')): ?>
@@ -106,6 +100,32 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                 <div style="font-size:12px;color:var(--text-muted)">Varios días a la semana</div>
                             </div>
                         </label>
+                    </div>
+                    <!-- Formato de clase: individual o pareja -->
+                    <div class="mb-3">
+                        <label style="font-size:13px;font-weight:600;color:var(--text-h);display:block;margin-bottom:8px">
+                            Formato de clase
+                        </label>
+                        <div class="d-flex gap-3">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
+                                <input type="radio" name="class_format" value="individual"
+                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'individual' ? 'checked' : '' ?>
+                                       style="accent-color:var(--accent)">
+                                <div>
+                                    <div style="font-weight:700;color:var(--text-h)">Individual</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">1 alumno</div>
+                                </div>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
+                                <input type="radio" name="class_format" value="pareja"
+                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'pareja' ? 'checked' : '' ?>
+                                       style="accent-color:var(--accent)">
+                                <div>
+                                    <div style="font-weight:700;color:var(--text-h)">Pareja</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">2 alumnos</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Puntual -->
@@ -221,7 +241,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label">Instalación (de la lista)</label>
-                            <select name="location_id" class="form-control-jp">
+                            <select name="location_id" id="location_id" class="form-control-jp">
                                 <option value="">— Seleccionar instalación —</option>
                                 <?php foreach ($locationOptions as $loc): ?>
                                     <option value="<?= $loc['id'] ?>"
@@ -237,6 +257,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                    value="<?= $v('location_custom') ?>"
                                    placeholder="Ej: Estadio Municipal, Campo 3">
                         </div>
+                    </div>
+                    <!-- Aviso conflicto de instalación -->
+                    <div id="location-conflict-warn" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Instalación ocupada:</strong> <span id="location-conflict-detail"></span>
                     </div>
                 </div>
             </div>
@@ -467,6 +492,52 @@ function removePlayer(id) {
     document.getElementById('player-' + id)?.remove();
     if (!addedPlayers.size) document.getElementById('playerEmpty').style.display = '';
 }
+
+// ── Aviso conflicto instalación ───────────────────────────────
+(function() {
+    var EXCLUDE_ID = <?= $isEdit ? (int)$session['id'] : 'null' ?>;
+
+    function checkLocationConflict() {
+        var locId = document.getElementById('location_id')?.value;
+        var date  = document.querySelector('[name="session_date"]')?.value;
+        var start = document.querySelector('[name="start_time"]')?.value;
+        var end   = document.querySelector('[name="end_time"]')?.value;
+        var warn  = document.getElementById('location-conflict-warn');
+
+        if (!locId || !date || !start || !end) { if (warn) warn.style.display = 'none'; return; }
+
+        var url = '/clases/api/check-location?location_id=' + encodeURIComponent(locId)
+                + '&date='  + encodeURIComponent(date)
+                + '&start=' + encodeURIComponent(start)
+                + '&end='   + encodeURIComponent(end)
+                + (EXCLUDE_ID ? '&exclude=' + EXCLUDE_ID : '');
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!warn) return;
+                var conflicts = data.conflicts ?? [];
+                if (conflicts.length === 0) {
+                    warn.style.display = 'none';
+                } else {
+                    var detail = conflicts.map(function(c) {
+                        return '"' + c.title + '" (' + c.start_time.substring(0,5) + '–' + c.end_time.substring(0,5) + ')';
+                    }).join(', ');
+                    document.getElementById('location-conflict-detail').textContent = detail;
+                    warn.style.display = '';
+                }
+            })
+            .catch(function() {});
+    }
+
+    var triggers = ['location_id', 'session_date', 'start_time', 'end_time'];
+    triggers.forEach(function(name) {
+        var el = document.getElementById(name) || document.querySelector('[name="' + name + '"]');
+        if (el) el.addEventListener('change', checkLocationConflict);
+    });
+    // Check on load if editing
+    if (EXCLUDE_ID) checkLocationConflict();
+})();
 </script>
 <?= $this->endSection() ?>
 

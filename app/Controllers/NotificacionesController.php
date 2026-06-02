@@ -31,6 +31,7 @@ class NotificacionesController extends BaseController
         $role   = $this->currentRole();
 
         $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
+        $canSeeSent   = in_array($role, ['superadmin', 'admin']);
 
         // Destinatarios disponibles para notificación individual
         $recipients = $this->userModel
@@ -47,12 +48,14 @@ class NotificacionesController extends BaseController
         }
 
         return view('notificaciones/index', [
-            'title'        => 'Notificaciones',
-            'notifications'=> $this->notifModel->getForUser($userId, 30),
-            'unread'       => $this->notifModel->countUnread($userId),
-            'recipients'   => $recipients,
-            'groups'       => $groups,
-            'canSendGroup' => $canSendGroup,
+            'title'             => 'Notificaciones',
+            'notifications'     => $this->notifModel->getForUser($userId, 30),
+            'unread'            => $this->notifModel->countUnread($userId),
+            'sentNotifications' => $canSeeSent ? $this->notifModel->getSentByUser($userId, 30) : [],
+            'canSeeSent'        => $canSeeSent,
+            'recipients'        => $recipients,
+            'groups'            => $groups,
+            'canSendGroup'      => $canSendGroup,
         ]);
     }
 
@@ -152,6 +155,7 @@ class NotificacionesController extends BaseController
             'ok'              => true,
             'notification_id' => $notifId,
             'recipients'      => count($recipientIds),
+            'csrf'            => csrf_hash(),
         ]);
     }
 

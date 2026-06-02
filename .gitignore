@@ -8,3 +8,7 @@ writable/session/
 writable/debugbar/
 writable/uploads/
 .claude/
+nul
+app/Database/Database/
+public/uploads/
+build/
