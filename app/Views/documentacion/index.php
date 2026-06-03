@@ -586,6 +586,10 @@ foreach ($personalByRole as $rk => $entries) {
 </style>
 
 <script>
+const isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
+const CSRF_NAME  = '<?= csrf_token() ?>';
+const CSRF_HASH  = '<?= csrf_hash() ?>';
+
 // ── Modal helpers ─────────────────────────────────────────────────────
 function openModal(id) {
     document.getElementById(id).classList.add('open');
@@ -636,6 +640,40 @@ function deleteFolder(id, name) {
         form.action = '/documentacion/folder/' + id + '/delete';
         form.submit();
     }
+}
+
+// ── Eliminar archivo individual (AJAX POST con confirmación) ─────────
+function deleteFile(id, name) {
+    if (!confirm('¿Eliminar el archivo «' + name + '»?\nEsta acción no se puede deshacer.')) return;
+
+    const fd = new FormData();
+    fd.append(CSRF_NAME, CSRF_HASH);
+
+    fetch('/documentacion/file/' + id + '/delete', {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the file row from the table
+            const btn = document.querySelector('[onclick*="deleteFile(' + id + ',"]');
+            if (btn) {
+                const row = btn.closest('tr');
+                if (row) row.remove();
+            }
+            // Update count in modal header
+            const countEl = document.getElementById('modal-folder-count');
+            if (countEl) {
+                const match = countEl.textContent.match(/\d+/);
+                if (match) countEl.textContent = (parseInt(match[0]) - 1) + ' archivo(s)';
+            }
+        } else {
+            alert(data.error || 'Error al eliminar el archivo.');
+        }
+    })
+    .catch(() => alert('Error de red al eliminar el archivo.'));
 }
 
 // ── Indicador de progreso en subida ─────────────────────────────────
@@ -715,6 +753,7 @@ function openFolderModal(folderId) {
                         <div style="display:flex;gap:4px;justify-content:flex-end">
                             ${previewBtn}
                             <a href="/documentacion/file/${f.id}/download" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar"><i class="bi bi-download"></i></a>
+                            ${isAdmin ? `<button type="button" onclick="deleteFile(${f.id},'${escHtml(f.name_original).replace(/'/g,"\\'")})" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar"><i class="bi bi-trash-fill"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>`;
