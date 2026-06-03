@@ -56,6 +56,7 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
             </button>
         </form>
         <?php endif; ?>
+        <?php if ($isAdminRole): ?>
         <form action="/clases/<?= $session['id'] ?>/eliminar" method="POST" style="margin:0">
             <?= csrf_field() ?>
             <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm"
@@ -63,6 +64,7 @@ $locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? n
                 <i class="bi bi-trash3-fill me-1"></i>Eliminar
             </button>
         </form>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>
@@ -416,7 +418,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <i class="bi bi-person-workspace me-2" style="color:#059669"></i>
                     Entrenadores (<?= count($session['coaches']) ?>)
                 </span>
-                <?php if ($canManage && $session['status'] === 'scheduled'): ?>
+                <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
                 <button class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalAddCoach')">
                     <i class="bi bi-plus-lg"></i>
                 </button>
@@ -435,7 +437,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                             <div style="font-size:11px;color:var(--text-muted)"><?= esc($c['email']) ?></div>
                         </div>
                     </div>
-                    <?php if ($canManage && $session['status'] === 'scheduled'): ?>
+                    <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
                     <form action="/clases/<?= $session['id'] ?>/coaches/<?= $c['user_id'] ?>/remove" method="POST" style="margin:0">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn-jp btn-jp-danger btn-jp-icon btn-jp-sm"
@@ -515,8 +517,8 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         </div>
         <?php endif; ?>
 
-        <!-- Añadir alumno (admin/coach) — límite según class_format -->
-        <?php if ($canManage && $session['status'] === 'scheduled'): ?>
+        <!-- Añadir alumno (solo admin/staff) — límite según class_format -->
+        <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
         <?php
             $playerCount = count($session['players']);
             $fmt = $session['class_format'] ?? 'individual';

@@ -225,7 +225,7 @@ $routes->post('clases/(:num)/cancelar', 'ClasesController::cancel/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/eliminar', 'ClasesController::destroy/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
 // ── Observaciones y asistencia ─────────────────────────────
@@ -241,15 +241,15 @@ $routes->post('clases/(:num)/coaches/add', 'ClasesController::addCoach/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/coaches/(:num)/remove', 'ClasesController::removeCoach/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
 // ── Jugadores ──────────────────────────────────────────────
 $routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 $routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::removePlayer/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
 // ── Pasar Lista — Vista semanal ────────────────────────────

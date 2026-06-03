@@ -7,7 +7,7 @@ $userId       = session('id');
 $role         = session('role');
 $csrfName     = csrf_token();
 $csrfHash     = csrf_hash();
-$canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
+$canSendGroup = in_array($role, ['superadmin', 'admin']);
 $canSeeSent   = $canSeeSent ?? false;
 $sentNotifications = $sentNotifications ?? [];
 ?>
@@ -25,9 +25,11 @@ $sentNotifications = $sentNotifications ?? [];
             <i class="bi bi-check2-all me-1"></i>Marcar todas leídas
         </button>
         <?php endif; ?>
+        <?php if ($canSendNotif ?? true): ?>
         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotif">
             <i class="bi bi-bell-fill me-1"></i>Nueva notificación
         </button>
+        <?php endif; ?>
     </div>
 </div>
 
