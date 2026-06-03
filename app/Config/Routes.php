@@ -305,6 +305,18 @@ $routes->post('bonos/(:num)/delete', 'BonosController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->post('bonos/tipos/store', 'BonosController::storeTipoBono', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/tipos/(:num)/update', 'BonosController::updateTipoBono/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/tipos/(:num)/toggle', 'BonosController::toggleTipoBono/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ------------------------------------------------------------
 // TORNEOS Y CAMPUS — DESACTIVADO TEMPORALMENTE
