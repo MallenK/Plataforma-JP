@@ -18,11 +18,11 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <!-- Cabecera -->
 <div class="page-header">
     <div class="d-flex gap-2">
-        <a href="<?= base_url('configuracion?section=facturacion') ?>" class="btn-jp btn-jp-secondary">
-            <i class="bi bi-gear"></i> Tipos de bono
-        </a>
+        <button class="btn-jp btn-jp-secondary" onclick="openModalTipos()">
+            <i class="bi bi-grid-fill"></i> Tipos de bono
+        </button>
         <button class="btn-jp btn-jp-primary" onclick="openModalEmitir()">
-            <i class="bi bi-plus-lg"></i> Nuevo bono
+            <i class="bi bi-plus-lg"></i> Asignar bono
         </button>
     </div>
 </div>
@@ -225,7 +225,11 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         </select>
                         <?php if (empty($bonoTypes)): ?>
                         <p style="font-size:12px;color:var(--warning);margin:4px 0 0">
-                            No hay tipos de bono activos. Créalos en <a href="<?= base_url('configuracion?section=facturacion') ?>">Configuración</a>.
+                            No hay tipos de bono activos.
+                            <button type="button" onclick="closeModalEmitir();openModalTipos();"
+                                style="background:none;border:none;padding:0;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:underline">
+                                Crear tipos de bono
+                            </button>
                         </p>
                         <?php endif; ?>
                     </div>
@@ -268,6 +272,117 @@ $pageSubtitle = 'Gestión de bonos y membresías';
     </div>
 </div>
 
+<!-- ── Modal tipos de bono ──────────────────────────────────────── -->
+<div id="modalTiposBono" class="bono-modal-overlay d-none">
+    <div class="bono-modal" style="max-width:700px">
+        <div class="bono-modal-header">
+            <span><i class="bi bi-grid-fill me-2" style="color:var(--accent)"></i>Tipos de bono</span>
+            <button onclick="closeModalTipos()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="bono-modal-body" style="padding:0">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <span style="font-size:13px;color:var(--text-muted)">Gestiona los tipos disponibles para asignar a jugadores</span>
+                <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="openModalFormTipo('create')" style="white-space:nowrap">
+                    <i class="bi bi-plus-lg"></i> Nuevo tipo
+                </button>
+            </div>
+            <div style="overflow-y:auto;max-height:420px">
+                <?php if (empty($allBonoTypes)): ?>
+                <div style="padding:48px 20px;text-align:center;color:var(--text-muted)">
+                    <i class="bi bi-grid" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+                    Sin tipos de bono. Crea el primero con el botón de arriba.
+                </div>
+                <?php else: ?>
+                <table id="tablaTiposBono" style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead>
+                        <tr>
+                            <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Nombre</th>
+                            <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Sesiones</th>
+                            <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Precio</th>
+                            <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Validez</th>
+                            <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Estado</th>
+                            <th style="padding:10px 16px;border-bottom:2px solid var(--border)"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($allBonoTypes as $t): ?>
+                    <tr id="tipo-row-<?= $t['id'] ?>" style="border-bottom:1px solid var(--border)<?= !$t['active'] ? ';opacity:.55' : '' ?>">
+                        <td style="padding:12px 16px;font-weight:600;color:var(--text-h)"><?= esc($t['name']) ?></td>
+                        <td style="padding:12px 16px;text-align:center;color:var(--text-muted)"><?= (int)$t['sessions'] ?></td>
+                        <td style="padding:12px 16px;text-align:center;color:var(--text-muted)"><?= number_format((float)$t['price'], 2) ?>€</td>
+                        <td style="padding:12px 16px;text-align:center;color:var(--text-muted)"><?= (int)$t['validity_days'] ?>d</td>
+                        <td style="padding:12px 16px;text-align:center">
+                            <span class="tipo-badge-<?= $t['id'] ?> badge-status <?= $t['active'] ? 'active' : 'inactive' ?>">
+                                <?= $t['active'] ? 'Activo' : 'Inactivo' ?>
+                            </span>
+                        </td>
+                        <td style="padding:12px 16px;text-align:right;white-space:nowrap">
+                            <button class="btn-jp btn-jp-secondary btn-jp-sm me-1"
+                                data-id="<?= $t['id'] ?>"
+                                data-name="<?= esc($t['name']) ?>"
+                                onclick="openModalFormTipo('edit', this.dataset.id, this.dataset.name)"
+                                title="Editar nombre">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-jp btn-jp-secondary btn-jp-sm tipo-toggle-btn"
+                                id="tipo-toggle-<?= $t['id'] ?>"
+                                data-id="<?= $t['id'] ?>"
+                                data-active="<?= (int)$t['active'] ?>"
+                                onclick="toggleTipoBono(this.dataset.id, this.dataset.active)"
+                                title="<?= $t['active'] ? 'Desactivar' : 'Activar' ?>"
+                                style="<?= $t['active'] ? 'color:#dc2626;border-color:#dc262644' : 'color:#16a34a;border-color:#16a34a44' ?>">
+                                <i class="bi bi-toggle-<?= $t['active'] ? 'on' : 'off' ?>"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal formulario crear / editar tipo ────────────────────── -->
+<div id="modalFormTipo" class="bono-modal-overlay d-none" style="z-index:1060">
+    <div class="bono-modal" style="max-width:440px">
+        <div class="bono-modal-header">
+            <span id="modalFormTipoTitle"><i class="bi bi-plus-circle-fill me-2" style="color:var(--accent)"></i>Nuevo tipo de bono</span>
+            <button onclick="closeModalFormTipo()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="bono-modal-body">
+            <div id="tipoFormError" style="display:none;padding:10px 12px;background:#fee2e2;border-radius:6px;font-size:13px;color:#dc2626;border:1px solid #fca5a5;margin-bottom:12px"></div>
+            <input type="hidden" id="tipoFormMode" value="create">
+            <input type="hidden" id="tipoFormId" value="">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Nombre <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="tipoFormName" class="form-control-jp" placeholder="Ej: Bono 10 sesiones" maxlength="100">
+                </div>
+                <div class="col-12 col-md-6" id="tipoFieldSessions">
+                    <label class="form-label">Sesiones <span style="color:var(--danger)">*</span></label>
+                    <input type="number" id="tipoFormSessions" class="form-control-jp" min="1" value="10">
+                </div>
+                <div class="col-12 col-md-6" id="tipoFieldPrice">
+                    <label class="form-label">Precio (€)</label>
+                    <input type="number" id="tipoFormPrice" class="form-control-jp" min="0" step="0.01" value="0.00">
+                </div>
+                <div class="col-12" id="tipoFieldValidity">
+                    <label class="form-label">Validez (días) <span style="color:var(--danger)">*</span></label>
+                    <input type="number" id="tipoFormValidity" class="form-control-jp" min="1" value="90">
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 20px;border-top:1px solid var(--border)">
+            <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModalFormTipo()">Cancelar</button>
+            <button type="button" class="btn-jp btn-jp-primary" onclick="submitFormTipo()">
+                <i class="bi bi-check-lg me-1"></i><span id="btnFormTipoLabel">Crear tipo</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -295,8 +410,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 .bono-modal-body { padding:20px;overflow-y:auto;flex:1; }
 </style>
 <script>
-const BONOS_CSRF_NAME = '<?= csrf_token() ?>';
-const BONOS_CSRF_HASH = '<?= csrf_hash() ?>';
+let BONOS_CSRF_NAME = '<?= csrf_token() ?>';
+let BONOS_CSRF_HASH = '<?= csrf_hash() ?>';
 
 function openModalEmitir() {
     document.getElementById('modalEmitirBono').classList.remove('d-none');
@@ -306,7 +421,189 @@ function closeModalEmitir() {
     document.getElementById('modalEmitirBono').classList.add('d-none');
     document.body.style.overflow = '';
 }
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModalEmitir(); });
+
+function openModalTipos() {
+    document.getElementById('modalTiposBono').classList.remove('d-none');
+    document.body.style.overflow = 'hidden';
+}
+function closeModalTipos() {
+    document.getElementById('modalTiposBono').classList.add('d-none');
+    if (document.getElementById('modalFormTipo').classList.contains('d-none') &&
+        document.getElementById('modalEmitirBono').classList.contains('d-none')) {
+        document.body.style.overflow = '';
+    }
+}
+
+function openModalFormTipo(mode, id, name) {
+    id   = id   ?? '';
+    name = name ?? '';
+    document.getElementById('tipoFormMode').value = mode;
+    document.getElementById('tipoFormId').value   = id;
+    document.getElementById('tipoFormError').style.display = 'none';
+    document.getElementById('tipoFormName').value = name;
+
+    const isEdit = mode === 'edit';
+    document.getElementById('modalFormTipoTitle').innerHTML = isEdit
+        ? '<i class="bi bi-pencil-fill me-2" style="color:var(--accent)"></i>Editar nombre'
+        : '<i class="bi bi-plus-circle-fill me-2" style="color:var(--accent)"></i>Nuevo tipo de bono';
+    document.getElementById('btnFormTipoLabel').textContent = isEdit ? 'Guardar' : 'Crear tipo';
+    document.getElementById('tipoFieldSessions').style.display = isEdit ? 'none' : '';
+    document.getElementById('tipoFieldPrice').style.display    = isEdit ? 'none' : '';
+    document.getElementById('tipoFieldValidity').style.display = isEdit ? 'none' : '';
+
+    if (!isEdit) {
+        document.getElementById('tipoFormSessions').value = '10';
+        document.getElementById('tipoFormPrice').value    = '0.00';
+        document.getElementById('tipoFormValidity').value = '90';
+    }
+
+    document.getElementById('modalFormTipo').classList.remove('d-none');
+}
+function closeModalFormTipo() {
+    document.getElementById('modalFormTipo').classList.add('d-none');
+}
+
+async function submitFormTipo() {
+    const mode  = document.getElementById('tipoFormMode').value;
+    const id    = document.getElementById('tipoFormId').value;
+    const name  = document.getElementById('tipoFormName').value.trim();
+    const errEl = document.getElementById('tipoFormError');
+    errEl.style.display = 'none';
+
+    if (name.length < 2) {
+        errEl.textContent = 'El nombre debe tener al menos 2 caracteres.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append(BONOS_CSRF_NAME, BONOS_CSRF_HASH);
+    fd.append('name', name);
+
+    if (mode === 'create') {
+        const sessions = parseInt(document.getElementById('tipoFormSessions').value) || 0;
+        const price    = parseFloat(document.getElementById('tipoFormPrice').value) || 0;
+        const validity = parseInt(document.getElementById('tipoFormValidity').value) || 0;
+        if (sessions < 1) { errEl.textContent = 'Las sesiones deben ser al menos 1.'; errEl.style.display = 'block'; return; }
+        if (validity < 1) { errEl.textContent = 'La validez debe ser al menos 1 día.'; errEl.style.display = 'block'; return; }
+        fd.append('sessions', sessions);
+        fd.append('price', price);
+        fd.append('validity_days', validity);
+    }
+
+    const url = mode === 'create'
+        ? '<?= base_url('bonos/tipos/store') ?>'
+        : '<?= base_url('bonos/tipos/') ?>' + id + '/update';
+
+    try {
+        const res  = await fetch(url, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.csrf_name) { BONOS_CSRF_NAME = data.csrf_name; BONOS_CSRF_HASH = data.csrf_hash; }
+
+        if (!data.ok) {
+            errEl.textContent = data.error ?? 'Error al guardar.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        if (mode === 'create') {
+            _addTipoRow(data.tipo);
+            const sel = document.querySelector('select[name="bono_type_id"]');
+            if (sel) {
+                const opt = document.createElement('option');
+                opt.value       = data.tipo.id;
+                opt.textContent = data.tipo.name + ' — ' + data.tipo.sessions + ' sesiones';
+                sel.appendChild(opt);
+            }
+        } else {
+            const row = document.getElementById('tipo-row-' + id);
+            if (row) {
+                row.cells[0].textContent = name;
+                const editBtn = row.querySelector('[data-id="' + id + '"]');
+                if (editBtn) editBtn.dataset.name = name;
+            }
+        }
+
+        closeModalFormTipo();
+    } catch(e) {
+        errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
+        errEl.style.display = 'block';
+    }
+}
+
+function _addTipoRow(t) {
+    const tbody = document.querySelector('#tablaTiposBono tbody');
+    if (!tbody) { location.reload(); return; }
+
+    const tr = document.createElement('tr');
+    tr.id = 'tipo-row-' + t.id;
+    tr.style.borderBottom = '1px solid var(--border)';
+    tr.innerHTML =
+        '<td style="padding:12px 16px;font-weight:600;color:var(--text-h)">' + _esc(t.name) + '</td>' +
+        '<td style="padding:12px 16px;text-align:center;color:var(--text-muted)">' + t.sessions + '</td>' +
+        '<td style="padding:12px 16px;text-align:center;color:var(--text-muted)">' + t.price + '€</td>' +
+        '<td style="padding:12px 16px;text-align:center;color:var(--text-muted)">' + t.validity_days + 'd</td>' +
+        '<td style="padding:12px 16px;text-align:center"><span class="tipo-badge-' + t.id + ' badge-status active">Activo</span></td>' +
+        '<td style="padding:12px 16px;text-align:right;white-space:nowrap">' +
+            '<button class="btn-jp btn-jp-secondary btn-jp-sm me-1" data-id="' + t.id + '" data-name="' + _esc(t.name) + '" onclick="openModalFormTipo(\'edit\', this.dataset.id, this.dataset.name)" title="Editar nombre"><i class="bi bi-pencil"></i></button>' +
+            '<button class="btn-jp btn-jp-secondary btn-jp-sm tipo-toggle-btn" id="tipo-toggle-' + t.id + '" data-id="' + t.id + '" data-active="1" onclick="toggleTipoBono(this.dataset.id, this.dataset.active)" title="Desactivar" style="color:#dc2626;border-color:#dc262644"><i class="bi bi-toggle-on"></i></button>' +
+        '</td>';
+    tbody.appendChild(tr);
+}
+
+async function toggleTipoBono(id, currentActive) {
+    const fd = new FormData();
+    fd.append(BONOS_CSRF_NAME, BONOS_CSRF_HASH);
+
+    try {
+        const res  = await fetch('<?= base_url('bonos/tipos/') ?>' + id + '/toggle', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.csrf_name) { BONOS_CSRF_NAME = data.csrf_name; BONOS_CSRF_HASH = data.csrf_hash; }
+
+        if (!data.ok) { alert(data.error ?? 'Error al cambiar el estado.'); return; }
+
+        const row   = document.getElementById('tipo-row-' + id);
+        const badge = document.querySelector('.tipo-badge-' + id);
+        const btn   = document.getElementById('tipo-toggle-' + id);
+
+        if (data.active) {
+            row.style.opacity   = '1';
+            badge.className     = 'tipo-badge-' + id + ' badge-status active';
+            badge.textContent   = 'Activo';
+            btn.dataset.active  = '1';
+            btn.title           = 'Desactivar';
+            btn.style.color     = '#dc2626';
+            btn.style.borderColor = '#dc262644';
+            btn.innerHTML       = '<i class="bi bi-toggle-on"></i>';
+            // Remove from emitir dropdown if it was missing (type reactivated)
+        } else {
+            row.style.opacity   = '.55';
+            badge.className     = 'tipo-badge-' + id + ' badge-status inactive';
+            badge.textContent   = 'Inactivo';
+            btn.dataset.active  = '0';
+            btn.title           = 'Activar';
+            btn.style.color     = '#16a34a';
+            btn.style.borderColor = '#16a34a44';
+            btn.innerHTML       = '<i class="bi bi-toggle-off"></i>';
+            // Remove from emitir dropdown
+            const opt = document.querySelector('select[name="bono_type_id"] option[value="' + id + '"]');
+            if (opt) opt.remove();
+        }
+    } catch(e) {
+        alert('Error de conexión. Inténtalo de nuevo.');
+    }
+}
+
+function _esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('modalFormTipo').classList.contains('d-none')) { closeModalFormTipo(); return; }
+    if (!document.getElementById('modalTiposBono').classList.contains('d-none')) { closeModalTipos(); return; }
+    closeModalEmitir();
+});
 
 async function checkBonoActivo(playerId) {
     const alertEl   = document.getElementById('alertaBonoActivo');

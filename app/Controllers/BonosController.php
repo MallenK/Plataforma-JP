@@ -47,6 +47,7 @@ class BonosController extends BaseController
             'bonos'        => $bonos,
             'stats'        => $this->bonoModel->getStats(),
             'bonoTypes'    => $this->typeModel->getActive(),
+            'allBonoTypes' => $this->typeModel->orderBy('active', 'DESC')->orderBy('name', 'ASC')->findAll(),
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
             'filtro'       => $filter,
         ]);
@@ -227,6 +228,88 @@ class BonosController extends BaseController
     // ────────────────────────────────────────────────────────────────
     //  Helpers privados
     // ────────────────────────────────────────────────────────────────
+
+    // ────────────────────────────────────────────────────────────────
+    //  Tipos de bono — CRUD (solo admin/superadmin)
+    // ────────────────────────────────────────────────────────────────
+
+    public function storeTipoBono()
+    {
+        $name         = trim($this->request->getPost('name') ?? '');
+        $sessions     = (int)$this->request->getPost('sessions');
+        $price        = (float)$this->request->getPost('price');
+        $validityDays = (int)$this->request->getPost('validity_days');
+
+        if (strlen($name) < 2 || $sessions < 1 || $validityDays < 1) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Datos inválidos.']);
+        }
+
+        $id = $this->typeModel->insert([
+            'name'          => $name,
+            'sessions'      => $sessions,
+            'price'         => max(0.0, $price),
+            'validity_days' => $validityDays,
+            'active'        => 1,
+        ]);
+
+        if (!$id) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Error al crear el tipo de bono.']);
+        }
+
+        return $this->response->setJSON([
+            'ok'        => true,
+            'tipo'      => [
+                'id'            => $id,
+                'name'          => $name,
+                'sessions'      => $sessions,
+                'price'         => number_format($price, 2),
+                'validity_days' => $validityDays,
+                'active'        => 1,
+            ],
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
+        ]);
+    }
+
+    public function updateTipoBono(int $id)
+    {
+        $tipo = $this->typeModel->find($id);
+        if (!$tipo) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Tipo no encontrado.']);
+        }
+
+        $name = trim($this->request->getPost('name') ?? '');
+        if (strlen($name) < 2) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'El nombre debe tener al menos 2 caracteres.']);
+        }
+
+        $this->typeModel->update($id, ['name' => $name]);
+
+        return $this->response->setJSON([
+            'ok'        => true,
+            'name'      => $name,
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
+        ]);
+    }
+
+    public function toggleTipoBono(int $id)
+    {
+        $tipo = $this->typeModel->find($id);
+        if (!$tipo) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Tipo no encontrado.']);
+        }
+
+        $newState = $tipo['active'] ? 0 : 1;
+        $this->typeModel->update($id, ['active' => $newState]);
+
+        return $this->response->setJSON([
+            'ok'        => true,
+            'active'    => $newState,
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
+        ]);
+    }
 
     private function getExpiredBonos(): array
     {
