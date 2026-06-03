@@ -239,13 +239,13 @@ $attendanceOpts = [
                         self.outerHTML = '<span style="font-size:11px;color:#059669;font-weight:600"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>';
                     }
                 } else {
-                    alert(data.error || 'Error al descontar el bono.');
+                    showAlert(data.error || 'Error al descontar el bono.');
                     self.disabled = false;
                     self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar bono';
                 }
             })
             .catch(function() {
-                alert('Error de red. Inténtalo de nuevo.');
+                showAlert('Error de red. Inténtalo de nuevo.');
                 self.disabled = false;
                 self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar bono';
             });

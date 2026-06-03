@@ -671,10 +671,10 @@ function deleteFile(id, name) {
                 if (match) countEl.textContent = (parseInt(match[0]) - 1) + ' archivo(s)';
             }
         } else {
-            alert(data.error || 'Error al eliminar el archivo.');
+            showAlert(data.error || 'Error al eliminar el archivo.');
         }
     })
-    .catch(() => alert('Error de red al eliminar el archivo.'));
+    .catch(() => showAlert('Error de red al eliminar el archivo.'));
 }
 
 // ── Indicador de progreso en subida ─────────────────────────────────
