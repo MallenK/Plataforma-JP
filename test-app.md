@@ -287,3 +287,8 @@
 ---
 
 **Sesión cerrada correctamente.** La plataforma queda con los datos de prueba en el estado final de la ejecución (Sede QA Test sin poder eliminar por BUG-11, notificaciones de prueba enviadas, conversación de chat con Joan Quilabert creada).
+
+
+
+
+ginamoref@gmail.com / Jp687f6a7d!

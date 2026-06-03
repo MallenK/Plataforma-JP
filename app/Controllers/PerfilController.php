@@ -143,7 +143,8 @@ class PerfilController extends BaseController
             ]);
         }
 
-        return redirect()->to('/perfil/' . $targetId)->with('success', 'Perfil actualizado correctamente.');
+        $redirectTo = ($isSelf && !$this->isAdmin()) ? '/perfil' : '/perfil/' . $targetId;
+        return redirect()->to($redirectTo)->with('success', 'Perfil actualizado correctamente.');
     }
 
     /**
