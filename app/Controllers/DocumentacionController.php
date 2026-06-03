@@ -173,6 +173,14 @@ class DocumentacionController extends BaseController
 
         $ok = $this->docService->deleteFile($id, $this->currentUserId(), $this->currentRole());
 
+        if ($this->request->hasHeader('X-Requested-With')) {
+            return $this->response->setJSON(
+                $ok
+                    ? ['success' => true]
+                    : ['success' => false, 'error' => 'No tienes permiso para eliminar este archivo.']
+            );
+        }
+
         if ($ok) {
             session()->setFlashdata('success', 'Archivo eliminado correctamente.');
         } else {

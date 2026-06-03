@@ -393,6 +393,12 @@ const coachOptions  = <?= $coachOptionsJs ?>;
 const playerOptions = <?= $playerOptionsJs ?>;
 
 // ── Tipo de clase toggle ──────────────────────────────────────
+function setBlockDisabled(block, disabled) {
+    block.querySelectorAll('input, select, textarea').forEach(el => {
+        el.disabled = disabled;
+    });
+}
+
 function toggleType(v) {
     const single = document.getElementById('block-single');
     const recur  = document.getElementById('block-recurring');
@@ -404,11 +410,15 @@ function toggleType(v) {
         recur.classList.remove('d-none');
         lblR.style.borderColor = 'var(--accent)';
         lblS.style.borderColor = 'var(--border)';
+        setBlockDisabled(single, true);
+        setBlockDisabled(recur, false);
     } else {
         recur.classList.add('d-none');
         single.classList.remove('d-none');
         lblS.style.borderColor = 'var(--accent)';
         lblR.style.borderColor = 'var(--border)';
+        setBlockDisabled(recur, true);
+        setBlockDisabled(single, false);
     }
 }
 // Init

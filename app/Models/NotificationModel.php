@@ -24,9 +24,17 @@ class NotificationModel extends Model
     public function createWithRecipients(array $data, array $recipientIds): int
     {
         $data['created_at'] = date('Y-m-d H:i:s');
-        $notifId = $this->insert($data, true);
+        $result = $this->insert($data, true);
 
-        if ($notifId && !empty($recipientIds)) {
+        // `false` significa error de insert; 0 puede ocurrir en TiDB con AUTO_INCREMENT roto.
+        // En ambos casos no insertamos destinatarios (no hay notificación válida).
+        if ($result === false) {
+            return 0;
+        }
+
+        $notifId = (int) $result;
+
+        if (!empty($recipientIds)) {
             $rows = array_map(fn($rid) => [
                 'notification_id' => $notifId,
                 'recipient_id'    => $rid,
@@ -36,7 +44,7 @@ class NotificationModel extends Model
             $this->db->table('notification_recipients')->insertBatch($rows);
         }
 
-        return (int) $notifId;
+        return $notifId;
     }
 
     /**

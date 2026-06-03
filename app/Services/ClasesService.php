@@ -638,6 +638,9 @@ class ClasesService
             $this->updateAttendance($sessionId, $attendanceMap, $absenceReasons, $absenceNotes);
         }
 
+        // Descontar bonos de los jugadores marcados como presentes
+        $this->deductBonosForSession($sessionId);
+
         $this->sessionModel->update($sessionId, [
             'lista_pasada_at' => date('Y-m-d H:i:s'),
             'lista_pasada_by' => $adminId,
