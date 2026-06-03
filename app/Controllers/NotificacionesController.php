@@ -31,7 +31,7 @@ class NotificacionesController extends BaseController
         $role   = $this->currentRole();
 
         $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
-        $canSeeSent   = in_array($role, ['superadmin', 'admin']);
+        $canSeeSent   = in_array($role, ['superadmin', 'admin', 'coach']);
 
         // Destinatarios disponibles para notificación individual
         $recipients = $this->userModel

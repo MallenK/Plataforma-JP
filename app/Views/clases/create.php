@@ -159,6 +159,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                     <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-weight:600;color:var(--text-body);transition:all .15s" class="day-label">
                                         <input type="checkbox" name="recurrence_days[]" value="<?= $num ?>"
                                                style="accent-color:var(--accent);display:none" class="day-check"
+                                               disabled
                                                <?= in_array($num, $recDays) ? 'checked' : '' ?>>
                                         <?= $name ?>
                                     </label>
@@ -168,22 +169,22 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                             <div class="col-6 col-md-3">
                                 <label class="form-label">Hora inicio <span style="color:var(--danger)">*</span></label>
                                 <input type="time" name="start_time" class="form-control-jp"
-                                       value="<?= $v('start_time') ?>">
+                                       value="<?= $v('start_time') ?>" disabled>
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label">Hora fin</label>
                                 <input type="time" name="end_time" class="form-control-jp"
-                                       value="<?= $v('end_time') ?>">
+                                       value="<?= $v('end_time') ?>" disabled>
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label">Desde <span style="color:var(--danger)">*</span></label>
                                 <input type="date" name="recurrence_start" class="form-control-jp"
-                                       value="<?= $v('recurrence_start', date('Y-m-d')) ?>">
+                                       value="<?= $v('recurrence_start', date('Y-m-d')) ?>" disabled>
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label">Hasta <span style="color:var(--danger)">*</span></label>
                                 <input type="date" name="recurrence_end" class="form-control-jp"
-                                       value="<?= $v('recurrence_end', date('Y-m-d', strtotime('+1 month'))) ?>">
+                                       value="<?= $v('recurrence_end', date('Y-m-d', strtotime('+1 month'))) ?>" disabled>
                             </div>
                         </div>
                     </div>

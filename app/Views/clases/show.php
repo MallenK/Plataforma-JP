@@ -161,6 +161,11 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             </div>
             <div class="card-jp-body">
                 <div class="row g-3">
+                    <div class="col-12 mb-1">
+                        <span class="badge-status" style="background:<?= $statusColor ?>22;color:<?= $statusColor ?>;border:1px solid <?= $statusColor ?>44">
+                            <i class="bi <?= $statusIcon ?> me-1"></i><?= $statusLabel ?>
+                        </span>
+                    </div>
                     <div class="col-6 col-md-4">
                         <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;margin-bottom:4px">Fecha</div>
                         <div style="font-weight:600;color:var(--text-h)">
