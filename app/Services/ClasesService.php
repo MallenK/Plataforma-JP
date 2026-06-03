@@ -215,6 +215,17 @@ class ClasesService
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
+        } elseif ($role === 'coach') {
+            $sessions = $this->db->table('class_sessions cs')
+                ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
+                ->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                ->where('csc.user_id', $userId)
+                ->where('cs.session_date >=', $start)
+                ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
+                ->orderBy('cs.session_date', 'ASC')
+                ->orderBy('cs.start_time', 'ASC')
+                ->get()->getResultArray();
         } else {
             $sessions = $this->sessionModel->getForMonth($year, $month);
         }

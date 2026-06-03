@@ -76,7 +76,8 @@ class DocumentService
             'public'   => true,
             'personal' => (int)$folder['owner_id'] === $userId
                            || in_array($role, ['admin', 'superadmin'])
-                           || in_array($role, ['coach', 'staff']),
+                           || ($role === 'staff' && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player')
+                           || ($role === 'coach' && $this->isAssignedStudentOfCoach((int)($folder['owner_id'] ?? 0), $userId)),
             'internal' => $role !== 'player'
                            && (in_array($role, ['admin', 'superadmin'])
                                || $this->permModel->hasReadPermission($folderId, $userId)),
@@ -104,8 +105,8 @@ class DocumentService
             'public'   => in_array($role, ['admin', 'superadmin', 'coach', 'staff']),
             'personal' => (int)$folder['owner_id'] === $userId
                            || in_array($role, ['admin', 'superadmin'])
-                           || (in_array($role, ['coach', 'staff'])
-                               && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player'),
+                           || ($role === 'staff' && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player')
+                           || ($role === 'coach' && $this->isAssignedStudentOfCoach((int)($folder['owner_id'] ?? 0), $userId)),
             'internal' => in_array($role, ['admin', 'superadmin'])
                            || $this->permModel->hasWritePermission($folderId, $userId),
             default    => false,
@@ -136,8 +137,26 @@ class DocumentService
             );
         } elseif (in_array($role, ['admin', 'superadmin'])) {
             // Ve todo
+        } elseif ($role === 'coach') {
+            // Coach: públicas + carpeta propia + carpetas de alumnos asignados + internas con permiso
+            $builder->where(
+                "(df.type = 'public'
+                  OR (df.type = 'personal' AND df.owner_id = {$userId})
+                  OR (df.type = 'personal' AND df.owner_id IN (
+                        SELECT csp.user_id FROM class_session_players csp
+                        INNER JOIN class_session_coaches csc ON csc.session_id = csp.session_id
+                        WHERE csc.user_id = {$userId}
+                  ))
+                  OR (df.type = 'internal' AND EXISTS (
+                        SELECT 1 FROM folder_permissions fp
+                        WHERE fp.folder_id = df.id
+                          AND fp.user_id = {$userId}
+                          AND fp.can_read = 1
+                  )))",
+                null, false
+            );
         } else {
-            // Coach / staff: públicas + todas las carpetas personales + internas asignadas
+            // Staff: públicas + todas las carpetas personales + internas asignadas
             $builder->where(
                 "(df.type = 'public'
                   OR df.type = 'personal'
@@ -560,6 +579,19 @@ class DocumentService
         } catch (\Throwable $e) {
             log_message('warning', 'DocumentService::ensureStorageDir failed: ' . $e->getMessage());
         }
+    }
+
+    private function isAssignedStudentOfCoach(int $ownerId, int $coachId): bool
+    {
+        if ($ownerId <= 0 || $coachId <= 0) {
+            return false;
+        }
+        return (bool)\Config\Database::connect()
+            ->table('class_session_players csp')
+            ->join('class_session_coaches csc', 'csc.session_id = csp.session_id')
+            ->where('csp.user_id', $ownerId)
+            ->where('csc.user_id', $coachId)
+            ->countAllResults();
     }
 
     private function getFolderOwnerRole(int $ownerId): string

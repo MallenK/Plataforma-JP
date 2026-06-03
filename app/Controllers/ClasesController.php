@@ -148,16 +148,29 @@ class ClasesController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $userId    = $this->currentUserId();
-        $role      = session('role');
-        $isPlayer  = in_array($role, ['alumno', 'player']);
-        $canManage = in_array($role, ['superadmin', 'admin', 'staff', 'coach']);
+        $userId      = $this->currentUserId();
+        $role        = session('role');
+        $isPlayer    = in_array($role, ['alumno', 'player']);
+        $isCoach     = $role === 'coach';
+        $canManage   = in_array($role, ['superadmin', 'admin', 'staff', 'coach']);
+        $isAdminRole = in_array($role, ['superadmin', 'admin', 'staff']);
 
         // Jugadores solo ven sesiones en las que están asignados
         if ($isPlayer) {
             $assigned = false;
             foreach ($session['players'] as $p) {
                 if ((int)$p['user_id'] === $userId) { $assigned = true; break; }
+            }
+            if (!$assigned) {
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+            }
+        }
+
+        // Coach solo ve sesiones donde está asignado como entrenador
+        if ($isCoach) {
+            $assigned = false;
+            foreach ($session['coaches'] as $c) {
+                if ((int)$c['user_id'] === $userId) { $assigned = true; break; }
             }
             if (!$assigned) {
                 throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -175,8 +188,9 @@ class ClasesController extends BaseController
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'canManage'       => $canManage,
+            'isAdminRole'     => $isAdminRole,
             'coachOptions'    => $canManage ? $this->clasesService->getCoachOptions()    : [],
-            'playerOptions'   => $canManage ? $this->clasesService->getPlayerOptions()   : [],
+            'playerOptions'   => $isAdminRole ? $this->clasesService->getPlayerOptions() : [],
             'locationOptions' => $canManage ? $this->clasesService->getLocationOptions() : [],
             'currentUserId'   => $userId,
             'myPlayer'        => $myPlayer,

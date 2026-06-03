@@ -30,8 +30,9 @@ class NotificacionesController extends BaseController
         $userId = $this->currentUserId();
         $role   = $this->currentRole();
 
-        $canSendGroup = in_array($role, ['superadmin', 'admin', 'coach']);
-        $canSeeSent   = in_array($role, ['superadmin', 'admin', 'coach']);
+        $canSendNotif = !in_array($role, ['coach']);
+        $canSendGroup = in_array($role, ['superadmin', 'admin']);
+        $canSeeSent   = in_array($role, ['superadmin', 'admin']);
 
         // Destinatarios disponibles para notificación individual
         $recipients = $this->userModel
@@ -53,6 +54,7 @@ class NotificacionesController extends BaseController
             'unread'            => $this->notifModel->countUnread($userId),
             'sentNotifications' => $canSeeSent ? $this->notifModel->getSentByUser($userId, 30) : [],
             'canSeeSent'        => $canSeeSent,
+            'canSendNotif'      => $canSendNotif,
             'recipients'        => $recipients,
             'groups'            => $groups,
             'canSendGroup'      => $canSendGroup,
@@ -105,6 +107,11 @@ class NotificacionesController extends BaseController
         $role   = $this->currentRole();
         $type   = $this->request->getPost('type'); // 'individual' | 'group'
 
+        // Coach no puede enviar notificaciones (solo mensajes)
+        if ($role === 'coach') {
+            return $this->response->setJSON(['error' => 'Los entrenadores no pueden enviar notificaciones. Usa el apartado de Mensajes.'])->setStatusCode(403);
+        }
+
         // Validaciones básicas
         $title = trim($this->request->getPost('title') ?? '');
         $body  = trim($this->request->getPost('body') ?? '');
@@ -113,8 +120,8 @@ class NotificacionesController extends BaseController
             return $this->response->setJSON(['error' => 'Título y mensaje son obligatorios.'])->setStatusCode(422);
         }
 
-        // Solo admin/superadmin/coach pueden enviar grupal
-        if ($type === 'group' && !in_array($role, ['superadmin', 'admin', 'coach'])) {
+        // Solo admin/superadmin pueden enviar grupal
+        if ($type === 'group' && !in_array($role, ['superadmin', 'admin'])) {
             return $this->response->setJSON(['error' => 'Sin permisos para notificaciones grupales.'])->setStatusCode(403);
         }
 

@@ -146,6 +146,7 @@ if ($isAdmin && !empty($allUsers)) {
 // Orden y etiquetas de los grupos de rol
 $roleGroups = [
     'player'     => ['Jugadores',      'bi-dribbble',         'var(--accent)'],
+    'alumno'     => ['Jugadores',      'bi-dribbble',         'var(--accent)'],
     'coach'      => ['Entrenadores',   'bi-whistle-fill',     '#38a169'],
     'staff'      => ['Staff',          'bi-briefcase-fill',   '#dd6b20'],
     'admin'      => ['Administración', 'bi-shield-fill',      '#805ad5'],
