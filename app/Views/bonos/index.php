@@ -560,7 +560,7 @@ async function toggleTipoBono(id, currentActive) {
         const data = await res.json();
         if (data.csrf_name) { BONOS_CSRF_NAME = data.csrf_name; BONOS_CSRF_HASH = data.csrf_hash; }
 
-        if (!data.ok) { alert(data.error ?? 'Error al cambiar el estado.'); return; }
+        if (!data.ok) { showAlert(data.error ?? 'Error al cambiar el estado.'); return; }
 
         const row   = document.getElementById('tipo-row-' + id);
         const badge = document.querySelector('.tipo-badge-' + id);
@@ -590,7 +590,7 @@ async function toggleTipoBono(id, currentActive) {
             if (opt) opt.remove();
         }
     } catch(e) {
-        alert('Error de conexión. Inténtalo de nuevo.');
+        showAlert('Error de conexión. Inténtalo de nuevo.');
     }
 }
 

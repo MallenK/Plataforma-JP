@@ -671,13 +671,13 @@ $defaultDay = $defaultDay ?? $today;
                     }
                     self.outerHTML = '<span class="pc-bono-ok"><i class="bi bi-check-circle-fill"></i> Descontado</span>';
                 } else {
-                    alert(data.error || 'Error.');
+                    showAlert(data.error || 'Error.');
                     self.disabled = false;
                     self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar';
                 }
             })
             .catch(function() {
-                alert('Error de red.');
+                showAlert('Error de red.');
                 self.disabled = false;
                 self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar';
             });
@@ -709,13 +709,13 @@ $defaultDay = $defaultDay ?? $today;
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    alert(data.error || 'Error al completar el día.');
+                    showAlert(data.error || 'Error al completar el día.');
                     self.disabled = false;
                     self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
                 }
             })
             .catch(function() {
-                alert('Error de red.');
+                showAlert('Error de red.');
                 self.disabled = false;
                 self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
             });
