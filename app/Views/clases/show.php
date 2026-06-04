@@ -40,14 +40,6 @@ $responsibleEmpty = $isStaffSession ? 'Sin staff responsable asignado' : 'Sin en
             <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar Lista
         </a>
         <?php endif; ?>
-        <?php if ($session['status'] === 'scheduled'): ?>
-        <form action="/clases/<?= $session['id'] ?>/completar" method="POST" style="margin:0">
-            <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-sm" style="background:#d1fae5;color:#065f46">
-                <i class="bi bi-check-circle-fill me-1"></i>Marcar completada
-            </button>
-        </form>
-        <?php endif; ?>
         <?php if (in_array($session['status'], ['scheduled'])): ?>
         <a href="/clases/<?= $session['id'] ?>/editar" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-pencil-fill me-1"></i>Editar
@@ -293,9 +285,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             </div>
 
             <?php if ($canManage): ?>
-            <!-- Admin/coach: formularios de asistencia y obs por jugador -->
-            <form action="/clases/<?= $session['id'] ?>/asistencia" method="POST">
-                <?= csrf_field() ?>
+            <!-- Admin/coach: vista de estado + link a pasar lista -->
             <div class="table-responsive">
                 <table class="table-jp">
                     <thead>
@@ -303,7 +293,6 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                             <th>Jugador</th>
                             <th>Aviso alumno</th>
                             <th>Asistencia</th>
-                            <th>Motivo ausencia</th>
                             <th>Obs.</th>
                         </tr>
                     </thead>
@@ -318,9 +307,6 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                                     <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
                                     <div>
                                         <div class="td-name"><?= esc($p['name']) ?></div>
-                                        <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44;font-size:10px">
-                                            <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
-                                        </span>
                                     </div>
                                 </div>
                             </td>
@@ -339,23 +325,9 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <select name="attendance[<?= $p['user_id'] ?>]"
-                                        class="form-control-jp attendance-select"
-                                        data-uid="<?= $p['user_id'] ?>"
-                                        style="font-size:12px;padding:4px 8px;width:auto">
-                                    <?php foreach (['pending' => 'Pendiente', 'present' => 'Presente', 'absent' => 'Ausente'] as $val => $lbl): ?>
-                                        <option value="<?= $val ?>" <?= $p['attendance'] === $val ? 'selected' : '' ?>><?= $lbl ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
-                            <td style="min-width:160px">
-                                <input type="text"
-                                       name="absence_reason[<?= $p['user_id'] ?>]"
-                                       class="form-control-jp absence-reason-field"
-                                       id="abs-reason-<?= $p['user_id'] ?>"
-                                       placeholder="Motivo…"
-                                       value="<?= esc($p['absence_reason'] ?? '') ?>"
-                                       style="font-size:12px;padding:4px 8px;<?= ($p['attendance'] !== 'absent') ? 'display:none' : '' ?>">
+                                <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44;font-size:11px">
+                                    <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
+                                </span>
                             </td>
                             <td>
                                 <button type="button" onclick="openObsModal(<?= $p['user_id'] ?>, '<?= esc($p['name'], 'js') ?>', '<?= esc($p['pre_obs'] ?? '', 'js') ?>', '<?= esc($p['post_obs'] ?? '', 'js') ?>')"
@@ -369,11 +341,10 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 </table>
             </div>
             <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:right">
-                <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
-                    <i class="bi bi-floppy-fill me-1"></i>Guardar asistencia
-                </button>
+                <a href="/clases/<?= $session['id'] ?>/lista" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
+                    <i class="bi bi-clipboard2-check-fill me-1"></i>Gestionar asistencia
+                </a>
             </div>
-            </form>
 
             <?php else: ?>
             <!-- Vista jugador: solo ve a sus compañeros y su obs -->
@@ -693,17 +664,6 @@ document.querySelectorAll('.cs-modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
 });
 
-// Mostrar/ocultar campo motivo ausencia según selección
-document.querySelectorAll('.attendance-select').forEach(function(sel) {
-    sel.addEventListener('change', function() {
-        const uid    = this.dataset.uid;
-        const field  = document.getElementById('abs-reason-' + uid);
-        if (field) {
-            field.style.display = this.value === 'absent' ? '' : 'none';
-            if (this.value !== 'absent') field.value = '';
-        }
-    });
-});
 
 function openObsModal(userId, name, preObs, postObs) {
     document.getElementById('obsModalTitle').textContent = 'Observaciones — ' + name;

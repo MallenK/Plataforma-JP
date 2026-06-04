@@ -27,6 +27,29 @@ $attendanceOpts = [
 <div class="alert-jp alert-jp-danger mb-4"><?= session()->getFlashdata('error') ?></div>
 <?php endif; ?>
 
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+    <div>
+        <h5 style="margin:0;font-weight:700"><?= esc($session['title']) ?></h5>
+        <span style="font-size:12px;color:var(--text-muted)">
+            <?= date('d/m/Y', strtotime($session['session_date'])) ?>
+            · <?= substr($session['start_time'], 0, 5) ?>–<?= substr($session['end_time'], 0, 5) ?>
+        </span>
+    </div>
+    <?php if ($session['status'] === 'completed'): ?>
+    <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+        <i class="bi bi-check-circle-fill me-1"></i>Sesión cerrada
+    </span>
+    <?php elseif (!empty($session['lista_pasada_at'])): ?>
+    <span style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+        <i class="bi bi-clipboard2-check-fill me-1"></i>Lista guardada · pendiente cerrar
+    </span>
+    <?php else: ?>
+    <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+        <i class="bi bi-hourglass-split me-1"></i>Pendiente
+    </span>
+    <?php endif; ?>
+</div>
+
 <div class="card-jp">
     <div class="card-jp-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <span style="font-weight:600;font-size:1rem">
@@ -49,7 +72,7 @@ $attendanceOpts = [
     </div>
     <?php else: ?>
 
-    <form id="form-lista" action="/clases/<?= $session['id'] ?>/asistencia" method="POST">
+    <form id="form-lista" action="/clases/<?= $session['id'] ?>/lista" method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="absence_reason_hidden" value="">
 
@@ -146,13 +169,29 @@ $attendanceOpts = [
         </table>
         </div>
 
-        <div style="padding:16px 20px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:10px">
-            <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm">Cancelar</a>
-            <button type="submit" class="btn-jp btn-jp-sm">
-                <i class="bi bi-floppy-fill me-1"></i>Guardar asistencia
-            </button>
+        <div style="padding:16px 20px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="submit" class="btn-jp btn-jp-sm">
+                    <i class="bi bi-floppy-fill me-1"></i>Guardar asistencia
+                </button>
+                <?php if ($session['status'] === 'scheduled'): ?>
+                <button type="button" id="btn-cerrar-sesion"
+                        style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7"
+                        class="btn-jp btn-jp-sm">
+                    <i class="bi bi-check2-circle me-1"></i>Cerrar sesión
+                </button>
+                <?php endif; ?>
+            </div>
         </div>
     </form>
+    <?php if ($session['status'] === 'scheduled'): ?>
+    <form id="form-cerrar" action="/clases/<?= $session['id'] ?>/cerrar" method="POST" style="display:none">
+        <?= csrf_field() ?>
+    </form>
+    <?php endif; ?>
 
     <?php endif; ?>
 </div>
@@ -260,6 +299,15 @@ $attendanceOpts = [
         var btn  = cell.querySelector('.btn-deduct');
         if (btn && sel.value !== 'present') btn.style.display = 'none';
     });
+
+    // Cerrar sesión
+    var btnCerrar = document.getElementById('btn-cerrar-sesion');
+    if (btnCerrar) {
+        btnCerrar.addEventListener('click', function() {
+            if (!confirm('¿Cerrar esta sesión? Quedará marcada como completada y no podrá editarse.')) return;
+            document.getElementById('form-cerrar').submit();
+        });
+    }
 })();
 </script>
 
