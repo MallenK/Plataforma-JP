@@ -60,11 +60,12 @@ class AuthService
 
         // Guardamos con la clave canónica 'id' — todos los controllers deben usar session('id')
         $this->session->set([
-            'id'          => $user['id'],
-            'name'        => $user['name'],
-            'role'        => $user['role'],
-            'avatar'      => $user['avatar'] ?? null,
-            'isLoggedIn'  => true,
+            'id'           => $user['id'],
+            'name'         => $user['name'],
+            'role'         => $user['role'],
+            'avatar'       => $user['avatar'] ?? null,
+            'isLoggedIn'   => true,
+            'last_activity' => time(),
         ]);
 
         return true;
@@ -172,6 +173,11 @@ class AuthService
             return 'El enlace ha expirado. Solicita uno nuevo';
         }
 
+        $validationError = $this->validatePasswordPolicy($password);
+        if ($validationError !== null) {
+            return $validationError;
+        }
+
         // El modelo aplica password_hash automáticamente via beforeUpdate callback
         $this->userModel
             ->where('email', $record['email'])
@@ -182,6 +188,34 @@ class AuthService
         $db->table('password_resets')->where('token', $token)->delete();
 
         return true;
+    }
+
+    /**
+     * Valida la contraseña contra la política configurada en academy_settings.
+     * Devuelve null si es válida, o un string con el error si no.
+     */
+    private function validatePasswordPolicy(string $password): ?string
+    {
+        $s              = (new \App\Models\SettingsModel())->getAll();
+        $minLen         = (int)($s['sec_min_password']   ?? 8);
+        $requireUpper   = (bool)($s['sec_require_upper']   ?? false);
+        $requireNumbers = (bool)($s['sec_require_numbers'] ?? false);
+        $requireSpecial = (bool)($s['sec_require_special'] ?? false);
+
+        if (strlen($password) < $minLen) {
+            return "La contraseña debe tener al menos {$minLen} caracteres.";
+        }
+        if ($requireUpper && !preg_match('/[A-Z]/', $password)) {
+            return 'La contraseña debe incluir al menos una letra mayúscula.';
+        }
+        if ($requireNumbers && !preg_match('/[0-9]/', $password)) {
+            return 'La contraseña debe incluir al menos un número.';
+        }
+        if ($requireSpecial && !preg_match('/[!@#$%^&*()\-_=+\[\]{};:\'",.<>?\/\\\\|`~]/', $password)) {
+            return 'La contraseña debe incluir al menos un carácter especial (!@#$...).';
+        }
+
+        return null;
     }
 
     /**

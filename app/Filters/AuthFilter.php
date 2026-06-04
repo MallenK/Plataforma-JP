@@ -28,6 +28,16 @@ class AuthFilter implements FilterInterface
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('/login');
         }
+
+        $timeout      = (int)(new \App\Models\SettingsModel())->get('sec_session_timeout', 10);
+        $lastActivity = session()->get('last_activity');
+
+        if ($lastActivity !== null && (time() - $lastActivity) > ($timeout * 60)) {
+            session()->remove(['isLoggedIn', 'id', 'name', 'role', 'avatar', 'last_activity']);
+            return redirect()->to('/login?expired=1');
+        }
+
+        session()->set('last_activity', time());
     }
 
     /**

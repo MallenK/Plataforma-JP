@@ -495,17 +495,6 @@ $routes->post('configuracion/bonos/(:num)/delete', 'ConfiguracionController::del
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-// ── Notificaciones ─────────────────────────────────────────
-$routes->post('configuracion/notificaciones/smtp', 'ConfiguracionController::saveSmtp', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('configuracion/notificaciones/toggles', 'ConfiguracionController::saveNotifToggles', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('configuracion/notificaciones/send', 'ConfiguracionController::sendEmail', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
 // ── Seguridad ──────────────────────────────────────────────
 $routes->post('configuracion/seguridad/save', 'ConfiguracionController::saveSeguridad', [
     'filter' => ['auth', 'role:superadmin,admin'],
