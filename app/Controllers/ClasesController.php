@@ -270,7 +270,7 @@ class ClasesController extends BaseController
         return redirect()->to('/clases');
     }
 
-    public function complete(int $id)
+    public function cerrarSesion(int $id)
     {
         $session = $this->clasesService->getSession($id);
         if (!$session) {
@@ -278,13 +278,13 @@ class ClasesController extends BaseController
         }
 
         if (!$this->isAssignedOrAdmin($session)) {
-            session()->setFlashdata('error', 'No tienes permiso para completar esta sesión.');
+            session()->setFlashdata('error', 'No tienes permiso para cerrar esta sesión.');
             return redirect()->to('/clases');
         }
 
-        $this->clasesService->markComplete($id);
-        session()->setFlashdata('success', 'Sesión marcada como completada.');
-        return redirect()->to('/clases/' . $id);
+        $this->clasesService->cerrarSesion($id, $this->currentUserId());
+        session()->setFlashdata('success', 'Sesión cerrada y marcada como completada.');
+        return redirect()->to('/clases/' . $id . '/lista');
     }
 
     public function cancel(int $id)
@@ -335,7 +335,7 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Avisar ausencia (jugador)
+    //  Avisar ausencia (alumno)
     // ────────────────────────────────────────────────────────────────
 
     public function notifyAbsence(int $id)
@@ -361,28 +361,6 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Confirmar asistencia (jugador, mantenido por compatibilidad)
-    // ────────────────────────────────────────────────────────────────
-
-    public function respond(int $id)
-    {
-        $result = $this->clasesService->respondToSession(
-            $this->currentUserId(),
-            $id,
-            $this->request->getPost('status')
-        );
-
-        if (!$result['success']) {
-            session()->setFlashdata('error', $result['error'] ?? 'Error al registrar respuesta.');
-        } else {
-            $label = $this->request->getPost('status') === 'confirmed' ? 'confirmada' : 'declinada';
-            session()->setFlashdata('success', "Asistencia {$label}.");
-        }
-
-        return redirect()->to('/clases/' . $id);
-    }
-
-    // ────────────────────────────────────────────────────────────────
     //  Observaciones
     // ────────────────────────────────────────────────────────────────
 
@@ -390,22 +368,6 @@ class ClasesController extends BaseController
     {
         $this->clasesService->saveObservations($id, $this->request->getPost());
         session()->setFlashdata('success', 'Observaciones guardadas.');
-        return redirect()->to('/clases/' . $id);
-    }
-
-    // ────────────────────────────────────────────────────────────────
-    //  Asistencia (admin/coach)
-    // ────────────────────────────────────────────────────────────────
-
-    public function saveAttendance(int $id)
-    {
-        $this->clasesService->updateAttendance(
-            $id,
-            $this->request->getPost('attendance') ?? [],
-            $this->request->getPost('absence_reason') ?? [],
-            $this->request->getPost('absence_notes') ?? []
-        );
-        session()->setFlashdata('success', 'Asistencia registrada.');
         return redirect()->to('/clases/' . $id);
     }
 
@@ -421,45 +383,15 @@ class ClasesController extends BaseController
         $data = $this->clasesService->getWeekSessions($weekOffset, $search);
 
         return view('clases/pasar_lista_semanal', [
-            'title'          => 'Pasar Lista — JP Preparation',
-            'isAdmin'        => $this->isAdmin(),
-            'weekData'       => $data,
-            'search'         => $search,
-            'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
+            'title'    => 'Pasar Lista — JP Preparation',
+            'isAdmin'  => $this->isAdmin(),
+            'weekData' => $data,
+            'search'   => $search,
         ]);
     }
 
-    public function guardarListaPasada(int $id)
-    {
-        $result = $this->clasesService->markListaPasada(
-            $id,
-            $this->currentUserId(),
-            $this->request->getPost('attendance') ?? [],
-            $this->request->getPost('absence_reason') ?? [],
-            $this->request->getPost('absence_notes') ?? []
-        );
-
-        $semana = $this->request->getPost('semana') ?? 0;
-        $buscar = $this->request->getPost('buscar') ?? '';
-        $qs     = http_build_query(array_filter(['semana' => $semana, 'buscar' => $buscar]));
-
-        session()->setFlashdata('success', 'Lista guardada correctamente.');
-        return redirect()->to('/pasar-lista' . ($qs ? '?' . $qs : ''));
-    }
-
-    public function completarDiaRapido()
-    {
-        $date = $this->request->getPost('date');
-        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return $this->response->setJSON(['success' => false, 'error' => 'Fecha inválida']);
-        }
-
-        $result = $this->clasesService->completarDiaRapido($date, $this->currentUserId());
-        return $this->response->setJSON($result);
-    }
-
     // ────────────────────────────────────────────────────────────────
-    //  Pasar Lista — por sesión individual (admin/superadmin)
+    //  Pasar Lista — por sesión individual (único punto de marcado)
     // ────────────────────────────────────────────────────────────────
 
     public function pasarLista(int $id)
@@ -497,6 +429,30 @@ class ClasesController extends BaseController
             'isAdmin'       => $this->isAdmin(),
             'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
         ]);
+    }
+
+    public function guardarLista(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para gestionar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
+        $this->clasesService->guardarLista(
+            $id,
+            $this->currentUserId(),
+            $this->request->getPost('attendance') ?? [],
+            $this->request->getPost('absence_reason') ?? [],
+            $this->request->getPost('absence_notes') ?? []
+        );
+
+        session()->setFlashdata('success', 'Asistencia guardada.');
+        return redirect()->to('/clases/' . $id . '/lista');
     }
 
     public function deductBono(int $id, int $playerId)

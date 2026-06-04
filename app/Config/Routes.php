@@ -198,24 +198,16 @@ $routes->get('clases/(:num)', 'ClasesController::show/$1', [
     'filter' => 'auth',
 ]);
 
-// ── Avisar ausencia (jugador convocado) ────────────────────
+// ── Avisar ausencia (alumno convocado) ─────────────────────
 $routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
     'filter' => 'auth',
 ]);
 
-// ── Confirmar asistencia (jugador convocado, mantenido) ────
-$routes->post('clases/(:num)/confirmar', 'ClasesController::respond/$1', [
-    'filter' => 'auth',
-]);
-
-// ── Editar / Completar / Cancelar / Eliminar ───────────────
+// ── Editar / Cancelar / Eliminar ───────────────────────────
 $routes->get('clases/(:num)/editar', 'ClasesController::edit/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/editar', 'ClasesController::update/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
-]);
-$routes->post('clases/(:num)/completar', 'ClasesController::complete/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/cancelar', 'ClasesController::cancel/$1', [
@@ -225,11 +217,8 @@ $routes->post('clases/(:num)/eliminar', 'ClasesController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
-// ── Observaciones y asistencia ─────────────────────────────
+// ── Observaciones ──────────────────────────────────────────
 $routes->post('clases/(:num)/observaciones', 'ClasesController::saveObservations/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
-]);
-$routes->post('clases/(:num)/asistencia', 'ClasesController::saveAttendance/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
@@ -249,23 +238,23 @@ $routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::remove
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
-// ── Pasar Lista — Vista semanal ────────────────────────────
+// ── Pasar Lista — Vista semanal (solo navegación) ──────────
 $routes->get('pasar-lista', 'ClasesController::pasarListaIndex', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
-$routes->post('clases/(:num)/lista-guardar', 'ClasesController::guardarListaPasada/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('pasar-lista/completar-dia', 'ClasesController::completarDiaRapido', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
 
-// ── Pasar Lista — por sesión ───────────────────────────────
+// ── Pasar Lista — por sesión (única pantalla de asistencia) ─
 $routes->get('clases/(:num)/lista', 'ClasesController::pasarLista/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/lista', 'ClasesController::guardarLista/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/cerrar', 'ClasesController::cerrarSesion/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/jugadores/(:num)/descontar-bono', 'ClasesController::deductBono/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
 

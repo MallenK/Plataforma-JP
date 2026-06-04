@@ -308,41 +308,43 @@ class ClasesService
         return true;
     }
 
-    public function markComplete(int $id): bool
+    /**
+     * Guarda asistencia y marca la sesión como "lista pasada".
+     * Única entrada para el marcado de asistencia por admin/coach.
+     */
+    public function guardarLista(int $sessionId, int $adminId, array $attendanceMap, array $absenceReasons = [], array $absenceNotes = []): array
     {
-        return (bool)$this->sessionModel->update($id, ['status' => 'completed']);
+        if (!empty($attendanceMap)) {
+            $this->updateAttendance($sessionId, $attendanceMap, $absenceReasons, $absenceNotes);
+        }
+
+        $this->sessionModel->update($sessionId, [
+            'lista_pasada_at' => date('Y-m-d H:i:s'),
+            'lista_pasada_by' => $adminId,
+        ]);
+
+        return ['success' => true];
     }
 
     /**
-     * Al completar una sesión, descuenta 1 sesión del bono activo de cada
-     * jugador que asistió REALMENTE (attendance='present').
-     *
-     * No se descuenta a 'pending', 'confirmed', 'declined' ni 'absent':
-     * solo el 'present' representa una clase consumida por el alumno.
-     *
-     * Si tras descontar el bono queda con 1 sesión o se agota (0),
-     * se emite una notificación interna al alumno y a todos los admins.
+     * Cierra la sesión: status='completed' + lista_pasada_at si aún no estaba marcada.
+     * Única acción que finaliza una sesión.
      */
-    private function deductBonosForSession(int $sessionId): void
+    public function cerrarSesion(int $sessionId, int $adminId): array
     {
-        $bonoModel = new PlayerBonoModel();
-
-        $players = $this->db->table('class_session_players')
-            ->where('session_id', $sessionId)
-            ->where('attendance', 'present')
-            ->get()->getResultArray();
-
-        foreach ($players as $player) {
-            $bono = $bonoModel->deductSessionDetailed((int)$player['user_id']);
-            if ($bono === null) {
-                continue;
-            }
-
-            $remaining = (int)$bono['sessions_remaining'];
-            if ($remaining === 1 || $remaining === 0) {
-                $this->emitBonoLowSessionsNotification((int)$player['user_id'], $bono);
-            }
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
         }
+
+        $update = ['status' => 'completed'];
+        if (empty($session['lista_pasada_at'])) {
+            $update['lista_pasada_at'] = date('Y-m-d H:i:s');
+            $update['lista_pasada_by'] = $adminId;
+        }
+
+        $this->sessionModel->update($sessionId, $update);
+        return ['success' => true];
     }
 
     /**
@@ -646,55 +648,6 @@ class ClasesService
         ];
     }
 
-    /**
-     * Marca una sesión como "lista pasada" por el admin.
-     * También guarda asistencia si se pasa un attendanceMap.
-     */
-    public function markListaPasada(int $sessionId, int $adminId, array $attendanceMap = [], array $absenceReasons = [], array $absenceNotes = []): array
-    {
-        if (!empty($attendanceMap)) {
-            $this->updateAttendance($sessionId, $attendanceMap, $absenceReasons, $absenceNotes);
-        }
-
-        // Descontar bonos de los jugadores marcados como presentes
-        $this->deductBonosForSession($sessionId);
-
-        $this->sessionModel->update($sessionId, [
-            'lista_pasada_at' => date('Y-m-d H:i:s'),
-            'lista_pasada_by' => $adminId,
-        ]);
-
-        return ['success' => true];
-    }
-
-    public function completarDiaRapido(string $date, int $adminId): array
-    {
-        $sessions = $this->db->table('class_sessions')
-            ->select('id')
-            ->where('session_date', $date)
-            ->where('status !=', 'cancelled')
-            ->where('lista_pasada_at IS NULL')
-            ->get()->getResultArray();
-
-        $done = 0;
-        foreach ($sessions as $s) {
-            $sid     = (int)$s['id'];
-            $players = $this->db->table('class_session_players')
-                ->select('user_id')
-                ->where('session_id', $sid)
-                ->get()->getResultArray();
-
-            $attendanceMap = [];
-            foreach ($players as $p) {
-                $attendanceMap[(int)$p['user_id']] = 'present';
-            }
-
-            $this->markListaPasada($sid, $adminId, $attendanceMap);
-            $done++;
-        }
-
-        return ['success' => true, 'sessions_completed' => $done];
-    }
 
     public function cancelSession(int $id): bool
     {
@@ -853,34 +806,6 @@ class ClasesService
             'success'    => true,
             'lateNotice' => $lateNotice,
         ];
-    }
-
-    // ────────────────────────────────────────────────────────────────
-    //  Confirmaciones de asistencia (mantenido por compatibilidad,
-    //  redirige a notifyAbsence para jugadores)
-    // ────────────────────────────────────────────────────────────────
-
-    public function respondToSession(int $userId, int $sessionId, string $status): array
-    {
-        if (!in_array($status, ['confirmed', 'declined'])) {
-            return ['success' => false, 'error' => 'Estado no válido.'];
-        }
-
-        $player = $this->playerModel
-            ->where('session_id', $sessionId)
-            ->where('user_id', $userId)
-            ->first();
-
-        if (!$player) {
-            return ['success' => false, 'error' => 'No estás asignado a esta sesión.'];
-        }
-
-        $this->playerModel->update($player['id'], [
-            'attendance'   => $status,
-            'responded_at' => date('Y-m-d H:i:s'),
-        ]);
-
-        return ['success' => true];
     }
 
     // ────────────────────────────────────────────────────────────────
