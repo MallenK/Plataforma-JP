@@ -217,7 +217,8 @@ class ClasesService
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
-        } elseif ($role === 'coach') {
+        } elseif (in_array($role, ['coach', 'staff'])) {
+            // Coach y staff solo ven las sesiones donde están asignados como responsable
             $sessions = $this->db->table('class_sessions cs')
                 ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
                 ->join('class_session_coaches csc', 'csc.session_id = cs.id')
@@ -962,6 +963,8 @@ class ClasesService
         $mStart    = date('Y-m-01');
         $mEnd      = date('Y-m-t');
 
+        $isStaff = $role === 'staff';
+
         if ($isPlayer) {
             $weekCount = (int)$this->db->table('class_sessions cs')
                 ->join('class_session_players csp', 'csp.session_id = cs.id')
@@ -975,6 +978,23 @@ class ClasesService
                 ->where('csp.user_id', $userId)
                 ->where('cs.session_date >=', $mStart)
                 ->where('cs.session_date <=', $mEnd)
+                ->countAllResults();
+        } elseif ($isStaff) {
+            // Staff: solo sesiones donde está asignado como responsable
+            $weekCount = (int)$this->db->table('class_sessions cs')
+                ->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                ->where('csc.user_id', $userId)
+                ->where('cs.session_date >=', $weekStart)
+                ->where('cs.session_date <=', $weekEnd)
+                ->where('cs.status !=', 'cancelled')
+                ->countAllResults();
+
+            $monthCount = (int)$this->db->table('class_sessions cs')
+                ->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                ->where('csc.user_id', $userId)
+                ->where('cs.session_date >=', $mStart)
+                ->where('cs.session_date <=', $mEnd)
+                ->where('cs.status !=', 'cancelled')
                 ->countAllResults();
         } else {
             $weekCount = (int)$this->db->table('class_sessions')
@@ -990,29 +1010,38 @@ class ClasesService
                 ->countAllResults();
         }
 
-        // Jugadores únicos activos este mes
-        $activePlayers = (int)$this->db->table('class_session_players csp')
-                ->select('csp.user_id') // <--- SOLUCIÓN: Seleccionar solo una columna específica
-                ->join('class_sessions cs', 'cs.id = csp.session_id')
-                ->where('cs.session_date >=', $mStart)
-                ->where('cs.session_date <=', $mEnd)
-                ->where('cs.status !=', 'cancelled')
-                ->groupBy('csp.user_id')
-                ->countAllResults();
+        // Jugadores únicos activos este mes (staff: solo de sus sesiones)
+        $playersQuery = $this->db->table('class_session_players csp')
+            ->select('csp.user_id')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->where('cs.session_date >=', $mStart)
+            ->where('cs.session_date <=', $mEnd)
+            ->where('cs.status !=', 'cancelled');
+        if ($isStaff) {
+            $playersQuery->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                         ->where('csc.user_id', $userId);
+        }
+        $activePlayers = (int)$playersQuery->groupBy('csp.user_id')->countAllResults();
 
-        // Asistencia media (sesiones completadas últimas 4 semanas)
-        $since    = date('Y-m-d', strtotime('-4 weeks'));
-        $present  = (int)$this->db->table('class_session_players csp')
+        // Asistencia media últimas 4 semanas (staff: solo sus sesiones)
+        $since = date('Y-m-d', strtotime('-4 weeks'));
+        $presentQuery = $this->db->table('class_session_players csp')
             ->join('class_sessions cs', 'cs.id = csp.session_id')
             ->where('cs.status', 'completed')
             ->where('cs.session_date >=', $since)
-            ->where('csp.attendance', 'present')
-            ->countAllResults();
-        $total    = (int)$this->db->table('class_session_players csp')
+            ->where('csp.attendance', 'present');
+        $totalQuery = $this->db->table('class_session_players csp')
             ->join('class_sessions cs', 'cs.id = csp.session_id')
             ->where('cs.status', 'completed')
-            ->where('cs.session_date >=', $since)
-            ->countAllResults();
+            ->where('cs.session_date >=', $since);
+        if ($isStaff) {
+            $presentQuery->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                         ->where('csc.user_id', $userId);
+            $totalQuery->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                       ->where('csc.user_id', $userId);
+        }
+        $present = (int)$presentQuery->countAllResults();
+        $total   = (int)$totalQuery->countAllResults();
 
         $avgAttendance = ($total > 0) ? round(($present / $total) * 100) : null;
 
