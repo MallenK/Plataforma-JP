@@ -37,6 +37,15 @@ class AnnotationController extends BaseController
             return $this->redirectBack($playerId);
         }
 
+        // Players solo pueden anotar su propio perfil y solo anotaciones públicas
+        if ($role === 'player') {
+            if ((int)$this->currentUserId() !== $playerId) {
+                session()->setFlashdata('annotation_error', 'No tienes permiso para añadir anotaciones en otros perfiles.');
+                return $this->redirectBack($playerId);
+            }
+            $type = 'public';
+        }
+
         if ($type === 'internal' && $role === 'player') {
             session()->setFlashdata('annotation_error', 'No tienes permiso para crear anotaciones internas.');
             return $this->redirectBack($playerId);

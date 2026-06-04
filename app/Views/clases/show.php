@@ -16,7 +16,11 @@ $attendanceMap = [
     'absent'    => ['Ausente',    '#dc2626', 'bi-person-x-fill'],
 ];
 
-$locationDisplay = $session['location_name'] ?? $session['location_custom'] ?? null;
+$locationDisplay  = $session['location_name'] ?? $session['location_custom'] ?? null;
+$isStaffSession   = ($session['session_type'] ?? 'coach') === 'staff';
+$responsibleLabel = $isStaffSession ? 'Staff responsable' : 'Entrenadores';
+$responsibleIcon  = $isStaffSession ? '#7c3aed'           : '#059669';
+$responsibleEmpty = $isStaffSession ? 'Sin staff responsable asignado' : 'Sin entrenadores asignados';
 ?>
 
 <?= $this->section('page_content') ?>
@@ -97,7 +101,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 </span>
                 <?php if ($myPlayer['coach_name']): ?>
                     <span style="font-size:12px;color:var(--text-muted);margin-left:10px">
-                        <i class="bi bi-person-workspace me-1"></i>Entrenador: <?= esc($myPlayer['coach_name']) ?>
+                        <i class="bi bi-person-workspace me-1"></i><?= $isStaffSession ? 'Staff' : 'Entrenador' ?>: <?= esc($myPlayer['coach_name']) ?>
                     </span>
                 <?php endif; ?>
                 <?php if (!empty($myPlayer['absence_reason'])): ?>
@@ -411,12 +415,17 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
     <!-- ── Sidebar ──────────────────────────────────────────── -->
     <div class="col-12 col-lg-4">
 
-        <!-- Entrenadores -->
+        <!-- Responsable (entrenador o staff) -->
+        <?php
+        $avatarBg    = $isStaffSession ? '#ede9fe' : '#d1fae5';
+        $avatarColor = $isStaffSession ? '#7c3aed' : '#059669';
+        $removeLabel = $isStaffSession ? '¿Eliminar staff responsable?' : '¿Eliminar entrenador?';
+        ?>
         <div class="card-jp mb-3">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
-                    <i class="bi bi-person-workspace me-2" style="color:#059669"></i>
-                    Entrenadores (<?= count($session['coaches']) ?>)
+                    <i class="bi bi-person-workspace me-2" style="color:<?= $responsibleIcon ?>"></i>
+                    <?= $responsibleLabel ?> (<?= count($session['coaches']) ?>)
                 </span>
                 <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
                 <button class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalAddCoach')">
@@ -426,12 +435,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             </div>
             <div class="card-jp-body py-2">
                 <?php if (empty($session['coaches'])): ?>
-                    <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:10px">Sin entrenadores asignados</div>
+                    <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:10px"><?= $responsibleEmpty ?></div>
                 <?php else: ?>
                 <?php foreach ($session['coaches'] as $c): ?>
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="td-avatar" style="background:#d1fae5;color:#059669"><?= strtoupper(substr($c['name'], 0, 1)) ?></div>
+                        <div class="td-avatar" style="background:<?= $avatarBg ?>;color:<?= $avatarColor ?>"><?= strtoupper(substr($c['name'], 0, 1)) ?></div>
                         <div>
                             <div style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($c['name']) ?></div>
                             <div style="font-size:11px;color:var(--text-muted)"><?= esc($c['email']) ?></div>
@@ -441,7 +450,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <form action="/clases/<?= $session['id'] ?>/coaches/<?= $c['user_id'] ?>/remove" method="POST" style="margin:0">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn-jp btn-jp-danger btn-jp-icon btn-jp-sm"
-                                onclick="return confirm('¿Eliminar entrenador?')" title="Eliminar">
+                                onclick="return confirm('<?= esc($removeLabel, 'js') ?>')" title="Eliminar">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </form>
@@ -554,8 +563,10 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <?php endforeach; ?>
                     </select>
                     <select name="coach_id" class="form-control-jp mb-2">
-                        <option value="">Sin entrenador asignado</option>
-                        <?php foreach ($coachOptions as $c): ?>
+                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin entrenador asignado' ?></option>
+                        <?php
+                        $responsiblePool = $isStaffSession ? $staffOptions : $coachOptions;
+                        foreach ($responsiblePool as $c): ?>
                             <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -572,21 +583,22 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 
 </div>
 
-<!-- ── Modal: añadir entrenador ──────────────────────────────── -->
+<!-- ── Modal: añadir entrenador/staff ────────────────────────── -->
 <?php if ($canManage): ?>
+<?php $modalPool = $isStaffSession ? $staffOptions : $coachOptions; ?>
 <div id="modalAddCoach" class="cs-modal-overlay d-none">
     <div class="cs-modal">
         <div class="cs-modal-header">
-            <span>Añadir entrenador</span>
+            <span><?= $isStaffSession ? 'Añadir staff responsable' : 'Añadir entrenador' ?></span>
             <button onclick="closeModal('modalAddCoach')"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="cs-modal-body">
             <form action="/clases/<?= $session['id'] ?>/coaches/add" method="POST">
                 <?= csrf_field() ?>
-                <label class="form-label">Entrenador</label>
+                <label class="form-label"><?= $isStaffSession ? 'Staff' : 'Entrenador' ?></label>
                 <select name="user_id" class="form-control-jp mb-3" required>
                     <option value="">Seleccionar…</option>
-                    <?php foreach ($coachOptions as $c):
+                    <?php foreach ($modalPool as $c):
                         $isAssigned = false;
                         foreach ($session['coaches'] as $sc) {
                             if ((int)$sc['user_id'] === (int)$c['id']) { $isAssigned = true; break; }

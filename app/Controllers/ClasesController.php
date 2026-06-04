@@ -97,6 +97,7 @@ class ClasesController extends BaseController
             'session'         => null,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
+            'staffOptions'    => $this->clasesService->getStaffOptions(),
             'playerOptions'   => $this->clasesService->getPlayerOptions(),
             'locationOptions' => $this->clasesService->getLocationOptions(),
         ]);
@@ -190,6 +191,7 @@ class ClasesController extends BaseController
             'canManage'       => $canManage,
             'isAdminRole'     => $isAdminRole,
             'coachOptions'    => $canManage ? $this->clasesService->getCoachOptions()    : [],
+            'staffOptions'    => $canManage ? $this->clasesService->getStaffOptions()    : [],
             'playerOptions'   => $isAdminRole ? $this->clasesService->getPlayerOptions() : [],
             'locationOptions' => $canManage ? $this->clasesService->getLocationOptions() : [],
             'currentUserId'   => $userId,
@@ -213,6 +215,7 @@ class ClasesController extends BaseController
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
+            'staffOptions'    => $this->clasesService->getStaffOptions(),
             'playerOptions'   => $this->clasesService->getPlayerOptions(),
             'locationOptions' => $this->clasesService->getLocationOptions(),
         ]);
