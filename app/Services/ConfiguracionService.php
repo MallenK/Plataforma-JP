@@ -66,6 +66,7 @@ class ConfiguracionService
     {
         return $this->users
             ->whereIn('role', ['admin', 'staff', 'coach'])
+            ->where('id !=', self::PROTECTED_USER_ID)
             ->orderBy('role',  'ASC')
             ->orderBy('name',  'ASC')
             ->findAll();
