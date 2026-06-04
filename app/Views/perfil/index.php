@@ -371,15 +371,14 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                                 <input type="text" class="form-control-jp" value="<?= esc($roleLabel) ?>" readonly>
                             </div>
                         </div>
-                        <?php if ($isStaffRole): ?>
+                        <?php if ($canEditTitle): ?>
                         <div class="col-12 col-md-6">
                             <div class="form-group mb-0">
                                 <label class="form-label">Cargo / puesto específico</label>
                                 <input type="text" name="staff_title" class="form-control-jp"
                                        value="<?= esc(old('staff_title', $staffTitle)) ?>"
                                        maxlength="100"
-                                       placeholder="Ej: Director técnico, Recepción..."
-                                       <?= $canEditTitle ? '' : 'readonly' ?>>
+                                       placeholder="Ej: Director técnico, Recepción...">
                             </div>
                         </div>
                         <?php endif; ?>
@@ -500,7 +499,8 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
         <?php endif; ?>
         <?php endif; ?>
 
-        <!-- Seguridad -->
+        <!-- Seguridad (oculta para staff viendo su propio perfil) -->
+        <?php if (!($isSelf && $role === 'staff')): ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title"><i class="bi bi-shield-lock-fill me-2" style="color:var(--success)"></i>Seguridad</span>
@@ -534,6 +534,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Documentos personales -->
         <?php

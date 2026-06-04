@@ -248,26 +248,6 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 <?php endif; ?>
 <?php endforeach; ?>
 
-<?php // Carpetas personales de roles no contemplados en $roleGroups ?>
-<?php
-$knownRoles = array_keys($roleGroups);
-$fPersonalOther = [];
-foreach ($personalByRole as $rk => $entries) {
-    if (!in_array($rk, $knownRoles)) {
-        $fPersonalOther = array_merge($fPersonalOther, $entries);
-    }
-}
-?>
-<?php if (!empty($fPersonalOther)): ?>
-<div style="margin-bottom:8px;margin-top:4px">
-    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">
-        <i class="bi bi-person-fill me-1"></i>Otros
-    </span>
-</div>
-<div class="row g-3 mb-3">
-    <?php foreach ($fPersonalOther as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
-</div>
-<?php endif; ?>
 
 <?php endif; ?>
 

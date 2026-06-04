@@ -52,7 +52,8 @@ class ClasesService
 
     private function insertSingle(array $data, int $userId, ?int $classId = null): int
     {
-        $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
+        $fmt  = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
+        $sType = in_array($data['session_type'] ?? '', ['coach', 'staff']) ? $data['session_type'] : 'coach';
         return (int)$this->sessionModel->insert([
             'class_id'        => $classId ?? ($data['class_id'] ?? null),
             'title'           => trim($data['title']),
@@ -67,6 +68,7 @@ class ClasesService
             'status'          => 'scheduled',
             'created_by'      => $userId,
             'class_format'    => $fmt,
+            'session_type'    => $sType,
         ]);
     }
 
@@ -278,12 +280,16 @@ class ClasesService
     {
         $allowed = ['title', 'session_date', 'start_time', 'end_time',
                     'location_id', 'location_custom', 'focus',
-                    'pre_notes', 'post_notes', 'status'];
+                    'pre_notes', 'post_notes', 'status', 'session_type'];
 
         $update = [];
         foreach ($allowed as $key) {
             if (array_key_exists($key, $data)) {
-                $update[$key] = $data[$key] !== '' ? $data[$key] : null;
+                if ($key === 'session_type') {
+                    $update[$key] = in_array($data[$key], ['coach', 'staff']) ? $data[$key] : 'coach';
+                } else {
+                    $update[$key] = $data[$key] !== '' ? $data[$key] : null;
+                }
             }
         }
 
@@ -1042,6 +1048,16 @@ class ClasesService
             ->get()->getResultArray();
     }
 
+    public function getStaffOptions(): array
+    {
+        return $this->db->table('users')
+            ->select('id, name, email')
+            ->where('role', 'staff')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get()->getResultArray();
+    }
+
     public function getLocationOptions(): array
     {
         return $this->db->table('locations')
@@ -1055,6 +1071,7 @@ class ClasesService
     {
         return [
             'coaches'   => $this->getCoachOptions(),
+            'staff'     => $this->getStaffOptions(),
             'players'   => $this->getPlayerOptions(),
             'locations' => $this->getLocationOptions(),
         ];

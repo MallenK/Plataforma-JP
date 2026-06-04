@@ -306,33 +306,26 @@ class DocumentacionController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // Nombre seguro para el header (RFC 5987)
         $safeName = rawurlencode($doc['name_original']);
 
-        $this->response
-            ->setHeader('Content-Type',        $doc['mime_type'])
-            ->setHeader('Content-Disposition', "{$disposition}; filename*=UTF-8''{$safeName}")
-            ->setHeader('Content-Length',      (string) filesize($path));
-
-        if ($doc['sensitive']) {
-            $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-            $this->response->setHeader('Pragma', 'no-cache');
-        } else {
-            $this->response->setHeader('Cache-Control', 'private, max-age=3600');
-        }
-
-        // Limpiar buffer de salida antes de readfile para no cargar en memoria
-        if (ob_get_level()) {
+        // Limpiar TODOS los niveles de output buffer para evitar 503 en proxies
+        while (ob_get_level() > 0) {
             ob_end_clean();
         }
 
-        // Enviar headers ya acumulados por CI4
-        foreach ($this->response->getHeaders() as $name => $header) {
-            header($name . ': ' . $header->getValueLine());
+        // Enviar headers directamente via PHP, sin pasar por el response object de CI4
+        header('Content-Type: ' . $doc['mime_type']);
+        header("Content-Disposition: {$disposition}; filename*=UTF-8''{$safeName}");
+        header('Content-Length: ' . filesize($path));
+
+        if ($doc['sensitive']) {
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            header('Pragma: no-cache');
+        } else {
+            header('Cache-Control: private, max-age=3600');
         }
 
-        http_response_code($this->response->getStatusCode());
-
+        http_response_code(200);
         flush();
         readfile($path);
         exit;

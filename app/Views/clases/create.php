@@ -16,6 +16,9 @@ $v = function(string $key, $default = '') use ($session) {
 $assignedCoachIds  = array_column($session['coaches'] ?? [], 'user_id');
 $assignedPlayerIds = array_column($session['players'] ?? [], 'user_id');
 
+// Tipo de sesión (coach o staff)
+$currentSessionType = $session['session_type'] ?? 'coach';
+
 // Días de la semana para recurrencia
 $weekDays = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
 $recDays  = [];
@@ -300,19 +303,68 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-            <!-- Entrenadores -->
+            <!-- Tipo de responsable -->
             <div class="card-jp mb-3">
                 <div class="card-jp-header">
                     <span class="card-jp-title" style="font-size:13px">
-                        <i class="bi bi-person-workspace me-2" style="color:#059669"></i>Entrenadores
+                        <i class="bi bi-person-badge-fill me-2" style="color:#7c3aed"></i>Tipo de responsable
                     </span>
                 </div>
                 <div class="card-jp-body">
-                    <select id="coachSelect" class="form-control-jp mb-2" onchange="addCoach(this)">
+                    <input type="hidden" name="session_type" id="session_type_input" value="<?= esc($currentSessionType) ?>">
+                    <div class="d-flex gap-2">
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-coach">
+                            <input type="radio" name="_session_type_ui" value="coach"
+                                   <?= $currentSessionType === 'coach' ? 'checked' : '' ?>
+                                   onchange="switchResponsible('coach')"
+                                   style="accent-color:var(--accent)">
+                            <div>
+                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Entrenamiento</div>
+                                <div style="font-size:11px;color:var(--text-muted)">Con entrenador</div>
+                            </div>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-staff">
+                            <input type="radio" name="_session_type_ui" value="staff"
+                                   <?= $currentSessionType === 'staff' ? 'checked' : '' ?>
+                                   onchange="switchResponsible('staff')"
+                                   style="accent-color:#7c3aed">
+                            <div>
+                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Sesión de staff</div>
+                                <div style="font-size:11px;color:var(--text-muted)">Con personal</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Responsable (entrenador o staff, según tipo) -->
+            <div class="card-jp mb-3">
+                <div class="card-jp-header">
+                    <span class="card-jp-title" style="font-size:13px" id="responsible-card-title">
+                        <i class="bi bi-person-workspace me-2" id="responsible-card-icon" style="color:#059669"></i>
+                        <span id="responsible-card-label"><?= $currentSessionType === 'staff' ? 'Staff responsable' : 'Entrenadores' ?></span>
+                    </span>
+                </div>
+                <div class="card-jp-body">
+                    <!-- Selector entrenador -->
+                    <select id="coachSelect" class="form-control-jp mb-2"
+                            onchange="addCoach(this)"
+                            style="<?= $currentSessionType === 'staff' ? 'display:none' : '' ?>">
                         <option value="">Añadir entrenador…</option>
                         <?php foreach ($coachOptions as $c): ?>
                             <option value="<?= $c['id'] ?>" data-name="<?= esc($c['name']) ?>">
                                 <?= esc($c['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <!-- Selector staff -->
+                    <select id="staffSelect" class="form-control-jp mb-2"
+                            onchange="addCoach(this)"
+                            style="<?= $currentSessionType === 'coach' ? 'display:none' : '' ?>">
+                        <option value="">Añadir miembro del staff…</option>
+                        <?php foreach ($staffOptions as $s): ?>
+                            <option value="<?= $s['id'] ?>" data-name="<?= esc($s['name']) ?>">
+                                <?= esc($s['name']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -321,13 +373,13 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <div class="selected-person" id="coach-<?= $c['user_id'] ?>">
                             <input type="hidden" name="coach_ids[]" value="<?= $c['user_id'] ?>">
                             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-                                <span><i class="bi bi-person-fill me-2" style="color:#059669"></i><?= esc($c['name']) ?></span>
+                                <span><i class="bi bi-person-fill me-2" id="coach-icon-<?= $c['user_id'] ?>" style="color:<?= $currentSessionType === 'staff' ? '#7c3aed' : '#059669' ?>"></i><?= esc($c['name']) ?></span>
                                 <button type="button" onclick="removeCoach(<?= $c['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
                             </div>
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['coaches'] ?? []) ? '' : ';display:none' ?>">Sin entrenadores asignados</div>
+                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['coaches'] ?? []) ? '' : ';display:none' ?>">Sin responsable asignado</div>
                 </div>
             </div>
 
@@ -357,9 +409,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                     <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i><?= esc($p['name']) ?></span>
                                     <button type="button" onclick="removePlayer(<?= $p['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
                                 </div>
-                                <select name="player_coach_map[<?= $p['user_id'] ?>]" class="form-control-jp" style="font-size:12px;padding:4px 8px">
-                                    <option value="">Sin entrenador asignado</option>
-                                    <?php foreach ($coachOptions as $c): ?>
+                                <select name="player_coach_map[<?= $p['user_id'] ?>]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
+                                    <option value="">Sin responsable asignado</option>
+                                    <?php
+                                    $responsibleOptions = $currentSessionType === 'staff' ? $staffOptions : $coachOptions;
+                                    foreach ($responsibleOptions as $c): ?>
                                         <option value="<?= $c['id'] ?>" <?= $pCoachId == $c['id'] ? 'selected' : '' ?>><?= esc($c['name']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
@@ -379,6 +433,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 <?php
 // Opciones para JS
 $coachOptionsJs  = json_encode(array_map(fn($c) => ['id' => $c['id'], 'name' => $c['name']], $coachOptions));
+$staffOptionsJs  = json_encode(array_map(fn($s) => ['id' => $s['id'], 'name' => $s['name']], $staffOptions));
 $playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name']], $playerOptions));
 ?>
 <style>
@@ -391,7 +446,60 @@ $playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => 
 </style>
 <script>
 const coachOptions  = <?= $coachOptionsJs ?>;
+const staffOptions  = <?= $staffOptionsJs ?>;
 const playerOptions = <?= $playerOptionsJs ?>;
+let currentSessionType = '<?= esc($currentSessionType, 'js') ?>';
+
+// ── Cambio tipo responsable ───────────────────────────────────
+function switchResponsible(type) {
+    currentSessionType = type;
+    document.getElementById('session_type_input').value = type;
+
+    const isStaff = type === 'staff';
+    const lblCoach = document.getElementById('lbl-stype-coach');
+    const lblStaff = document.getElementById('lbl-stype-staff');
+    if (lblCoach) lblCoach.style.borderColor = isStaff ? 'var(--border)' : 'var(--accent)';
+    if (lblStaff) lblStaff.style.borderColor = isStaff ? '#7c3aed'       : 'var(--border)';
+
+    // Swap selects
+    const coachSel = document.getElementById('coachSelect');
+    const staffSel = document.getElementById('staffSelect');
+    if (coachSel) coachSel.style.display = isStaff ? 'none' : '';
+    if (staffSel) staffSel.style.display = isStaff ? ''     : 'none';
+
+    // Update card label and icon
+    const label = document.getElementById('responsible-card-label');
+    const icon  = document.getElementById('responsible-card-icon');
+    if (label) label.textContent = isStaff ? 'Staff responsable' : 'Entrenadores';
+    if (icon)  icon.style.color  = isStaff ? '#7c3aed' : '#059669';
+
+    // Update icon colors in already-added coaches
+    document.querySelectorAll('[id^="coach-icon-"]').forEach(el => {
+        el.style.color = isStaff ? '#7c3aed' : '#059669';
+    });
+
+    // Rebuild player_coach_map dropdowns
+    document.querySelectorAll('.player-responsible-map').forEach(sel => {
+        const selectedVal = sel.value;
+        const options = isStaff ? staffOptions : coachOptions;
+        const label = isStaff ? 'Sin staff asignado' : 'Sin entrenador asignado';
+        sel.innerHTML = `<option value="">${label}</option>` +
+            options.map(o => `<option value="${o.id}"${o.id == selectedVal ? ' selected' : ''}>${o.name}</option>`).join('');
+    });
+}
+
+// Init visual state on load
+(function() {
+    const lblCoach = document.getElementById('lbl-stype-coach');
+    const lblStaff = document.getElementById('lbl-stype-staff');
+    if (currentSessionType === 'staff') {
+        if (lblCoach) lblCoach.style.borderColor = 'var(--border)';
+        if (lblStaff) lblStaff.style.borderColor = '#7c3aed';
+    } else {
+        if (lblCoach) lblCoach.style.borderColor = 'var(--accent)';
+        if (lblStaff) lblStaff.style.borderColor = 'var(--border)';
+    }
+})();
 
 // ── Tipo de clase toggle ──────────────────────────────────────
 function setBlockDisabled(block, disabled) {
@@ -450,10 +558,11 @@ function addCoach(sel) {
     addedCoaches.add(id);
     sel.value = '';
 
+    const iconColor = currentSessionType === 'staff' ? '#7c3aed' : '#059669';
     const html = `<div class="selected-person" id="coach-${id}">
         <input type="hidden" name="coach_ids[]" value="${id}">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-            <span><i class="bi bi-person-fill me-2" style="color:#059669"></i>${name}</span>
+            <span><i class="bi bi-person-fill me-2" id="coach-icon-${id}" style="color:${iconColor}"></i>${name}</span>
             <button type="button" onclick="removeCoach(${id})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>`;
@@ -477,9 +586,9 @@ function addPlayer(sel) {
     addedPlayers.add(id);
     sel.value = '';
 
-    const coachOpts = coachOptions.map(c =>
-        `<option value="${c.id}">${c.name}</option>`
-    ).join('');
+    const responsibleOpts = (currentSessionType === 'staff' ? staffOptions : coachOptions)
+        .map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const responsibleLabel = currentSessionType === 'staff' ? 'Sin staff asignado' : 'Sin entrenador asignado';
 
     const html = `<div class="selected-person" id="player-${id}">
         <input type="hidden" name="player_ids[]" value="${id}">
@@ -488,9 +597,9 @@ function addPlayer(sel) {
                 <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>${name}</span>
                 <button type="button" onclick="removePlayer(${id})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
             </div>
-            <select name="player_coach_map[${id}]" class="form-control-jp" style="font-size:12px;padding:4px 8px">
-                <option value="">Sin entrenador asignado</option>
-                ${coachOpts}
+            <select name="player_coach_map[${id}]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
+                <option value="">${responsibleLabel}</option>
+                ${responsibleOpts}
             </select>
         </div>
     </div>`;
