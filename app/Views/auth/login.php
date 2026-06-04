@@ -38,5 +38,8 @@
 </script>
 
 <script src="<?= base_url('assets/js/auth.js') ?>"></script>
+<?php if (service('request')->getGet('expired')): ?>
+<script>document.getElementById('errorBox').textContent = 'Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.';</script>
+<?php endif; ?>
 
 <?= $this->endSection() ?>
