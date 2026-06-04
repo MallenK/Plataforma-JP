@@ -285,11 +285,6 @@ $defaultDay = $defaultDay ?? $today;
             <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600">
                 <i class="bi bi-hourglass-split me-1"></i><?= $dayPending ?> pendiente<?= $dayPending !== 1 ? 's' : '' ?>
             </span>
-            <button type="button" class="btn-jp btn-jp-sm btn-completar-dia"
-                    data-date="<?= $date ?>" data-label="<?= esc($dayLabel . ' ' . $dateLabel) ?>"
-                    style="font-size:11px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
-                <i class="bi bi-lightning-fill me-1"></i>Completar día
-            </button>
             <?php else: ?>
             <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600">
                 <i class="bi bi-check-all me-1"></i>Completado
@@ -350,129 +345,47 @@ $defaultDay = $defaultDay ?? $today;
             <i class="bi bi-chevron-down session-chevron-<?= $s['id'] ?>" style="transition:transform .2s;font-size:13px;color:var(--text-muted)"></i>
         </div>
 
-        <!-- Formulario asistencia (colapsable) -->
+        <!-- Detalle sesión (colapsable, solo lectura) -->
         <div id="s<?= $s['id'] ?>" style="display:none">
         <?php if (empty($s['players'])): ?>
         <div style="padding:20px 24px;color:var(--text-muted);font-size:13px">
             <i class="bi bi-people me-1"></i>Sin alumnos asignados a esta sesión.
         </div>
         <?php else: ?>
-        <form action="/clases/<?= $s['id'] ?>/lista-guardar" method="POST" style="margin:0">
-            <?= csrf_field() ?>
-            <input type="hidden" name="semana" value="<?= $weekOffset ?>">
-            <?php if ($search): ?><input type="hidden" name="buscar" value="<?= esc($search) ?>"><?php endif; ?>
-
-            <!-- Grid de jugadores — Opción C -->
-            <div class="player-grid">
-            <?php foreach ($s['players'] as $p): ?>
-            <?php
-                $uid       = (int)$p['user_id'];
-                $att       = $p['attendance'] ?? 'pending';
-                $isAbsent  = ($att === 'absent');
-                $isPresent = ($att === 'present');
-                $deducted  = !empty($p['bono_deducted_at']);
-                $formId    = 's' . $s['id'] . 'u' . $uid;
-                $icon      = $statusIcons[$att] ?? 'hourglass-split';
-                $bonoRem   = $p['sessions_remaining'];
-            ?>
-            <div id="card-<?= $formId ?>" class="pc att-<?= $att ?>">
-
-                <!-- Nombre -->
-                <div class="pc-top">
-                    <span class="pc-name"><?= esc($p['name']) ?></span>
-                    <?php if (!empty($p['student_note'])): ?>
-                    <span class="pc-note"><i class="bi bi-chat-left-text-fill me-1"></i><?= esc($p['student_note']) ?></span>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Zona de estado (color dominante) -->
-                <div class="pc-status att-zone-<?= $att ?>">
-                    <!-- Select oculto para el form -->
-                    <select name="attendance[<?= $uid ?>]"
-                            class="att-sel"
-                            data-formid="<?= $formId ?>"
-                            data-uid="<?= $uid ?>"
-                            style="display:none">
-                        <?php foreach ($attendanceOpts as $val => [$lbl, $col]): ?>
-                        <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>><?= $lbl ?></option>
-                        <?php endforeach; ?>
-                    </select>
-
-                    <!-- Etiqueta de estado -->
-                    <div class="pc-status-label">
-                        <i class="bi bi-<?= $icon ?>"></i>
-                        <span><?= $attendanceOpts[$att][0] ?></span>
-                    </div>
-
-                    <!-- Botones rápidos ✓ / ✗ -->
-                    <div class="pc-actions">
-                        <button type="button"
-                                class="pc-act-btn pc-present <?= $att === 'present' ? 'active' : '' ?>"
-                                data-formid="<?= $formId ?>" data-val="present">
-                            <i class="bi bi-check-lg"></i>
-                        </button>
-                        <button type="button"
-                                class="pc-act-btn pc-absent <?= $att === 'absent' ? 'active' : '' ?>"
-                                data-formid="<?= $formId ?>" data-val="absent">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Campos de ausencia (visible solo si ausente) -->
-                <div id="abs-<?= $formId ?>" class="pc-abs" style="display:<?= $isAbsent ? 'flex' : 'none' ?>;flex-direction:column;gap:4px">
-                    <select name="absence_reason[<?= $uid ?>]" class="form-select-jp" style="font-size:11px;width:100%">
-                        <option value="">— Motivo —</option>
-                        <?php foreach ($absenceReasons as $r): ?>
-                        <option value="<?= esc($r) ?>" <?= ($p['absence_reason'] ?? '') === $r ? 'selected' : '' ?>><?= esc($r) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="text"
-                           name="absence_notes[<?= $uid ?>]"
-                           class="form-control-jp"
-                           placeholder="Nota opcional…"
-                           value="<?= esc($p['absence_notes'] ?? '') ?>"
-                           style="font-size:11px;width:100%">
-                </div>
-
-                <!-- Bono footer -->
-                <div class="pc-bono">
-                    <?php if ($bonoRem !== null): ?>
-                    <span class="bono-rem-<?= $formId ?> pc-bono-count <?= $bonoRem <= 1 ? 'low' : 'ok' ?>">
-                        <?= $bonoRem ?>
-                    </span>
-                    <span class="pc-bono-name"><?= esc($p['bono_name'] ?? '') ?></span>
-                    <?php if ($deducted): ?>
-                    <span class="pc-bono-ok">
-                        <i class="bi bi-check-circle-fill"></i> Descontado
-                    </span>
-                    <?php elseif ($isPresent): ?>
-                    <button type="button"
-                            class="btn-jp btn-jp-sm btn-deduct-week pc-deduct-btn"
-                            data-session="<?= $s['id'] ?>"
-                            data-player="<?= $uid ?>"
-                            data-formid="<?= $formId ?>">
-                        <i class="bi bi-dash-circle-fill me-1"></i>Descontar
-                    </button>
-                    <?php else: ?>
-                    <span class="bono-hint-<?= $formId ?> pc-bono-hint">Marcar presente</span>
-                    <?php endif; ?>
-                    <?php else: ?>
-                    <span class="pc-bono-empty" title="Este jugador no tiene bono activo">
-                        <i class="bi bi-exclamation-triangle-fill me-1" style="color:#d97706"></i>Sin bono
-                    </span>
-                    <?php endif; ?>
+        <div class="player-grid">
+        <?php foreach ($s['players'] as $p): ?>
+        <?php
+            $uid  = (int)$p['user_id'];
+            $att  = $p['attendance'] ?? 'pending';
+            $icon = $statusIcons[$att] ?? 'hourglass-split';
+        ?>
+        <div class="pc att-<?= $att ?>">
+            <div class="pc-top">
+                <span class="pc-name"><?= esc($p['name']) ?></span>
+                <?php if (!empty($p['student_note'])): ?>
+                <span class="pc-note"><i class="bi bi-chat-left-text-fill me-1"></i><?= esc($p['student_note']) ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="pc-status att-zone-<?= $att ?>">
+                <div class="pc-status-label">
+                    <i class="bi bi-<?= $icon ?>"></i>
+                    <span><?= $attendanceOpts[$att][0] ?></span>
                 </div>
             </div>
-            <?php endforeach; ?>
+            <?php if ($p['attendance'] === 'absent' && !empty($p['absence_reason'])): ?>
+            <div style="padding:6px 12px;font-size:11px;color:#991b1b;background:#fee2e2;border-top:1px solid #fca5a5">
+                <?= esc($p['absence_reason']) ?>
             </div>
-
-            <div style="padding:10px 18px;display:flex;justify-content:flex-end;border-top:1px solid var(--border-color)">
-                <button type="submit" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
-                    <i class="bi bi-clipboard2-check-fill me-1"></i>Guardar y marcar lista pasada
-                </button>
-            </div>
-        </form>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+        </div>
+        <div style="padding:10px 18px;display:flex;justify-content:flex-end;border-top:1px solid var(--border-color)">
+            <a href="/clases/<?= $s['id'] ?>/lista"
+               class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
+                <i class="bi bi-clipboard2-check-fill me-1"></i>Gestionar asistencia
+            </a>
+        </div>
         <?php endif; ?>
         </div>
     </div>
@@ -494,8 +407,6 @@ $defaultDay = $defaultDay ?? $today;
 
 <script>
 (function () {
-    var CSRF_NAME   = '<?= csrf_token() ?>';
-    var CSRF_HASH   = '<?= csrf_hash() ?>';
     var DEFAULT_DAY = '<?= $defaultDay ?>';
 
     // ── Toggle sesión ────────────────────────────────────────────
@@ -587,140 +498,6 @@ $defaultDay = $defaultDay ?? $today;
         });
     });
 
-    // ── Botones rápidos P / A en tarjeta ─────────────────────────
-    var statusConfig = {
-        present:   ['Presente',   'check-circle-fill'],
-        absent:    ['Ausente',    'x-circle-fill'],
-        pending:   ['Pendiente',  'hourglass-split'],
-        confirmed: ['Confirmado', 'check-circle'],
-        declined:  ['Declinado',  'dash-circle'],
-    };
-
-    document.querySelectorAll('.pc-act-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var fid  = this.dataset.formid;
-            var val  = this.dataset.val;
-            var card = document.getElementById('card-' + fid);
-            if (!card) return;
-
-            // Actualizar select oculto
-            var sel = card.querySelector('.att-sel');
-            if (sel) sel.value = val;
-
-            // Color de zona de estado
-            var zone = card.querySelector('.pc-status');
-            if (zone) zone.className = 'pc-status att-zone-' + val;
-
-            // Etiqueta + icono
-            var labelEl = card.querySelector('.pc-status-label span');
-            var iconEl  = card.querySelector('.pc-status-label i');
-            if (labelEl && statusConfig[val]) labelEl.textContent = statusConfig[val][0];
-            if (iconEl  && statusConfig[val]) iconEl.className = 'bi bi-' + statusConfig[val][1];
-
-            // Border de tarjeta
-            card.className = card.className.replace(/att-\w+/, 'att-' + val);
-
-            // Botón activo
-            card.querySelectorAll('.pc-act-btn').forEach(function(b) { b.classList.remove('active'); });
-            this.classList.add('active');
-
-            // Campos ausencia
-            var absEl = document.getElementById('abs-' + fid);
-            if (absEl) absEl.style.display = (val === 'absent') ? 'flex' : 'none';
-
-            // Bono: mostrar/ocultar
-            var deductBtn = card.querySelector('.btn-deduct-week');
-            var hint      = card.querySelector('.pc-bono-hint');
-            if (deductBtn) deductBtn.style.display = (val === 'present') ? '' : 'none';
-            if (hint)      hint.style.display      = (val === 'present') ? 'none' : '';
-        });
-    });
-
-    // Ocultar botón descontar si no está presente al cargar
-    document.querySelectorAll('.btn-deduct-week').forEach(function(btn) {
-        var fid = btn.dataset.formid;
-        var sel = document.querySelector('.att-sel[data-formid="' + fid + '"]');
-        if (sel && sel.value !== 'present') btn.style.display = 'none';
-    });
-
-    // ── Descontar bono AJAX ──────────────────────────────────────
-    document.querySelectorAll('.btn-deduct-week').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var sessionId = this.dataset.session;
-            var playerId  = this.dataset.player;
-            var fid       = this.dataset.formid;
-            var self      = this;
-
-            if (!confirm('¿Descontar 1 sesión del bono de este jugador?')) return;
-            self.disabled = true;
-            self.textContent = '…';
-
-            fetch('/clases/' + sessionId + '/jugadores/' + playerId + '/descontar-bono', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ [CSRF_NAME]: CSRF_HASH })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    var remEl = document.querySelector('.bono-rem-' + fid);
-                    if (remEl) {
-                        remEl.textContent = data.sessions_remaining;
-                        remEl.classList.remove('ok', 'low');
-                        remEl.classList.add(data.sessions_remaining <= 1 ? 'low' : 'ok');
-                    }
-                    self.outerHTML = '<span class="pc-bono-ok"><i class="bi bi-check-circle-fill"></i> Descontado</span>';
-                } else {
-                    showAlert(data.error || 'Error.');
-                    self.disabled = false;
-                    self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar';
-                }
-            })
-            .catch(function() {
-                showAlert('Error de red.');
-                self.disabled = false;
-                self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar';
-            });
-        });
-    });
-
-    // ── Completar día rápido ─────────────────────────────────────
-    document.querySelectorAll('.btn-completar-dia').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var date  = this.dataset.date;
-            var label = this.dataset.label;
-            var self  = this;
-
-            if (!confirm('¿Marcar todos los alumnos como Presente y completar todas las sesiones pendientes de ' + label + '?\n\nEsta acción no descuenta bonos.')) return;
-            self.disabled = true;
-            self.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Guardando…';
-
-            var body = new URLSearchParams();
-            body.append('date', date);
-            body.append(CSRF_NAME, CSRF_HASH);
-
-            fetch('/pasar-lista/completar-dia', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                body: body.toString()
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    showAlert(data.error || 'Error al completar el día.');
-                    self.disabled = false;
-                    self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
-                }
-            })
-            .catch(function() {
-                showAlert('Error de red.');
-                self.disabled = false;
-                self.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Completar día';
-            });
-        });
-    });
 })();
 </script>
 
