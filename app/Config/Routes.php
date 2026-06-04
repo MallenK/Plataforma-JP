@@ -36,9 +36,6 @@ $routes->get('/', function () {
 $routes->get('login',  'AuthController::login');
 $routes->post('login', 'AuthController::loginPost');
 
-$routes->get('register',  'AuthController::register');
-$routes->post('register', 'AuthController::registerPost');
-
 $routes->get('/forgot-password',  'AuthController::forgotPassword');
 $routes->post('/forgot-password', 'AuthController::forgotPasswordPost');
 

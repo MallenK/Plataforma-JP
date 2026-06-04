@@ -210,6 +210,11 @@ class ClasesController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para editar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
         return view('clases/create', [
             'title'           => 'Editar Clase — JP Preparation',
             'session'         => $session,
@@ -223,6 +228,16 @@ class ClasesController extends BaseController
 
     public function update(int $id)
     {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para editar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
         $ok = $this->clasesService->updateSession($id, $this->request->getPost());
 
         if (!$ok) {
@@ -240,6 +255,16 @@ class ClasesController extends BaseController
 
     public function destroy(int $id)
     {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para eliminar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
         $this->clasesService->deleteSession($id);
         session()->setFlashdata('success', 'Sesión eliminada.');
         return redirect()->to('/clases');
@@ -247,6 +272,16 @@ class ClasesController extends BaseController
 
     public function complete(int $id)
     {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para completar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
         $this->clasesService->markComplete($id);
         session()->setFlashdata('success', 'Sesión marcada como completada.');
         return redirect()->to('/clases/' . $id);
@@ -254,9 +289,49 @@ class ClasesController extends BaseController
 
     public function cancel(int $id)
     {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para cancelar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
         $this->clasesService->cancelSession($id);
         session()->setFlashdata('success', 'Sesión cancelada.');
         return redirect()->to('/clases/' . $id);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Helpers de autorización
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Devuelve true si el usuario puede gestionar la sesión:
+     * - superadmin/admin siempre pueden
+     * - coach/staff solo si están en la lista de coaches asignados
+     */
+    protected function isAssignedOrAdmin(array $session): bool
+    {
+        $role = $this->currentRole();
+
+        if (in_array($role, ['superadmin', 'admin'])) {
+            return true;
+        }
+
+        if ($role === 'coach' || $role === 'staff') {
+            $userId = $this->currentUserId();
+            foreach ($session['coaches'] as $c) {
+                if ((int)$c['user_id'] === $userId) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return false;
     }
 
     // ────────────────────────────────────────────────────────────────
