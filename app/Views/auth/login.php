@@ -23,13 +23,6 @@
             </button>
         </form>
 
-        <div style="text-align:center;margin-top:15px;">
-            <a href="/register" style="color:#93c5fd;">Crear cuenta</a>
-        </div>
-
-        <div style="text-align:center;margin-top:10px;">
-            <a href="/forgot-password" style="color:#93c5fd;">¿Olvidaste tu contraseña?</a>
-        </div>
     </div>
 </div>
 

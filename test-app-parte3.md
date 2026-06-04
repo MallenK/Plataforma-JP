@@ -234,4 +234,3 @@ Sesión cerrada correctamente al finalizar.
 1. 🔴 Eliminar el botón/funcionalidad "Nueva notificación" para el rol player  
 2. 🟡 Corregir el endpoint de descarga de archivos (503)  
 3. 🟡 Definir si /configuracion debe ser 403 o solo lectura para players
-
