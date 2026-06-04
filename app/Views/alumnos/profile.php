@@ -289,9 +289,9 @@ $categoryLabel = match($profile['category'] ?? '') {
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-chat-square-text-fill me-2" style="color:var(--accent)"></i>
-                    Anotaciones
+                    Observaciones
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($publicAnns) ?> anotación(es)</span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($publicAnns) ?> observación(es)</span>
             </div>
 
             <div class="card-jp-body d-flex flex-column gap-2">
@@ -309,7 +309,7 @@ $categoryLabel = match($profile['category'] ?? '') {
                 <?php endif; ?>
 
                 <?php if (empty($publicAnns)): ?>
-                    <p style="font-size:13px;color:var(--text-muted);margin:0">Sin anotaciones todavía.</p>
+                    <p style="font-size:13px;color:var(--text-muted);margin:0">Sin observaciones todavía.</p>
                 <?php else: ?>
                     <?php foreach ($publicAnns as $ann): ?>
                     <?php $canDelete = (int)$ann['author_id'] === (int)$currentUserId || $isAdminOrSuper; ?>
@@ -323,7 +323,7 @@ $categoryLabel = match($profile['category'] ?? '') {
                             </span>
                             <?php if ($canDelete): ?>
                             <form action="<?= base_url('anotaciones/' . $ann['id'] . '/eliminar') ?>" method="post"
-                                  onsubmit="return confirm('¿Eliminar esta anotación?')">
+                                  onsubmit="return confirm('¿Eliminar esta observación?')">
                                 <?= csrf_field() ?>
                                 <button type="submit"
                                         style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:0;line-height:1"
@@ -345,12 +345,12 @@ $categoryLabel = match($profile['category'] ?? '') {
                     <input type="hidden" name="type" value="public">
                     <div class="form-group mb-2">
                         <textarea name="content" class="form-control-jp" rows="2"
-                                  placeholder="Añadir anotación..." required
+                                  placeholder="Añadir observación..." required
                                   style="resize:vertical;min-height:64px"></textarea>
                     </div>
                     <div class="text-end">
                         <button type="submit" class="btn-jp btn-jp-primary" style="padding:6px 16px;font-size:13px">
-                            <i class="bi bi-plus-circle me-1"></i>Añadir anotación
+                            <i class="bi bi-plus-circle me-1"></i>Añadir observación
                         </button>
                     </div>
                 </form>

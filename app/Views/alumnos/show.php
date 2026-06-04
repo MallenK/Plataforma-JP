@@ -747,15 +747,15 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
         <div class="card-jp-header">
             <span class="card-jp-title">
                 <i class="bi bi-chat-square-text-fill me-2" style="color:var(--accent)"></i>
-                Anotaciones
+                Observaciones
             </span>
-            <span style="font-size:12px;color:var(--text-muted)"><?= count($publicAnnotations) ?> anotación(es)</span>
+            <span style="font-size:12px;color:var(--text-muted)"><?= count($publicAnnotations) ?> observación(es)</span>
         </div>
 
         <!-- Lista -->
         <div class="card-jp-body d-flex flex-column gap-2" id="public-annotations-list">
             <?php if (empty($publicAnnotations)): ?>
-                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin anotaciones todavía.</p>
+                <p style="font-size:13px;color:var(--text-muted);margin:0">Sin observaciones todavía.</p>
             <?php else: ?>
                 <?php foreach ($publicAnnotations as $ann): ?>
                 <?php
@@ -788,7 +788,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                         </span>
                         <?php if ($canDelete): ?>
                         <form action="<?= base_url('anotaciones/' . $ann['id'] . '/eliminar') ?>" method="post"
-                              onsubmit="return confirm('¿Eliminar esta anotación?')">
+                              onsubmit="return confirm('¿Eliminar esta observación?')">
                             <?= csrf_field() ?>
                             <button type="submit"
                                     style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:0;line-height:1"
@@ -810,7 +810,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                 <input type="hidden" name="type" value="public">
                 <div class="form-group mb-2">
                     <textarea name="content" class="form-control-jp" rows="2"
-                              placeholder="Añadir anotación..." required
+                              placeholder="Añadir observación..." required
                               style="resize:vertical;min-height:64px"></textarea>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -822,7 +822,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                                onchange="document.getElementById('ann-pub-filename').textContent = this.files[0]?.name || 'Adjuntar archivo (opcional)'">
                     </label>
                     <button type="submit" class="btn-jp btn-jp-primary ms-auto" style="padding:6px 16px;font-size:13px">
-                        <i class="bi bi-plus-circle me-1"></i>Añadir anotación
+                        <i class="bi bi-plus-circle me-1"></i>Añadir observación
                     </button>
                 </div>
             </form>
