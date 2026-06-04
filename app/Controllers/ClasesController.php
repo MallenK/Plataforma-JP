@@ -167,8 +167,8 @@ class ClasesController extends BaseController
             }
         }
 
-        // Coach solo ve sesiones donde está asignado como entrenador
-        if ($isCoach) {
+        // Coach y staff solo ven sesiones donde están asignados como responsable
+        if ($isCoach || $role === 'staff') {
             $assigned = false;
             foreach ($session['coaches'] as $c) {
                 if ((int)$c['user_id'] === $userId) { $assigned = true; break; }
