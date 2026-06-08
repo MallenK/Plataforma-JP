@@ -58,7 +58,7 @@ $isEditing = !empty($profile);
                             <div class="form-group">
                                 <label class="form-label">Altura (cm)</label>
                                 <input type="number" name="height" class="form-control-jp"
-                                    placeholder="Ej: 185" step="0.1" min="100" max="250"
+                                    placeholder="Ej: 185" step="0.1"
                                     value="<?= esc($profile['height'] ?? '') ?>">
                             </div>
                         </div>
@@ -101,7 +101,7 @@ $isEditing = !empty($profile);
 
                         <div class="col-12 col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Liga</label>
+                                <label class="form-label">División</label>
                                 <input type="text" name="league" class="form-control-jp"
                                     placeholder="Ej: Liga Autonómica"
                                     value="<?= esc($profile['league'] ?? '') ?>">

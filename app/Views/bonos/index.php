@@ -286,7 +286,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     <i class="bi bi-plus-lg"></i> Nuevo tipo
                 </button>
             </div>
-            <div style="overflow-y:auto;max-height:420px">
+            <div style="overflow-x:auto;overflow-y:auto;max-height:420px">
                 <?php if (empty($allBonoTypes)): ?>
                 <div style="padding:48px 20px;text-align:center;color:var(--text-muted)">
                     <i class="bi bi-grid" style="font-size:2rem;display:block;margin-bottom:8px"></i>

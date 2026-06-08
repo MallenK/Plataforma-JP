@@ -2,9 +2,9 @@
 
 <?= $this->section('content') ?>
 
-<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a,#1e3a8a);">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0f172a,#1e3a8a);">
 
-    <div style="width:400px;padding:40px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.3);color:white;">
+    <div style="width:100%;max-width:400px;padding:32px 28px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.3);color:white;">
         <h2 style="text-align:center;margin-bottom:30px;">Crear cuenta</h2>
 
         <div id="errorBox" style="color:#fca5a5;margin-bottom:15px;"></div>

@@ -112,7 +112,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             </div>
 
             <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
-            <div style="min-width:240px">
+            <div style="width:100%;max-width:320px">
                 <?php if ($pastCutoff): ?>
                 <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
                     <i class="bi bi-exclamation-triangle-fill me-1"></i>

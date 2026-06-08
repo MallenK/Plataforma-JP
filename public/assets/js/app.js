@@ -26,3 +26,31 @@ function showAlert(msg, type = 'error') {
 $(document).ready(function () {
     console.log("App global cargada fouewrhgiuerb");
 });
+
+// ── Sidebar toggle para móvil ──────────────────────────────────
+(function () {
+    const btn     = document.getElementById('mobile-menu-btn');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (!btn || !sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    btn.addEventListener('click', openSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 768) closeSidebar();
+    });
+})();

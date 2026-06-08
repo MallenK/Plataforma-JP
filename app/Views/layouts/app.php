@@ -10,6 +10,7 @@
 <div class="app-layout">
 
     <?= view('components/sidebar') ?>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="main-wrap">
 
