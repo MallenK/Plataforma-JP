@@ -45,6 +45,10 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
 
 <header class="topbar">
 
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menú">
+        <i class="bi bi-list"></i>
+    </button>
+
     <div class="topbar-title">
         <h1><?= esc($pageTitle) ?></h1>
         <?php if ($pageSubtitle): ?><p><?= esc($pageSubtitle) ?></p><?php endif; ?>

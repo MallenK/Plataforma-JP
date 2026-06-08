@@ -107,7 +107,6 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                             <div class="form-group">
                                 <label class="form-label">Altura (cm)</label>
                                 <input type="number" name="height" class="form-control-jp"
-                                    min="100" max="250"
                                     value="<?= esc($alumno['height'] ?? '') ?>">
                             </div>
                         </div>

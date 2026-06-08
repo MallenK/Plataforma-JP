@@ -76,7 +76,7 @@ $attendanceOpts = [
         <?= csrf_field() ?>
         <input type="hidden" name="absence_reason_hidden" value="">
 
-        <div style="overflow-x:auto">
+        <div class="table-responsive">
         <table class="table-jp" style="min-width:700px">
             <thead>
                 <tr>

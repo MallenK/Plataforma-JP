@@ -12,14 +12,14 @@ $canSeeSent   = $canSeeSent ?? false;
 $sentNotifications = $sentNotifications ?? [];
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h2 class="fw-bold mb-1" style="font-size:1.25rem">Centro de notificaciones</h2>
         <p class="text-muted mb-0" style="font-size:13px">
             <?= $unread ?> sin leer
         </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
         <?php if ($unread > 0): ?>
         <button class="btn btn-sm btn-outline-secondary" id="btn-mark-all-read">
             <i class="bi bi-check2-all me-1"></i>Marcar todas leídas

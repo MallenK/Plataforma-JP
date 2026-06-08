@@ -104,7 +104,7 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
                             <div class="form-group">
                                 <label class="form-label">Altura (cm)</label>
                                 <input type="number" name="height" class="form-control-jp"
-                                    placeholder="Ej: 185" min="100" max="250"
+                                    placeholder="Ej: 185"
                                     value="<?= esc(old('height')) ?>">
                             </div>
                         </div>
@@ -147,7 +147,7 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
 
                         <div class="col-12 col-md-4">
                             <div class="form-group">
-                                <label class="form-label">Liga</label>
+                                <label class="form-label">Divisió</label>
                                 <input type="text" name="league" class="form-control-jp"
                                     placeholder="Ej: Liga Autonómica"
                                     value="<?= esc(old('league')) ?>">
