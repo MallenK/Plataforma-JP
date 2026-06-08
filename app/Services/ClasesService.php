@@ -986,7 +986,7 @@ class ClasesService
     {
         return $this->db->table('users')
             ->select('id, name, email')
-            ->whereIn('role', ['coach', 'admin', 'superadmin'])
+            ->where('role', 'coach')
             ->where('status', 'active')
             ->orderBy('name')
             ->get()->getResultArray();
