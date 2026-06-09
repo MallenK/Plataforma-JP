@@ -27,7 +27,7 @@ $(document).ready(function () {
     console.log("App global cargada fouewrhgiuerb");
 });
 
-// ── Sidebar toggle para móvil ──────────────────────────────────
+// ── Sidebar toggle para móvil y tablet ─────────────────────────
 (function () {
     const btn     = document.getElementById('mobile-menu-btn');
     const sidebar = document.querySelector('.sidebar');
@@ -51,6 +51,6 @@ $(document).ready(function () {
     if (overlay) overlay.addEventListener('click', closeSidebar);
 
     window.addEventListener('resize', function () {
-        if (window.innerWidth > 768) closeSidebar();
+        if (window.innerWidth > 1024) closeSidebar();
     });
 })();
