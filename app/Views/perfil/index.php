@@ -53,7 +53,7 @@ $today = date('Y-m-d');
 $isProtected = ((int)($user['id'] ?? 0) === 2)
     || (strtolower((string)($user['email'] ?? '')) === 'sergimallenweb@gmail.com');
 
-$canEdit       = !$isProtected && ($isSelf || $isAdmin);
+$canEdit       = $isSelf || ($isAdmin && !$isProtected);
 $canEditTitle  = !$isProtected && $isAdmin;
 
 $role         = $user['role'] ?? '';

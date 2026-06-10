@@ -31,7 +31,9 @@ class AvatarController extends BaseController
             return redirect()->back();
         }
 
-        if ($this->isProtectedUser($userId)) {
+        // Solo bloquear si un admin intenta modificar el avatar de otro usuario protegido,
+        // no cuando el propio usuario gestiona su avatar.
+        if ($targetId !== null && $this->isProtectedUser($userId)) {
             session()->setFlashdata('error', 'Este perfil está protegido y su avatar no puede modificarse desde la plataforma.');
             return redirect()->back();
         }
@@ -96,7 +98,7 @@ class AvatarController extends BaseController
             return redirect()->back();
         }
 
-        if ($this->isProtectedUser($userId)) {
+        if ($targetId !== null && $this->isProtectedUser($userId)) {
             session()->setFlashdata('error', 'Este perfil está protegido y su avatar no puede modificarse desde la plataforma.');
             return redirect()->back();
         }
