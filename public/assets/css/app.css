@@ -57,6 +57,7 @@ body {
     background: var(--bg-app);
     color: var(--text-body);
     line-height: 1.5;
+    overflow-x: hidden;
 }
 
 /* ── Layout principal ───────────────────────────────────── */
@@ -254,6 +255,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-width: 0;
 }
 
 /* ── Navbar ─────────────────────────────────────────────── */
@@ -858,6 +860,15 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
 .alert-jp.error   { background: var(--danger-light);  color: #991b1b; }
 .alert-jp.warning { background: var(--warning-light); color: #92400e; }
 
+/* ── Overflow containment para tablas ────────────────────────── */
+/* Las tablas hacen scroll internamente; no afectan al layout global */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    width: 100%;
+}
+
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile & Tablet
    ══════════════════════════════════════════════════════════════ */
@@ -931,6 +942,82 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
     /* Métricas */
     .metric-value { font-size: 22px; }
     .metric-card  { padding: 14px 16px; }
+
+    /* Overflow prevention — inputs y contenedores flex */
+    .input-search { min-width: 150px; flex: 1; }
+    .page-body    { min-width: 0; }
+    .card-jp      { min-width: 0; }
+
+    /* Bootstrap .row con gutters puede tener márgenes negativos;
+       el overflow-x:hidden del body los absorbe, pero limitamos también aquí */
+    .row { --bs-gutter-x: 1rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLET PURO (769 px – 1024 px)
+   Sin sidebar → área completa; tipografía mayor y diseño vertical.
+   Sobreescribe las reducciones aplicadas por max-width:1024px.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+
+    /* ── Tipografía base ──────────────────────────────────────── */
+    body { font-size: 15px; }
+
+    /* ── Topbar ───────────────────────────────────────────────── */
+    .topbar         { padding: 0 24px; }
+    .topbar-title h1 { font-size: 20px; }
+    .topbar-title p  { font-size: 12px; }
+
+    /* ── Cuerpo ───────────────────────────────────────────────── */
+    .page-body { padding: 24px; }
+
+    /* ── Cabecera de página ───────────────────────────────────── */
+    .page-header-text h2 { font-size: 21px; }
+    .page-header-text p  { font-size: 13.5px; }
+
+    /* ── Métricas: compensamos la reducción de max-width:1024px ── */
+    .metric-value  { font-size: 26px; }
+    .metric-card   { padding: 18px 20px; }
+    .metric-label  { font-size: 12px; }
+    .metric-icon   { width: 36px; height: 36px; font-size: 17px; }
+
+    /* ── Cards ────────────────────────────────────────────────── */
+    .card-jp-title  { font-size: 16px; }
+    .card-jp-header { padding: 16px 20px 12px; }
+    .card-jp-body   { padding: 18px 20px; }
+
+    /* ── Botones ──────────────────────────────────────────────── */
+    .btn-jp    { padding: 10px 18px; font-size: 14px; }
+    .btn-jp-sm { padding: 7px 14px;  font-size: 13px; }
+
+    /* ── Tabla ────────────────────────────────────────────────── */
+    .table-jp th { font-size: 12px;   padding: 12px 16px; }
+    .table-jp td { font-size: 14px;   padding: 14px 16px; }
+
+    /* ── Formularios ──────────────────────────────────────────── */
+    .form-control-jp  { font-size: 14px; padding: 11px 14px; }
+    .input-search input { font-size: 14px; }
+    .form-label       { font-size: 13px; }
+
+    /* ── Perfil: apilado vertical en tablet ───────────────────── */
+    .profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px;
+    }
+
+    /* ── Badges ───────────────────────────────────────────────── */
+    .badge-status { font-size: 12px; padding: 4px 12px; }
+
+    /* ── Sidebar nav (visible cuando está abierto) ────────────── */
+    .sidebar-nav-link { font-size: 14px; padding: 10px 12px; }
+
+    /* ── Dropdown notificaciones ──────────────────────────────── */
+    .notif-dropdown { width: 320px; }
+
+    /* ── Chat: ajuste altura con nuevo padding ────────────────── */
+    .chat-layout { height: calc(100vh - var(--navbar-h) - 48px); }
 }
 
 /* ── Móvil (≤ 768px) ────────────────────────────────────────── */
@@ -988,8 +1075,19 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
     .page-header { flex-direction: column; align-items: flex-start; }
     .page-header .d-flex { flex-wrap: wrap; }
 
-    /* Tablas */
-    .table-responsive { -webkit-overflow-scrolling: touch; }
+    /* Tablas: scroll interno, no afectan el layout */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    /* Search bar: selects con min-width inline → forzar stretch */
+    .search-bar select,
+    .search-bar .form-control-jp {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
 
     /* Calendar view tabs */
     .card-jp-header .d-flex.align-items-center.gap-2 { flex-wrap: wrap; }
