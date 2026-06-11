@@ -39,15 +39,26 @@ $(document).ready(function () {
         sidebar.classList.add('open');
         if (overlay) overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
+        btn.querySelector('i').className = 'bi bi-x-lg';
+        btn.setAttribute('aria-expanded', 'true');
     }
 
     function closeSidebar() {
         sidebar.classList.remove('open');
         if (overlay) overlay.classList.remove('active');
         document.body.style.overflow = '';
+        btn.querySelector('i').className = 'bi bi-list';
+        btn.setAttribute('aria-expanded', 'false');
     }
 
-    btn.addEventListener('click', openSidebar);
+    btn.addEventListener('click', function () {
+        if (sidebar.classList.contains('open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
+    });
+
     if (overlay) overlay.addEventListener('click', closeSidebar);
 
     window.addEventListener('resize', function () {
