@@ -9,17 +9,14 @@ class ConversationModel extends Model
     protected $table            = 'conversations';
     protected $primaryKey       = 'id';
     protected $returnType       = 'array';
-    protected $useAutoIncrement = false;
+    protected $useAutoIncrement = true;
     protected $useTimestamps    = false;
 
-    protected $allowedFields = ['id', 'user1_id', 'user2_id', 'created_at', 'last_message_at'];
+    protected $allowedFields = ['user1_id', 'user2_id', 'created_at', 'last_message_at'];
 
     /**
      * Devuelve o crea la conversación entre dos usuarios.
      * user1_id siempre es el menor de los dos IDs para unicidad.
-     *
-     * NOTE: La tabla conversations no tiene AUTO_INCREMENT en TiDB (datos importados
-     * sin secuencia). Generamos el id explícitamente para evitar Duplicate PRIMARY.
      */
     public function findOrCreate(int $userA, int $userB): array
     {
@@ -34,25 +31,20 @@ class ConversationModel extends Model
             return $conv;
         }
 
-        // Generate explicit ID: TiDB ignores AUTO_INCREMENT = N on this table.
-        $maxRow = $this->db->query("SELECT COALESCE(MAX(id), -1) + 1 AS next_id FROM conversations")->getRow();
-        $nextId = (int) $maxRow->next_id;
-
         $now = date('Y-m-d H:i:s');
         try {
-            $this->insert([
-                'id'         => $nextId,
+            $newId = $this->insert([
                 'user1_id'   => $u1,
                 'user2_id'   => $u2,
                 'created_at' => $now,
-            ]);
+            ], true);
         } catch (\Throwable $e) {
-            // Race condition (another request used the same id or created same pair) → retry read.
+            // Race condition: otro request creó la misma conversación → releer.
             $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
             return $conv ?: [];
         }
 
-        return $this->find($nextId) ?: [];
+        return $this->find($newId) ?: [];
     }
 
     /**

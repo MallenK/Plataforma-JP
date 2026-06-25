@@ -35,6 +35,7 @@ $navTitles = [
     'perfil'         => ['Mi perfil',       'Información de cuenta'],
     'notificaciones' => ['Notificaciones',  'Centro de notificaciones'],
     'mensajes'       => ['Mensajes',        'Chat y conversaciones'],
+    'tickets'        => ['Soporte',         'Sistema de tickets'],
 ];
 
 // Si el controlador pasó $pageTitle/$pageSubtitle explícitamente, se usan esos
