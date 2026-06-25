@@ -238,7 +238,7 @@ $categoryLabel = match($profile['category'] ?? '') {
                             <div class="d-flex gap-1 justify-content-end">
                                 <?php if ($canPreview): ?>
                                 <button type="button"
-                                        onclick="openDocPreview(<?= (int)$doc['id'] ?>, <?= json_encode($doc['name_original']) ?>, '<?= esc($doc['extension'] ?? '') ?>')"
+                                        onclick="openDocPreview(<?= (int)$doc['id'] ?>, <?= esc(json_encode($doc['name_original'])) ?>, '<?= esc($doc['extension'] ?? '') ?>')"
                                         class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
                                     <i class="bi bi-eye"></i>
                                 </button>

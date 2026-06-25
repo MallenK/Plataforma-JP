@@ -641,12 +641,13 @@ $roleLabels = [
 
     function formatTime(dt) {
         if (!dt) return '';
-        const d = new Date(dt.replace(' ', 'T'));
+        const d  = new Date(dt.replace(' ', 'T') + 'Z'); // UTC stored → parse as UTC
         const now = new Date();
-        const sameDay = d.toDateString() === now.toDateString();
-        if (sameDay) return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-        return d.toLocaleDateString('es-ES', {day:'2-digit', month:'short'}) + ' ' +
-               d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+        const tz  = 'Etc/GMT-1'; // UTC+1 fixed (no DST)
+        const sameDay = d.toLocaleDateString('es-ES', {timeZone: tz}) === now.toLocaleDateString('es-ES', {timeZone: tz});
+        if (sameDay) return d.toLocaleTimeString('es-ES', {timeZone: tz, hour:'2-digit', minute:'2-digit'});
+        return d.toLocaleDateString('es-ES', {timeZone: tz, day:'2-digit', month:'short'}) + ' ' +
+               d.toLocaleTimeString('es-ES', {timeZone: tz, hour:'2-digit', minute:'2-digit'});
     }
 
     function timeAgoJS(dt) {

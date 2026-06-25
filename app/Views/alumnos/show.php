@@ -670,7 +670,7 @@ $formatTime = static function (?string $hms): string {
                             <div class="d-flex gap-1 justify-content-end">
                                 <?php if ($canPreviewDoc): ?>
                                 <button type="button"
-                                        onclick="openDocPreview(<?= (int)$rdoc['id'] ?>, <?= json_encode($rdoc['name_original']) ?>, '<?= esc($rdoc['extension'] ?? '') ?>')"
+                                        onclick="openDocPreview(<?= (int)$rdoc['id'] ?>, <?= esc(json_encode($rdoc['name_original'])) ?>, '<?= esc($rdoc['extension'] ?? '') ?>')"
                                         class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Previsualizar">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -773,7 +773,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                         </a>
                         <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
                         <button type="button"
-                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= json_encode($ann['doc_name']) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
+                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= esc(json_encode($ann['doc_name'])) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
                                 class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
                             <i class="bi bi-eye" style="font-size:11px"></i>
                         </button>
@@ -861,7 +861,7 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
                         </a>
                         <?php if (in_array($ann['doc_ext'] ?? '', ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'])): ?>
                         <button type="button"
-                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= json_encode($ann['doc_name']) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
+                                onclick="openDocPreview(<?= (int)$ann['document_id'] ?>, <?= esc(json_encode($ann['doc_name'])) ?>, '<?= esc($ann['doc_ext'] ?? '') ?>')"
                                 class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Ver" style="padding:2px 5px">
                             <i class="bi bi-eye" style="font-size:11px"></i>
                         </button>
