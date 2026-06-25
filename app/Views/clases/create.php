@@ -27,6 +27,29 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 }
 ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.flatpickr-calendar {
+    font-family: 'Montserrat', sans-serif !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,.18) !important;
+    border-radius: 12px !important;
+}
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus { background: var(--accent) !important; border-color: var(--accent) !important; }
+.flatpickr-day:hover { background: var(--accent-light) !important; }
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover,
+.flatpickr-current-month input.cur-year[disabled]:hover { background: var(--accent-light) !important; }
+.flatpickr-time input:focus,
+.flatpickr-time input:hover { background: var(--accent-light) !important; }
+.numInputWrapper:hover { background: var(--accent-light) !important; }
+.flatpickr-input.active,
+.flatpickr-input:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(79,70,229,.15) !important; }
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('page_content') ?>
 
 <div class="page-header">
@@ -430,6 +453,8 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 </form>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 <?php
 // Opciones para JS
 $coachOptionsJs  = json_encode(array_map(fn($c) => ['id' => $c['id'], 'name' => $c['name']], $coachOptions));
@@ -657,6 +682,52 @@ function removePlayer(id) {
     });
     // Check on load if editing
     if (EXCLUDE_ID) checkLocationConflict();
+})();
+
+// ── Flatpickr — time & date pickers ──────────────────────────
+(function () {
+    if (typeof flatpickr === 'undefined') return;
+
+    const timeOpts = {
+        enableTime: true,
+        noCalendar: true,
+        time_24hr:  true,
+        minuteIncrement: 5,
+        disableMobile:   false
+    };
+    const dateOpts = {
+        dateFormat:    'Y-m-d',
+        allowInput:    true,
+        disableMobile: false,
+        locale:        (window.flatpickr?.l10ns?.es) ? 'es' : 'default'
+    };
+
+    // Sesión puntual (bloque single o formulario de edición)
+    const sSingle = document.getElementById('block-single');
+    const sEdit   = document.querySelector('[name="session_date"]')?.closest('.card-jp-body');
+
+    [sSingle, sEdit].filter(Boolean).forEach(block => {
+        const dateEl  = block.querySelector('[name="session_date"]');
+        const startEl = block.querySelector('[name="start_time"]');
+        const endEl   = block.querySelector('[name="end_time"]');
+        if (dateEl  && !dateEl._flatpickr)  flatpickr(dateEl,  dateOpts);
+        if (startEl && !startEl._flatpickr) flatpickr(startEl, timeOpts);
+        if (endEl   && !endEl._flatpickr)   flatpickr(endEl,   timeOpts);
+    });
+
+    // Bloque recurrente
+    const sRec = document.getElementById('block-recurring');
+    if (sRec) {
+        const inputs = [
+            { el: sRec.querySelector('[name="start_time"]'),      opts: timeOpts },
+            { el: sRec.querySelector('[name="end_time"]'),        opts: timeOpts },
+            { el: sRec.querySelector('[name="recurrence_start"]'),opts: dateOpts },
+            { el: sRec.querySelector('[name="recurrence_end"]'),  opts: dateOpts },
+        ];
+        inputs.forEach(({ el, opts }) => {
+            if (el && !el._flatpickr) flatpickr(el, opts);
+        });
+    }
 })();
 </script>
 <?= $this->endSection() ?>

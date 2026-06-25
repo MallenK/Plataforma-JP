@@ -150,8 +150,24 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                 $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
                 $barColor    = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
             ?>
-            <tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:12px;vertical-align:middle">
+            <?php
+                $badgeIcon = match(true) {
+                    $unassigned        => 'bi-person-dash-fill',
+                    $remaining === 0   => 'bi-x-octagon-fill',
+                    $expired           => 'bi-calendar-x-fill',
+                    $pct <= 20         => 'bi-exclamation-triangle-fill',
+                    default            => 'bi-check-circle-fill',
+                };
+                $badgeColor = match(true) {
+                    $unassigned        => '#7c3aed',
+                    $remaining === 0   => '#dc2626',
+                    $expired           => '#dc2626',
+                    $pct <= 20         => '#f59e0b',
+                    default            => '#16a34a',
+                };
+            ?>
+            <tr class="bono-row" style="border-bottom:1px solid var(--border);transition:background .12s">
+                <td style="padding:12px 10px;vertical-align:middle">
                     <?php if ($unassigned): ?>
                     <div style="display:flex;align-items:center;gap:10px">
                         <div style="width:36px;height:36px;border-radius:50%;background:#7c3aed22;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -169,25 +185,30 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     </div>
                     <?php endif; ?>
                 </td>
-                <td style="padding:12px;vertical-align:middle;font-weight:600"><?= esc($b['bono_name']) ?></td>
-                <td style="padding:12px;vertical-align:middle">
-                    <div style="font-weight:700;color:var(--text-h)"><?= $remaining ?> / <?= $total ?></div>
-                    <div style="margin-top:4px;height:5px;background:var(--border);border-radius:3px;width:80px">
-                        <div style="height:5px;border-radius:3px;background:<?= $barColor ?>;width:<?= $pct ?>%"></div>
-                    </div>
+                <td style="padding:12px 10px;vertical-align:middle">
+                    <span style="font-weight:600;font-size:13px;color:var(--text-h)"><?= esc($b['bono_name']) ?></span>
                 </td>
-                <td style="padding:12px;vertical-align:middle;font-size:12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($b['start_date'])) ?></td>
-                <td style="padding:12px;vertical-align:middle;font-size:12px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>">
+                <td style="padding:12px 10px;vertical-align:middle;min-width:140px">
+                    <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:5px">
+                        <span style="font-size:18px;font-weight:800;color:<?= $barColor ?>;line-height:1"><?= $remaining ?></span>
+                        <span style="font-size:12px;color:var(--text-muted)">/ <?= $total ?> sesiones</span>
+                    </div>
+                    <div style="height:7px;background:var(--border);border-radius:99px;overflow:hidden;width:110px">
+                        <div class="bono-bar" style="height:100%;border-radius:99px;background:<?= $barColor ?>;width:0;transition:width .7s cubic-bezier(.4,0,.2,1)" data-w="<?= $pct ?>"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:3px"><?= $pct ?>% restante</div>
+                </td>
+                <td style="padding:12px 10px;vertical-align:middle;font-size:12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($b['start_date'])) ?></td>
+                <td style="padding:12px 10px;vertical-align:middle;font-size:12px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>;font-weight:<?= $expired ? '600' : '400' ?>">
+                    <?php if ($expired): ?><i class="bi bi-exclamation-circle me-1"></i><?php endif; ?>
                     <?= !empty($b['expires_at']) ? date('d/m/Y', strtotime($b['expires_at'])) : '—' ?>
                 </td>
-                <td style="padding:12px;vertical-align:middle">
-                    <?php if ($unassigned): ?>
-                    <span class="badge-status" style="background:#7c3aed22;color:#7c3aed;border:1px solid #7c3aed44"><?= $statusLbl ?></span>
-                    <?php else: ?>
-                    <span class="badge-status <?= $statusCls ?>"><?= $statusLbl ?></span>
-                    <?php endif; ?>
+                <td style="padding:12px 10px;vertical-align:middle">
+                    <span class="bono-status-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;background:<?= $badgeColor ?>18;color:<?= $badgeColor ?>;border:1px solid <?= $badgeColor ?>33">
+                        <i class="bi <?= $badgeIcon ?>" style="font-size:10px"></i><?= $statusLbl ?>
+                    </span>
                 </td>
-                <td style="padding:12px;vertical-align:middle">
+                <td style="padding:12px 10px;vertical-align:middle">
                     <a href="<?= base_url('bonos/' . $b['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-eye"></i>
                     </a>
@@ -387,6 +408,13 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 <?= $this->section('scripts') ?>
 <style>
+/* ── Bono row hover ──────────────────────────────── */
+.bono-row:hover { background: var(--bg-app); }
+
+/* ── Métricas: valor grande ──────────────────────── */
+.metric-value { font-size: 2rem; font-weight: 800; color: var(--text-h); line-height: 1.1; margin-top: 4px; }
+
+/* ── Modal ───────────────────────────────────────── */
 .bono-modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;
     display:flex;align-items:center;justify-content:center;padding:16px;
@@ -410,6 +438,21 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 .bono-modal-body { padding:20px;overflow-y:auto;flex:1; }
 </style>
 <script>
+// Animar barras de progreso al cargar
+(function () {
+    const bars = document.querySelectorAll('.bono-bar[data-w]');
+    if (!bars.length) return;
+    const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.width = entry.target.dataset.w + '%';
+                io.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    bars.forEach(bar => { bar.style.width = '0'; io.observe(bar); });
+})();
+
 let BONOS_CSRF_NAME = '<?= csrf_token() ?>';
 let BONOS_CSRF_HASH = '<?= csrf_hash() ?>';
 

@@ -181,6 +181,38 @@ $sentNotifications = $sentNotifications ?? [];
 
 </div><!-- /.tab-content -->
 
+<!-- ── Modal: ver notificación completa ───────────────────────── -->
+<div class="modal fade" id="modalViewNotif" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0" style="align-items:flex-start">
+                <div class="d-flex align-items-center gap-3 flex-grow-1 me-3">
+                    <div id="vn-avatar-wrap" style="flex-shrink:0"></div>
+                    <div>
+                        <div class="fw-bold" id="vn-sender" style="font-size:15px;color:var(--text-h)"></div>
+                        <div class="text-muted" id="vn-time" style="font-size:12px"></div>
+                    </div>
+                    <span id="vn-type-badge" class="badge ms-1" style="font-size:11px;font-weight:600"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <h5 class="fw-bold mb-3" id="vn-title" style="color:var(--text-h)"></h5>
+                <div id="vn-body" style="white-space:pre-wrap;color:var(--text-body);font-size:14px;line-height:1.75"></div>
+                <div id="vn-file-wrap" class="mt-3 d-none">
+                    <a id="vn-file-link" href="#" class="notif-file-link">
+                        <i class="bi bi-paperclip me-1"></i>
+                        <span id="vn-file-name"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ── Modal: nueva notificación ──────────────────────────────── -->
 <div class="modal fade" id="modalNotif" tabindex="-1" aria-labelledby="modalNotifLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -431,6 +463,83 @@ $sentNotifications = $sentNotifications ?? [];
         updateBellCount(0, true);
         this.remove();
     });
+
+    // ── Datos de notificaciones recibidas ───────────────────────
+    const notifMap = {};
+    <?php foreach ($notifications as $n): ?>
+    notifMap[<?= (int)$n['id'] ?>] = {
+        title:     <?= json_encode($n['title']) ?>,
+        body:      <?= json_encode($n['body'] ?? '') ?>,
+        sender:    <?= json_encode($n['sender_name'] ?? 'Sistema') ?>,
+        avatar:    <?= json_encode($n['sender_avatar'] ?? null) ?>,
+        time:      <?= json_encode($n['created_at']) ?>,
+        file_name: <?= json_encode($n['file_name'] ?? null) ?>,
+        type:      <?= json_encode($n['type']) ?>,
+        unread:    <?= empty($n['recipient_read_at']) ? 'true' : 'false' ?>
+    };
+    <?php endforeach; ?>
+
+    // ── Abrir modal de detalle al hacer click en notificación ────
+    document.querySelectorAll('#pane-recv .notif-item[data-id]').forEach(item => {
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', function (e) {
+            if (e.target.closest('.notif-read-btn')) return;
+
+            const id   = parseInt(this.dataset.id);
+            const data = notifMap[id];
+            if (!data) return;
+
+            document.getElementById('vn-title').textContent  = data.title;
+            document.getElementById('vn-sender').textContent = data.sender;
+            document.getElementById('vn-body').textContent   = data.body;
+            document.getElementById('vn-time').textContent   = formatNotifTime(data.time);
+
+            // Badge tipo
+            const badge = document.getElementById('vn-type-badge');
+            if (data.type === 'group') {
+                badge.textContent = 'Grupal';
+                badge.className   = 'badge ms-1';
+                badge.style.background = '#7c3aed22';
+                badge.style.color = '#7c3aed';
+            } else {
+                badge.textContent = 'Individual';
+                badge.className   = 'badge ms-1';
+                badge.style.background = 'var(--accent-light)';
+                badge.style.color = 'var(--accent)';
+            }
+
+            // Avatar con iniciales
+            const wrap    = document.getElementById('vn-avatar-wrap');
+            const initials = data.sender.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            wrap.innerHTML = `<div class="notif-avatar d-flex align-items-center justify-content-center fw-bold" style="background:var(--accent-light);color:var(--accent);font-size:14px">${initials}</div>`;
+
+            // Adjunto
+            const fileWrap = document.getElementById('vn-file-wrap');
+            if (data.file_name) {
+                document.getElementById('vn-file-link').href        = BASE + 'notificaciones/' + id + '/download';
+                document.getElementById('vn-file-name').textContent = data.file_name;
+                fileWrap.classList.remove('d-none');
+            } else {
+                fileWrap.classList.add('d-none');
+            }
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalViewNotif')).show();
+
+            // Marcar leída automáticamente al ver el detalle
+            if (data.unread) {
+                const readBtn = this.querySelector('.notif-read-btn');
+                if (readBtn) { readBtn.click(); data.unread = false; }
+            }
+        });
+    });
+
+    function formatNotifTime(dt) {
+        if (!dt) return '';
+        const d = new Date(dt.replace(' ', 'T') + 'Z');
+        return d.toLocaleDateString('es-ES', {timeZone:'Etc/GMT-1', day:'2-digit', month:'long', year:'numeric'})
+             + ' · '
+             + d.toLocaleTimeString('es-ES', {timeZone:'Etc/GMT-1', hour:'2-digit', minute:'2-digit'});
+    }
 
     function updateBellCount(delta, reset = false) {
         const badge = document.getElementById('notif-bell-count');
