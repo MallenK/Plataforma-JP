@@ -38,8 +38,16 @@ class ConversationModel extends Model
                 'user2_id'   => $u2,
                 'created_at' => $now,
             ], true);
+
+            log_message('debug', "[ConvModel] insert ok → newId={$newId}");
         } catch (\Throwable $e) {
-            // Race condition: otro request creó la misma conversación → releer.
+            log_message('error', "[ConvModel] insert FAILED u1={$u1} u2={$u2}: " . $e->getMessage());
+            $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
+            return $conv ?: [];
+        }
+
+        if (!$newId) {
+            log_message('error', "[ConvModel] insert returned false (sin excepción) u1={$u1} u2={$u2}. Errores: " . implode(', ', $this->errors() ?? []));
             $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
             return $conv ?: [];
         }
