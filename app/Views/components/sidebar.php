@@ -115,6 +115,17 @@ $canManage    = $isAdmin || $isStaff || $isCoach;
                 </a>
             </li>
 
+            <!-- Tickets — todos excepto player -->
+            <?php if (!$isAlumno): ?>
+            <li class="sidebar-nav-item">
+                <a href="<?= base_url('tickets') ?>"
+                   class="sidebar-nav-link <?= sidebarActive('/tickets', $currentUri) ?>">
+                    <i class="bi bi-headset"></i>
+                    Soporte
+                </a>
+            </li>
+            <?php endif; ?>
+
             <!-- Configuración — admin, superadmin -->
             <?php if ($isAdmin): ?>
             <li class="sidebar-nav-item">
