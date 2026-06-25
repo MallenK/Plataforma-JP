@@ -25,7 +25,7 @@ class MessageModel extends Model
     public function getForConversation(int $convId, int $limit = 50, ?int $beforeId = null): array
     {
         $builder = $this->db->table('messages m')
-            ->select('m.*, u.name AS sender_name, u.avatar AS sender_avatar, u.role AS sender_role')
+            ->select('m.*, u.name AS sender_name, u.avatar AS sender_avatar, u.role AS sender_role', false)
             ->join('users u', 'u.id = m.sender_id')
             ->where('m.conversation_id', $convId)
             ->orderBy('m.created_at', 'DESC')
@@ -47,7 +47,7 @@ class MessageModel extends Model
         $this->db->table('messages')
             ->where('conversation_id', $convId)
             ->where('sender_id !=', $userId)
-            ->where('read_at IS NULL')
+            ->where('read_at', null)
             ->update(['read_at' => date('Y-m-d H:i:s')]);
     }
 

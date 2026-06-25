@@ -90,9 +90,13 @@ class MensajesController extends BaseController
             return $this->jsonError('No se pudo abrir la conversación.', 500);
         }
 
-        $this->msgModel->markReadInConversation($conv['id'], $userId);
-
-        $messages = $this->msgModel->getForConversation($conv['id'], 50);
+        try {
+            $this->msgModel->markReadInConversation($conv['id'], $userId);
+            $messages = $this->msgModel->getForConversation($conv['id'], 50);
+        } catch (\Throwable $e) {
+            log_message('error', 'MensajesController::ajaxOpenConversation messages failed: ' . $e->getMessage());
+            $messages = [];
+        }
 
         return $this->response->setJSON([
             'conversation_id' => (int) $conv['id'],
