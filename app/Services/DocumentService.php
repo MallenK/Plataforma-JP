@@ -76,9 +76,9 @@ class DocumentService
             'public'   => true,
             'personal' => (int)$folder['owner_id'] === $userId
                            || in_array($role, ['admin', 'superadmin'])
-                           || ($role === 'staff' && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player')
+                           || ($role === 'staff' && in_array($this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)), ['player', 'alumno']))
                            || ($role === 'coach' && $this->isAssignedStudentOfCoach((int)($folder['owner_id'] ?? 0), $userId)),
-            'internal' => $role !== 'player'
+            'internal' => !in_array($role, ['player', 'alumno'])
                            && (in_array($role, ['admin', 'superadmin'])
                                || $this->permModel->hasReadPermission($folderId, $userId)),
             default    => false,
@@ -105,7 +105,7 @@ class DocumentService
             'public'   => in_array($role, ['admin', 'superadmin', 'coach', 'staff']),
             'personal' => (int)$folder['owner_id'] === $userId
                            || in_array($role, ['admin', 'superadmin'])
-                           || ($role === 'staff' && $this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)) === 'player')
+                           || ($role === 'staff' && in_array($this->getFolderOwnerRole((int)($folder['owner_id'] ?? 0)), ['player', 'alumno']))
                            || ($role === 'coach' && $this->isAssignedStudentOfCoach((int)($folder['owner_id'] ?? 0), $userId)),
             'internal' => in_array($role, ['admin', 'superadmin'])
                            || $this->permModel->hasWritePermission($folderId, $userId),
@@ -129,7 +129,7 @@ class DocumentService
             ->join('users u', 'u.id = df.owner_id', 'left')
             ->where('df.status', 'active');
 
-        if ($role === 'player') {
+        if (in_array($role, ['player', 'alumno'])) {
             // Carpetas públicas + carpeta personal propia
             $builder->where(
                 "(df.type = 'public' OR (df.type = 'personal' AND df.owner_id = {$userId}))",
@@ -432,11 +432,17 @@ class DocumentService
     public function getFileForServing(int $fileId, int $userId, string $role): ?array
     {
         $doc = $this->docModel->find($fileId);
-        if (!$doc || $doc['deleted_at'] !== null) {
+        if (!$doc) {
+            log_message('warning', "DocumentService::getFileForServing doc={$fileId} — not found in DB");
+            return null;
+        }
+        if ($doc['deleted_at'] !== null) {
+            log_message('warning', "DocumentService::getFileForServing doc={$fileId} — soft-deleted");
             return null;
         }
 
         if (!$this->canAccessFolder((int)$doc['folder_id'], $userId, $role)) {
+            log_message('warning', "DocumentService::getFileForServing doc={$fileId} folder={$doc['folder_id']} user={$userId} role={$role} — access denied");
             return null;
         }
 
@@ -444,6 +450,7 @@ class DocumentService
         $path   = $this->buildStoragePath($folder) . $doc['name_stored'];
 
         if (!file_exists($path)) {
+            log_message('error', "DocumentService::getFileForServing doc={$fileId} — file not found on disk: {$path}");
             return null;
         }
 

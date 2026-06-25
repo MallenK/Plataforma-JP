@@ -429,7 +429,22 @@ $roleLabels = [
                 scrollToBottom();
                 clearConvBadge(activeConvId);
             }
+            // Actualizar indicadores de lectura para mensajes que ya leyó el otro
+            if (data.read_ids && data.read_ids.length > 0) {
+                updateReadIndicators(data.read_ids);
+            }
         } catch (_) {}
+    }
+
+    function updateReadIndicators(readIds) {
+        readIds.forEach(function(id) {
+            const el = document.querySelector('.msg-read-indicator[data-msg-id="' + id + '"]');
+            if (el && !el.classList.contains('msg-read-done')) {
+                el.classList.add('msg-read-done');
+                el.title = 'Leído';
+                el.innerHTML = '<i class="bi bi-check2-all" style="color:#7c3aed"></i>';
+            }
+        });
     }
 
     async function pollConversations() {
@@ -491,8 +506,18 @@ $roleLabels = [
         }
 
         const time = formatTime(msg.created_at);
+        // Indicador de lectura: solo para mis mensajes
+        let readIndicator = '';
+        if (isMine) {
+            const isRead = msg.read_at != null && msg.read_at !== '';
+            readIndicator = '<span class="msg-read-indicator" data-msg-id="' + msg.id + '" title="' + (isRead ? 'Leído' : 'Enviado') + '">'
+                + (isRead
+                    ? '<i class="bi bi-check2-all" style="color:#7c3aed"></i>'
+                    : '<i class="bi bi-check2" style="color:var(--text-muted)"></i>')
+                + '</span>';
+        }
         el.innerHTML = '<div class="chat-msg-inner">' + content
-            + '<div class="chat-msg-time">' + time + '</div>'
+            + '<div class="chat-msg-time">' + time + readIndicator + '</div>'
             + '</div>';
 
         // Quitar el mensaje de "sin mensajes" si existe
