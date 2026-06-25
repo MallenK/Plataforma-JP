@@ -82,24 +82,32 @@ class ClasesService
 
         // Guardar plantilla
         $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
-        $classId = (int)$this->classModel->insert([
-            'title'                   => trim($data['title']),
-            'description'             => ($data['description'] ?? '') ?: null,
-            'type'                    => 'recurring',
-            'class_format'            => $fmt,
-            'recurrence_days'         => json_encode($days),
-            'recurrence_start'        => $data['recurrence_start'],
-            'recurrence_end'          => $data['recurrence_end'],
-            'recurrence_time_start'   => $data['start_time'],
-            'recurrence_time_end'     => $data['end_time'],
-            'default_location_id'     => ($data['location_id'] ?? '') ?: null,
-            'default_location_custom' => ($data['location_custom'] ?? '') ?: null,
-            'default_focus'           => ($data['focus'] ?? '') ?: null,
-            'created_by'              => $userId,
-        ]);
+        try {
+            $classId = (int)$this->classModel->insert([
+                'title'                   => trim($data['title']),
+                'description'             => ($data['description'] ?? '') ?: null,
+                'type'                    => 'recurring',
+                'class_format'            => $fmt,
+                'recurrence_days'         => json_encode($days),
+                'recurrence_start'        => $data['recurrence_start'],
+                'recurrence_end'          => $data['recurrence_end'],
+                'recurrence_time_start'   => $data['start_time'],
+                'recurrence_time_end'     => $data['end_time'],
+                'default_location_id'     => ($data['location_id'] ?? '') ?: null,
+                'default_location_custom' => ($data['location_custom'] ?? '') ?: null,
+                'default_focus'           => ($data['focus'] ?? '') ?: null,
+                'created_by'              => $userId,
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'ClasesService::createRecurring insert classes failed: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Error al crear la plantilla recurrente: ' . $e->getMessage()];
+        }
 
         if (!$classId) {
-            return ['success' => false, 'error' => 'Error al crear la plantilla recurrente.'];
+            $errors = $this->classModel->errors();
+            $msg    = !empty($errors) ? implode(' ', $errors) : 'Error al crear la plantilla recurrente.';
+            log_message('error', 'ClasesService::createRecurring insert returned 0. Errors: ' . $msg);
+            return ['success' => false, 'error' => $msg];
         }
 
         // Generar sesiones
@@ -432,8 +440,8 @@ class ClasesService
             return ['success' => false, 'error' => 'Jugador no asignado a esta sesión.'];
         }
 
-        if ($player['attendance'] !== 'present') {
-            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes.'];
+        if (!in_array($player['attendance'], ['present', 'confirmed'])) {
+            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes o confirmados.'];
         }
 
         if (!empty($player['bono_deducted_at'])) {

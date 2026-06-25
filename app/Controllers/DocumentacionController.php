@@ -123,9 +123,12 @@ class DocumentacionController extends BaseController
 
     public function download(int $id)
     {
-        $result = $this->docService->getFileForServing($id, $this->currentUserId(), $this->currentRole());
+        $userId = (int) $this->currentUserId();
+        $role   = (string) $this->currentRole();
+        $result = $this->docService->getFileForServing($id, $userId, $role);
 
         if (!$result) {
+            log_message('warning', "DocumentacionController::download doc={$id} user={$userId} role={$role} — getFileForServing returned null");
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
@@ -143,9 +146,12 @@ class DocumentacionController extends BaseController
 
     public function preview(int $id)
     {
-        $result = $this->docService->getFileForServing($id, $this->currentUserId(), $this->currentRole());
+        $userId = (int) $this->currentUserId();
+        $role   = (string) $this->currentRole();
+        $result = $this->docService->getFileForServing($id, $userId, $role);
 
         if (!$result) {
+            log_message('warning', "DocumentacionController::preview doc={$id} user={$userId} role={$role} — getFileForServing returned null");
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 

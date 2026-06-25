@@ -224,7 +224,16 @@ class MensajesController extends BaseController
             $this->msgModel->markReadInConversation($convId, $userId);
         }
 
-        return $this->response->setJSON(['messages' => $messages]);
+        // Devolver IDs de mis mensajes ya leídos por el otro (para actualizar la UI)
+        $readIds = $this->db->table('messages')
+            ->select('id')
+            ->where('conversation_id', $convId)
+            ->where('sender_id', $userId)
+            ->where('read_at IS NOT NULL', null, false)
+            ->get()->getResultArray();
+        $readIds = array_column($readIds, 'id');
+
+        return $this->response->setJSON(['messages' => $messages, 'read_ids' => $readIds]);
     }
 
     // ─────────────────────────────────────────────────────────

@@ -98,6 +98,7 @@ $attendanceOpts = [
                 $deducted   = !empty($p['bono_deducted_at']);
                 $isAbsent   = ($att === 'absent');
                 $isPresent  = ($att === 'present');
+                $isConfirmed = ($att === 'confirmed');
             ?>
             <tr data-uid="<?= $uid ?>" data-attendance="<?= esc($att) ?>">
                 <td>
@@ -147,7 +148,7 @@ $attendanceOpts = [
                         <span style="font-size:11px;color:#059669;font-weight:600">
                             <i class="bi bi-check-circle-fill me-1"></i>Descontado
                         </span>
-                        <?php elseif ($isPresent): ?>
+                        <?php elseif ($isPresent || $isConfirmed): ?>
                         <button type="button"
                                 class="btn-jp btn-jp-sm btn-deduct"
                                 data-session="<?= $session['id'] ?>"
@@ -221,6 +222,7 @@ $attendanceOpts = [
             var uid     = this.dataset.uid;
             var isAbs   = (this.value === 'absent');
             var isPres  = (this.value === 'present');
+            var isConf  = (this.value === 'confirmed');
             var absCol  = document.querySelector('.absence-col-' + uid);
             var notCol  = document.querySelector('.notes-col-' + uid);
             var row     = document.querySelector('tr[data-uid="' + uid + '"]');
@@ -228,12 +230,11 @@ $attendanceOpts = [
             if (absCol) { absCol.style.opacity = isAbs ? '1' : '0.35'; absCol.style.pointerEvents = isAbs ? '' : 'none'; }
             if (notCol) { notCol.style.opacity = isAbs ? '1' : '0.35'; notCol.style.pointerEvents = isAbs ? '' : 'none'; }
 
-            // Mostrar/ocultar botón de descontar bono
+            // Mostrar/ocultar botón de descontar bono (presente o confirmado)
             var cell = document.querySelector('.bono-cell-' + uid);
             if (cell) {
                 var btn = cell.querySelector('.btn-deduct');
-                var hint = cell.querySelector('.bono-hint');
-                if (btn) btn.style.display = isPres ? '' : 'none';
+                if (btn) btn.style.display = (isPres || isConf) ? '' : 'none';
             }
 
             row.dataset.attendance = this.value;
@@ -297,7 +298,7 @@ $attendanceOpts = [
         var cell = document.querySelector('.bono-cell-' + uid);
         if (!cell) return;
         var btn  = cell.querySelector('.btn-deduct');
-        if (btn && sel.value !== 'present') btn.style.display = 'none';
+        if (btn && sel.value !== 'present' && sel.value !== 'confirmed') btn.style.display = 'none';
     });
 
     // Cerrar sesión
