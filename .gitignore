@@ -1,4 +1,5 @@
 .env
+deploy/.env
 users.txt
 database.txt
 vendor/
@@ -10,5 +11,14 @@ writable/uploads/
 .claude/
 nul
 app/Database/Database/
-public/uploads/
+public/uploads/*
+!public/uploads/tickets/
+public/uploads/tickets/*
+!public/uploads/tickets/.htaccess
+!public/uploads/mensajes/
+public/uploads/mensajes/*
+!public/uploads/mensajes/.htaccess
+!public/uploads/notificaciones/
+public/uploads/notificaciones/*
+!public/uploads/notificaciones/.htaccess
 build/

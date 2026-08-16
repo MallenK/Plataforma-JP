@@ -49,7 +49,7 @@ class UserModel extends Model
     protected $validationRules = [
         'name'     => 'required|min_length[3]|max_length[150]',
         'email'    => 'required|valid_email|is_unique[users.email,id,{id}]',
-        'password' => 'required|min_length[6]'
+        'password' => 'required|min_length[8]'
     ];
 
     protected $validationMessages = [
@@ -64,7 +64,7 @@ class UserModel extends Model
         ],
         'password' => [
             'required'   => 'La contraseña es obligatoria',
-            'min_length' => 'La contraseña debe tener mínimo 6 caracteres'
+            'min_length' => 'La contraseña debe tener mínimo 8 caracteres'
         ]
     ];
 

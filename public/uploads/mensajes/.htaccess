@@ -1,0 +1,15 @@
+Options -Indexes
+
+Deny from all
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php[s357]?|phtml|phar|pl|py|sh|cgi|exe|bat|cmd)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

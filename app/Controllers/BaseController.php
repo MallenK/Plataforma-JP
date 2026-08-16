@@ -162,4 +162,49 @@ abstract class BaseController extends Controller
     {
         return $this->response->setJSON($data)->setStatusCode($status);
     }
+
+    // ----------------------------------------------------------------
+    // Subida de archivos — protección de directorios bajo public/
+    //
+    // Los directorios de adjuntos (tickets, mensajes, notificaciones)
+    // viven dentro de public/uploads/, servido directamente por Apache.
+    // Este .htaccess bloquea el acceso HTTP directo y la ejecución de
+    // scripts, obligando a pasar siempre por el controller (que valida
+    // permisos). Se reescribe si falta, por si el directorio se recrea
+    // sin copiar archivos ocultos (p. ej. en un despliegue).
+    // ----------------------------------------------------------------
+
+    private const UPLOAD_DIR_HTACCESS = <<<'HTACCESS'
+        Options -Indexes
+
+        Deny from all
+
+        <IfModule mod_php.c>
+            php_flag engine off
+        </IfModule>
+        <IfModule mod_php8.c>
+            php_flag engine off
+        </IfModule>
+
+        <FilesMatch "\.(php[s357]?|phtml|phar|pl|py|sh|cgi|exe|bat|cmd)$">
+            Order Allow,Deny
+            Deny from all
+        </FilesMatch>
+        HTACCESS;
+
+    /**
+     * Crea el directorio de subida si no existe y garantiza que tiene el
+     * .htaccess de protección (deny-all + bloqueo de ejecución de scripts).
+     */
+    protected function secureUploadDir(string $absDir): void
+    {
+        if (!is_dir($absDir)) {
+            mkdir($absDir, 0755, true);
+        }
+
+        $htaccess = rtrim($absDir, '/\\') . DIRECTORY_SEPARATOR . '.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, self::UPLOAD_DIR_HTACCESS);
+        }
+    }
 }
