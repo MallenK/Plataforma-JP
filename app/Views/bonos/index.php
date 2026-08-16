@@ -105,7 +105,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
     <?php if (empty($bonos)): ?>
     <div class="empty-state">
         <i class="bi bi-ticket-perforated"></i>
-        <h2>Sin bonos</h2>
+        <h3>Sin bonos</h3>
         <p>No hay bonos
             <?php
             echo match($filtro ?? 'activos') {

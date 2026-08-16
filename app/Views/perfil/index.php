@@ -340,7 +340,8 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
             <div class="card-jp-header">
                 <span class="card-jp-title"><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>Datos personales</span>
                 <?php if ($isProtected): ?>
-                    <span style="font-size:11px;color:var(--text-muted)">
+                    <span style="font-size:11px;color:var(--text-muted)"
+                          title="Cuenta raíz de la plataforma. Solo se puede modificar directamente en la base de datos por el administrador técnico.">
                         <i class="bi bi-lock-fill"></i> Perfil protegido
                     </span>
                 <?php endif; ?>
@@ -511,7 +512,8 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Contraseña</div>
                         <div style="font-size:12px;color:var(--text-muted)">
                             <?php if ($isProtected): ?>
-                                <i class="bi bi-lock-fill"></i> Perfil protegido — no modificable desde la plataforma
+                                <i class="bi bi-lock-fill"></i> Perfil protegido — es la cuenta raíz de la plataforma.
+                                Solo el administrador técnico puede modificarla, directamente en la base de datos.
                             <?php else: ?>
                                 Última modificación desconocida
                             <?php endif; ?>
@@ -532,6 +534,24 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                     </form>
                     <?php endif; ?>
                 </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Ayuda -->
+        <?php if ($isSelf): ?>
+        <div class="card-jp">
+            <div class="card-jp-body d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">
+                        <i class="bi bi-question-circle-fill me-1" style="color:var(--accent)"></i>
+                        ¿Necesitas un repaso?
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted)">Vuelve a ver la guía de bienvenida con los pasos básicos de la plataforma.</div>
+                </div>
+                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" onclick="window.JPTutorial && window.JPTutorial.open()">
+                    <i class="bi bi-play-circle-fill"></i> Ver tutorial
+                </button>
             </div>
         </div>
         <?php endif; ?>

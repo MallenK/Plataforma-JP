@@ -149,10 +149,15 @@ $canManage    = $isAdmin || $isStaff || $isCoach;
                 <div class="sidebar-user-role"><?= esc($role) ?></div>
             </div>
         </a>
-        <a href="<?= base_url('logout') ?>" class="sidebar-logout">
-            <i class="bi bi-box-arrow-left"></i>
-            Cerrar sesión
-        </a>
+        <form action="<?= base_url('logout') ?>" method="post" id="logout-form">
+            <?= csrf_field() ?>
+            <button type="submit" class="sidebar-logout"
+                    style="border:none;background:transparent;width:100%;text-align:left;cursor:pointer;font-family:inherit"
+                    onclick="return confirm('¿Cerrar sesión?')">
+                <i class="bi bi-box-arrow-left"></i>
+                Cerrar sesión
+            </button>
+        </form>
     </div>
 
 </aside>
