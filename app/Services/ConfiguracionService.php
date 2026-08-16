@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\SettingsModel;
 use App\Models\LocationModel;
-use App\Models\BonoTypeModel;
 use App\Models\UserModel;
 use App\Services\DocumentService;
 
@@ -17,14 +16,12 @@ class ConfiguracionService
 
     protected SettingsModel  $settings;
     protected LocationModel  $locations;
-    protected BonoTypeModel  $bonoTypes;
     protected UserModel      $users;
 
     public function __construct()
     {
         $this->settings  = new SettingsModel();
         $this->locations = new LocationModel();
-        $this->bonoTypes = new BonoTypeModel();
         $this->users     = new UserModel();
     }
 
@@ -204,25 +201,31 @@ class ConfiguracionService
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // FK RESTRICT nullable → SET NULL para no bloquear el DELETE del usuario
-        $db->table('sessions')->where('coach_id',   $userId)->set(['coach_id'   => null])->update();
-        $db->table('sessions')->where('created_by', $userId)->set(['created_by' => null])->update();
-        $db->table('observations')->where('author_id', $userId)->set(['author_id' => null])->update();
-        $db->table('player_metrics')->where('coach_id', $userId)->set(['coach_id' => null])->update();
-        $db->table('player_plans')->where('player_id', $userId)->set(['player_id' => null])->update();
-        $db->table('logs')->where('user_id', $userId)->set(['user_id' => null])->update();
+        try {
+            // FK RESTRICT nullable → SET NULL para no bloquear el DELETE del usuario
+            $db->table('sessions')->where('coach_id',   $userId)->set(['coach_id'   => null])->update();
+            $db->table('sessions')->where('created_by', $userId)->set(['created_by' => null])->update();
+            $db->table('observations')->where('author_id', $userId)->set(['author_id' => null])->update();
+            $db->table('player_metrics')->where('coach_id', $userId)->set(['coach_id' => null])->update();
+            $db->table('player_plans')->where('player_id', $userId)->set(['player_id' => null])->update();
+            $db->table('logs')->where('user_id', $userId)->set(['user_id' => null])->update();
 
-        // Tablas pivot sin FK — limpiar para coherencia
-        $db->table('class_session_coaches')->where('user_id', $userId)->delete();
-        $db->table('class_session_players')->where('user_id', $userId)->delete();
-        $db->table('folder_permissions')->where('user_id', $userId)->delete();
-        $db->table('event_team_members')->where('user_id', $userId)->delete();
+            // Tablas pivot sin FK — limpiar para coherencia
+            $db->table('class_session_coaches')->where('user_id', $userId)->delete();
+            $db->table('class_session_players')->where('user_id', $userId)->delete();
+            $db->table('folder_permissions')->where('user_id', $userId)->delete();
+            $db->table('event_team_members')->where('user_id', $userId)->delete();
 
-        // Eliminar el usuario (las FK CASCADE se resuelven automáticamente).
-        // Usamos $db explícitamente para permanecer dentro de la misma transacción.
-        $db->table('users')->delete(['id' => $userId]);
+            // Eliminar el usuario (las FK CASCADE se resuelven automáticamente).
+            // Usamos $db explícitamente para permanecer dentro de la misma transacción.
+            $db->table('users')->delete(['id' => $userId]);
 
-        $db->transComplete();
+            $db->transComplete();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'ConfiguracionService::deleteStaffUser error (userId=' . $userId . '): ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Error al eliminar el usuario. Inténtalo de nuevo.'];
+        }
 
         if (!$db->transStatus()) {
             return ['success' => false, 'error' => 'Error al eliminar el usuario. Inténtalo de nuevo.'];
@@ -300,51 +303,6 @@ class ConfiguracionService
     public function deleteLocation(int $id): bool
     {
         return (bool) $this->locations->delete($id);
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  TIPOS DE BONO
-    // ════════════════════════════════════════════════════════════════
-
-    public function getBonoTypes(): array
-    {
-        return $this->bonoTypes->orderBy('name', 'ASC')->findAll();
-    }
-
-    /**
-     * @return array{success: bool, id?: int, errors?: array}
-     */
-    public function createBonoType(array $data): array
-    {
-        $id = $this->bonoTypes->insert([
-            'name'          => $data['name'],
-            'sessions'      => (int)($data['sessions']      ?? 10),
-            'price'         => (float)($data['price']       ?? 0),
-            'validity_days' => (int)($data['validity_days'] ?? 90),
-            'active'        => isset($data['active']) ? (int)$data['active'] : 1,
-        ]);
-
-        if (!$id) {
-            return ['success' => false, 'errors' => $this->bonoTypes->errors()];
-        }
-
-        return ['success' => true, 'id' => $id];
-    }
-
-    public function updateBonoType(int $id, array $data): bool
-    {
-        return (bool) $this->bonoTypes->update($id, [
-            'name'          => $data['name'],
-            'sessions'      => (int)($data['sessions']      ?? 10),
-            'price'         => (float)($data['price']       ?? 0),
-            'validity_days' => (int)($data['validity_days'] ?? 90),
-            'active'        => isset($data['active']) ? (int)$data['active'] : 1,
-        ]);
-    }
-
-    public function deleteBonoType(int $id): bool
-    {
-        return (bool) $this->bonoTypes->delete($id);
     }
 
     // ════════════════════════════════════════════════════════════════

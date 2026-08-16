@@ -433,12 +433,17 @@ class ClasesController extends BaseController
 
     public function guardarLista(int $id)
     {
+        $isAjax  = $this->request->isAJAX();
         $session = $this->clasesService->getSession($id);
         if (!$session) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         if (!$this->isAssignedOrAdmin($session)) {
+            if ($isAjax) {
+                return $this->response->setStatusCode(403)
+                    ->setJSON(['success' => false, 'error' => 'No tienes permiso para gestionar esta sesión.']);
+            }
             session()->setFlashdata('error', 'No tienes permiso para gestionar esta sesión.');
             return redirect()->to('/clases');
         }
@@ -450,6 +455,10 @@ class ClasesController extends BaseController
             $this->request->getPost('absence_reason') ?? [],
             $this->request->getPost('absence_notes') ?? []
         );
+
+        if ($isAjax) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Asistencia guardada.', 'csrf' => csrf_hash()]);
+        }
 
         session()->setFlashdata('success', 'Asistencia guardada.');
         return redirect()->to('/clases/' . $id . '/lista');

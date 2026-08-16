@@ -70,7 +70,13 @@ class AvatarController extends BaseController
 
         // Nombre único para evitar colisiones
         $newName = 'avatar_' . $userId . '_' . time() . '.' . $file->getExtension();
-        $file->move(self::UPLOAD_PATH, $newName);
+        try {
+            $file->move(self::UPLOAD_PATH, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'AvatarController::upload move failed (user=' . $userId . '): ' . $e->getMessage());
+            session()->setFlashdata('error', 'No se pudo guardar el avatar. Inténtalo de nuevo.');
+            return redirect()->back();
+        }
 
         $relativePath = 'uploads/avatars/' . $newName;
         $model->update($userId, ['avatar' => $relativePath]);

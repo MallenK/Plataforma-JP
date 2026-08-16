@@ -132,20 +132,21 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
         </div>
     </div>
 
-    <!-- Ingresos del mes -->
+    <!-- Listas de asistencia pendientes de pasar/cerrar -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="metric-card">
+        <a href="<?= base_url('pasar-lista') ?>" style="text-decoration:none;color:inherit">
+        <div class="metric-card" style="cursor:pointer">
             <div class="metric-card-header">
-                <span class="metric-label color-red">Ingresos mes</span>
-                <div class="metric-icon orange"><i class="bi bi-wallet2"></i></div>
+                <span class="metric-label">Listas pendientes</span>
+                <div class="metric-icon orange"><i class="bi bi-clipboard2-check-fill"></i></div>
             </div>
-            <div class="metric-value" id="ingresos-count">—</div>
+            <div class="metric-value" id="listas-pendientes-count">—</div>
             <div class="metric-footer">
-                <span class="badge-trend up" id="ingresos-trend"><i class="bi bi-arrow-up-short"></i>—</span>
-                <span class="metric-footer-label">meta mensual</span>
+                <span class="metric-footer-label" id="listas-pendientes-label">sesiones sin pasar/cerrar</span>
             </div>
-            <div class="metric-progress"><div class="metric-progress-bar" id="ingresos-bar" style="width:0%;background:#f97316"></div></div>
+            <div class="metric-progress"><div class="metric-progress-bar" id="listas-pendientes-bar" style="width:0%;background:#f97316"></div></div>
         </div>
+        </a>
     </div>
 
     <!-- Alertas -->

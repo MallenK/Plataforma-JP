@@ -857,7 +857,8 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
 }
 
 .alert-jp.success { background: var(--success-light); color: #065f46; }
-.alert-jp.error   { background: var(--danger-light);  color: #991b1b; }
+.alert-jp.error,
+.alert-jp.danger  { background: var(--danger-light);  color: #991b1b; }
 .alert-jp.warning { background: var(--warning-light); color: #92400e; }
 
 /* ── Overflow containment para tablas ────────────────────────── */

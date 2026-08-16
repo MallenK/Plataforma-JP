@@ -473,17 +473,6 @@ $routes->post('configuracion/sedes/(:num)/delete', 'ConfiguracionController::del
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-// ── Facturación — Tipos de Bono ────────────────────────────
-$routes->post('configuracion/bonos/create', 'ConfiguracionController::createBonoType', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('configuracion/bonos/(:num)/edit', 'ConfiguracionController::updateBonoType/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('configuracion/bonos/(:num)/delete', 'ConfiguracionController::deleteBonoType/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
 // ── Seguridad ──────────────────────────────────────────────
 $routes->post('configuracion/seguridad/save', 'ConfiguracionController::saveSeguridad', [
     'filter' => ['auth', 'role:superadmin,admin'],
@@ -626,13 +615,14 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 // TICKETS — sistema de soporte y reporte de incidencias
 //
 //  Acceso para todos los roles excepto 'player'.
-//  La gestión (cambio de estado, respuestas) es exclusiva del superadmin.
+//  La gestión (cambio de estado) es exclusiva del superadmin. Responder
+//  también lo puede hacer el creador del ticket, mientras no esté cerrado.
 //
 //  GET  /tickets                      → lista de tickets del usuario
 //  GET  /tickets/create               → formulario de nuevo ticket
 //  POST /tickets                      → guardar nuevo ticket
 //  GET  /tickets/:id                  → detalle de un ticket
-//  POST /tickets/:id/reply            → responder ticket (superadmin)
+//  POST /tickets/:id/reply            → responder ticket (usuario dueño o superadmin)
 //  POST /tickets/:id/status           → cambiar estado (superadmin)
 //  POST /tickets/:id/priority         → cambiar prioridad (usuario dueño o superadmin)
 //  GET  /tickets/download/:id         → descargar adjunto
@@ -669,7 +659,7 @@ $routes->get('tickets/(:num)', 'TicketsController::show/$1', [
 ]);
 
 $routes->post('tickets/(:num)/reply', 'TicketsController::reply/$1', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
 ]);
 
 $routes->post('tickets/(:num)/status', 'TicketsController::updateStatus/$1', [

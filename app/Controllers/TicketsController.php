@@ -96,12 +96,16 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Error al crear el ticket.'])->setStatusCode(500);
         }
 
-        // Adjunto opcional
+        // Adjunto opcional — si falla, se avisa en la respuesta JSON en vez
+        // de descartarlo en silencio (el ticket ya se ha creado igualmente).
+        $attachmentError = null;
         $file = $this->request->getFile('attachment');
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $result = $this->handleFileUpload($file);
             if (!isset($result['error'])) {
                 $this->attachModel->addAttachment($ticketId, null, $result);
+            } else {
+                $attachmentError = $result['error'];
             }
         }
 
@@ -111,10 +115,11 @@ class TicketsController extends BaseController
         $ticket = $this->ticketModel->find($ticketId);
 
         return $this->response->setJSON([
-            'ok'            => true,
-            'ticket_number' => $ticket['ticket_number'],
-            'redirect'      => base_url('tickets/' . $ticketId),
-            'csrf'          => csrf_hash(),
+            'ok'               => true,
+            'ticket_number'    => $ticket['ticket_number'],
+            'redirect'         => base_url('tickets/' . $ticketId),
+            'csrf'             => csrf_hash(),
+            'attachment_error' => $attachmentError,
         ]);
     }
 
@@ -132,8 +137,9 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // El usuario solo puede ver sus propios tickets; superadmin ve todos
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        // El usuario solo puede ver sus propios tickets; superadmin ve todos.
+        // Cast obligatorio: user_id llega de BD como string, $userId es int.
+        if ((int)$ticket['user_id'] !== $userId && $role !== 'superadmin') {
             return $this->response->setStatusCode(403);
         }
 
@@ -208,14 +214,25 @@ class TicketsController extends BaseController
     }
 
     // ─────────────────────────────────────────────────────────
-    // ADMIN — responder ticket
+    // SUPERADMIN + DUEÑO DEL TICKET — responder
     // ─────────────────────────────────────────────────────────
 
     public function reply(int $id): \CodeIgniter\HTTP\ResponseInterface
     {
+        $userId = $this->currentUserId();
+        $role   = $this->currentRole();
+
         $ticket = $this->ticketModel->find($id);
         if (!$ticket) {
             return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $isOwner = (int)$ticket['user_id'] === $userId;
+        if (!$isOwner && $role !== 'superadmin') {
+            return $this->response->setJSON(['error' => 'Sin permisos.'])->setStatusCode(403);
+        }
+        if ($role !== 'superadmin' && $ticket['status'] === 'cerrado') {
+            return $this->response->setJSON(['error' => 'Este ticket está cerrado y no admite más respuestas.'])->setStatusCode(403);
         }
 
         $body = trim($this->request->getPost('body') ?? '');
@@ -223,36 +240,48 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'La respuesta no puede estar vacía.'])->setStatusCode(422);
         }
 
-        $replyId = $this->replyModel->createReply($id, $this->currentUserId(), $body);
+        $replyId = $this->replyModel->createReply($id, $userId, $body);
 
         if (!$replyId) {
             return $this->response->setJSON(['error' => 'Error al guardar la respuesta.'])->setStatusCode(500);
         }
 
-        // Adjunto opcional en la respuesta
+        // Adjunto opcional en la respuesta — si falla, se avisa en la respuesta
+        // JSON en vez de descartarlo en silencio.
+        $attachmentError = null;
         $file = $this->request->getFile('attachment');
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $result = $this->handleFileUpload($file);
             if (!isset($result['error'])) {
                 $this->attachModel->addAttachment($id, $replyId, $result);
+            } else {
+                $attachmentError = $result['error'];
             }
         }
 
-        // Si el ticket estaba abierto, pasarlo a en progreso automáticamente
-        if ($ticket['status'] === 'abierto') {
+        // Solo una respuesta del equipo (superadmin) marca el ticket como
+        // "en progreso" — que el propio creador amplíe su ticket no implica
+        // que alguien ya esté trabajando en él.
+        if ($role === 'superadmin' && $ticket['status'] === 'abierto') {
             $this->ticketModel->updateStatus($id, 'en_progreso');
         }
 
-        // Notificar al creador del ticket
-        $this->notifyTicketOwner($ticket, 'respuesta');
+        // Notificar a la otra parte: si responde el creador, avisamos a los
+        // superadmins; si responde el equipo, avisamos al creador.
+        if ($isOwner && $role !== 'superadmin') {
+            $this->notifyAdminsOfReply($ticket, $userId);
+        } else {
+            $this->notifyTicketOwner($ticket, 'respuesta');
+        }
 
         $reply = $this->replyModel->getForTicket($id);
         $lastReply = end($reply);
 
         return $this->response->setJSON([
-            'ok'   => true,
-            'csrf' => csrf_hash(),
-            'reply' => $lastReply,
+            'ok'               => true,
+            'csrf'             => csrf_hash(),
+            'reply'            => $lastReply,
+            'attachment_error' => $attachmentError,
         ]);
     }
 
@@ -302,7 +331,7 @@ class TicketsController extends BaseController
 
         // Usuario normal solo puede cambiar prioridad si el ticket es suyo y está abierto
         if ($role !== 'superadmin') {
-            if ($ticket['user_id'] !== $userId) {
+            if ((int)$ticket['user_id'] !== $userId) {
                 return $this->response->setJSON(['error' => 'Sin permisos.'])->setStatusCode(403);
             }
             if (!in_array($ticket['status'], ['abierto', 'en_progreso'])) {
@@ -345,7 +374,7 @@ class TicketsController extends BaseController
         }
 
         // Solo el creador o superadmin puede descargar
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        if ((int)$ticket['user_id'] !== $userId && $role !== 'superadmin') {
             return $this->response->setStatusCode(403);
         }
 
@@ -360,6 +389,12 @@ class TicketsController extends BaseController
     // ─────────────────────────────────────────────────────────
     // Helpers privados
     // ─────────────────────────────────────────────────────────
+
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx',
+        'txt', 'mp4',
+    ];
 
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
     {
@@ -381,13 +416,25 @@ class TicketsController extends BaseController
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/tickets/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        // getClientExtension() viene del nombre que puso el cliente y no es de
+        // confianza (CI4 lo documenta explícitamente): se valida contra lista
+        // blanca antes de usarla, para no poder guardar un .php camuflado con
+        // un MIME permitido (p. ej. detectado como text/plain).
+        $ext = strtolower($file->getClientExtension());
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+            return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $file->getClientExtension();
-        $file->move($uploadDir, $newName);
+        $uploadDir = FCPATH . 'uploads/tickets/';
+        $this->secureUploadDir($uploadDir);
+
+        $newName = uniqid('', true) . '_' . time() . '.' . $ext;
+        try {
+            $file->move($uploadDir, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'TicketsController::handleFileUpload move failed: ' . $e->getMessage());
+            return ['error' => 'No se pudo guardar el archivo. Inténtalo de nuevo.'];
+        }
 
         return [
             'path' => 'uploads/tickets/' . $newName,
@@ -419,11 +466,36 @@ class TicketsController extends BaseController
         ], $ids);
     }
 
+    /**
+     * Avisa a los superadmins cuando el CREADOR del ticket añade una
+     * respuesta (no un ticket nuevo) a su propio hilo.
+     */
+    private function notifyAdminsOfReply(array $ticket, int $fromUserId): void
+    {
+        $superadmins = $this->userModel
+            ->where('role', 'superadmin')
+            ->where('id !=', $fromUserId)
+            ->where('status', 'active')
+            ->select('id')
+            ->findAll();
+
+        $ids = array_column($superadmins, 'id');
+        if (empty($ids)) return;
+
+        $this->notifModel->createWithRecipients([
+            'sender_id'  => $fromUserId,
+            'type'       => 'individual',
+            'title'      => 'Nueva respuesta en ' . $ticket['ticket_number'],
+            'body'       => $ticket['title'],
+            'created_at' => date('Y-m-d H:i:s'),
+        ], $ids);
+    }
+
     private function notifyTicketOwner(array $ticket, string $event, string $extraInfo = ''): void
     {
         $adminId = $this->currentUserId();
 
-        if ($ticket['user_id'] === $adminId) return;
+        if ((int)$ticket['user_id'] === $adminId) return;
 
         if ($event === 'respuesta') {
             $title = 'Respuesta a tu ticket ' . $ticket['ticket_number'];

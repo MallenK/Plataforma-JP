@@ -33,27 +33,32 @@ class MailService
             'html'    => $body,
         ];
 
-        $ch = curl_init();
+        try {
+            $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://api.resend.com/emails');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json',
-        ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_URL, 'https://api.resend.com/emails');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json',
+            ]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if (curl_errno($ch)) {
-            log_message('error', 'MailService: error de cURL — ' . curl_error($ch));
+            if (curl_errno($ch)) {
+                log_message('error', 'MailService: error de cURL — ' . curl_error($ch));
+                curl_close($ch);
+                return false;
+            }
+
             curl_close($ch);
+        } catch (\Throwable $e) {
+            log_message('error', 'MailService: excepción inesperada al enviar — ' . $e->getMessage());
             return false;
         }
-
-        curl_close($ch);
 
         // Resend devuelve 200/201 en éxito
         if ($httpCode < 200 || $httpCode >= 300) {

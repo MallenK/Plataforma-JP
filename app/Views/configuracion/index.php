@@ -53,7 +53,14 @@ $sec  = $section;        // sección activa
     <div class="alert-jp success mb-3">
         <i class="bi bi-person-plus-fill me-2"></i>
         Usuario <strong><?= esc($newStaffName) ?></strong> creado.
-        Contraseña temporal: <code style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px"><?= esc(session()->getFlashdata('staff_created_password')) ?></code>
+        Contraseña temporal (no se mostrará otra vez):
+        <span class="d-inline-flex align-items-center gap-2">
+            <code id="newPwdValue-staff" style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px"><?= esc(session()->getFlashdata('staff_created_password')) ?></code>
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm"
+                    onclick="navigator.clipboard.writeText(document.getElementById('newPwdValue-staff').textContent.trim()); this.innerHTML='<i class=\'bi bi-check-lg\'></i> Copiada'">
+                <i class="bi bi-clipboard"></i> Copiar
+            </button>
+        </span>
         <span style="opacity:.7;font-size:12px"> — Compártela de forma segura y pide que la cambie.</span>
     </div>
 <?php endif; ?>
@@ -722,50 +729,6 @@ $sec  = $section;        // sección activa
     </div>
 </div>
 
-<!-- Modal: Tipo de Bono (crear / editar) -->
-<div id="modalBono" class="cfg-modal-overlay d-none">
-    <div class="cfg-modal">
-        <div class="cfg-modal-header">
-            <span id="modalBonoTitle"><i class="bi bi-ticket-perforated-fill me-2"></i>Nuevo tipo de bono</span>
-            <button onclick="closeModal('modalBono')"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <form id="modalBonoForm" action="/configuracion/bonos/create" method="POST">
-            <?= csrf_field() ?>
-            <div class="cfg-modal-body">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">Nombre <span style="color:var(--danger)">*</span></label>
-                        <input type="text" name="name" id="bonoNombre" class="form-control-jp" required placeholder="Ej: Bono 10 clases">
-                    </div>
-                    <div class="col-4">
-                        <label class="form-label">Sesiones <span style="color:var(--danger)">*</span></label>
-                        <input type="number" name="sessions" id="bonoSesiones" class="form-control-jp" required min="1" placeholder="10">
-                    </div>
-                    <div class="col-4">
-                        <label class="form-label">Precio (€) <span style="color:var(--danger)">*</span></label>
-                        <input type="number" name="price" id="bonoPrecio" class="form-control-jp" required min="0" step="0.01" placeholder="0.00">
-                    </div>
-                    <div class="col-4">
-                        <label class="form-label">Validez (días) <span style="color:var(--danger)">*</span></label>
-                        <input type="number" name="validity_days" id="bonoValidez" class="form-control-jp" required min="1" placeholder="90">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Estado</label>
-                        <select name="active" id="bonoActivo" class="form-control-jp">
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="cfg-modal-footer">
-                <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalBono')">Cancelar</button>
-                <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Guardar</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <?= $this->endSection() ?>
 
 
@@ -884,27 +847,6 @@ function openSedeModal(data) {
         form.reset();
     }
     openModal('modalSede');
-}
-
-// ── Modal Bono ────────────────────────────────────────────────────────
-function openBonoModal(data) {
-    const form  = document.getElementById('modalBonoForm');
-    const title = document.getElementById('modalBonoTitle');
-
-    if (data) {
-        title.innerHTML = '<i class="bi bi-pencil-fill me-2"></i>Editar tipo de bono';
-        form.action = '/configuracion/bonos/' + data.id + '/edit';
-        document.getElementById('bonoNombre').value   = data.name          || '';
-        document.getElementById('bonoSesiones').value = data.sessions      || '';
-        document.getElementById('bonoPrecio').value   = data.price         || '';
-        document.getElementById('bonoValidez').value  = data.validity_days || '';
-        document.getElementById('bonoActivo').value   = data.active != null ? String(data.active) : '1';
-    } else {
-        title.innerHTML = '<i class="bi bi-ticket-perforated-fill me-2"></i>Nuevo tipo de bono';
-        form.action = '/configuracion/bonos/create';
-        form.reset();
-    }
-    openModal('modalBono');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────

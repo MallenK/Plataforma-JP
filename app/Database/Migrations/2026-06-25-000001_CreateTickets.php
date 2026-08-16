@@ -11,7 +11,7 @@ class CreateTickets extends Migration
         $this->forge->addField([
             'id'            => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
             'ticket_number' => ['type' => 'VARCHAR', 'constraint' => 20],
-            'user_id'       => ['type' => 'INT', 'unsigned' => true],
+            'user_id'       => ['type' => 'INT'], // sin unsigned: users.id es INT con signo
             'category'      => ['type' => 'ENUM', 'constraint' => ['bug', 'mejora', 'consulta', 'tecnico', 'otro'], 'default' => 'otro'],
             'priority'      => ['type' => 'ENUM', 'constraint' => ['baja', 'media', 'alta', 'urgente'], 'default' => 'media'],
             'title'         => ['type' => 'VARCHAR', 'constraint' => 255],

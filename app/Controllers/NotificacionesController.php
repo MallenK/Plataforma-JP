@@ -246,6 +246,12 @@ class NotificacionesController extends BaseController
         ];
     }
 
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx',
+        'txt', 'mp4',
+    ];
+
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file, string $subfolder): array
     {
         $maxSize  = 5 * 1024 * 1024; // 5 MB
@@ -264,13 +270,24 @@ class NotificacionesController extends BaseController
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        // getClientExtension() no es de confianza (nombre puesto por el cliente):
+        // se valida contra lista blanca para no poder guardar un .php camuflado
+        // con un MIME permitido (p. ej. detectado como text/plain).
+        $ext = strtolower($file->getClientExtension());
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+            return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $file->getClientExtension();
-        $file->move($uploadDir, $newName);
+        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
+        $this->secureUploadDir($uploadDir);
+
+        $newName = uniqid('', true) . '_' . time() . '.' . $ext;
+        try {
+            $file->move($uploadDir, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'NotificacionesController::handleFileUpload move failed: ' . $e->getMessage());
+            return ['error' => 'No se pudo guardar el archivo. Inténtalo de nuevo.'];
+        }
 
         return [
             'path' => 'uploads/' . $subfolder . '/' . $newName,

@@ -22,10 +22,13 @@ $(document).ready(function () {
             $('#entrenadores-count').text(res.entrenadores ?? 0);
 
             // Métricas opcionales (cuando el backend las devuelva)
-            if (res.ingresos !== undefined) {
-                $('#ingresos-count').text(res.ingresos + '€');
-                const pct = Math.min(Math.round((res.ingresos / 5000) * 100), 100);
-                $('#ingresos-bar').css('width', pct + '%');
+            if (res.listas_pendientes !== undefined) {
+                $('#listas-pendientes-count').text(res.listas_pendientes);
+                $('#listas-pendientes-label').text(
+                    res.listas_pendientes === 1 ? 'sesión sin pasar/cerrar' : 'sesiones sin pasar/cerrar'
+                );
+                const pct = res.listas_pendientes > 0 ? 100 : 0;
+                $('#listas-pendientes-bar').css('width', pct + '%');
             }
 
             if (res.alertas !== undefined) {
@@ -51,7 +54,7 @@ $(document).ready(function () {
         },
 
         error: function () {
-            ['alumnos-count', 'entrenadores-count', 'ingresos-count', 'alertas-count'].forEach(function (id) {
+            ['alumnos-count', 'entrenadores-count', 'listas-pendientes-count', 'alertas-count'].forEach(function (id) {
                 $('#' + id).text('—');
             });
         }

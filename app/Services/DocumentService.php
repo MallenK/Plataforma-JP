@@ -406,7 +406,12 @@ class DocumentService
         $storedName = bin2hex(random_bytes(16)) . '.' . $ext;
 
         // 8. Mover archivo
-        $file->move($destDir, $storedName);
+        try {
+            $file->move($destDir, $storedName);
+        } catch (\Throwable $e) {
+            log_message('error', 'DocumentService::uploadFile move failed (folder=' . $folderId . '): ' . $e->getMessage());
+            return ['success' => false, 'error' => 'No se pudo guardar el archivo. Inténtalo de nuevo.'];
+        }
 
         // 9. Insertar en BD
         $this->docModel->insert([

@@ -120,6 +120,42 @@ class PlayerBonoModel extends Model
     }
 
     /**
+     * IDs de los bonos "activos" reales: uno por jugador, el más antiguo
+     * con sesiones restantes y no caducado (misma regla FIFO que
+     * getActiveBono()). Es la única fuente de verdad de qué bono se está
+     * descontando ahora mismo por jugador — cualquier otro bono válido del
+     * mismo jugador está en cola, no activo.
+     */
+    public function getActiveBonoIdsByPlayer(): array
+    {
+        $today = date('Y-m-d');
+
+        $candidates = $this->select('id, player_id')
+            ->where('player_id IS NOT NULL')
+            ->where('sessions_remaining >', 0)
+            ->groupStart()
+                ->where('expires_at IS NULL')
+                ->orWhere('expires_at >=', $today)
+            ->groupEnd()
+            ->orderBy('player_id', 'ASC')
+            ->orderBy('created_at', 'ASC')
+            ->findAll();
+
+        $seenPlayers = [];
+        $activeIds   = [];
+        foreach ($candidates as $row) {
+            $playerId = (int)$row['player_id'];
+            if (isset($seenPlayers[$playerId])) {
+                continue; // ya vimos el bono más antiguo de este jugador
+            }
+            $seenPlayers[$playerId] = true;
+            $activeIds[]            = (int)$row['id'];
+        }
+
+        return $activeIds;
+    }
+
+    /**
      * Lista todos los bonos con datos del jugador y tipo de bono.
      * LEFT JOIN para incluir bonos sin jugador asignado.
      */
@@ -175,13 +211,10 @@ class PlayerBonoModel extends Model
         $today     = date('Y-m-d');
         $thisMonth = date('Y-m-01');
 
-        $active = (int)$this->db->table('player_bonos')
-            ->where('sessions_remaining >', 0)
-            ->groupStart()
-                ->where('expires_at IS NULL')
-                ->orWhere('expires_at >=', $today)
-            ->groupEnd()
-            ->countAllResults();
+        // "Activo" = un bono por jugador (regla FIFO), no toda fila con
+        // sesiones restantes — si no, un alumno con un bono en cola cuenta
+        // el doble.
+        $active = count($this->getActiveBonoIdsByPlayer());
 
         $issuedThisMonth = (int)$this->db->table('player_bonos')
             ->where('start_date >=', $thisMonth)

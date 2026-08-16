@@ -36,15 +36,15 @@ $attendanceOpts = [
         </span>
     </div>
     <?php if ($session['status'] === 'completed'): ?>
-    <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+    <span id="session-status-badge" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
         <i class="bi bi-check-circle-fill me-1"></i>Sesión cerrada
     </span>
     <?php elseif (!empty($session['lista_pasada_at'])): ?>
-    <span style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+    <span id="session-status-badge" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
         <i class="bi bi-clipboard2-check-fill me-1"></i>Lista guardada · pendiente cerrar
     </span>
     <?php else: ?>
-    <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
+    <span id="session-status-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
         <i class="bi bi-hourglass-split me-1"></i>Pendiente
     </span>
     <?php endif; ?>
@@ -307,6 +307,73 @@ $attendanceOpts = [
         btnCerrar.addEventListener('click', function() {
             if (!confirm('¿Cerrar esta sesión? Quedará marcada como completada y no podrá editarse.')) return;
             document.getElementById('form-cerrar').submit();
+        });
+    }
+
+    // ── Aviso de cambios sin guardar + guardado por AJAX ───────────
+    var formLista = document.getElementById('form-lista');
+    if (formLista) {
+        var isDirty = false;
+        var CSRF_NAME = <?= json_encode(csrf_token()) ?>;
+        var SESSION_ALREADY_COMPLETED = <?= $session['status'] === 'completed' ? 'true' : 'false' ?>;
+
+        formLista.addEventListener('change', function () { isDirty = true; });
+        formLista.addEventListener('input',  function () { isDirty = true; });
+
+        window.addEventListener('beforeunload', function (e) {
+            if (!isDirty) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        formLista.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var submitBtn = formLista.querySelector('button[type="submit"]');
+            var originalHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Guardando…';
+            }
+
+            fetch(formLista.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(formLista)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    isDirty = false;
+                    showAlert(data.message || 'Asistencia guardada.', 'success');
+
+                    if (data.csrf) {
+                        var csrfInput = formLista.querySelector('[name="' + CSRF_NAME + '"]');
+                        if (csrfInput) csrfInput.value = data.csrf;
+                    }
+
+                    if (!SESSION_ALREADY_COMPLETED) {
+                        var badge = document.getElementById('session-status-badge');
+                        if (badge) {
+                            badge.style.background = '#ede9fe';
+                            badge.style.color = '#5b21b6';
+                            badge.style.borderColor = '#c4b5fd';
+                            badge.innerHTML = '<i class="bi bi-clipboard2-check-fill me-1"></i>Lista guardada · pendiente cerrar';
+                        }
+                    }
+                } else {
+                    showAlert(data.error || 'No se pudo guardar la asistencia.');
+                }
+            })
+            .catch(function () {
+                showAlert('Error de red. Inténtalo de nuevo.');
+            })
+            .finally(function () {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHtml;
+                }
+            });
         });
     }
 })();

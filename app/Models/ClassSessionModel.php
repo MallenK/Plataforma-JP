@@ -53,4 +53,16 @@ class ClassSessionModel extends Model
                     ->orderBy('start_time', 'ASC')
                     ->findAll($limit);
     }
+
+    /**
+     * Sesiones ya pasadas o de hoy a las que aún no se les ha pasado/cerrado
+     * la asistencia (lista_pasada_at nulo). Usado en el dashboard de admin.
+     */
+    public function countPendingAttendance(): int
+    {
+        return $this->where('session_date <=', date('Y-m-d'))
+                    ->where('status !=', 'cancelled')
+                    ->where('lista_pasada_at', null)
+                    ->countAllResults();
+    }
 }

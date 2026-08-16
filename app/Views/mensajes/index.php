@@ -643,7 +643,7 @@ $roleLabels = [
         if (!dt) return '';
         const d  = new Date(dt.replace(' ', 'T') + 'Z'); // UTC stored → parse as UTC
         const now = new Date();
-        const tz  = 'Etc/GMT-1'; // UTC+1 fixed (no DST)
+        const tz  = 'Europe/Madrid'; // con horario de verano (CET/CEST)
         const sameDay = d.toLocaleDateString('es-ES', {timeZone: tz}) === now.toLocaleDateString('es-ES', {timeZone: tz});
         if (sameDay) return d.toLocaleTimeString('es-ES', {timeZone: tz, hour:'2-digit', minute:'2-digit'});
         return d.toLocaleDateString('es-ES', {timeZone: tz, day:'2-digit', month:'short'}) + ' ' +
@@ -652,7 +652,7 @@ $roleLabels = [
 
     function timeAgoJS(dt) {
         if (!dt) return '';
-        const d   = new Date(dt.replace(' ', 'T'));
+        const d   = new Date(dt.replace(' ', 'T') + 'Z'); // UTC stored → parse as UTC (igual que formatTime)
         const now = new Date();
         const sec = Math.floor((now - d) / 1000);
         if (sec < 60)    return 'ahora';

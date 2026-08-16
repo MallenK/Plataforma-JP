@@ -170,7 +170,9 @@ $csrfHash = csrf_hash();
             });
             const data = await res.json();
             if (data.ok) {
-                window.location.href = data.redirect;
+                window.location.href = data.attachment_error
+                    ? data.redirect + '?attachment_error=' + encodeURIComponent(data.attachment_error)
+                    : data.redirect;
             } else {
                 showError(data.error ?? 'Error inesperado.');
             }

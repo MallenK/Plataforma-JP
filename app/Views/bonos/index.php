@@ -139,15 +139,20 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <tbody>
             <?php
             $today = date('Y-m-d');
+            $activeBonoIds = $activeBonoIds ?? [];
             foreach ($bonos as $b):
                 $remaining   = (int)$b['sessions_remaining'];
                 $total       = (int)$b['sessions_total'];
                 $pct         = $total > 0 ? round(($remaining / $total) * 100) : 0;
                 $expired     = !empty($b['expires_at']) && $b['expires_at'] < $today;
-                $isActive    = $remaining > 0 && !$expired;
                 $unassigned  = empty($b['player_id']);
-                $statusCls   = $isActive ? 'active' : 'inactive';
-                $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
+                $hasSessions = $remaining > 0 && !$expired;
+                // "Activo" = el bono más antiguo con sesiones del jugador (regla FIFO).
+                // Otro bono válido del mismo jugador está en cola, no activo.
+                $isActive    = $hasSessions && !$unassigned && in_array((int)$b['id'], $activeBonoIds, true);
+                $isQueued    = $hasSessions && !$unassigned && !$isActive;
+                $statusCls   = $isActive ? 'active' : ($isQueued ? 'pending' : 'inactive');
+                $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($isQueued ? 'En cola' : ($remaining === 0 ? 'Agotado' : 'Vencido')));
                 $barColor    = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
             ?>
             <?php
@@ -155,6 +160,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     $unassigned        => 'bi-person-dash-fill',
                     $remaining === 0   => 'bi-x-octagon-fill',
                     $expired           => 'bi-calendar-x-fill',
+                    $isQueued          => 'bi-hourglass-split',
                     $pct <= 20         => 'bi-exclamation-triangle-fill',
                     default            => 'bi-check-circle-fill',
                 };
@@ -162,6 +168,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     $unassigned        => '#7c3aed',
                     $remaining === 0   => '#dc2626',
                     $expired           => '#dc2626',
+                    $isQueued          => '#92400e',
                     $pct <= 20         => '#f59e0b',
                     default            => '#16a34a',
                 };

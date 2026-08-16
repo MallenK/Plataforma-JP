@@ -13,12 +13,17 @@ $pageSubtitle = 'Gestión de alumnos registrados';
     <div>
         <strong>Alumno "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
         <span style="font-size:13px">
-            Contraseña inicial:
-            <code style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px">
+            Contraseña inicial (no se mostrará otra vez):
+        </span>
+        <div class="d-flex align-items-center gap-2 mt-1">
+            <code id="newPwdValue-alumnos" style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px">
                 <?= esc(session()->getFlashdata('created_password')) ?>
             </code>
-            — anótala antes de salir de esta página.
-        </span>
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm"
+                    onclick="navigator.clipboard.writeText(document.getElementById('newPwdValue-alumnos').textContent.trim()); this.innerHTML='<i class=\'bi bi-check-lg\'></i> Copiada'">
+                <i class="bi bi-clipboard"></i> Copiar
+            </button>
+        </div>
     </div>
 </div>
 <?php endif; ?>

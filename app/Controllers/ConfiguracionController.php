@@ -29,7 +29,6 @@ class ConfiguracionController extends BaseController
         $settings  = $this->cfgService->getAllSettings();
         $locations = $isAdmin ? $this->cfgService->getLocations()    : [];
         $staff     = $isAdmin ? $this->cfgService->getStaffUsers()   : [];
-        $bonoTypes = $isAdmin ? $this->cfgService->getBonoTypes()    : [];
         $logs      = $isAdmin ? $this->cfgService->getRecentLogs(50) : [];
 
         return view('configuracion/index', [
@@ -37,7 +36,6 @@ class ConfiguracionController extends BaseController
             'settings'     => $settings,
             'locations'    => $locations,
             'staff'        => $staff,
-            'bonoTypes'    => $bonoTypes,
             'logs'         => $logs,
             'isAdmin'      => $isAdmin,
             'isSuperAdmin' => $isSuperAdmin,
@@ -182,48 +180,6 @@ class ConfiguracionController extends BaseController
         );
 
         return redirect()->to('/configuracion?section=sedes');
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  FACTURACIÓN — TIPOS DE BONO
-    // ════════════════════════════════════════════════════════════════
-
-    public function createBonoType()
-    {
-        $result = $this->cfgService->createBonoType($this->request->getPost());
-
-        if (!$result['success']) {
-            $errors = isset($result['errors']) ? implode(' ', $result['errors']) : 'Error al crear el tipo de bono.';
-            session()->setFlashdata('error', $errors);
-        } else {
-            session()->setFlashdata('success', 'Tipo de bono creado correctamente.');
-        }
-
-        return redirect()->to('/configuracion?section=facturacion');
-    }
-
-    public function updateBonoType(int $id)
-    {
-        $ok = $this->cfgService->updateBonoType($id, $this->request->getPost());
-
-        session()->setFlashdata(
-            $ok ? 'success' : 'error',
-            $ok ? 'Tipo de bono actualizado correctamente.' : 'No se pudo actualizar el tipo de bono.'
-        );
-
-        return redirect()->to('/configuracion?section=facturacion');
-    }
-
-    public function deleteBonoType(int $id)
-    {
-        $ok = $this->cfgService->deleteBonoType($id);
-
-        session()->setFlashdata(
-            $ok ? 'success' : 'error',
-            $ok ? 'Tipo de bono eliminado correctamente.' : 'No se pudo eliminar el tipo de bono.'
-        );
-
-        return redirect()->to('/configuracion?section=facturacion');
     }
 
     // ════════════════════════════════════════════════════════════════

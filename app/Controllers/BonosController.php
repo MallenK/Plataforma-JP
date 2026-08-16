@@ -41,11 +41,12 @@ class BonosController extends BaseController
         };
 
         return view('bonos/index', [
-            'title'        => 'Bonos — JP Preparation',
-            'pageTitle'    => 'Bonos',
-            'pageSubtitle' => 'Membresías y bonos de entrenamiento',
-            'bonos'        => $bonos,
-            'stats'        => $this->bonoModel->getStats(),
+            'title'         => 'Bonos — JP Preparation',
+            'pageTitle'     => 'Bonos',
+            'pageSubtitle'  => 'Membresías y bonos de entrenamiento',
+            'bonos'         => $bonos,
+            'activeBonoIds' => $this->bonoModel->getActiveBonoIdsByPlayer(),
+            'stats'         => $this->bonoModel->getStats(),
             'bonoTypes'    => $this->typeModel->getActive(),
             'allBonoTypes' => $this->typeModel->orderBy('active', 'DESC')->orderBy('name', 'ASC')->findAll(),
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
@@ -120,11 +121,17 @@ class BonosController extends BaseController
             ? $this->bonoModel->getBonosForPlayer((int)$bono['player_id'])
             : [];
 
+        // Bono realmente activo (regla FIFO) de este jugador, para no marcar
+        // "Activo" un bono en cola solo porque tiene sesiones y no ha caducado.
+        $trueActive       = !empty($bono['player_id']) ? $this->bonoModel->getActiveBono((int)$bono['player_id']) : null;
+        $trueActiveBonoId = $trueActive['id'] ?? null;
+
         return view('bonos/show', [
-            'title'   => 'Bono — JP Preparation',
-            'bono'    => $bono,
-            'history' => $history,
-            'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
+            'title'            => 'Bono — JP Preparation',
+            'bono'             => $bono,
+            'history'          => $history,
+            'trueActiveBonoId' => $trueActiveBonoId,
+            'players'          => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
         ]);
     }
 
@@ -181,7 +188,8 @@ class BonosController extends BaseController
             $data['notes'] = $this->request->getPost('notes') ?: null;
         }
         if ($this->request->getPost('sessions_remaining') !== null) {
-            $data['sessions_remaining'] = max(0, (int)$this->request->getPost('sessions_remaining'));
+            $total = (int)$bono['sessions_total'];
+            $data['sessions_remaining'] = max(0, min($total, (int)$this->request->getPost('sessions_remaining')));
         }
         if ($this->request->getPost('expires_at') !== null) {
             $data['expires_at'] = $this->request->getPost('expires_at') ?: null;

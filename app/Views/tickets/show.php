@@ -197,8 +197,8 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
         </div>
         <?php endforeach; ?>
 
-        <!-- Formulario de respuesta (solo superadmin) -->
-        <?php if ($canManage && !in_array($ticket['status'], ['cerrado'])): ?>
+        <!-- Formulario de respuesta (superadmin o el dueño del ticket) -->
+        <?php if (($canManage || $isOwner) && !in_array($ticket['status'], ['cerrado'])): ?>
         <div class="ticket-reply-form" id="reply-form-wrap">
             <div class="ticket-message-avatar">
                 <?= avatar_html(session('avatar'), session('name'), 'ticket-avatar') ?>
@@ -293,6 +293,14 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
     const CSRF_NAME = '<?= $csrfName ?>';
     let   csrfHash  = '<?= $csrfHash ?>';
 
+    // Aviso de adjunto rechazado al crear el ticket (llega por query string
+    // tras la redirección, ver tickets/create.php).
+    const attachErr = new URLSearchParams(location.search).get('attachment_error');
+    if (attachErr) {
+        showToast('Ticket creado — ' + attachErr, true);
+        history.replaceState({}, '', location.pathname);
+    }
+
     // ── Cambiar estado ─────────────────────────────────────
     document.querySelectorAll('.btn-change-status').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -375,8 +383,8 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    showToast('Respuesta enviada');
-                    setTimeout(() => location.reload(), 600);
+                    showToast(data.attachment_error ? 'Respuesta enviada — ' + data.attachment_error : 'Respuesta enviada', !!data.attachment_error);
+                    setTimeout(() => location.reload(), data.attachment_error ? 1800 : 600);
                 } else {
                     errBox.textContent = data.error ?? 'Error inesperado.';
                     errBox.classList.remove('d-none');

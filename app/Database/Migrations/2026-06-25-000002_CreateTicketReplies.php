@@ -11,7 +11,7 @@ class CreateTicketReplies extends Migration
         $this->forge->addField([
             'id'         => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
             'ticket_id'  => ['type' => 'INT', 'unsigned' => true],
-            'user_id'    => ['type' => 'INT', 'unsigned' => true],
+            'user_id'    => ['type' => 'INT'], // sin unsigned: users.id es INT con signo
             'body'       => ['type' => 'TEXT'],
             'created_at' => ['type' => 'DATETIME', 'null' => true],
         ]);

@@ -10,10 +10,13 @@ $remaining  = (int)$bono['sessions_remaining'];
 $total      = (int)$bono['sessions_total'];
 $pct        = $total > 0 ? round(($remaining / $total) * 100) : 0;
 $expired    = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
-$isActive   = $remaining > 0 && !$expired;
 $unassigned = empty($bono['player_id']);
-$statusLbl  = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
-$statusCls  = $unassigned ? '' : ($isActive ? 'active' : 'inactive');
+$hasSessions = $remaining > 0 && !$expired;
+// "Activo" = es el bono FIFO-activo de este jugador, no solo "tiene sesiones".
+$isActive   = $hasSessions && !$unassigned && (int)$bono['id'] === (int)($trueActiveBonoId ?? 0);
+$isQueued   = $hasSessions && !$unassigned && !$isActive;
+$statusLbl  = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($isQueued ? 'En cola' : ($remaining === 0 ? 'Agotado' : 'Vencido')));
+$statusCls  = $unassigned ? '' : ($isActive ? 'active' : ($isQueued ? 'pending' : 'inactive'));
 $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
 ?>
 
@@ -192,10 +195,12 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                     </thead>
                     <tbody>
                     <?php foreach ($history as $h):
-                        $hExpired = !empty($h['expires_at']) && $h['expires_at'] < $today;
-                        $hActive  = (int)$h['sessions_remaining'] > 0 && !$hExpired;
-                        $hCls     = $hActive ? 'active' : 'inactive';
-                        $hLbl     = $hActive ? 'Activo' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido');
+                        $hExpired      = !empty($h['expires_at']) && $h['expires_at'] < $today;
+                        $hHasSessions  = (int)$h['sessions_remaining'] > 0 && !$hExpired;
+                        $hActive       = $hHasSessions && (int)$h['id'] === (int)($trueActiveBonoId ?? 0);
+                        $hQueued       = $hHasSessions && !$hActive;
+                        $hCls          = $hActive ? 'active' : ($hQueued ? 'pending' : 'inactive');
+                        $hLbl          = $hActive ? 'Activo' : ($hQueued ? 'En cola' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido'));
                         $isCurrent = (int)$h['id'] === (int)$bono['id'];
                     ?>
                     <tr style="border-bottom:1px solid var(--border);<?= $isCurrent ? 'background:var(--accent-light)' : '' ?>">

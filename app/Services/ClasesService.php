@@ -449,15 +449,33 @@ class ClasesService
         }
 
         $bonoModel = new PlayerBonoModel();
-        $bono      = $bonoModel->deductSessionDetailed($playerId);
 
-        if ($bono === null) {
-            return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+        // Descontar la sesión y marcar bono_deducted_at deben ir juntos: si la
+        // segunda escritura falla tras la primera, se perdería una sesión de
+        // bono sin dejar constancia, y un reintento la descontaría otra vez.
+        $this->db->transStart();
+        try {
+            $bono = $bonoModel->deductSessionDetailed($playerId);
+
+            if ($bono === null) {
+                $this->db->transRollback();
+                return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+            }
+
+            $this->playerModel->update($player['id'], [
+                'bono_deducted_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->db->transComplete();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            log_message('error', 'ClasesService::deductBonoForPlayer error (session=' . $sessionId . ', player=' . $playerId . '): ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Error al descontar el bono. Inténtalo de nuevo.'];
         }
 
-        $this->playerModel->update($player['id'], [
-            'bono_deducted_at' => date('Y-m-d H:i:s'),
-        ]);
+        if (!$this->db->transStatus()) {
+            return ['success' => false, 'error' => 'Error al descontar el bono. Inténtalo de nuevo.'];
+        }
 
         $remaining = (int)$bono['sessions_remaining'];
         if ($remaining === 1 || $remaining === 0) {
