@@ -228,10 +228,12 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Eliminar bono</div>
                         <div style="font-size:12px;color:var(--text-muted)">Esta acción no se puede deshacer.</div>
                     </div>
-                    <form action="<?= base_url('bonos/' . $bono['id'] . '/delete') ?>" method="post">
+                    <form action="<?= base_url('bonos/' . $bono['id'] . '/delete') ?>" method="post"
+                          data-ru-confirm="¿Eliminar «<?= esc($bono['bono_name']) ?>»<?= !$unassigned ? ' de ' . esc($bono['player_name']) : '' ?>?"
+                          data-ru-confirm-desc="Se perderán las <?= $remaining ?> de <?= $total ?> sesiones restantes. Esta acción no se puede deshacer."
+                          data-ru-confirm-label="Eliminar" data-ru-confirm-danger>
                         <?= csrf_field() ?>
                         <button type="submit"
-                                onclick="return confirm('¿Eliminar este bono definitivamente?')"
                                 class="btn-jp btn-jp-sm"
                                 style="background:var(--danger-light);color:var(--danger);border:1px solid var(--danger)">
                             <i class="bi bi-trash"></i> Eliminar

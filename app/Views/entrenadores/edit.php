@@ -18,7 +18,7 @@ $pageSubtitle = esc($coach['name'] ?? '');
     </div>
 </div>
 
-<form method="post" action="<?= base_url('entrenadores/' . $coach['id'] . '/editar') ?>">
+<form method="post" action="<?= base_url('entrenadores/' . $coach['id'] . '/editar') ?>" id="form-edit-coach">
     <?= csrf_field() ?>
 
     <div class="row g-3 justify-content-center">
@@ -52,7 +52,8 @@ $pageSubtitle = esc($coach['name'] ?? '');
                         <div class="col-12 col-md-5">
                             <div class="form-group">
                                 <label class="form-label">Estado</label>
-                                <select name="status" class="form-control-jp">
+                                <select name="status" id="coach-status" class="form-control-jp"
+                                        data-original="<?= esc($coach['status'] ?? 'active') ?>">
                                     <option value="active"   <?= ($coach['status'] ?? '') === 'active'   ? 'selected' : '' ?>>Activo</option>
                                     <option value="inactive" <?= ($coach['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactivo</option>
                                     <option value="banned"   <?= ($coach['status'] ?? '') === 'banned'   ? 'selected' : '' ?>>Bloqueado</option>
@@ -81,5 +82,30 @@ $pageSubtitle = esc($coach['name'] ?? '');
     </div>
 
 </form>
+
+<script>
+(function () {
+    var form   = document.getElementById('form-edit-coach');
+    var status = document.getElementById('coach-status');
+    if (!form || !status) return;
+
+    var labels = { inactive: 'Inactivo', banned: 'Bloqueado' };
+
+    form.addEventListener('submit', function (e) {
+        var risky = ['inactive', 'banned'].includes(status.value) && status.value !== status.dataset.original;
+        if (!risky) return; // guardado normal, sin cambios de riesgo en el estado
+
+        e.preventDefault();
+        RadixUI.confirm({
+            title: '¿Cambiar el estado a "' + labels[status.value] + '"?',
+            description: 'El entrenador perderá acceso a la plataforma con este cambio.',
+            confirmLabel: 'Guardar cambios',
+            danger: true,
+        }).then(function (ok) {
+            if (ok) form.submit();
+        });
+    });
+})();
+</script>
 
 <?= $this->endSection() ?>

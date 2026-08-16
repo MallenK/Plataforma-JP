@@ -306,7 +306,9 @@ $sec  = $section;        // sección activa
                                             <?php if ((int)$u['id'] !== (int)$currentUserId && $u['role'] !== 'superadmin'): ?>
                                                 <?php if ($u['status'] === 'active'): ?>
                                                 <form action="/configuracion/staff/<?= $u['id'] ?>/deactivate" method="POST" class="d-inline"
-                                                      onsubmit="return confirm('¿Desactivar a <?= esc($u['name'], 'js') ?>?')">
+                                                      data-ru-confirm="¿Desactivar a <?= esc($u['name']) ?>?"
+                                                      data-ru-confirm-desc="No podrá acceder a la plataforma hasta que se reactive su cuenta."
+                                                      data-ru-confirm-label="Desactivar">
                                                     <?= csrf_field() ?>
                                                     <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Desactivar">
                                                         <i class="bi bi-person-x-fill"></i>
@@ -405,7 +407,9 @@ $sec  = $section;        // sección activa
                                                 <i class="bi bi-pencil-fill"></i>
                                             </button>
                                             <form action="/configuracion/sedes/<?= $loc['id'] ?>/delete" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Eliminar la sede «<?= esc($loc['name']) ?>»?')">
+                                                  data-ru-confirm="¿Eliminar la sede «<?= esc($loc['name']) ?>»?"
+                                                  data-ru-confirm-desc="Esta acción no se puede deshacer."
+                                                  data-ru-confirm-label="Eliminar" data-ru-confirm-danger>
                                                 <?= csrf_field() ?>
                                                 <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar">
                                                     <i class="bi bi-trash-fill"></i>

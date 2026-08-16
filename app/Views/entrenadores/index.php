@@ -121,7 +121,10 @@ $pageSubtitle = 'Gestión del equipo técnico';
                             <a href="<?= base_url('entrenadores/' . $c['id'] . '/editar') ?>" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form method="post" action="<?= base_url('entrenadores/' . $c['id'] . '/eliminar') ?>" style="display:inline" onsubmit="return confirm('¿Dar de baja a <?= esc($c['name']) ?>? Esta acción cambia su estado a inactivo.')">
+                            <form method="post" action="<?= base_url('entrenadores/' . $c['id'] . '/eliminar') ?>" style="display:inline"
+                                  data-ru-confirm="¿Dar de baja a <?= esc($c['name']) ?>?"
+                                  data-ru-confirm-desc="Esta acción cambia su estado a inactivo."
+                                  data-ru-confirm-label="Dar de baja" data-ru-confirm-danger>
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Dar de baja">
                                     <i class="bi bi-person-x-fill"></i>
