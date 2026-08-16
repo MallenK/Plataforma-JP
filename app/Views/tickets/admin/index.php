@@ -29,10 +29,10 @@ $priorityColors = [
         <p class="text-muted mb-0" style="font-size:13px"><?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> en total</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-bar-chart-fill me-1"></i>Dashboard
         </a>
-        <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-person me-1"></i>Mis tickets
         </a>
     </div>
@@ -42,12 +42,12 @@ $priorityColors = [
 <form method="GET" action="<?= base_url('tickets/admin') ?>" class="ticket-filters mb-4">
     <div class="row g-2 align-items-end">
         <div class="col-sm-4 col-lg-3">
-            <input type="text" name="search" class="form-control form-control-sm"
+            <input type="text" name="search" class="form-control-jp"
                    placeholder="Buscar por título, número o usuario..."
                    value="<?= esc($filters['search']) ?>">
         </div>
         <div class="col-sm-2 col-lg-2">
-            <select name="status" class="form-select form-select-sm">
+            <select name="status" class="form-control-jp">
                 <option value="">Todos los estados</option>
                 <?php foreach ($statuses as $key => $label): ?>
                 <option value="<?= $key ?>" <?= $filters['status'] === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
@@ -55,7 +55,7 @@ $priorityColors = [
             </select>
         </div>
         <div class="col-sm-2 col-lg-2">
-            <select name="priority" class="form-select form-select-sm">
+            <select name="priority" class="form-control-jp">
                 <option value="">Todas las prioridades</option>
                 <?php foreach ($priorities as $key => $label): ?>
                 <option value="<?= $key ?>" <?= $filters['priority'] === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
@@ -63,7 +63,7 @@ $priorityColors = [
             </select>
         </div>
         <div class="col-sm-2 col-lg-2">
-            <select name="category" class="form-select form-select-sm">
+            <select name="category" class="form-control-jp">
                 <option value="">Todas las categorías</option>
                 <?php foreach ($categories as $key => $label): ?>
                 <option value="<?= $key ?>" <?= $filters['category'] === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
@@ -71,13 +71,13 @@ $priorityColors = [
             </select>
         </div>
         <div class="col-sm-2 col-lg-1">
-            <button type="submit" class="btn btn-sm btn-primary w-100">
+            <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
                 <i class="bi bi-search"></i>
             </button>
         </div>
         <?php if (array_filter($filters)): ?>
         <div class="col-auto">
-            <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+            <a href="<?= base_url('tickets/admin') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                 <i class="bi bi-x-lg me-1"></i>Limpiar
             </a>
         </div>
@@ -140,7 +140,7 @@ $priorityColors = [
                 <td class="text-center"><?= (int) $t['reply_count'] ?></td>
                 <td class="ticket-date-cell"><?= date('d/m/Y', strtotime($t['created_at'])) ?></td>
                 <td>
-                    <a href="<?= base_url('tickets/' . $t['id']) ?>" class="btn btn-xs btn-outline-secondary">
+                    <a href="<?= base_url('tickets/' . $t['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         Ver
                     </a>
                 </td>

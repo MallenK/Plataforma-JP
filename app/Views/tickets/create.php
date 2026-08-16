@@ -14,7 +14,7 @@ $csrfHash = csrf_hash();
         <h2 class="fw-bold mb-1" style="font-size:1.25rem">Nuevo Ticket</h2>
         <p class="text-muted mb-0" style="font-size:13px">Describe el problema o sugerencia con el mayor detalle posible</p>
     </div>
-    <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
+    <a href="<?= base_url('tickets') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
         <i class="bi bi-arrow-left me-1"></i>Volver
     </a>
 </div>
@@ -26,7 +26,7 @@ $csrfHash = csrf_hash();
         <!-- Título -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
-            <input type="text" name="title" id="ticket-title" class="form-control"
+            <input type="text" name="title" id="ticket-title" class="form-control-jp"
                    placeholder="Ej: Error al cargar la sección de clases" maxlength="255" required>
             <div class="form-text">Resume el problema en una frase corta y clara.</div>
         </div>
@@ -35,7 +35,7 @@ $csrfHash = csrf_hash();
         <div class="row g-3 mb-3">
             <div class="col-sm-6">
                 <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
-                <select name="category" class="form-select" required>
+                <select name="category" class="form-control-jp" required>
                     <option value="">Selecciona una categoría</option>
                     <?php foreach ($categories as $key => $label): ?>
                     <option value="<?= $key ?>"><?= esc($label) ?></option>
@@ -44,7 +44,7 @@ $csrfHash = csrf_hash();
             </div>
             <div class="col-sm-6">
                 <label class="form-label fw-semibold">Prioridad <span class="text-danger">*</span></label>
-                <select name="priority" class="form-select" required>
+                <select name="priority" class="form-control-jp" required>
                     <?php foreach ($priorities as $key => $label): ?>
                     <option value="<?= $key ?>" <?= $key === 'media' ? 'selected' : '' ?>>
                         <?= esc($label) ?>
@@ -58,7 +58,7 @@ $csrfHash = csrf_hash();
         <!-- Descripción -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
-            <textarea name="description" id="ticket-desc" class="form-control" rows="6"
+            <textarea name="description" id="ticket-desc" class="form-control-jp" rows="6"
                       placeholder="Explica el problema con detalle: ¿qué ocurrió?, ¿qué esperabas que ocurriera?, ¿en qué sección?"
                       maxlength="5000" required></textarea>
             <div class="d-flex justify-content-between mt-1">
@@ -89,8 +89,8 @@ $csrfHash = csrf_hash();
         </div>
 
         <div class="d-flex justify-content-end gap-2">
-            <a href="<?= base_url('tickets') ?>" class="btn btn-outline-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary" id="btn-submit-ticket">
+            <a href="<?= base_url('tickets') ?>" class="btn-jp btn-jp-secondary">Cancelar</a>
+            <button type="submit" class="btn-jp btn-jp-primary" id="btn-submit-ticket">
                 <span class="btn-label"><i class="bi bi-send me-1"></i>Enviar ticket</span>
                 <span class="btn-spinner d-none">
                     <span class="spinner-border spinner-border-sm me-1"></span>Enviando...
@@ -98,7 +98,7 @@ $csrfHash = csrf_hash();
             </button>
         </div>
 
-        <div class="alert alert-danger mt-3 d-none" id="ticket-error"></div>
+        <div class="alert-jp danger mt-3 d-none" id="ticket-error"></div>
     </form>
 </div>
 

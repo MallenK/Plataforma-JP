@@ -33,14 +33,14 @@ $priorityColors = [
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <?php if ($role === 'superadmin'): ?>
-        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-bar-chart-fill me-1"></i>Dashboard
         </a>
-        <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/admin') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-list-ul me-1"></i>Todos los tickets
         </a>
         <?php endif; ?>
-        <a href="<?= base_url('tickets/create') ?>" class="btn btn-sm btn-primary">
+        <a href="<?= base_url('tickets/create') ?>" class="btn-jp btn-jp-primary btn-jp-sm">
             <i class="bi bi-plus-lg me-1"></i>Nuevo ticket
         </a>
     </div>
@@ -51,7 +51,7 @@ $priorityColors = [
     <i class="bi bi-ticket-perforated ticket-empty-icon"></i>
     <p class="ticket-empty-title">Sin tickets todavía</p>
     <p class="ticket-empty-sub">Usa el botón de arriba para reportar un problema o enviar una sugerencia.</p>
-    <a href="<?= base_url('tickets/create') ?>" class="btn btn-primary mt-2">
+    <a href="<?= base_url('tickets/create') ?>" class="btn-jp btn-jp-primary mt-2">
         <i class="bi bi-plus-lg me-1"></i>Crear mi primer ticket
     </a>
 </div>

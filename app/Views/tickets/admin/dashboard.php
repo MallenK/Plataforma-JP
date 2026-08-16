@@ -23,7 +23,7 @@ $closed   = (int) ($byStatus['cerrado']     ?? 0);
         <h2 class="fw-bold mb-1" style="font-size:1.25rem">Dashboard de Tickets</h2>
         <p class="text-muted mb-0" style="font-size:13px">Resumen y métricas del sistema de soporte</p>
     </div>
-    <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+    <a href="<?= base_url('tickets/admin') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
         <i class="bi bi-list-ul me-1"></i>Ver todos los tickets
     </a>
 </div>
@@ -137,8 +137,9 @@ $closed   = (int) ($byStatus['cerrado']     ?? 0);
     <?php $count = (int) ($byStatus[$key] ?? 0); ?>
     <?php if ($count > 0): ?>
     <div class="col-auto">
-        <a href="<?= base_url('tickets/admin?status=' . $key) ?>" class="btn btn-sm btn-outline-secondary">
-            <?= esc($label) ?> <span class="badge bg-secondary ms-1"><?= $count ?></span>
+        <a href="<?= base_url('tickets/admin?status=' . $key) ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+            <?= esc($label) ?>
+            <span style="background:var(--border);color:var(--text-muted);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:5px"><?= $count ?></span>
         </a>
     </div>
     <?php endif; ?>
