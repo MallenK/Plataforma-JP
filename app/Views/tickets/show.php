@@ -36,7 +36,7 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <a href="<?= base_url($isSuperAdmin ? 'tickets/admin' : 'tickets') ?>"
-               class="btn btn-sm btn-outline-secondary py-0 px-2">
+               class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon">
                 <i class="bi bi-arrow-left"></i>
             </a>
             <span class="ticket-number-lg"><?= esc($ticket['ticket_number']) ?></span>
@@ -53,57 +53,51 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
     <?php if ($canManage): ?>
     <div class="d-flex gap-2 flex-wrap">
         <!-- Cambiar estado -->
-        <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <div class="ru-dropdown">
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ru-dropdown-trigger aria-haspopup="true" aria-expanded="false">
                 <i class="bi bi-arrow-repeat me-1"></i>Estado
             </button>
-            <ul class="dropdown-menu">
+            <div class="ru-dropdown-menu" role="menu" hidden>
                 <?php foreach ($statuses as $key => $label): ?>
                 <?php if ($key !== $ticket['status']): ?>
-                <li>
-                    <button class="dropdown-item btn-change-status" data-status="<?= $key ?>">
-                        <?= esc($label) ?>
-                    </button>
-                </li>
+                <button type="button" role="menuitem" class="ru-dropdown-item btn-change-status" data-status="<?= $key ?>">
+                    <?= esc($label) ?>
+                </button>
                 <?php endif; ?>
                 <?php endforeach; ?>
-            </ul>
+            </div>
         </div>
         <!-- Cambiar prioridad -->
-        <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <div class="ru-dropdown">
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ru-dropdown-trigger aria-haspopup="true" aria-expanded="false">
                 <i class="bi bi-flag me-1"></i>Prioridad
             </button>
-            <ul class="dropdown-menu">
+            <div class="ru-dropdown-menu" role="menu" hidden>
                 <?php foreach ($priorities as $key => $label): ?>
                 <?php if ($key !== $ticket['priority']): ?>
-                <li>
-                    <button class="dropdown-item btn-change-priority" data-priority="<?= $key ?>">
-                        <?= esc($label) ?>
-                    </button>
-                </li>
+                <button type="button" role="menuitem" class="ru-dropdown-item btn-change-priority" data-priority="<?= $key ?>">
+                    <?= esc($label) ?>
+                </button>
                 <?php endif; ?>
                 <?php endforeach; ?>
-            </ul>
+            </div>
         </div>
     </div>
     <?php elseif ($isOwner && !$isClosed): ?>
     <!-- El creador puede cambiar prioridad si el ticket no está cerrado -->
-    <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+    <div class="ru-dropdown">
+        <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ru-dropdown-trigger aria-haspopup="true" aria-expanded="false">
             <i class="bi bi-flag me-1"></i>Prioridad
         </button>
-        <ul class="dropdown-menu">
+        <div class="ru-dropdown-menu" role="menu" hidden>
             <?php foreach ($priorities as $key => $label): ?>
             <?php if ($key !== $ticket['priority']): ?>
-            <li>
-                <button class="dropdown-item btn-change-priority" data-priority="<?= $key ?>">
-                    <?= esc($label) ?>
-                </button>
-            </li>
+            <button type="button" role="menuitem" class="ru-dropdown-item btn-change-priority" data-priority="<?= $key ?>">
+                <?= esc($label) ?>
+            </button>
             <?php endif; ?>
             <?php endforeach; ?>
-        </ul>
+        </div>
     </div>
     <?php endif; ?>
 </div>
@@ -206,31 +200,32 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             <div class="ticket-message-body flex-1">
                 <form id="reply-form" enctype="multipart/form-data">
                     <input type="hidden" name="<?= $csrfName ?>" value="<?= $csrfHash ?>" id="reply-csrf">
-                    <textarea name="body" id="reply-body" class="form-control mb-2" rows="4"
+                    <textarea name="body" id="reply-body" class="form-control-jp mb-2" rows="4"
                               placeholder="Escribe tu respuesta..." maxlength="5000"></textarea>
 
                     <!-- Adjunto en respuesta -->
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <label for="reply-file" class="btn btn-sm btn-outline-secondary">
+                        <label for="reply-file" class="btn-jp btn-jp-secondary btn-jp-sm" style="margin-bottom:0">
                             <i class="bi bi-paperclip me-1"></i>Adjuntar
                         </label>
                         <input type="file" name="attachment" id="reply-file" class="d-none"
                                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.mp4">
                         <span class="text-muted small d-none" id="reply-file-name"></span>
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0 d-none" id="reply-file-remove">
+                        <button type="button" class="d-none" id="reply-file-remove"
+                                style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
 
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-sm btn-primary" id="btn-reply">
+                        <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" id="btn-reply">
                             <span class="btn-label"><i class="bi bi-reply me-1"></i>Enviar respuesta</span>
                             <span class="btn-spinner d-none">
                                 <span class="spinner-border spinner-border-sm me-1"></span>Enviando...
                             </span>
                         </button>
                     </div>
-                    <div class="alert alert-danger mt-2 d-none" id="reply-error"></div>
+                    <div class="alert-jp danger mt-2 d-none" id="reply-error"></div>
                 </form>
             </div>
         </div>

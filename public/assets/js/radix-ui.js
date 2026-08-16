@@ -127,6 +127,9 @@
         if (typeof entry.onClose === 'function') {
             entry.onClose();
         }
+        // Evento genérico para que otro código de la página reaccione al
+        // cierre (ej. resetear un formulario), sin acoplarse a Bootstrap.
+        overlayEl.dispatchEvent(new CustomEvent('ru-dialog-close'));
     }
 
     function initDialogs() {

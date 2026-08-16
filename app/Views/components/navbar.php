@@ -60,7 +60,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
         <!-- Ticket rápido — todos los roles excepto player/alumno -->
         <?php if (!in_array($role, ['player', 'alumno'])): ?>
         <button class="topbar-btn" id="topbar-ticket-btn" title="Reportar problema o sugerencia"
-                data-bs-toggle="modal" data-bs-target="#modalTicketRapido">
+                data-ru-dialog-trigger="modalTicketRapido">
             <i class="bi bi-ticket-perforated"></i>
         </button>
         <?php endif; ?>
