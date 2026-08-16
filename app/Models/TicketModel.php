@@ -204,9 +204,9 @@ class TicketModel extends Model
             ->get()->getResultArray();
 
         $avgResolution = $this->db->table('tickets')
-            ->selectAvg('TIMESTAMPDIFF(HOUR, created_at, resolved_at)', 'avg_hours')
+            ->select('AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)) AS avg_hours', false)
             ->where('status !=', 'abierto')
-            ->whereNotNull('resolved_at')
+            ->where('resolved_at IS NOT NULL')
             ->get()->getRowArray();
 
         $last30 = $this->db->table('tickets')
