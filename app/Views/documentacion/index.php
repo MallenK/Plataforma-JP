@@ -121,6 +121,10 @@ $fPublic   = array_filter($folders, fn($f) => $f['type'] === 'public');
 $fInternal = array_filter($folders, fn($f) => $f['type'] === 'internal');
 $fPersonal = array_filter($folders, fn($f) => $f['type'] === 'personal');
 
+// IDs de carpetas donde el usuario actual puede subir archivos, para
+// mostrar el acceso de escritura en la propia tarjeta (antes de entrar).
+$writableFolderIds = array_map('intval', array_column($writableFolders, 'id'));
+
 // Agrupar carpetas personales por rol del propietario
 // Para admin/superadmin: incluir todos los usuarios, con o sin carpeta
 $personalByRole = [];
@@ -153,9 +157,10 @@ $roleGroups = [
     'superadmin' => ['Superadmin',     'bi-shield-lock-fill', '#e53e3e'],
 ];
 
-function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
+function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin, array $writableFolderIds = []): void {
     [$typeLabel, $typeBadge] = folderTypeLabel($f['type']);
-    $noFolder = !empty($f['no_folder']);
+    $noFolder  = !empty($f['no_folder']);
+    $canWrite  = !$noFolder && in_array((int)$f['id'], $writableFolderIds, true);
     $cardName = strtolower($f['owner_name'] ?? $f['name'] ?? '');
     ?>
     <div class="col-6 col-md-4 col-lg-3 doc-folder-item"
@@ -218,6 +223,11 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                 <span class="badge-status <?= esc($typeBadge) ?>" style="font-size:10px">
                     <?= esc($typeLabel) ?>
                 </span>
+                <?php if ($canWrite): ?>
+                <span title="Puedes subir archivos aquí" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--success-light);color:var(--success);font-size:9px;margin-left:4px;vertical-align:middle">
+                    <i class="bi bi-pencil-fill"></i>
+                </span>
+                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>
@@ -228,8 +238,8 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 
 <?php if (!empty($fPublic) || !empty($fInternal)): ?>
 <div class="row g-3 mb-3 doc-section-group">
-    <?php foreach ($fPublic as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
-    <?php foreach ($fInternal as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+    <?php foreach ($fPublic as $f): renderFolderCard($f, $activeFolder, $isAdmin, $writableFolderIds); endforeach; ?>
+    <?php foreach ($fInternal as $f): renderFolderCard($f, $activeFolder, $isAdmin, $writableFolderIds); endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -242,7 +252,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     </span>
 </div>
 <div class="row g-3 mb-3">
-    <?php foreach ($personalByRole[$roleKey] as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
+    <?php foreach ($personalByRole[$roleKey] as $f): renderFolderCard($f, $activeFolder, $isAdmin, $writableFolderIds); endforeach; ?>
 </div>
 </div>
 <?php endif; ?>
