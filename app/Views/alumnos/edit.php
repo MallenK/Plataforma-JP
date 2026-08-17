@@ -3,9 +3,24 @@
 <?php
 $pageTitle    = 'Editar alumno';
 $pageSubtitle = esc($alumno['name'] ?? '');
+$errors       = (array) (session()->getFlashdata('errors') ?? []);
+
+$v = function (string $key, $default = '') use ($alumno) {
+    $old = old($key);
+    if ($old !== null) return esc($old);
+    if (isset($alumno[$key]) && $alumno[$key] !== '') return esc($alumno[$key]);
+    return esc($default);
+};
 ?>
 
 <?= $this->section('page_content') ?>
+
+<?php if (!empty($errors)): ?>
+<div class="alert-jp danger" style="margin-bottom:16px">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Revisa los campos marcados en rojo.
+</div>
+<?php endif; ?>
 
 <div class="page-header">
     <div class="d-flex gap-2">
@@ -38,26 +53,29 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Nombre completo <span style="color:var(--danger)">*</span></label>
-                                <input type="text" name="name" class="form-control-jp" required
-                                    value="<?= esc($alumno['name']) ?>">
+                                <input type="text" name="name" class="form-control-jp<?= !empty($errors['name']) ? ' is-invalid' : '' ?>" required
+                                    value="<?= $v('name') ?>">
+                                <?php if (!empty($errors['name'])): ?><span class="field-error-msg"><?= esc($errors['name']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Email <span style="color:var(--danger)">*</span></label>
-                                <input type="email" name="email" class="form-control-jp" required
-                                    value="<?= esc($alumno['email']) ?>">
+                                <input type="email" name="email" class="form-control-jp<?= !empty($errors['email']) ? ' is-invalid' : '' ?>" required
+                                    value="<?= $v('email') ?>">
+                                <?php if (!empty($errors['email'])): ?><span class="field-error-msg"><?= esc($errors['email']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
+                        <?php $statusVal = old('status', $alumno['status'] ?? 'active'); ?>
                         <div class="col-12 col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Estado</label>
                                 <select name="status" class="form-control-jp">
-                                    <option value="active"   <?= ($alumno['status'] ?? '') === 'active'   ? 'selected' : '' ?>>Activo</option>
-                                    <option value="inactive" <?= ($alumno['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactivo</option>
-                                    <option value="banned"   <?= ($alumno['status'] ?? '') === 'banned'   ? 'selected' : '' ?>>Bloqueado</option>
+                                    <option value="active"   <?= $statusVal === 'active'   ? 'selected' : '' ?>>Activo</option>
+                                    <option value="inactive" <?= $statusVal === 'inactive' ? 'selected' : '' ?>>Inactivo</option>
+                                    <option value="banned"   <?= $statusVal === 'banned'   ? 'selected' : '' ?>>Bloqueado</option>
                                 </select>
                             </div>
                         </div>
@@ -90,7 +108,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                             <div class="form-group">
                                 <label class="form-label">Fecha de nacimiento</label>
                                 <input type="date" name="birth_date" class="form-control-jp"
-                                    value="<?= esc($alumno['birth_date'] ?? '') ?>">
+                                    value="<?= $v('birth_date') ?>">
                             </div>
                         </div>
 
@@ -99,7 +117,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                                 <label class="form-label">Posición</label>
                                 <input type="text" name="position" class="form-control-jp"
                                     placeholder="Ej: Base, Escolta, Pivot..."
-                                    value="<?= esc($alumno['position'] ?? '') ?>">
+                                    value="<?= $v('position') ?>">
                             </div>
                         </div>
 
@@ -107,7 +125,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                             <div class="form-group">
                                 <label class="form-label">Altura (cm)</label>
                                 <input type="number" name="height" class="form-control-jp"
-                                    value="<?= esc($alumno['height'] ?? '') ?>">
+                                    value="<?= $v('height') ?>">
                             </div>
                         </div>
 
@@ -116,17 +134,18 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                                 <label class="form-label">Peso (kg)</label>
                                 <input type="number" name="weight" class="form-control-jp"
                                     min="30" max="200"
-                                    value="<?= esc($alumno['weight'] ?? '') ?>">
+                                    value="<?= $v('weight') ?>">
                             </div>
                         </div>
 
+                        <?php $categoryVal = old('category', $alumno['category'] ?? ''); ?>
                         <div class="col-12 col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Categoría</label>
                                 <select name="category" class="form-control-jp">
                                     <option value="">— Sin especificar —</option>
                                     <?php foreach (['prebenjamin'=>'Prebenjamín','benjamin'=>'Benjamín','alevin'=>'Alevín','infantil'=>'Infantil','cadete'=>'Cadete','juvenil'=>'Juvenil','junior'=>'Júnior','senior'=>'Sénior','veterano'=>'Veterano'] as $val => $lbl): ?>
-                                    <option value="<?= $val ?>" <?= ($alumno['category'] ?? '') === $val ? 'selected' : '' ?>><?= $lbl ?></option>
+                                    <option value="<?= $val ?>" <?= $categoryVal === $val ? 'selected' : '' ?>><?= $lbl ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -137,7 +156,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                                 <label class="form-label">Equipo</label>
                                 <input type="text" name="team" class="form-control-jp"
                                     placeholder="Ej: CD Juventud A"
-                                    value="<?= esc($alumno['team'] ?? '') ?>">
+                                    value="<?= $v('team') ?>">
                             </div>
                         </div>
 
@@ -146,7 +165,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                                 <label class="form-label">Liga</label>
                                 <input type="text" name="league" class="form-control-jp"
                                     placeholder="Ej: Liga Autonómica Juvenil"
-                                    value="<?= esc($alumno['league'] ?? '') ?>">
+                                    value="<?= $v('league') ?>">
                             </div>
                         </div>
 
@@ -154,7 +173,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                             <div class="form-group">
                                 <label class="form-label">Notas médicas o lesiones previas</label>
                                 <textarea name="medical_notes" class="form-control-jp" rows="3"
-                                    placeholder="Alergias, lesiones previas u otras consideraciones..."><?= esc($alumno['medical_notes'] ?? '') ?></textarea>
+                                    placeholder="Alergias, lesiones previas u otras consideraciones..."><?= $v('medical_notes') ?></textarea>
                             </div>
                         </div>
 

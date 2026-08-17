@@ -3,9 +3,17 @@
 <?php
 $pageTitle    = 'Editar entrenador';
 $pageSubtitle = esc($coach['name'] ?? '');
+$errors       = (array) (session()->getFlashdata('errors') ?? []);
 ?>
 
 <?= $this->section('page_content') ?>
+
+<?php if (!empty($errors)): ?>
+<div class="alert-jp danger" style="margin-bottom:16px">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Revisa los campos marcados en rojo.
+</div>
+<?php endif; ?>
 
 <div class="page-header">
     <div class="d-flex gap-2">
@@ -36,27 +44,30 @@ $pageSubtitle = esc($coach['name'] ?? '');
                         <div class="col-12">
                             <div class="form-group">
                                 <label class="form-label">Nombre completo <span style="color:var(--danger)">*</span></label>
-                                <input type="text" name="name" class="form-control-jp" required
-                                    value="<?= esc($coach['name']) ?>">
+                                <input type="text" name="name" class="form-control-jp<?= !empty($errors['name']) ? ' is-invalid' : '' ?>" required
+                                    value="<?= esc(old('name', $coach['name'])) ?>">
+                                <?php if (!empty($errors['name'])): ?><span class="field-error-msg"><?= esc($errors['name']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
                         <div class="col-12">
                             <div class="form-group">
                                 <label class="form-label">Email <span style="color:var(--danger)">*</span></label>
-                                <input type="email" name="email" class="form-control-jp" required
-                                    value="<?= esc($coach['email']) ?>">
+                                <input type="email" name="email" class="form-control-jp<?= !empty($errors['email']) ? ' is-invalid' : '' ?>" required
+                                    value="<?= esc(old('email', $coach['email'])) ?>">
+                                <?php if (!empty($errors['email'])): ?><span class="field-error-msg"><?= esc($errors['email']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
+                        <?php $statusVal = old('status', $coach['status'] ?? 'active'); ?>
                         <div class="col-12 col-md-5">
                             <div class="form-group">
                                 <label class="form-label">Estado</label>
                                 <select name="status" id="coach-status" class="form-control-jp"
                                         data-original="<?= esc($coach['status'] ?? 'active') ?>">
-                                    <option value="active"   <?= ($coach['status'] ?? '') === 'active'   ? 'selected' : '' ?>>Activo</option>
-                                    <option value="inactive" <?= ($coach['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactivo</option>
-                                    <option value="banned"   <?= ($coach['status'] ?? '') === 'banned'   ? 'selected' : '' ?>>Bloqueado</option>
+                                    <option value="active"   <?= $statusVal === 'active'   ? 'selected' : '' ?>>Activo</option>
+                                    <option value="inactive" <?= $statusVal === 'inactive' ? 'selected' : '' ?>>Inactivo</option>
+                                    <option value="banned"   <?= $statusVal === 'banned'   ? 'selected' : '' ?>>Bloqueado</option>
                                 </select>
                             </div>
                         </div>

@@ -845,6 +845,15 @@ body {
 select.form-control-jp { cursor: pointer; }
 textarea.form-control-jp { resize: vertical; min-height: 90px; }
 
+.form-control-jp.is-invalid { border-color: var(--danger); }
+.form-control-jp.is-invalid:focus { border-color: var(--danger); }
+.field-error-msg {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--danger);
+}
+
 /* ── Alertas ─────────────────────────────────────────────── */
 .alert-jp {
     padding: 12px 16px;

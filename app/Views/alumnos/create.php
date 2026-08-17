@@ -3,18 +3,15 @@
 <?php
 $pageTitle    = 'Nuevo alumno';
 $pageSubtitle = 'Crear cuenta y ficha del alumno';
+$errors       = (array) (session()->getFlashdata('errors') ?? []);
 ?>
 
 <?= $this->section('page_content') ?>
 
-<?php if (session()->getFlashdata('errors')): ?>
+<?php if (!empty($errors)): ?>
 <div class="alert-jp danger" style="margin-bottom:16px">
     <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <ul style="margin:0;padding-left:16px">
-        <?php foreach ((array) session()->getFlashdata('errors') as $e): ?>
-        <li><?= esc($e) ?></li>
-        <?php endforeach; ?>
-    </ul>
+    Revisa los campos marcados en rojo.
 </div>
 <?php endif; ?>
 
@@ -44,18 +41,20 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Nombre completo <span style="color:var(--danger)">*</span></label>
-                                <input type="text" name="name" class="form-control-jp" required
+                                <input type="text" name="name" class="form-control-jp<?= !empty($errors['name']) ? ' is-invalid' : '' ?>" required
                                     placeholder="Ej: Carlos Martínez"
                                     value="<?= esc(old('name')) ?>">
+                                <?php if (!empty($errors['name'])): ?><span class="field-error-msg"><?= esc($errors['name']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Email <span style="color:var(--danger)">*</span></label>
-                                <input type="email" name="email" class="form-control-jp" required
+                                <input type="email" name="email" class="form-control-jp<?= !empty($errors['email']) ? ' is-invalid' : '' ?>" required
                                     placeholder="alumno@ejemplo.com"
                                     value="<?= esc(old('email')) ?>">
+                                <?php if (!empty($errors['email'])): ?><span class="field-error-msg"><?= esc($errors['email']) ?></span><?php endif; ?>
                             </div>
                         </div>
 
