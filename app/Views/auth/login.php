@@ -2,26 +2,40 @@
 
 <?= $this->section('content') ?>
 
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0f172a,#1e3a8a);">
+<div class="auth-page">
+    <div class="auth-card">
 
-    <div style="width:100%;max-width:380px;padding:32px 28px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.3);color:white;">
-        <h2 style="text-align:center;margin-bottom:30px;">JP Preparation</h2>
+        <div class="auth-logo"><i class="bi bi-shield-lock-fill"></i></div>
+        <h1 class="auth-title">JP Preparation</h1>
+        <p class="auth-subtitle">Accede a tu plataforma</p>
 
-        <div id="errorBox" style="color:#fca5a5;margin-bottom:15px;"></div>
+        <div id="errorBox" class="alert-jp danger d-none"></div>
 
-        <form id="loginForm">
+        <form id="loginForm" novalidate>
 
-            <input type="email" name="email" placeholder="Email"
-                style="width:100%;padding:12px;margin-bottom:15px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+            <div class="form-group mb-3">
+                <label class="form-label" for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" class="form-control-jp"
+                       placeholder="tucorreo@ejemplo.com" required autocomplete="username">
+            </div>
 
-            <input type="password" name="password" placeholder="Password"
-                style="width:100%;padding:12px;margin-bottom:20px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+            <div class="form-group mb-3">
+                <label class="form-label" for="login-password">Contraseña</label>
+                <input type="password" id="login-password" name="password" class="form-control-jp"
+                       placeholder="••••••••" required autocomplete="current-password">
+            </div>
 
-            <button type="submit"
-                style="width:100%;padding:12px;border:none;border-radius:10px;background:#3b82f6;color:white;font-weight:bold;">
-                Entrar
+            <button type="submit" class="btn-jp btn-jp-primary w-100">
+                <span class="btn-label">Entrar</span>
+                <span class="btn-spinner d-none">
+                    <span class="spinner-border spinner-border-sm me-1"></span>Entrando...
+                </span>
             </button>
         </form>
+
+        <div class="auth-links center">
+            <a href="<?= base_url('forgot-password') ?>">¿Olvidaste tu contraseña?</a>
+        </div>
 
     </div>
 </div>
@@ -39,7 +53,7 @@
 
 <script src="<?= base_url('assets/js/auth.js') ?>"></script>
 <?php if (service('request')->getGet('expired')): ?>
-<script>document.getElementById('errorBox').textContent = 'Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.';</script>
+<script>window.showAuthError('Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.');</script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>

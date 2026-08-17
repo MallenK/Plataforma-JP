@@ -38,8 +38,11 @@ class AuthService
         ];
 
         // Bloqueo tras 5 intentos fallidos en menos de 5 minutos
-        if ($attempts['count'] >= 5 && (time() - $attempts['last_attempt']) < 300) {
-            return 'Demasiados intentos. Intenta más tarde';
+        $elapsed = time() - $attempts['last_attempt'];
+        if ($attempts['count'] >= 5 && $elapsed < 300) {
+            $minutesLeft = (int) ceil((300 - $elapsed) / 60);
+            $unit        = $minutesLeft === 1 ? 'minuto' : 'minutos';
+            return "Demasiados intentos fallidos. Inténtalo de nuevo en {$minutesLeft} {$unit}.";
         }
 
         $user = $this->userModel->where('email', $email)->first();
