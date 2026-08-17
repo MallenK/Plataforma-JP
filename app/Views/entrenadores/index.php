@@ -187,7 +187,26 @@ $pageSubtitle = 'Gestión del equipo técnico';
         totalCount.textContent = visible + ' entrenador(es)';
     }
 
-    searchInput.addEventListener('input', applyFilters);
+    // Refleja la búsqueda en la URL (?q=) para que sobreviva a recargas
+    // y al botón "atrás" del navegador, sin recargar la página.
+    const params = new URLSearchParams(window.location.search);
+    const initialQ = params.get('q') || '';
+    if (initialQ) {
+        searchInput.value = initialQ;
+        applyFilters();
+    }
+
+    searchInput.addEventListener('input', () => {
+        applyFilters();
+        const p = new URLSearchParams(window.location.search);
+        if (searchInput.value.trim()) {
+            p.set('q', searchInput.value.trim());
+        } else {
+            p.delete('q');
+        }
+        const qs = p.toString();
+        history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    });
 })();
 </script>
 <?= $this->endSection() ?>
