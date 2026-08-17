@@ -21,12 +21,12 @@ $sentNotifications = $sentNotifications ?? [];
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <?php if ($unread > 0): ?>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-mark-all-read">
+        <button class="btn-jp btn-jp-secondary btn-jp-sm" id="btn-mark-all-read">
             <i class="bi bi-check2-all me-1"></i>Marcar todas leídas
         </button>
         <?php endif; ?>
         <?php if ($canSendNotif ?? true): ?>
-        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNotif">
+        <button class="btn-jp btn-jp-primary btn-jp-sm" data-ru-dialog-trigger="modalNotif">
             <i class="bi bi-bell-fill me-1"></i>Nueva notificación
         </button>
         <?php endif; ?>
@@ -35,33 +35,27 @@ $sentNotifications = $sentNotifications ?? [];
 
 <?php if ($canSeeSent): ?>
 <!-- Tabs recibidas / enviadas -->
-<ul class="nav nav-tabs mb-0" id="notif-tabs" role="tablist" style="border-bottom:none">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-recv" data-bs-toggle="tab"
-                data-bs-target="#pane-recv" type="button" role="tab">
-            <i class="bi bi-inbox me-1"></i>Recibidas
-            <?php if ($unread > 0): ?>
-            <span class="badge bg-danger ms-1" style="font-size:10px"><?= $unread ?></span>
-            <?php endif; ?>
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-sent" data-bs-toggle="tab"
-                data-bs-target="#pane-sent" type="button" role="tab">
-            <i class="bi bi-send me-1"></i>Enviadas
-            <?php if (!empty($sentNotifications)): ?>
-            <span class="badge bg-secondary ms-1" style="font-size:10px"><?= count($sentNotifications) ?></span>
-            <?php endif; ?>
-        </button>
-    </li>
-</ul>
+<div class="ru-tabs mb-3" role="tablist" id="notif-tabs" style="max-width:320px">
+    <button type="button" role="tab" id="tab-recv" aria-controls="pane-recv" aria-selected="true" tabindex="0" class="active">
+        <i class="bi bi-inbox"></i>Recibidas
+        <?php if ($unread > 0): ?>
+        <span class="ru-tab-count"><?= $unread ?></span>
+        <?php endif; ?>
+    </button>
+    <button type="button" role="tab" id="tab-sent" aria-controls="pane-sent" aria-selected="false" tabindex="-1">
+        <i class="bi bi-send"></i>Enviadas
+        <?php if (!empty($sentNotifications)): ?>
+        <span class="ru-tab-count"><?= count($sentNotifications) ?></span>
+        <?php endif; ?>
+    </button>
+</div>
 <?php endif; ?>
 
 <div class="tab-content">
 
 <!-- ── Recibidas ──────────────────────────────────────────────── -->
-<div class="tab-pane fade show active" id="pane-recv" role="tabpanel">
-<div class="card border-0 shadow-sm" style="border-radius:<?= $canSeeSent ? '0 var(--radius) var(--radius) var(--radius)' : 'var(--radius)' ?>">
+<div id="pane-recv" role="tabpanel" aria-labelledby="tab-recv">
+<div class="card border-0 shadow-sm" style="border-radius:var(--radius)">
     <div class="card-body p-0">
         <?php if (empty($notifications)): ?>
         <div class="text-center py-5 text-muted">
@@ -121,8 +115,8 @@ $sentNotifications = $sentNotifications ?? [];
 
 <?php if ($canSeeSent): ?>
 <!-- ── Enviadas ───────────────────────────────────────────────── -->
-<div class="tab-pane fade" id="pane-sent" role="tabpanel">
-<div class="card border-0 shadow-sm" style="border-radius:0 var(--radius) var(--radius) var(--radius)">
+<div id="pane-sent" role="tabpanel" aria-labelledby="tab-sent" hidden>
+<div class="card border-0 shadow-sm" style="border-radius:var(--radius)">
     <div class="card-body p-0">
         <?php if (empty($sentNotifications)): ?>
         <div class="text-center py-5 text-muted">
@@ -181,53 +175,50 @@ $sentNotifications = $sentNotifications ?? [];
 
 </div><!-- /.tab-content -->
 
-<!-- ── Modal: ver notificación completa ───────────────────────── -->
-<div class="modal fade" id="modalViewNotif" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0" style="align-items:flex-start">
-                <div class="d-flex align-items-center gap-3 flex-grow-1 me-3">
-                    <div id="vn-avatar-wrap" style="flex-shrink:0"></div>
-                    <div>
-                        <div class="fw-bold" id="vn-sender" style="font-size:15px;color:var(--text-h)"></div>
-                        <div class="text-muted" id="vn-time" style="font-size:12px"></div>
-                    </div>
-                    <span id="vn-type-badge" class="badge ms-1" style="font-size:11px;font-weight:600"></span>
+<!-- ── Diálogo: ver notificación completa ─────────────────────── -->
+<div class="ru-overlay" data-ru-dialog id="modalViewNotif" hidden>
+    <div class="ru-dialog ru-dialog-lg" role="dialog" aria-modal="true" aria-labelledby="vn-title">
+        <div class="ru-dialog-header">
+            <div class="d-flex align-items-center gap-3 flex-grow-1 me-3">
+                <div id="vn-avatar-wrap" style="flex-shrink:0"></div>
+                <div>
+                    <div class="fw-bold" id="vn-sender" style="font-size:15px;color:var(--text-h)"></div>
+                    <div class="text-muted" id="vn-time" style="font-size:12px"></div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <span id="vn-type-badge" class="badge ms-1" style="font-size:11px;font-weight:600"></span>
             </div>
-            <div class="modal-body pt-2">
-                <h5 class="fw-bold mb-3" id="vn-title" style="color:var(--text-h)"></h5>
-                <div id="vn-body" style="white-space:pre-wrap;color:var(--text-body);font-size:14px;line-height:1.75"></div>
-                <div id="vn-file-wrap" class="mt-3 d-none">
-                    <a id="vn-file-link" href="#" class="notif-file-link">
-                        <i class="bi bi-paperclip me-1"></i>
-                        <span id="vn-file-name"></span>
-                    </a>
-                </div>
+            <button type="button" data-ru-dialog-close aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="ru-dialog-body">
+            <h5 class="fw-bold mb-3" id="vn-title" style="color:var(--text-h)"></h5>
+            <div id="vn-body" style="white-space:pre-wrap;color:var(--text-body);font-size:14px;line-height:1.75"></div>
+            <div id="vn-file-wrap" class="mt-3 d-none">
+                <a id="vn-file-link" href="#" class="notif-file-link">
+                    <i class="bi bi-paperclip me-1"></i>
+                    <span id="vn-file-name"></span>
+                </a>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+        </div>
+        <div class="ru-dialog-footer">
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ru-dialog-close>Cerrar</button>
         </div>
     </div>
 </div>
 
-<!-- ── Modal: nueva notificación ──────────────────────────────── -->
-<div class="modal fade" id="modalNotif" tabindex="-1" aria-labelledby="modalNotifLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <form id="form-notif" enctype="multipart/form-data">
-                <input type="hidden" name="<?= $csrfName ?>" id="csrf-notif" value="<?= $csrfHash ?>">
+<!-- ── Diálogo: nueva notificación ─────────────────────────────── -->
+<div class="ru-overlay" data-ru-dialog id="modalNotif" hidden>
+    <div class="ru-dialog ru-dialog-lg" role="dialog" aria-modal="true" aria-labelledby="modalNotifLabel">
+        <form id="form-notif" enctype="multipart/form-data">
+            <input type="hidden" name="<?= $csrfName ?>" id="csrf-notif" value="<?= $csrfHash ?>">
 
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="modalNotifLabel">
-                        <i class="bi bi-bell-fill text-primary me-2"></i>Nueva notificación
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+            <div class="ru-dialog-header">
+                <h3 id="modalNotifLabel">
+                    <i class="bi bi-bell-fill me-2" style="color:var(--accent)"></i>Nueva notificación
+                </h3>
+                <button type="button" data-ru-dialog-close aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+            </div>
 
-                <div class="modal-body">
+                <div class="ru-dialog-body">
 
                     <!-- Tipo -->
                     <div class="mb-3">
@@ -255,7 +246,7 @@ $sentNotifications = $sentNotifications ?? [];
                     <!-- Destinatario individual -->
                     <div id="field-recipient" class="mb-3">
                         <label for="recipient_id" class="form-label fw-semibold">Destinatario</label>
-                        <select class="form-select" name="recipient_id" id="recipient_id">
+                        <select class="form-control-jp" name="recipient_id" id="recipient_id">
                             <option value="">— Seleccionar usuario —</option>
                             <?php foreach ($recipients as $r): ?>
                             <?php
@@ -279,7 +270,7 @@ $sentNotifications = $sentNotifications ?? [];
                     <?php if ($canSendGroup): ?>
                     <div id="field-group" class="mb-3 d-none">
                         <label for="group" class="form-label fw-semibold">Grupo destinatario</label>
-                        <select class="form-select" name="group" id="group">
+                        <select class="form-control-jp" name="group" id="group">
                             <?php foreach ($groups as $key => $label): ?>
                             <option value="<?= $key ?>"><?= esc($label) ?></option>
                             <?php endforeach; ?>
@@ -290,14 +281,14 @@ $sentNotifications = $sentNotifications ?? [];
                     <!-- Título -->
                     <div class="mb-3">
                         <label for="notif-title" class="form-label fw-semibold">Título</label>
-                        <input type="text" class="form-control" id="notif-title" name="title"
+                        <input type="text" class="form-control-jp" id="notif-title" name="title"
                                maxlength="255" placeholder="Ej: Convocatoria especial" required>
                     </div>
 
                     <!-- Mensaje -->
                     <div class="mb-3">
                         <label for="notif-body" class="form-label fw-semibold">Mensaje</label>
-                        <textarea class="form-control" id="notif-body" name="body"
+                        <textarea class="form-control-jp" id="notif-body" name="body"
                                   rows="4" maxlength="2000" placeholder="Escribe aquí tu mensaje..."
                                   required></textarea>
                         <div class="text-end text-muted mt-1" style="font-size:11px">
@@ -310,7 +301,7 @@ $sentNotifications = $sentNotifications ?? [];
                         <label for="notif-file" class="form-label fw-semibold">
                             Archivo adjunto <span class="text-muted fw-normal">(opcional, máx. 5 MB)</span>
                         </label>
-                        <input type="file" class="form-control" id="notif-file" name="attachment"
+                        <input type="file" class="form-control-jp" id="notif-file" name="attachment"
                                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.mp4">
                         <div id="notif-file-preview" class="mt-2 d-none">
                             <span class="badge bg-light text-dark border">
@@ -320,12 +311,12 @@ $sentNotifications = $sentNotifications ?? [];
                         </div>
                     </div>
 
-                    <div id="notif-error" class="alert alert-danger d-none py-2"></div>
+                    <div id="notif-error" class="alert-jp danger d-none py-2"></div>
                 </div>
 
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btn-send-notif">
+                <div class="ru-dialog-footer">
+                    <button type="button" class="btn-jp btn-jp-secondary" data-ru-dialog-close>Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary" id="btn-send-notif">
                         <span class="spinner-border spinner-border-sm d-none me-1" id="notif-spinner"></span>
                         <i class="bi bi-send-fill me-1" id="notif-icon"></i>Enviar
                     </button>
@@ -333,7 +324,6 @@ $sentNotifications = $sentNotifications ?? [];
             </form>
         </div>
     </div>
-</div>
 
 <?= $this->endSection() ?>
 
@@ -409,7 +399,7 @@ $sentNotifications = $sentNotifications ?? [];
 
             if (res.ok && data.ok) {
                 if (data.csrf) refreshCsrf(data.csrf);
-                bootstrap.Modal.getInstance(document.getElementById('modalNotif')).hide();
+                RadixUI.closeDialog('modalNotif');
                 this.reset();
                 document.getElementById('notif-file-preview')?.classList.add('d-none');
                 if (counter) counter.textContent = '0';
@@ -523,7 +513,7 @@ $sentNotifications = $sentNotifications ?? [];
                 fileWrap.classList.add('d-none');
             }
 
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalViewNotif')).show();
+            RadixUI.openDialog('modalViewNotif');
 
             // Marcar leída automáticamente al ver el detalle
             if (data.unread) {

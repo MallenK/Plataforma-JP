@@ -1870,4 +1870,3 @@ input[type="time"] {
     padding: 1px 7px;
 }
 .ru-tabs [role="tab"]:not(.active) .ru-tab-count { background: var(--bg-app); color: var(--text-muted); }
-}
