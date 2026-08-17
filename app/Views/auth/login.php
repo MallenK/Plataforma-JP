@@ -3,10 +3,9 @@
 <?= $this->section('content') ?>
 
 <div class="login-stage">
-    <div class="login-orb login-orb-blue"></div>
-    <div class="login-orb login-orb-lime"></div>
-    <div class="login-orb login-orb-amber"></div>
-    <div class="login-orb login-orb-navy"></div>
+    <div class="login-aura-layer login-aura-grid" aria-hidden="true"></div>
+    <div class="login-aura-layer login-aura-glow-primary" aria-hidden="true"></div>
+    <div class="login-aura-layer login-aura-glow-secondary" aria-hidden="true"></div>
 
     <div class="login-card">
 
