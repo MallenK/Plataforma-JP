@@ -216,7 +216,11 @@ class AlumnosController extends BaseController
             'medical_notes' => $this->request->getPost('medical_notes') ?: null,
         ];
 
-        $this->playerService->updateAlumno($id, $userData, $profileData);
+        $result = $this->playerService->updateAlumno($id, $userData, $profileData);
+
+        if (!$result['success']) {
+            return redirect()->back()->withInput()->with('errors', $result['errors']);
+        }
 
         session()->setFlashdata('success', 'Alumno actualizado correctamente.');
 

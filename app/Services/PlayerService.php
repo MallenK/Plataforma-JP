@@ -89,10 +89,14 @@ class PlayerService
     /**
      * Actualiza datos de usuario y perfil de un alumno existente.
      */
-    public function updateAlumno(int $id, array $userData, array $profileData): bool
+    public function updateAlumno(int $id, array $userData, array $profileData): array
     {
         if (!empty($userData)) {
-            $this->userModel->skipValidation(true)->update($id, $userData);
+            // is_unique[users.email,id,{id}] necesita 'id' en los datos
+            // validados para excluir el propio registro (ver CoachService::updateCoach).
+            if (!$this->userModel->update($id, $userData + ['id' => $id])) {
+                return ['success' => false, 'errors' => $this->userModel->errors()];
+            }
         }
 
         $existing = $this->profileModel->where('player_id', $id)->first();
@@ -103,7 +107,7 @@ class PlayerService
             $this->profileModel->insert($profileData);
         }
 
-        return true;
+        return ['success' => true, 'errors' => []];
     }
 
     /**

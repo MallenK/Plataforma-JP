@@ -49,7 +49,10 @@ class UserModel extends Model
     protected $validationRules = [
         'name'     => 'required|min_length[3]|max_length[150]',
         'email'    => 'required|valid_email|is_unique[users.email,id,{id}]',
-        'password' => 'required|min_length[8]'
+        'password' => 'required|min_length[8]',
+        // Sin regla propia, CI4 no resuelve el placeholder {id} de arriba
+        // (exige que el campo referenciado tenga también sus propias reglas).
+        'id'       => 'permit_empty|is_natural_no_zero',
     ];
 
     protected $validationMessages = [

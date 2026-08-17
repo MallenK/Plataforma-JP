@@ -97,9 +97,17 @@ class CoachService
     /**
      * Actualiza nombre, email y/o estado de un entrenador.
      */
-    public function updateCoach(int $id, array $userData): bool
+    public function updateCoach(int $id, array $userData): array
     {
-        return (bool) $this->userModel->skipValidation(true)->update($id, $userData);
+        // is_unique[users.email,id,{id}] solo excluye el propio registro si
+        // la validación puede resolver el placeholder {id} — necesita 'id'
+        // presente en los datos validados. doProtectFields() lo descarta
+        // después, antes del UPDATE real, así que no se llega a escribir.
+        if ($this->userModel->update($id, $userData + ['id' => $id])) {
+            return ['success' => true, 'errors' => []];
+        }
+
+        return ['success' => false, 'errors' => $this->userModel->errors()];
     }
 
     /**

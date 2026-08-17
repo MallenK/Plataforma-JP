@@ -116,7 +116,11 @@ class EntrenadoresController extends BaseController
             'status' => $this->request->getPost('status'),
         ];
 
-        $this->coachService->updateCoach($id, $userData);
+        $result = $this->coachService->updateCoach($id, $userData);
+
+        if (!$result['success']) {
+            return redirect()->back()->withInput()->with('errors', $result['errors']);
+        }
 
         session()->setFlashdata('success', 'Entrenador actualizado correctamente.');
 
