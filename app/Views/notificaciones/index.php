@@ -201,6 +201,9 @@ $sentNotifications = $sentNotifications ?? [];
         </div>
         <div class="ru-dialog-footer">
             <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ru-dialog-close>Cerrar</button>
+            <a id="vn-source-link" href="#" class="btn-jp btn-jp-primary btn-jp-sm d-none">
+                <i class="bi bi-box-arrow-up-right me-1"></i><span id="vn-source-label"></span>
+            </a>
         </div>
     </div>
 </div>
@@ -458,14 +461,16 @@ $sentNotifications = $sentNotifications ?? [];
     const notifMap = {};
     <?php foreach ($notifications as $n): ?>
     notifMap[<?= (int)$n['id'] ?>] = {
-        title:     <?= json_encode($n['title']) ?>,
-        body:      <?= json_encode($n['body'] ?? '') ?>,
-        sender:    <?= json_encode($n['sender_name'] ?? 'Sistema') ?>,
-        avatar:    <?= json_encode($n['sender_avatar'] ?? null) ?>,
-        time:      <?= json_encode($n['created_at']) ?>,
-        file_name: <?= json_encode($n['file_name'] ?? null) ?>,
-        type:      <?= json_encode($n['type']) ?>,
-        unread:    <?= empty($n['recipient_read_at']) ? 'true' : 'false' ?>
+        title:       <?= json_encode($n['title']) ?>,
+        body:        <?= json_encode($n['body'] ?? '') ?>,
+        sender:      <?= json_encode($n['sender_name'] ?? 'Sistema') ?>,
+        avatar:      <?= json_encode($n['sender_avatar'] ?? null) ?>,
+        time:        <?= json_encode($n['created_at']) ?>,
+        file_name:   <?= json_encode($n['file_name'] ?? null) ?>,
+        type:        <?= json_encode($n['type']) ?>,
+        unread:      <?= empty($n['recipient_read_at']) ? 'true' : 'false' ?>,
+        source_type: <?= json_encode($n['source_type'] ?? null) ?>,
+        source_id:   <?= json_encode($n['source_id'] ?? null) ?>
     };
     <?php endforeach; ?>
 
@@ -511,6 +516,21 @@ $sentNotifications = $sentNotifications ?? [];
                 fileWrap.classList.remove('d-none');
             } else {
                 fileWrap.classList.add('d-none');
+            }
+
+            // Enlace al origen (ticket o conversación)
+            const sourceLink  = document.getElementById('vn-source-link');
+            const sourceLabel = document.getElementById('vn-source-label');
+            if (data.source_type === 'ticket' && data.source_id) {
+                sourceLabel.textContent = 'Ver ticket';
+                sourceLink.href = BASE + 'tickets/' + data.source_id;
+                sourceLink.classList.remove('d-none');
+            } else if (data.source_type === 'conversation' && data.source_id) {
+                sourceLabel.textContent = 'Ir a la conversación';
+                sourceLink.href = BASE + 'mensajes?conv=' + data.source_id;
+                sourceLink.classList.remove('d-none');
+            } else {
+                sourceLink.classList.add('d-none');
             }
 
             RadixUI.openDialog('modalViewNotif');

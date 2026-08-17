@@ -483,11 +483,13 @@ class TicketsController extends BaseController
         if (empty($ids)) return;
 
         $this->notifModel->createWithRecipients([
-            'sender_id'  => $fromUserId,
-            'type'       => 'individual',
-            'title'      => 'Nueva respuesta en ' . $ticket['ticket_number'],
-            'body'       => $ticket['title'],
-            'created_at' => date('Y-m-d H:i:s'),
+            'sender_id'   => $fromUserId,
+            'type'        => 'individual',
+            'title'       => 'Nueva respuesta en ' . $ticket['ticket_number'],
+            'body'        => $ticket['title'],
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => 'ticket',
+            'source_id'   => $ticket['id'],
         ], $ids);
     }
 
@@ -507,11 +509,13 @@ class TicketsController extends BaseController
         }
 
         $this->notifModel->createWithRecipients([
-            'sender_id'  => $adminId,
-            'type'       => 'individual',
-            'title'      => $title,
-            'body'       => $body,
-            'created_at' => date('Y-m-d H:i:s'),
+            'sender_id'   => $adminId,
+            'type'        => 'individual',
+            'title'       => $title,
+            'body'        => $body,
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => 'ticket',
+            'source_id'   => $ticket['id'],
         ], [$ticket['user_id']]);
     }
 }

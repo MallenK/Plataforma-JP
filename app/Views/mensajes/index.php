@@ -672,6 +672,13 @@ $roleLabels = [
 
     // Limpiar polling al salir
     window.addEventListener('beforeunload', stopPolling);
+
+    // ── Deep-link desde notificación (?conv=ID) ──────────────
+    const deepLinkConvId = new URLSearchParams(window.location.search).get('conv');
+    if (deepLinkConvId) {
+        const item = document.querySelector('.conv-item[data-conv-id="' + parseInt(deepLinkConvId) + '"]');
+        if (item) item.click();
+    }
 })();
 </script>
 <?= $this->endSection() ?>

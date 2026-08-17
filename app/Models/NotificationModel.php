@@ -15,6 +15,7 @@ class NotificationModel extends Model
     protected $allowedFields = [
         'sender_id', 'type', 'title', 'body',
         'file_path', 'file_name', 'file_size', 'created_at',
+        'source_type', 'source_id',
     ];
 
     /**

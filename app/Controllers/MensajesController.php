@@ -4,12 +4,14 @@ namespace App\Controllers;
 
 use App\Models\ConversationModel;
 use App\Models\MessageModel;
+use App\Models\NotificationModel;
 use App\Models\UserModel;
 
 class MensajesController extends BaseController
 {
     private ConversationModel $convModel;
     private MessageModel      $msgModel;
+    private NotificationModel $notifModel;
     private UserModel         $userModel;
     private \CodeIgniter\Database\BaseConnection $db;
 
@@ -22,10 +24,11 @@ class MensajesController extends BaseController
                                    \Psr\Log\LoggerInterface $logger): void
     {
         parent::initController($request, $response, $logger);
-        $this->convModel = new ConversationModel();
-        $this->msgModel  = new MessageModel();
-        $this->userModel = new UserModel();
-        $this->db        = \Config\Database::connect();
+        $this->convModel  = new ConversationModel();
+        $this->msgModel   = new MessageModel();
+        $this->notifModel = new NotificationModel();
+        $this->userModel  = new UserModel();
+        $this->db         = \Config\Database::connect();
     }
 
     // ─────────────────────────────────────────────────────────
@@ -176,6 +179,21 @@ class MensajesController extends BaseController
         $this->convModel->touchLastMessage($convId);
 
         $me = $this->currentUser();
+
+        try {
+            $preview = $body ? mb_strimwidth($body, 0, 80, '…') : '📎 ' . ($fileName ?? 'Archivo adjunto');
+            $this->notifModel->createWithRecipients([
+                'sender_id'   => $userId,
+                'type'        => 'individual',
+                'title'       => 'Nuevo mensaje de ' . $me['name'],
+                'body'        => $preview,
+                'created_at'  => $now,
+                'source_type' => 'conversation',
+                'source_id'   => $convId,
+            ], [$otherId]);
+        } catch (\Throwable $e) {
+            log_message('error', 'MensajesController::ajaxSend notification failed: ' . $e->getMessage());
+        }
 
         return $this->response->setJSON([
             'ok'      => true,
