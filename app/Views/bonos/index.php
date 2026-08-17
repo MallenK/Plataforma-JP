@@ -404,7 +404,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 20px;border-top:1px solid var(--border)">
             <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModalFormTipo()">Cancelar</button>
-            <button type="button" class="btn-jp btn-jp-primary" onclick="submitFormTipo()">
+            <button type="button" class="btn-jp btn-jp-primary" id="btnFormTipoSubmit" onclick="submitFormTipo()">
                 <i class="bi bi-check-lg me-1"></i><span id="btnFormTipoLabel">Crear tipo</span>
             </button>
         </div>
@@ -514,6 +514,9 @@ function closeModalFormTipo() {
 }
 
 async function submitFormTipo() {
+    const submitBtn = document.getElementById('btnFormTipoSubmit');
+    if (submitBtn.disabled) return;
+
     const mode  = document.getElementById('tipoFormMode').value;
     const id    = document.getElementById('tipoFormId').value;
     const name  = document.getElementById('tipoFormName').value.trim();
@@ -545,6 +548,7 @@ async function submitFormTipo() {
         ? '<?= base_url('bonos/tipos/store') ?>'
         : '<?= base_url('bonos/tipos/') ?>' + id + '/update';
 
+    submitBtn.disabled = true;
     try {
         const res  = await fetch(url, { method: 'POST', body: fd });
         const data = await res.json();
@@ -578,6 +582,8 @@ async function submitFormTipo() {
     } catch(e) {
         errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
         errEl.style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
     }
 }
 

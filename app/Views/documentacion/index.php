@@ -637,6 +637,10 @@ function deleteFolder(id, name) {
 function deleteFile(id, name) {
     if (!confirm('¿Eliminar el archivo «' + name + '»?\nEsta acción no se puede deshacer.')) return;
 
+    const btn = document.querySelector('[onclick*="deleteFile(' + id + ',"]');
+    if (btn?.disabled) return;
+    if (btn) btn.disabled = true;
+
     const fd = new FormData();
     fd.append(CSRF_NAME, CSRF_HASH);
 
@@ -649,7 +653,6 @@ function deleteFile(id, name) {
     .then(data => {
         if (data.success) {
             // Remove the file row from the table
-            const btn = document.querySelector('[onclick*="deleteFile(' + id + ',"]');
             if (btn) {
                 const row = btn.closest('tr');
                 if (row) row.remove();
@@ -661,10 +664,14 @@ function deleteFile(id, name) {
                 if (match) countEl.textContent = (parseInt(match[0]) - 1) + ' archivo(s)';
             }
         } else {
+            if (btn) btn.disabled = false;
             showAlert(data.error || 'Error al eliminar el archivo.');
         }
     })
-    .catch(() => showAlert('Error de red al eliminar el archivo.'));
+    .catch(() => {
+        if (btn) btn.disabled = false;
+        showAlert('Error de red al eliminar el archivo.');
+    });
 }
 
 // ── Indicador de progreso en subida ─────────────────────────────────
