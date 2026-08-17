@@ -6,25 +6,56 @@ $action   = $isEdit ? '/clases/' . $session['id'] . '/editar' : '/clases/nueva';
 $btnLabel = $isEdit ? 'Guardar cambios' : 'Crear sesión';
 $isRec    = $isEdit && !empty($session['class_id']);
 
+// old() manda sobre el valor en BD: si venimos de un error de validación
+// (withInput()), lo que el usuario acaba de escribir no debe perderse
+// bajo el valor todavía-no-guardado de la sesión.
 $v = function(string $key, $default = '') use ($session) {
-    if (!empty($session[$key])) return esc($session[$key]);
     $old = old($key);
-    return $old !== null ? esc($old) : esc($default);
+    if ($old !== null) return esc($old);
+    if (!empty($session[$key])) return esc($session[$key]);
+    return esc($default);
 };
 
-// IDs ya asignados
-$assignedCoachIds  = array_column($session['coaches'] ?? [], 'user_id');
-$assignedPlayerIds = array_column($session['players'] ?? [], 'user_id');
-
 // Tipo de sesión (coach o staff)
-$currentSessionType = $session['session_type'] ?? 'coach';
+$currentSessionType = old('session_type', $session['session_type'] ?? 'coach');
 
-// Días de la semana para recurrencia
+// Días de la semana para recurrencia (solo aplica en creación; en edición
+// no se muestra este bloque)
 $weekDays = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
-$recDays  = [];
 if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
     $recDays = json_decode($session['class_info']['recurrence_days'], true) ?? [];
+} else {
+    $recDays = old('recurrence_days') ?? [];
 }
+
+// Entrenadores/staff y jugadores ya asignados — de BD en edición, o de
+// old() al redisplayar un error de validación en creación (si no, los
+// widgets JS de asignación se vacían por completo al fallar el envío).
+if ($isEdit) {
+    $selectedCoaches = $session['coaches'] ?? [];
+    $selectedPlayers = $session['players'] ?? [];
+} else {
+    $oldCoachIds  = old('coach_ids') ?? [];
+    $oldPlayerIds = old('player_ids') ?? [];
+    $oldPlayerMap = old('player_coach_map') ?? [];
+    $namesById    = array_column($coachOptions, 'name', 'id') + array_column($staffOptions, 'name', 'id');
+    $playerNamesById = array_column($playerOptions, 'name', 'id');
+
+    $selectedCoaches = array_values(array_filter(array_map(
+        fn($id) => isset($namesById[$id]) ? ['user_id' => (int)$id, 'name' => $namesById[$id]] : null,
+        $oldCoachIds
+    )));
+    $selectedPlayers = array_values(array_filter(array_map(
+        fn($id) => isset($playerNamesById[$id])
+            ? ['user_id' => (int)$id, 'name' => $playerNamesById[$id], 'coach_id' => $oldPlayerMap[$id] ?? '']
+            : null,
+        $oldPlayerIds
+    )));
+}
+
+// IDs ya asignados
+$assignedCoachIds  = array_column($selectedCoaches, 'user_id');
+$assignedPlayerIds = array_column($selectedPlayers, 'user_id');
 ?>
 
 <?= $this->section('styles') ?>
@@ -111,16 +142,17 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     </span>
                 </div>
                 <div class="card-jp-body">
+                    <?php $typeVal = old('type', 'single'); $classFormatVal = old('class_format', 'individual'); ?>
                     <div class="d-flex gap-3 mb-3">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 18px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-single">
-                            <input type="radio" name="type" value="single" checked onchange="toggleType(this.value)" style="accent-color:var(--accent)">
+                            <input type="radio" name="type" value="single" <?= $typeVal === 'single' ? 'checked' : '' ?> onchange="toggleType(this.value)" style="accent-color:var(--accent)">
                             <div>
                                 <div style="font-weight:700;color:var(--text-h)">Sesión puntual</div>
                                 <div style="font-size:12px;color:var(--text-muted)">Un único día y horario</div>
                             </div>
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 18px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-recurring">
-                            <input type="radio" name="type" value="recurring" onchange="toggleType(this.value)" style="accent-color:var(--accent)">
+                            <input type="radio" name="type" value="recurring" <?= $typeVal === 'recurring' ? 'checked' : '' ?> onchange="toggleType(this.value)" style="accent-color:var(--accent)">
                             <div>
                                 <div style="font-weight:700;color:var(--text-h)">Clase recurrente</div>
                                 <div style="font-size:12px;color:var(--text-muted)">Varios días a la semana</div>
@@ -135,7 +167,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <div class="d-flex gap-3">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
                                 <input type="radio" name="class_format" value="individual"
-                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'individual' ? 'checked' : '' ?>
+                                       <?= $classFormatVal === 'individual' ? 'checked' : '' ?>
                                        style="accent-color:var(--accent)">
                                 <div>
                                     <div style="font-weight:700;color:var(--text-h)">Individual</div>
@@ -144,7 +176,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                             </label>
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
                                 <input type="radio" name="class_format" value="pareja"
-                                       <?= ($isEdit ? ($session['class_info']['class_format'] ?? 'individual') : 'individual') === 'pareja' ? 'checked' : '' ?>
+                                       <?= $classFormatVal === 'pareja' ? 'checked' : '' ?>
                                        style="accent-color:var(--accent)">
                                 <div>
                                     <div style="font-weight:700;color:var(--text-h)">Pareja</div>
@@ -392,7 +424,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <?php endforeach; ?>
                     </select>
                     <div id="coachList" style="display:flex;flex-direction:column;gap:6px">
-                        <?php foreach ($session['coaches'] ?? [] as $c): ?>
+                        <?php foreach ($selectedCoaches as $c): ?>
                         <div class="selected-person" id="coach-<?= $c['user_id'] ?>">
                             <input type="hidden" name="coach_ids[]" value="<?= $c['user_id'] ?>">
                             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
@@ -402,7 +434,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['coaches'] ?? []) ? '' : ';display:none' ?>">Sin responsable asignado</div>
+                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($selectedCoaches) ? '' : ';display:none' ?>">Sin responsable asignado</div>
                 </div>
             </div>
 
@@ -423,7 +455,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <?php endforeach; ?>
                     </select>
                     <div id="playerList" style="display:flex;flex-direction:column;gap:6px">
-                        <?php foreach ($session['players'] ?? [] as $p):
+                        <?php foreach ($selectedPlayers as $p):
                             $pCoachId = $p['coach_id'] ?? ''; ?>
                         <div class="selected-person" id="player-<?= $p['user_id'] ?>">
                             <input type="hidden" name="player_ids[]" value="<?= $p['user_id'] ?>">
@@ -444,7 +476,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['players'] ?? []) ? '' : ';display:none' ?>">Sin jugadores asignados</div>
+                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($selectedPlayers) ? '' : ';display:none' ?>">Sin jugadores asignados</div>
                 </div>
             </div>
 
@@ -574,7 +606,7 @@ document.querySelectorAll('.day-check').forEach(cb => {
 });
 
 // ── Gestión de entrenadores ───────────────────────────────────
-const addedCoaches = new Set([<?= implode(',', array_map(fn($c) => $c['user_id'], $session['coaches'] ?? [])) ?>]);
+const addedCoaches = new Set([<?= implode(',', array_map(fn($c) => $c['user_id'], $selectedCoaches)) ?>]);
 
 function addCoach(sel) {
     const id = parseInt(sel.value);
@@ -602,7 +634,7 @@ function removeCoach(id) {
 }
 
 // ── Gestión de jugadores ──────────────────────────────────────
-const addedPlayers = new Set([<?= implode(',', array_map(fn($p) => $p['user_id'], $session['players'] ?? [])) ?>]);
+const addedPlayers = new Set([<?= implode(',', array_map(fn($p) => $p['user_id'], $selectedPlayers)) ?>]);
 
 function addPlayer(sel) {
     const id = parseInt(sel.value);
