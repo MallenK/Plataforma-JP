@@ -19,7 +19,7 @@ $roleLabels = [
 
         <div class="chat-sidebar-header">
             <span class="fw-bold" style="font-size:15px">Mensajes</span>
-            <button class="btn btn-sm btn-primary" id="btn-new-chat" title="Nueva conversación">
+            <button class="btn-jp btn-jp-primary btn-jp-sm btn-jp-icon" id="btn-new-chat" title="Nueva conversación">
                 <i class="bi bi-pencil-square"></i>
             </button>
         </div>
@@ -78,7 +78,7 @@ $roleLabels = [
         <div class="chat-empty" id="chat-empty">
             <i class="bi bi-chat-text" style="font-size:3rem;opacity:.2"></i>
             <p class="mt-3 text-muted">Selecciona una conversación o<br>inicia una nueva.</p>
-            <button class="btn btn-primary mt-2" id="btn-new-chat-main">
+            <button class="btn-jp btn-jp-primary mt-2" id="btn-new-chat-main">
                 <i class="bi bi-pencil-square me-1"></i>Nueva conversación
             </button>
         </div>
@@ -138,36 +138,34 @@ $roleLabels = [
     </div>
 </div>
 
-<!-- ── Modal: nueva conversación ──────────────────────────── -->
-<div class="modal fade" id="modalNewChat" tabindex="-1" aria-labelledby="modalNewChatLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold" id="modalNewChatLabel">
-                    <i class="bi bi-chat-dots text-primary me-2"></i>Nueva conversación
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="search" class="form-control mb-3" id="contact-search"
-                       placeholder="Buscar por nombre…">
-                <ul class="contact-list" id="contact-list">
-                    <?php foreach ($contactables as $c): ?>
-                    <?php $rl = $roleLabels[$c['role']] ?? ucfirst($c['role']); ?>
-                    <li class="contact-item" data-user-id="<?= $c['id'] ?>"
-                        data-name="<?= esc($c['name']) ?>">
-                        <?= avatar_html($c['avatar'] ?? null, $c['name'], 'contact-avatar') ?>
-                        <div class="contact-info">
-                            <div class="contact-name"><?= esc($c['name']) ?></div>
-                            <div class="contact-role"><?= esc($rl) ?></div>
-                        </div>
-                    </li>
-                    <?php endforeach; ?>
-                    <?php if (empty($contactables)): ?>
-                    <li class="text-center text-muted py-3">No hay usuarios disponibles.</li>
-                    <?php endif; ?>
-                </ul>
-            </div>
+<!-- ── Diálogo: nueva conversación ──────────────────────────── -->
+<div class="ru-overlay" data-ru-dialog id="modalNewChat" hidden>
+    <div class="ru-dialog" role="dialog" aria-modal="true" aria-labelledby="modalNewChatLabel">
+        <div class="ru-dialog-header">
+            <h3 id="modalNewChatLabel">
+                <i class="bi bi-chat-dots me-2" style="color:var(--accent)"></i>Nueva conversación
+            </h3>
+            <button type="button" data-ru-dialog-close aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="ru-dialog-body">
+            <input type="search" class="form-control-jp mb-3" id="contact-search"
+                   placeholder="Buscar por nombre…">
+            <ul class="contact-list" id="contact-list">
+                <?php foreach ($contactables as $c): ?>
+                <?php $rl = $roleLabels[$c['role']] ?? ucfirst($c['role']); ?>
+                <li class="contact-item" data-user-id="<?= $c['id'] ?>"
+                    data-name="<?= esc($c['name']) ?>">
+                    <?= avatar_html($c['avatar'] ?? null, $c['name'], 'contact-avatar') ?>
+                    <div class="contact-info">
+                        <div class="contact-name"><?= esc($c['name']) ?></div>
+                        <div class="contact-role"><?= esc($rl) ?></div>
+                    </div>
+                </li>
+                <?php endforeach; ?>
+                <?php if (empty($contactables)): ?>
+                <li class="text-center text-muted py-3">No hay usuarios disponibles.</li>
+                <?php endif; ?>
+            </ul>
         </div>
     </div>
 </div>
@@ -201,8 +199,7 @@ $roleLabels = [
 
     // ── Abrir modal nueva conversación ───────────────────────
     function openNewChatModal() {
-        const el = document.getElementById('modalNewChat');
-        bootstrap.Modal.getOrCreateInstance(el).show();
+        RadixUI.openDialog('modalNewChat');
         document.getElementById('contact-search').value = '';
         filterContacts('');
     }
@@ -228,7 +225,7 @@ $roleLabels = [
         const item = e.target.closest('.contact-item');
         if (!item) return;
         const otherId = parseInt(item.dataset.userId);
-        bootstrap.Modal.getInstance(document.getElementById('modalNewChat')).hide();
+        RadixUI.closeDialog('modalNewChat');
         await openConversation(null, otherId);
     });
 
