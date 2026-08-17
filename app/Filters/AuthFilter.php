@@ -29,7 +29,14 @@ class AuthFilter implements FilterInterface
             return redirect()->to('/login');
         }
 
-        $timeout      = (int)(new \App\Models\SettingsModel())->get('sec_session_timeout', 10);
+        $timeout = (int)(new \App\Models\SettingsModel())->get('sec_session_timeout', 10);
+
+        // "Recuérdame" en el login: aplica un margen de inactividad amplio
+        // (7 días) en vez del timeout corto configurado por seguridad.
+        if (session()->get('remember_me')) {
+            $timeout = max($timeout, 60 * 24 * 7);
+        }
+
         $lastActivity = session()->get('last_activity');
 
         if ($lastActivity !== null && (time() - $lastActivity) > ($timeout * 60)) {

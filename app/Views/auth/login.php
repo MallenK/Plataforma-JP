@@ -2,40 +2,56 @@
 
 <?= $this->section('content') ?>
 
-<div class="auth-page">
-    <div class="auth-card">
+<div class="login-stage">
+    <div class="login-orb login-orb-blue"></div>
+    <div class="login-orb login-orb-lime"></div>
+    <div class="login-orb login-orb-amber"></div>
+    <div class="login-orb login-orb-navy"></div>
 
-        <div class="auth-logo"><i class="bi bi-shield-lock-fill"></i></div>
-        <h1 class="auth-title">JP Preparation</h1>
-        <p class="auth-subtitle">Accede a tu plataforma</p>
+    <div class="login-card">
 
-        <div id="errorBox" class="alert-jp danger d-none"></div>
+        <h1 class="login-title">Bienvenido</h1>
+        <p class="login-subtitle">Accede a tu plataforma JP Preparation</p>
+
+        <div id="errorBox" class="login-error d-none"></div>
 
         <form id="loginForm" novalidate>
 
-            <div class="form-group mb-3">
-                <label class="form-label" for="login-email">Email</label>
-                <input type="email" id="login-email" name="email" class="form-control-jp"
-                       placeholder="tucorreo@ejemplo.com" required autocomplete="username">
+            <div class="login-field">
+                <div class="login-input-wrap">
+                    <i class="bi bi-envelope icon-leading"></i>
+                    <input type="email" id="login-email" name="email" placeholder="Email" required autocomplete="username">
+                </div>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="form-label" for="login-password">Contraseña</label>
-                <input type="password" id="login-password" name="password" class="form-control-jp"
-                       placeholder="••••••••" required autocomplete="current-password">
+            <div class="login-field">
+                <div class="login-input-wrap">
+                    <i class="bi bi-lock icon-leading"></i>
+                    <input type="password" id="login-password" name="password" placeholder="Contraseña" required autocomplete="current-password">
+                    <button type="button" class="login-toggle-pw" id="togglePw" aria-label="Mostrar contraseña">
+                        <i class="bi bi-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit" class="btn-jp btn-jp-primary w-100">
+            <div class="login-field-row">
+                <label class="login-remember">
+                    <input type="checkbox" id="remember" name="remember" value="1">
+                    <span class="login-check-box">
+                        <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.3L4 7.3L10 1.3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Recuérdame
+                </label>
+                <a href="<?= base_url('forgot-password') ?>">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="login-btn-submit">
                 <span class="btn-label">Entrar</span>
                 <span class="btn-spinner d-none">
-                    <span class="spinner-border spinner-border-sm me-1"></span>Entrando...
+                    <span class="spinner-border spinner-border-sm me-1" style="width:14px;height:14px"></span>Entrando…
                 </span>
             </button>
         </form>
-
-        <div class="auth-links center">
-            <a href="<?= base_url('forgot-password') ?>">¿Olvidaste tu contraseña?</a>
-        </div>
 
     </div>
 </div>

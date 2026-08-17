@@ -21,7 +21,7 @@ class AuthService
      *
      * @return true|string  true si éxito, string con el error si falla
      */
-    public function attempt(string $email, string $password)
+    public function attempt(string $email, string $password, bool $remember = false)
     {
         if (!$email || !$password) {
             return 'Datos incompletos';
@@ -69,6 +69,9 @@ class AuthService
             'avatar'       => $user['avatar'] ?? null,
             'isLoggedIn'   => true,
             'last_activity' => time(),
+            // "Recuérdame": no exime del todo del timeout, pero AuthFilter
+            // aplica un margen de inactividad mucho más amplio (ver allí).
+            'remember_me'  => $remember,
         ]);
 
         return true;

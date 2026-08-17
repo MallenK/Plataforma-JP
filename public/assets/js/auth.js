@@ -50,6 +50,15 @@ $(document).ready(function () {
         $spin.toggleClass('d-none', !isLoading);
     }
 
+    // Mostrar/ocultar contraseña (login)
+    $(document).on('click', '#togglePw', function () {
+        const $input = $('#login-password');
+        const isPw   = $input.attr('type') === 'password';
+        $input.attr('type', isPw ? 'text' : 'password');
+        $('#eyeIcon').toggleClass('bi-eye', !isPw).toggleClass('bi-eye-slash', isPw);
+        $(this).attr('aria-label', isPw ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    });
+
     // LOGIN
     $(document).on('submit', '#loginForm', function (e) {
         e.preventDefault();
