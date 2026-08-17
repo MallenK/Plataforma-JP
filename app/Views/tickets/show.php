@@ -357,12 +357,15 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
     // ── Enviar respuesta ───────────────────────────────────
     const replyForm = document.getElementById('reply-form');
     if (replyForm) {
+        const btnReply = document.getElementById('btn-reply');
         const btnLbl  = replyForm.querySelector('.btn-label');
         const btnSpin = replyForm.querySelector('.btn-spinner');
         const errBox  = document.getElementById('reply-error');
 
         replyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (btnReply.disabled) return;
+            btnReply.disabled = true;
             errBox.classList.add('d-none');
             btnLbl.classList.add('d-none');
             btnSpin.classList.remove('d-none');
@@ -389,6 +392,7 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 errBox.textContent = 'Error de conexión.';
                 errBox.classList.remove('d-none');
             } finally {
+                btnReply.disabled = false;
                 btnLbl.classList.remove('d-none');
                 btnSpin.classList.add('d-none');
             }
