@@ -1342,6 +1342,7 @@ input[type="time"] {
    ════════════════════════════════════════════════════════════ */
 
 .chat-layout {
+    position: relative;
     display: flex;
     height: calc(100vh - var(--navbar-h) - 32px);
     gap: 0;

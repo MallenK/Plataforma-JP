@@ -26,6 +26,11 @@ class AuthFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         if (!session()->get('isLoggedIn')) {
+            if ($request->isAJAX()) {
+                return service('response')
+                    ->setJSON(['error' => 'Sesión no iniciada.', 'session_expired' => true])
+                    ->setStatusCode(401);
+            }
             return redirect()->to('/login');
         }
 
@@ -41,6 +46,17 @@ class AuthFilter implements FilterInterface
 
         if ($lastActivity !== null && (time() - $lastActivity) > ($timeout * 60)) {
             session()->remove(['isLoggedIn', 'id', 'name', 'role', 'avatar', 'last_activity']);
+
+            // Las peticiones AJAX (fetch de Mensajes, Notificaciones, etc.) no
+            // deben recibir una redirección — el JS no la interpreta como
+            // sesión caducada y muestra un error genérico. Devolvemos JSON
+            // con una marca explícita para que el frontend pueda avisar al
+            // usuario en vez de fallar en silencio.
+            if ($request->isAJAX()) {
+                return service('response')
+                    ->setJSON(['error' => 'Tu sesión ha caducado. Vuelve a iniciar sesión.', 'session_expired' => true])
+                    ->setStatusCode(401);
+            }
             return redirect()->to('/login?expired=1');
         }
 

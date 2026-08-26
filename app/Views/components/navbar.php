@@ -170,7 +170,8 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
             const unreadCls = !n.recipient_read_at ? 'notif-dd-item--unread' : '';
             const time      = timeAgoJS(n.created_at);
             const icon      = n.type === 'group' ? '<i class="bi bi-people-fill notif-dd-group"></i>' : '';
-            return `<li class="notif-dd-item ${unreadCls}" data-id="${n.id}">
+            return `<li class="notif-dd-item ${unreadCls}" data-id="${n.id}"
+                         data-source-type="${n.source_type ?? ''}" data-source-id="${n.source_id ?? ''}">
                 ${icon}
                 <div class="notif-dd-body">
                     <div class="notif-dd-title">${escH(n.title)}</div>
@@ -180,9 +181,20 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
             </li>`;
         }).join('');
 
-        // Clic en item → marcar leída
+        // Clic en item → marcar leída y navegar al origen (conversación o ticket)
         list.querySelectorAll('.notif-dd-item[data-id]').forEach(item => {
-            item.addEventListener('click', () => markRead(parseInt(item.dataset.id), item));
+            item.addEventListener('click', () => {
+                const id = parseInt(item.dataset.id);
+                markRead(id, item);
+
+                const sourceType = item.dataset.sourceType;
+                const sourceId   = item.dataset.sourceId;
+                if (sourceType === 'conversation' && sourceId) {
+                    window.location.href = BASE + 'mensajes?conv=' + sourceId;
+                } else if (sourceType === 'ticket' && sourceId) {
+                    window.location.href = BASE + 'tickets/' + sourceId;
+                }
+            });
         });
     }
 

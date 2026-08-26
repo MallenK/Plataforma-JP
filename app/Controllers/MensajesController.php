@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\ConversationModel;
 use App\Models\MessageModel;
 use App\Models\NotificationModel;
+use App\Models\TicketModel;
 use App\Models\UserModel;
 
 class MensajesController extends BaseController
@@ -12,6 +13,7 @@ class MensajesController extends BaseController
     private ConversationModel $convModel;
     private MessageModel      $msgModel;
     private NotificationModel $notifModel;
+    private TicketModel       $ticketModel;
     private UserModel         $userModel;
     private \CodeIgniter\Database\BaseConnection $db;
 
@@ -24,24 +26,31 @@ class MensajesController extends BaseController
                                    \Psr\Log\LoggerInterface $logger): void
     {
         parent::initController($request, $response, $logger);
-        $this->convModel  = new ConversationModel();
-        $this->msgModel   = new MessageModel();
-        $this->notifModel = new NotificationModel();
-        $this->userModel  = new UserModel();
-        $this->db         = \Config\Database::connect();
+        $this->convModel   = new ConversationModel();
+        $this->msgModel    = new MessageModel();
+        $this->notifModel  = new NotificationModel();
+        $this->ticketModel = new TicketModel();
+        $this->userModel   = new UserModel();
+        $this->db          = \Config\Database::connect();
     }
 
     // ─────────────────────────────────────────────────────────
     // PÁGINA PRINCIPAL — listado de conversaciones
     // ─────────────────────────────────────────────────────────
 
-    public function index(): string
+    public function index()
     {
         $userId = $this->currentUserId();
         $role   = $this->currentRole();
 
-        $conversations  = $this->convModel->getForUser($userId);
-        $contactables   = $this->getContactableUsers($userId, $role);
+        try {
+            $conversations = $this->convModel->getForUser($userId);
+            $contactables  = $this->getContactableUsers($userId, $role);
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'index');
+            return redirect()->to('/dashboard')
+                ->with('error', "No se pudo cargar Mensajes. Inténtalo de nuevo. (Ref: {$ref})");
+        }
 
         return view('mensajes/index', [
             'title'         => 'Mensajes',
@@ -58,60 +67,62 @@ class MensajesController extends BaseController
 
     public function ajaxOpenConversation(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $userId    = (int) $this->currentUserId();
-        $myRole    = (string) $this->currentRole();
-        $otherId   = (int) $this->request->getPost('other_user_id');
-
-        if ($userId <= 0) {
-            return $this->jsonError('Sesión expirada. Vuelve a iniciar sesión.', 401);
-        }
-        if ($otherId <= 0 || $otherId === $userId) {
-            return $this->jsonError('Usuario no válido.', 422);
-        }
-
-        $otherUser = $this->userModel->find($otherId);
-        if (!$otherUser) {
-            return $this->jsonError('Usuario no encontrado.', 404);
-        }
-        if (($otherUser['status'] ?? 'active') !== 'active') {
-            return $this->jsonError('Este usuario no está activo.', 403);
-        }
-
-        // Regla: jugador no puede chatear con jugador
-        if (!$this->canChat($myRole, $otherUser['role'])) {
-            return $this->jsonError('Los jugadores no pueden chatear entre sí.', 403);
-        }
-
         try {
+            $userId  = (int) $this->currentUserId();
+            $myRole  = (string) $this->currentRole();
+            $otherId = (int) $this->request->getPost('other_user_id');
+
+            if ($userId <= 0) {
+                return $this->jsonError('Sesión expirada. Vuelve a iniciar sesión.', 401);
+            }
+            if ($otherId <= 0 || $otherId === $userId) {
+                return $this->jsonError('Usuario no válido.', 422);
+            }
+
+            $otherUser = $this->userModel->find($otherId);
+            if (!$otherUser) {
+                return $this->jsonError('Usuario no encontrado.', 404);
+            }
+            if (($otherUser['status'] ?? 'active') !== 'active') {
+                return $this->jsonError('Este usuario no está activo.', 403);
+            }
+
+            // Regla: jugador no puede chatear con jugador
+            if (!$this->canChat($myRole, $otherUser['role'])) {
+                return $this->jsonError('Los jugadores no pueden chatear entre sí.', 403);
+            }
+
             $conv = $this->convModel->findOrCreate($userId, $otherId);
+            if (empty($conv['id'])) {
+                $ref = $this->logAndRef(new \RuntimeException('findOrCreate devolvió vacío'), 'ajaxOpenConversation');
+                return $this->jsonError('No se pudo abrir la conversación.', 500, $ref);
+            }
+
+            try {
+                $this->msgModel->markReadInConversation($conv['id'], $userId);
+                $messages = $this->msgModel->getForConversation($conv['id'], 50);
+            } catch (\Throwable $e) {
+                // No bloqueamos la apertura de la conversación por un fallo al
+                // cargar el historial — se abre vacía y se registra el error.
+                $this->logAndRef($e, 'ajaxOpenConversation:messages');
+                $messages = [];
+            }
+
+            return $this->response->setJSON([
+                'conversation_id' => (int) $conv['id'],
+                'other_user'      => [
+                    'id'     => (int) $otherUser['id'],
+                    'name'   => $otherUser['name'],
+                    'avatar' => $otherUser['avatar'] ?? null,
+                    'role'   => $otherUser['role'],
+                ],
+                'messages' => $messages,
+                'csrf'     => csrf_hash(),
+            ]);
         } catch (\Throwable $e) {
-            log_message('error', 'MensajesController::ajaxOpenConversation findOrCreate failed: ' . $e->getMessage());
-            return $this->jsonError('No se pudo abrir la conversación.', 500);
+            $ref = $this->logAndRef($e, 'ajaxOpenConversation');
+            return $this->jsonError('Ha ocurrido un error inesperado al abrir la conversación.', 500, $ref);
         }
-
-        if (empty($conv['id'])) {
-            return $this->jsonError('No se pudo abrir la conversación.', 500);
-        }
-
-        try {
-            $this->msgModel->markReadInConversation($conv['id'], $userId);
-            $messages = $this->msgModel->getForConversation($conv['id'], 50);
-        } catch (\Throwable $e) {
-            log_message('error', 'MensajesController::ajaxOpenConversation messages failed: ' . $e->getMessage());
-            $messages = [];
-        }
-
-        return $this->response->setJSON([
-            'conversation_id' => (int) $conv['id'],
-            'other_user'      => [
-                'id'     => (int) $otherUser['id'],
-                'name'   => $otherUser['name'],
-                'avatar' => $otherUser['avatar'] ?? null,
-                'role'   => $otherUser['role'],
-            ],
-            'messages' => $messages,
-            'csrf'     => csrf_hash(),
-        ]);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -120,6 +131,7 @@ class MensajesController extends BaseController
 
     public function ajaxSend(): \CodeIgniter\HTTP\ResponseInterface
     {
+        try {
         $userId = $this->currentUserId();
         $myRole = $this->currentRole();
         $convId = (int) $this->request->getPost('conversation_id');
@@ -213,6 +225,10 @@ class MensajesController extends BaseController
             ],
             'csrf'    => csrf_hash(),
         ]);
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'ajaxSend');
+            return $this->jsonError('Ha ocurrido un error inesperado al enviar el mensaje.', 500, $ref);
+        }
     }
 
     // ─────────────────────────────────────────────────────────
@@ -221,37 +237,42 @@ class MensajesController extends BaseController
 
     public function ajaxPoll(int $convId): \CodeIgniter\HTTP\ResponseInterface
     {
-        $userId  = $this->currentUserId();
-        $sinceId = (int) ($this->request->getGet('since') ?? 0);
+        try {
+            $userId  = $this->currentUserId();
+            $sinceId = (int) ($this->request->getGet('since') ?? 0);
 
-        $conv = $this->convModel->find($convId);
-        if (!$conv || ((int)$conv['user1_id'] !== $userId && (int)$conv['user2_id'] !== $userId)) {
-            return $this->jsonError('Sin acceso.', 403);
+            $conv = $this->convModel->find($convId);
+            if (!$conv || ((int)$conv['user1_id'] !== $userId && (int)$conv['user2_id'] !== $userId)) {
+                return $this->jsonError('Sin acceso.', 403);
+            }
+
+            $messages = $this->db->table('messages m')
+                ->select('m.*, u.name AS sender_name, u.avatar AS sender_avatar, u.role AS sender_role')
+                ->join('users u', 'u.id = m.sender_id')
+                ->where('m.conversation_id', $convId)
+                ->where('m.id >', $sinceId)
+                ->orderBy('m.created_at', 'ASC')
+                ->get()->getResultArray();
+
+            // Marcar como leídos los mensajes del otro
+            if (!empty($messages)) {
+                $this->msgModel->markReadInConversation($convId, $userId);
+            }
+
+            // Devolver IDs de mis mensajes ya leídos por el otro (para actualizar la UI)
+            $readIds = $this->db->table('messages')
+                ->select('id')
+                ->where('conversation_id', $convId)
+                ->where('sender_id', $userId)
+                ->where('read_at IS NOT NULL', null, false)
+                ->get()->getResultArray();
+            $readIds = array_column($readIds, 'id');
+
+            return $this->response->setJSON(['messages' => $messages, 'read_ids' => $readIds]);
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'ajaxPoll');
+            return $this->jsonError('Ha ocurrido un error inesperado al comprobar mensajes nuevos.', 500, $ref);
         }
-
-        $messages = $this->db->table('messages m')
-            ->select('m.*, u.name AS sender_name, u.avatar AS sender_avatar, u.role AS sender_role')
-            ->join('users u', 'u.id = m.sender_id')
-            ->where('m.conversation_id', $convId)
-            ->where('m.id >', $sinceId)
-            ->orderBy('m.created_at', 'ASC')
-            ->get()->getResultArray();
-
-        // Marcar como leídos los mensajes del otro
-        if (!empty($messages)) {
-            $this->msgModel->markReadInConversation($convId, $userId);
-        }
-
-        // Devolver IDs de mis mensajes ya leídos por el otro (para actualizar la UI)
-        $readIds = $this->db->table('messages')
-            ->select('id')
-            ->where('conversation_id', $convId)
-            ->where('sender_id', $userId)
-            ->where('read_at IS NOT NULL', null, false)
-            ->get()->getResultArray();
-        $readIds = array_column($readIds, 'id');
-
-        return $this->response->setJSON(['messages' => $messages, 'read_ids' => $readIds]);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -260,10 +281,15 @@ class MensajesController extends BaseController
 
     public function ajaxConversations(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $userId = $this->currentUserId();
-        return $this->response->setJSON([
-            'conversations' => $this->convModel->getForUser($userId),
-        ]);
+        try {
+            $userId = $this->currentUserId();
+            return $this->response->setJSON([
+                'conversations' => $this->convModel->getForUser($userId),
+            ]);
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'ajaxConversations');
+            return $this->jsonError('Ha ocurrido un error inesperado al cargar las conversaciones.', 500, $ref);
+        }
     }
 
     // ─────────────────────────────────────────────────────────
@@ -272,25 +298,123 @@ class MensajesController extends BaseController
 
     public function download(int $msgId): mixed
     {
-        $userId = $this->currentUserId();
-        $msg    = $this->msgModel->find($msgId);
+        try {
+            $userId = $this->currentUserId();
+            $msg    = $this->msgModel->find($msgId);
 
-        if (!$msg || !$msg['file_path']) {
-            return $this->response->setStatusCode(404);
+            if (!$msg || !$msg['file_path']) {
+                return $this->response->setStatusCode(404);
+            }
+
+            // Verificar pertenencia a la conversación
+            $conv = $this->convModel->find($msg['conversation_id']);
+            if (!$conv || ((int)$conv['user1_id'] !== $userId && (int)$conv['user2_id'] !== $userId)) {
+                return $this->response->setStatusCode(403);
+            }
+
+            $fullPath = FCPATH . $msg['file_path'];
+            if (!file_exists($fullPath)) {
+                return $this->response->setStatusCode(404);
+            }
+
+            return $this->response->download($fullPath, null)->setFileName($msg['file_name']);
+        } catch (\Throwable $e) {
+            $this->logAndRef($e, 'download');
+            return $this->response->setStatusCode(500);
         }
+    }
 
-        // Verificar pertenencia a la conversación
-        $conv = $this->convModel->find($msg['conversation_id']);
-        if (!$conv || ((int)$conv['user1_id'] !== $userId && (int)$conv['user2_id'] !== $userId)) {
-            return $this->response->setStatusCode(403);
+    // ─────────────────────────────────────────────────────────
+    // AJAX: reportar un error de la interfaz de Mensajes.
+    // Crea un ticket automático dirigido al superadmin con el detalle
+    // técnico + el comentario opcional del usuario. Disponible para
+    // cualquier rol autenticado (incluido player, que normalmente no
+    // tiene acceso a /tickets).
+    // ─────────────────────────────────────────────────────────
+
+    public function reportError(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        try {
+            $userId = $this->currentUserId();
+            $user   = $this->currentUser();
+
+            $context  = trim((string) $this->request->getPost('context')) ?: 'desconocido';
+            $errorMsg = trim((string) $this->request->getPost('error_detail'));
+            $errorRef = trim((string) $this->request->getPost('error_ref'));
+            $comment  = trim((string) $this->request->getPost('user_comment'));
+            $pageUrl  = trim((string) $this->request->getPost('page_url'));
+            $userAgent = (string) $this->request->getUserAgent();
+
+            $descLines = [
+                'Reporte automático generado desde Mensajes.',
+                '',
+                'Acción que falló: ' . $context,
+                'Usuario: ' . ($user['name'] ?? '—') . ' (' . ($user['email'] ?? '—') . ', rol: ' . ($user['role'] ?? '—') . ')',
+                'URL: ' . ($pageUrl ?: '—'),
+                'Fecha: ' . date('Y-m-d H:i:s'),
+            ];
+            if ($errorRef !== '') {
+                $descLines[] = 'Referencia de error del servidor: ' . $errorRef;
+            }
+            if ($errorMsg !== '') {
+                $descLines[] = 'Detalle técnico: ' . mb_substr($errorMsg, 0, 500);
+            }
+            $descLines[] = 'Navegador: ' . mb_substr($userAgent, 0, 200);
+            if ($comment !== '') {
+                $descLines[] = '';
+                $descLines[] = 'Comentario del usuario:';
+                $descLines[] = mb_substr($comment, 0, 1000);
+            }
+
+            $ticketId = $this->ticketModel->createTicket([
+                'user_id'     => $userId,
+                'title'       => 'Error automático — Mensajes: ' . mb_substr($context, 0, 80),
+                'description' => implode("\n", $descLines),
+                'category'    => 'bug',
+                'priority'    => 'alta',
+            ]);
+
+            if (!$ticketId) {
+                return $this->jsonError('No se pudo crear el reporte. Inténtalo de nuevo.', 500);
+            }
+
+            // Notificar a los superadmins (mismo patrón que TicketsController::notifyAdmins)
+            try {
+                $superadmins = $this->userModel
+                    ->where('role', 'superadmin')
+                    ->where('id !=', $userId)
+                    ->where('status', 'active')
+                    ->select('id')
+                    ->findAll();
+                $ids = array_column($superadmins, 'id');
+                if (!empty($ids)) {
+                    $ticket = $this->ticketModel->find($ticketId);
+                    $this->notifModel->createWithRecipients([
+                        'sender_id'   => $userId,
+                        'type'        => 'individual',
+                        'title'       => 'Nuevo ticket: ' . $ticket['ticket_number'],
+                        'body'        => $ticket['title'],
+                        'created_at'  => date('Y-m-d H:i:s'),
+                        'source_type' => 'ticket',
+                        'source_id'   => $ticketId,
+                    ], $ids);
+                }
+            } catch (\Throwable $e) {
+                // La notificación es secundaria — el ticket ya existe aunque falle.
+                $this->logAndRef($e, 'reportError:notify');
+            }
+
+            $ticket = $this->ticketModel->find($ticketId);
+
+            return $this->response->setJSON([
+                'ok'            => true,
+                'ticket_number' => $ticket['ticket_number'] ?? null,
+                'csrf'          => csrf_hash(),
+            ]);
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'reportError');
+            return $this->jsonError('No se pudo enviar el reporte. Inténtalo de nuevo. (Ref: ' . $ref . ')', 500);
         }
-
-        $fullPath = FCPATH . $msg['file_path'];
-        if (!file_exists($fullPath)) {
-            return $this->response->setStatusCode(404);
-        }
-
-        return $this->response->download($fullPath, null)->setFileName($msg['file_name']);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -318,9 +442,25 @@ class MensajesController extends BaseController
         return $builder->orderBy('name', 'ASC')->findAll();
     }
 
-    private function jsonError(string $msg, int $status = 400): \CodeIgniter\HTTP\ResponseInterface
+    private function jsonError(string $msg, int $status = 400, ?string $ref = null): \CodeIgniter\HTTP\ResponseInterface
     {
-        return $this->response->setJSON(['error' => $msg])->setStatusCode($status);
+        $payload = ['error' => $msg];
+        if ($ref) {
+            $payload['error_ref'] = $ref;
+        }
+        return $this->response->setJSON($payload)->setStatusCode($status);
+    }
+
+    /**
+     * Registra una excepción inesperada con una referencia corta y
+     * legible, para poder correlacionar el log del servidor con el
+     * reporte que el usuario pueda enviar desde la interfaz.
+     */
+    private function logAndRef(\Throwable $e, string $where): string
+    {
+        $ref = strtoupper(bin2hex(random_bytes(3)));
+        log_message('critical', "[MensajesController::{$where}] ref={$ref} " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        return $ref;
     }
 
     private const ALLOWED_EXTENSIONS = [

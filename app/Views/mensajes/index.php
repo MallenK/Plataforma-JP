@@ -170,6 +170,35 @@ $roleLabels = [
     </div>
 </div>
 
+<!-- ── Diálogo: reportar un problema ─────────────────────────── -->
+<div class="ru-overlay" data-ru-dialog id="modalReportError" hidden>
+    <div class="ru-dialog" role="dialog" aria-modal="true" aria-labelledby="modalReportErrorLabel">
+        <div class="ru-dialog-header">
+            <h3 id="modalReportErrorLabel">
+                <i class="bi bi-flag-fill me-2" style="color:var(--danger)"></i>Reportar problema
+            </h3>
+            <button type="button" data-ru-dialog-close aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="ru-dialog-body">
+            <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">
+                Se enviará un aviso automático al equipo con los detalles técnicos. Cuéntanos qué estabas
+                haciendo para que podamos ayudarte más rápido (opcional).
+            </p>
+            <div class="form-group mb-2">
+                <textarea id="report-error-comment" class="form-control-jp" rows="3" maxlength="1000"
+                          placeholder="Ej: intentaba enviar una foto y no se envió…"></textarea>
+            </div>
+            <div id="report-error-result" class="alert-jp d-none" style="font-size:12.5px"></div>
+        </div>
+        <div class="ru-dialog-footer">
+            <button type="button" class="btn-jp btn-jp-secondary" data-ru-dialog-close>Cancelar</button>
+            <button type="button" class="btn-jp btn-jp-primary" id="btn-report-error-submit">
+                <i class="bi bi-send me-1"></i>Enviar reporte
+            </button>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -182,6 +211,137 @@ $roleLabels = [
     let   lastMsgId     = 0;
     let   pollTimer     = null;
     let   pollConvTimer = null;
+
+    // ── Manejo centralizado de errores + reporte de problemas ────
+    // fetchJSON distingue tres casos:
+    //  - Sesión caducada (401 + session_expired): el AuthFilter ya lo
+    //    marca así para peticiones AJAX en vez de redirigir a /login.
+    //  - Error "esperado" (4xx con mensaje de negocio, ej. "no puedes
+    //    chatear con otro jugador"): se muestra tal cual, sin ofrecer
+    //    reportarlo — no es un bug.
+    //  - Error "inesperado" (5xx, respuesta no-JSON, fallo de red):
+    //    se ofrece reportarlo como problema.
+    let pendingReport = null;
+
+    async function fetchJSON(url, options) {
+        let res;
+        try {
+            res = await fetch(url, options);
+        } catch (netErr) {
+            const err = new Error('Error de red. Comprueba tu conexión.');
+            err.unexpected = true;
+            throw err;
+        }
+
+        let data = {};
+        let parseFailed = false;
+        try { data = await res.json(); } catch (_) { parseFailed = true; }
+
+        if (res.status === 401 && data.session_expired) {
+            const err = new Error(data.error || 'Tu sesión ha caducado.');
+            err.sessionExpired = true;
+            throw err;
+        }
+        if (!res.ok) {
+            const err = new Error(data.error || 'Ha ocurrido un error inesperado.');
+            err.serverRef  = data.error_ref || null;
+            err.unexpected = res.status >= 500 || parseFailed || !data.error;
+            throw err;
+        }
+        if (parseFailed) {
+            const err = new Error('Respuesta inválida del servidor.');
+            err.unexpected = true;
+            throw err;
+        }
+        return data;
+    }
+
+    // onExpected(mensaje) recibe SIEMPRE un texto listo para mostrar al
+    // usuario (validación de negocio, sesión caducada o genérico).
+    function handleFetchError(err, context, onExpected) {
+        console.error('[Mensajes]', context, err);
+        if (err && err.sessionExpired) {
+            showSessionExpiredToast();
+            if (onExpected) onExpected('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+            return;
+        }
+        if (err && err.unexpected) {
+            showErrorReportToast(context, err.message, err.serverRef);
+            if (onExpected) onExpected('Algo ha fallado. Inténtalo de nuevo.');
+            return;
+        }
+        if (onExpected) onExpected((err && err.message) || 'Ha ocurrido un error.');
+    }
+
+    function showSessionExpiredToast() {
+        if (typeof Toastify === 'undefined') { window.location.href = BASE + 'login?expired=1'; return; }
+        Toastify({
+            text: 'Tu sesión ha caducado — toca aquí para volver a iniciar sesión',
+            duration: 10000, close: true,
+            gravity: 'top', position: 'right',
+            style: { background: 'var(--danger)', borderRadius: '8px', cursor: 'pointer' },
+            onClick: function () { window.location.href = BASE + 'login?expired=1'; },
+        }).showToast();
+    }
+
+    function showErrorReportToast(context, detail, ref) {
+        if (typeof Toastify === 'undefined') return;
+        Toastify({
+            text: 'Algo ha fallado — toca aquí para reportarlo',
+            duration: 8000, close: true,
+            gravity: 'top', position: 'right',
+            style: { background: 'var(--danger)', borderRadius: '8px', cursor: 'pointer' },
+            onClick: function () { openReportDialog(context, detail, ref); },
+        }).showToast();
+    }
+
+    function openReportDialog(context, detail, ref) {
+        pendingReport = { context: context, detail: detail || '', ref: ref || '' };
+        const commentEl = document.getElementById('report-error-comment');
+        const resultEl  = document.getElementById('report-error-result');
+        if (commentEl) commentEl.value = '';
+        if (resultEl) { resultEl.classList.add('d-none'); resultEl.className = 'alert-jp d-none'; }
+        const submitBtn = document.getElementById('btn-report-error-submit');
+        if (submitBtn) submitBtn.disabled = false;
+        RadixUI.openDialog('modalReportError');
+    }
+
+    document.getElementById('btn-report-error-submit')?.addEventListener('click', async function () {
+        const btn      = this;
+        const resultEl = document.getElementById('report-error-result');
+        btn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('context', (pendingReport && pendingReport.context) || 'Mensajes (desconocido)');
+        fd.append('error_detail', (pendingReport && pendingReport.detail) || '');
+        fd.append('error_ref', (pendingReport && pendingReport.ref) || '');
+        fd.append('user_comment', document.getElementById('report-error-comment')?.value.trim() || '');
+        fd.append('page_url', window.location.href);
+        fd.append(CSRF_NAME, csrfVal());
+
+        try {
+            const res  = await fetch(BASE + 'mensajes/report-error', {
+                method: 'POST', body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (res.ok && data.ok) {
+                if (data.csrf) refreshCsrf(data.csrf);
+                resultEl.textContent = 'Reportado correctamente' + (data.ticket_number ? ' (' + data.ticket_number + ')' : '') + '. Gracias por avisarnos.';
+                resultEl.className = 'alert-jp success';
+                setTimeout(function () { RadixUI.closeDialog('modalReportError'); }, 2000);
+            } else {
+                resultEl.textContent = data.error || 'No se pudo enviar el reporte. Inténtalo de nuevo.';
+                resultEl.className = 'alert-jp danger';
+                btn.disabled = false;
+            }
+        } catch (_) {
+            resultEl.textContent = 'Error de red. Inténtalo de nuevo.';
+            resultEl.className = 'alert-jp danger';
+            btn.disabled = false;
+        }
+    });
 
     // ── CSRF helpers ────────────────────────────────────────
     function csrfVal() {
@@ -269,12 +429,10 @@ $roleLabels = [
         formData.append(CSRF_NAME, csrfVal());
 
         try {
-            const res  = await fetch(BASE + 'mensajes/open', {
+            const data = await fetchJSON(BASE + 'mensajes/open', {
                 method: 'POST', body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) { showChatError(data.error ?? 'No se pudo abrir la conversación.'); return; }
 
             if (data.csrf) refreshCsrf(data.csrf);
 
@@ -319,7 +477,7 @@ $roleLabels = [
             startPolling();
 
         } catch (err) {
-            showChatError('Error de red.');
+            handleFetchError(err, 'Abrir conversación', showChatError);
         }
     }
 
@@ -345,25 +503,20 @@ $roleLabels = [
         btn.disabled = true;
 
         try {
-            const res  = await fetch(BASE + 'mensajes/send', {
+            const data = await fetchJSON(BASE + 'mensajes/send', {
                 method: 'POST', body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json();
 
-            if (res.ok && data.ok) {
-                bodyInput.value = '';
-                bodyInput.style.height = 'auto';
-                clearFileInput();
-                appendMessage(data.message);
-                scrollToBottom();
-                lastMsgId = data.message.id;
-                if (data.csrf) refreshCsrf(data.csrf);
-            } else {
-                showToast(data.error ?? 'Error al enviar.', 'error');
-            }
+            bodyInput.value = '';
+            bodyInput.style.height = 'auto';
+            clearFileInput();
+            appendMessage(data.message);
+            scrollToBottom();
+            lastMsgId = data.message.id;
+            if (data.csrf) refreshCsrf(data.csrf);
         } catch (err) {
-            showToast('Error de red.', 'error');
+            handleFetchError(err, 'Enviar mensaje', function (msg) { showToast(msg, 'error'); });
         }
 
         btn.disabled = false;
@@ -409,13 +562,14 @@ $roleLabels = [
         clearInterval(pollConvTimer);
     }
 
+    let pollMsgFailCount = 0;
     async function pollMessages() {
         if (!activeConvId) return;
         try {
-            const res  = await fetch(BASE + 'mensajes/' + activeConvId + '/poll?since=' + lastMsgId, {
+            const data = await fetchJSON(BASE + 'mensajes/' + activeConvId + '/poll?since=' + lastMsgId, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json();
+            pollMsgFailCount = 0;
             if (data.messages && data.messages.length > 0) {
                 data.messages.forEach(msg => {
                     if (parseInt(msg.sender_id) !== MY_ID) {
@@ -430,7 +584,19 @@ $roleLabels = [
             if (data.read_ids && data.read_ids.length > 0) {
                 updateReadIndicators(data.read_ids);
             }
-        } catch (_) {}
+        } catch (err) {
+            if (err && err.sessionExpired) {
+                stopPolling();
+                showSessionExpiredToast();
+                return;
+            }
+            // El sondeo falla cada pocos segundos si hay un corte puntual de
+            // red; solo se avisa (y se ofrece reportar) si persiste.
+            pollMsgFailCount++;
+            if (pollMsgFailCount === 3) {
+                handleFetchError(err, 'Comprobar mensajes nuevos', null);
+            }
+        }
     }
 
     function updateReadIndicators(readIds) {
@@ -444,14 +610,25 @@ $roleLabels = [
         });
     }
 
+    let pollConvFailCount = 0;
     async function pollConversations() {
         try {
-            const res  = await fetch(BASE + 'mensajes/conversations', {
+            const data = await fetchJSON(BASE + 'mensajes/conversations', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json();
+            pollConvFailCount = 0;
             if (data.conversations) updateConvList(data.conversations);
-        } catch (_) {}
+        } catch (err) {
+            if (err && err.sessionExpired) {
+                stopPolling();
+                showSessionExpiredToast();
+                return;
+            }
+            pollConvFailCount++;
+            if (pollConvFailCount === 3) {
+                handleFetchError(err, 'Actualizar lista de conversaciones', null);
+            }
+        }
     }
 
     // ── Renderizado de mensajes ──────────────────────────────
