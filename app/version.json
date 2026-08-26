@@ -1,0 +1,7 @@
+[
+    {
+        "version": "1.0.0",
+        "date": "2026-08-27 00:30:00",
+        "description": "Mensajes: corrige el botón \"Nueva conversación\" oculto en móvil, hace clicables las notificaciones de nuevo mensaje, añade manejo de errores con reporte automático de problemas (crea ticket al superadmin) y detección de sesión caducada en peticiones AJAX. Entrenadores: añade reseteo de contraseña. Se introduce el panel de historial de versiones (este)."
+    }
+]

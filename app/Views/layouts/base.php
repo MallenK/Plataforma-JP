@@ -34,6 +34,8 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <!-- App JS -->
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+<!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
+<script src="<?= base_url('assets/js/radix-ui.js') ?>"></script>
 
 <?= $this->renderSection('scripts') ?>
 </body>

@@ -568,6 +568,7 @@ $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
 //  GET  /mensajes/:id/poll            → polling mensajes nuevos (AJAX)
 //  GET  /mensajes/conversations       → lista conversaciones (AJAX)
 //  GET  /mensajes/download/:id        → descargar archivo de mensaje
+//  POST /mensajes/report-error        → reportar error de la UI (crea ticket)
 // ------------------------------------------------------------
 
 $routes->get('mensajes', 'MensajesController::index', [
@@ -591,6 +592,10 @@ $routes->get('mensajes/conversations', 'MensajesController::ajaxConversations', 
 ]);
 
 $routes->get('mensajes/download/(:num)', 'MensajesController::download/$1', [
+    'filter' => 'auth',
+]);
+
+$routes->post('mensajes/report-error', 'MensajesController::reportError', [
     'filter' => 'auth',
 ]);
 

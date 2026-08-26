@@ -2,8 +2,8 @@
 
 <?= $this->section('content') ?>
 
-<link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>">
-<link rel="stylesheet" href="<?= base_url('assets/css/doc-preview.css') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>">
+<link rel="stylesheet" href="<?= base_url('assets/css/doc-preview.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/doc-preview.css') ?: time() ?>">
 
 <script>window.APP_BASE = '<?= rtrim(base_url(), '/') ?>';</script>
 
