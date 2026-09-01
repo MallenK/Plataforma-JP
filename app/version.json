@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.2",
+        "date": "2026-09-01 21:30:00",
+        "description": "Rediseño de las pantallas de acceso: login con fondo Aura Gradient y tarjeta de cristal, y pantallas de recuperar/restablecer contraseña a juego. Casilla \"Recuérdame\" operativa (sesión de 7 días). Se elimina el formulario de auto-registro (ya estaba desactivado)."
+    },
+    {
         "version": "1.1.0",
         "date": "2026-09-01 20:00:00",
         "description": "Seguridad de acceso: bloqueo temporal tras varios intentos fallidos de login, nueva pantalla \"cambiar mi contraseña\", aviso por email al cambiarla, y los usuarios nuevos definen su contraseña en el primer acceso. CSRF y cabeceras de seguridad HTTP activados en todas las respuestas. Recuperación de contraseña y correo de bienvenida operativos. Alumnos: un alumno puede tener varias posiciones elegidas de una lista y se corrige el desbordamiento de texto en la ficha. Clases: los admin y el staff pueden ser responsables de una sesión, y el feedback \"Después\" se puede escribir en cuanto se imparte la clase o se pasa lista."

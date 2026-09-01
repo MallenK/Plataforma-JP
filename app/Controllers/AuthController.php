@@ -81,12 +81,13 @@ class AuthController extends BaseController
             ])->setStatusCode(400);
         }
 
-        $email = strtolower(trim($this->request->getPost('email')));
+        $email    = strtolower(trim($this->request->getPost('email')));
         $password = $this->request->getPost('password');
+        $remember = (bool) $this->request->getPost('remember');
 
         $auth = new AuthService();
 
-        $result = $auth->attempt($email, $password);
+        $result = $auth->attempt($email, $password, $remember);
 
         if ($result !== true) {
             return $this->response->setJSON([
