@@ -5,7 +5,7 @@
 <?php
 $canEdit         = in_array(session('role'), ['admin', 'superadmin', 'player']);
 $positionLabels  = \App\Models\PlayerProfileModel::decodePositionLabels($profile['position'] ?? null);
-$pos             = empty($positionLabels) ? '—' : implode(', ', array_map('esc', $positionLabels));
+$pos             = empty($positionLabels) ? '—' : implode(' / ', array_map('esc', $positionLabels));
 $categoryLabel = match($profile['category'] ?? '') {
     'prebenjamin' => 'Prebenjamín',
     'benjamin'    => 'Benjamín',
@@ -37,15 +37,9 @@ $categoryLabel = match($profile['category'] ?? '') {
                 <span class="metric-label"><?= count($positionLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
                 <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
             </div>
-            <?php if (empty($positionLabels)): ?>
-            <div class="metric-value" style="font-size:20px">—</div>
-            <?php else: ?>
-            <ul class="metric-value" style="font-size:15px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px">
-                <?php foreach ($positionLabels as $label): ?>
-                <li><?= esc($label) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <?php endif; ?>
+            <div class="metric-value" style="font-size:<?= count($positionLabels) > 1 ? '16px' : '20px' ?>">
+                <?= esc(empty($positionLabels) ? '—' : implode(' / ', $positionLabels)) ?>
+            </div>
         </div>
     </div>
     <div class="col-6 col-md-3">

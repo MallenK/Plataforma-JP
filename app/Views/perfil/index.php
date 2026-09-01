@@ -300,7 +300,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                     <?php if (!empty($pfpPosLabels)): ?>
                     <div class="d-flex justify-content-between align-items-center gap-2">
                         <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0"><?= count($pfpPosLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
-                        <span style="font-size:13px;font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(', ', $pfpPosLabels)) ?></span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(' / ', $pfpPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($pfp['team'])): ?>
@@ -402,7 +402,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
             $metricsPositionLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null);
             $metrics4 = [
                 ['label' => count($metricsPositionLabels) > 1 ? 'Posiciones' : 'Posición',
-                 'val'   => empty($metricsPositionLabels) ? '—' : implode(', ', $metricsPositionLabels),
+                 'val'   => empty($metricsPositionLabels) ? '—' : implode(' / ', $metricsPositionLabels),
                  'icon'  => 'bi-geo-alt-fill', 'color' => 'var(--accent)'],
                 ['label' => 'Categoría', 'val' => ($pfp['category'] ?? '') ? $categoryLabel : '—',       'icon' => 'bi-trophy-fill',         'color' => '#f59e0b'],
                 ['label' => 'Altura',    'val' => ($pfp['height']   ?? '') ? $pfp['height'] . ' cm' : '—', 'icon' => 'bi-arrows-vertical',   'color' => '#f97316'],

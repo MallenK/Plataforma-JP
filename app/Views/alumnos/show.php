@@ -287,15 +287,9 @@ $formatTime = static function (?string $hms): string {
                         <span class="metric-label"><?= count($positionLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
                         <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
                     </div>
-                    <?php if (empty($positionLabels)): ?>
-                    <div class="metric-value" style="font-size:18px">—</div>
-                    <?php else: ?>
-                    <ul class="metric-value" style="font-size:14px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px">
-                        <?php foreach ($positionLabels as $label): ?>
-                        <li><?= esc($label) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <?php endif; ?>
+                    <div class="metric-value" style="font-size:<?= count($positionLabels) > 1 ? '15px' : '18px' ?>">
+                        <?= esc(empty($positionLabels) ? '—' : implode(' / ', $positionLabels)) ?>
+                    </div>
                 </div>
             </div>
             <div class="col-6 col-md-3">

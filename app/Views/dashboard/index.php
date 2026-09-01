@@ -294,7 +294,7 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                     <?php if (!empty($dbPosLabels)): ?>
                     <div class="d-flex justify-content-between align-items-center gap-2">
                         <span style="color:var(--text-muted);flex-shrink:0"><i class="bi bi-geo-alt me-1"></i><?= count($dbPosLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
-                        <span style="font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(', ', $dbPosLabels)) ?></span>
+                        <span style="font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(' / ', $dbPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($dbPfp['team'])): ?>

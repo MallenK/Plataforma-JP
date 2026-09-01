@@ -77,6 +77,16 @@ final class PlayerProfilePositionsTest extends CIUnitTestCase
         $this->assertSame($original, $decoded);
     }
 
+    public function testFormatPositionsUneConBarra(): void
+    {
+        $raw = json_encode(['extremo_derecho', 'mediapunta']);
+        $this->assertSame('Extremo derecho / Mediapunta', PlayerProfileModel::formatPositions($raw));
+        // el legacy "mediapunta" coincide con la clave del catálogo -> "Mediapunta"
+        $this->assertSame('Extremo / Mediapunta', PlayerProfileModel::formatPositions('Extremo/mediapunta'));
+        $this->assertSame('—', PlayerProfileModel::formatPositions(null));
+        $this->assertSame('sin datos', PlayerProfileModel::formatPositions('', 'sin datos'));
+    }
+
     // ── Cableado en las vistas ──────────────────────────────────────
 
     public function testFormulariosUsanElPartialDeCheckboxes(): void
@@ -91,11 +101,14 @@ final class PlayerProfilePositionsTest extends CIUnitTestCase
         }
     }
 
-    public function testFichaDeAlumnoMuestraListaDePosiciones(): void
+    public function testFichaDeAlumnoMuestraLasPosicionesSeparadasPorBarra(): void
     {
         foreach (['show.php', 'profile.php'] as $f) {
             $src = file_get_contents(APPPATH . 'Views/alumnos/' . $f);
             $this->assertStringContainsString('decodePositionLabels', $src);
+            $this->assertStringContainsString("implode(' / ', \$positionLabels)", $src);
+            // ya no se pinta como lista <ul><li>
+            $this->assertStringNotContainsString('<ul class="metric-value"', $src);
         }
     }
 }

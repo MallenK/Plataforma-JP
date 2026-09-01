@@ -101,4 +101,14 @@ class PlayerProfileModel extends Model
     {
         return array_map([self::class, 'positionLabel'], self::decodePositions($raw));
     }
+
+    /**
+     * Posiciones en una sola línea legible: "Extremo derecho / Mediapunta".
+     * Devuelve $empty ('—' por defecto) si no hay ninguna.
+     */
+    public static function formatPositions(?string $raw, string $empty = '—'): string
+    {
+        $labels = self::decodePositionLabels($raw);
+        return $labels === [] ? $empty : implode(' / ', $labels);
+    }
 }

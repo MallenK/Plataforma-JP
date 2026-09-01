@@ -49,17 +49,18 @@ donde corresponde. Cubre cualquier valor largo en las vistas que usan
 - Los 3 formularios (`alumnos/create.php`, `edit.php`,
   `create_profile.php`) pasan de un `<input type="text">` a un selector
   de checkboxes múltiple (`alumnos/_position_checkboxes.php`).
-- La ficha (`alumnos/show.php`, `alumnos/profile.php`) muestra las
-  posiciones como **lista** (una por línea) en vez de una única cadena
-  larga — elimina el problema de raíz, no solo lo tapa con CSS.
-- Vistas compactas (`alumnos/index.php`, `dashboard/index.php`,
-  `perfil/index.php`) muestran las posiciones unidas por coma, con
-  wrap defensivo.
+- La ficha (`alumnos/show.php`, `alumnos/profile.php`) y el resto de
+  vistas muestran las posiciones en una sola línea separadas por
+  " / " ("Extremo derecho / Mediapunta") vía
+  `PlayerProfileModel::formatPositions()` — elimina el problema de raíz
+  (ya no es un único token largo sin espacios), y el CSS de
+  `.metric-value` (`overflow-wrap`) parte con seguridad si aún así no
+  cabe.
 
 ## Verificación
 
 - `tests/unit/MetricCardOverflowTest.php`
 - `tests/unit/PlayerProfilePositionsTest.php`
 - Manual: alumno de prueba con posiciones "Extremo derecho" +
-  "Mediapunta" → se ven como lista en la ficha, sin desbordar, en
-  móvil y escritorio.
+  "Mediapunta" → se ven como "Extremo derecho / Mediapunta" en la
+  ficha, sin desbordar, en móvil y escritorio.

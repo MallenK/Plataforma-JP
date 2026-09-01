@@ -102,7 +102,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
                                 <div class="td-name"><?= esc($p['name']) ?></div>
                                 <?php $posLabels = \App\Models\PlayerProfileModel::decodePositionLabels($p['position'] ?? null); ?>
                                 <?php if (!empty($posLabels)): ?>
-                                <div class="td-sub"><?= esc(implode(', ', $posLabels)) ?></div>
+                                <div class="td-sub"><?= esc(implode(' / ', $posLabels)) ?></div>
                                 <?php endif; ?>
                             </div>
                         </div>
