@@ -296,10 +296,11 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($levelLabel) ?></span>
                     </div>
                     <?php endif; ?>
-                    <?php if (!empty($pfp['position'])): ?>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Posición</span>
-                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($pfp['position']) ?></span>
+                    <?php $pfpPosLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null); ?>
+                    <?php if (!empty($pfpPosLabels)): ?>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0"><?= count($pfpPosLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(' / ', $pfpPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($pfp['team'])): ?>
@@ -398,19 +399,22 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
         <!-- Métricas: posición, categoría, altura, peso -->
         <div class="row g-2 mb-1">
             <?php
+            $metricsPositionLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null);
             $metrics4 = [
-                ['label' => 'Posición',  'val' => $pfp['position'] ?? '—',                               'icon' => 'bi-geo-alt-fill',       'color' => 'var(--accent)'],
+                ['label' => count($metricsPositionLabels) > 1 ? 'Posiciones' : 'Posición',
+                 'val'   => empty($metricsPositionLabels) ? '—' : implode(' / ', $metricsPositionLabels),
+                 'icon'  => 'bi-geo-alt-fill', 'color' => 'var(--accent)'],
                 ['label' => 'Categoría', 'val' => ($pfp['category'] ?? '') ? $categoryLabel : '—',       'icon' => 'bi-trophy-fill',         'color' => '#f59e0b'],
                 ['label' => 'Altura',    'val' => ($pfp['height']   ?? '') ? $pfp['height'] . ' cm' : '—', 'icon' => 'bi-arrows-vertical',   'color' => '#f97316'],
                 ['label' => 'Peso',      'val' => ($pfp['weight']   ?? '') ? $pfp['weight'] . ' kg' : '—', 'icon' => 'bi-activity',          'color' => '#8b5cf6'],
             ];
             foreach ($metrics4 as $m): ?>
             <div class="col-6">
-                <div class="card-jp" style="padding:12px 14px">
+                <div class="card-jp" style="padding:12px 14px;overflow:hidden;min-width:0">
                     <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
                         <?= $m['label'] ?>
                     </div>
-                    <div style="font-size:18px;font-weight:700;color:var(--text-h)"><?= esc($m['val']) ?></div>
+                    <div style="font-size:18px;font-weight:700;color:var(--text-h);overflow-wrap:anywhere;word-break:break-word"><?= esc($m['val']) ?></div>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -511,14 +515,17 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Contraseña</div>
                         <div style="font-size:12px;color:var(--text-muted)">
                             <?php if ($isProtected): ?>
-                                <i class="bi bi-lock-fill"></i> Perfil protegido — no modificable desde la plataforma
+                                <i class="bi bi-lock-fill"></i> Perfil protegido — es la cuenta raíz de la plataforma.
+                                Solo el administrador técnico puede modificarla, directamente en la base de datos.
+                            <?php elseif (!empty($user['password_changed_at'])): ?>
+                                Última modificación: <?= esc(date('d/m/Y', strtotime($user['password_changed_at']))) ?>
                             <?php else: ?>
                                 Última modificación desconocida
                             <?php endif; ?>
                         </div>
                     </div>
                     <?php if ($isSelf && !$isProtected): ?>
-                    <a href="<?= base_url('forgot-password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                    <a href="<?= base_url('perfil/password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-key-fill"></i> Cambiar contraseña
                     </a>
                     <?php elseif ($isAdmin && !$isSelf && !$isProtected): ?>

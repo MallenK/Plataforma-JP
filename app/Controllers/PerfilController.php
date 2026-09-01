@@ -180,23 +180,135 @@ class PerfilController extends BaseController
             return redirect()->to('/perfil')->with('error', 'Usuario no encontrado.');
         }
 
-        $newPassword = 'Jp' . bin2hex(random_bytes(4)) . '!';
+        $guard       = new \App\Services\AuthGuardService();
+        $newPassword = $guard->generateTempPassword();
+        $now         = date('Y-m-d H:i:s');
 
         $ok = (bool) \Config\Database::connect()
             ->table('users')
             ->where('id', $id)
             ->update([
-                'password'   => password_hash($newPassword, PASSWORD_BCRYPT),
-                'updated_at' => date('Y-m-d H:i:s'),
+                'password'             => password_hash($newPassword, PASSWORD_BCRYPT),
+                'password_changed_at'  => $now,
+                'must_change_password' => 1,
+                'updated_at'           => $now,
             ]);
 
         if (!$ok) {
             return redirect()->to('/perfil/' . $id)->with('error', 'No se pudo generar la nueva contraseña.');
         }
 
+        $guard->record('admin_pwreset', $target['email'] ?? null, $id, ['by' => $actorId]);
+
+        try {
+            (new \App\Services\MailService())->sendPasswordChangedEmail(
+                $target['email'] ?? '',
+                $target['name'] ?? '',
+                $guard->ip(),
+                $now
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'PerfilController::resetPassword aviso email — ' . $e->getMessage());
+        }
+
         return redirect()->to('/perfil/' . $id)
             ->with('new_password', $newPassword)
             ->with('new_password_user', $target['name'] ?? '')
-            ->with('success', 'Nueva contraseña generada. Cópiala ahora — no se mostrará otra vez.');
+            ->with('success', 'Nueva contraseña generada. Cópiala ahora — no se mostrará otra vez. El usuario deberá cambiarla al entrar.');
+    }
+
+    /**
+     * Formulario de "cambiar mi contraseña" (usuario autenticado).
+     */
+    public function changePasswordForm()
+    {
+        $policy = (new \App\Models\SettingsModel())->getAll();
+
+        return view('perfil/change_password', [
+            'title'  => 'Cambiar contraseña — JP Preparation',
+            'forced' => (bool) session()->get('must_change_password'),
+            'policy' => [
+                'minLength'      => max(8, (int)($policy['sec_min_password']   ?? 8)),
+                'requireUpper'   => (bool)($policy['sec_require_upper']   ?? false),
+                'requireNumbers' => (bool)($policy['sec_require_numbers'] ?? false),
+                'requireSpecial' => (bool)($policy['sec_require_special'] ?? false),
+            ],
+        ]);
+    }
+
+    /**
+     * Procesa el cambio de contraseña propio. Requiere la contraseña
+     * actual (re-autenticación). Limita los intentos con la actual mal.
+     */
+    public function changePassword()
+    {
+        $userId = (int) $this->currentUserId();
+        if (!$userId) {
+            return redirect()->to('/login');
+        }
+
+        $current = (string) $this->request->getPost('current_password');
+        $new     = (string) $this->request->getPost('new_password');
+        $confirm = (string) $this->request->getPost('new_password_confirm');
+
+        $guard     = new \App\Services\AuthGuardService();
+        $userModel = new \App\Models\UserModel();
+        $user      = $userModel->find($userId);
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        if ($this->isProtectedUser($userId)) {
+            return redirect()->to('/perfil')->with('error', 'Esta cuenta está protegida.');
+        }
+
+        if ($guard->passwordChangeThrottled($userId)) {
+            return redirect()->back()->with('error', 'Demasiados intentos. Inténtalo de nuevo dentro de unos minutos.');
+        }
+
+        if (!password_verify($current, $user['password'])) {
+            $guard->record('pwchange_fail', 'uid:' . $userId, $userId, ['reason' => 'bad_current']);
+            return redirect()->back()->with('error', 'La contraseña actual no es correcta.');
+        }
+
+        if ($new !== $confirm) {
+            return redirect()->back()->with('error', 'La nueva contraseña y su confirmación no coinciden.');
+        }
+
+        $err = $guard->validateNewPassword($new, $user['password']);
+        if ($err !== null) {
+            return redirect()->back()->with('error', $err);
+        }
+
+        $now = date('Y-m-d H:i:s');
+        \Config\Database::connect()->table('users')->where('id', $userId)->update([
+            'password'             => password_hash($new, PASSWORD_BCRYPT),
+            'password_changed_at'  => $now,
+            'must_change_password' => 0,
+            'updated_at'           => $now,
+        ]);
+
+        // Este dispositivo sigue dentro; los demás se caerán (AuthFilter).
+        session()->set([
+            'pw_stamp'             => $now,
+            'pw_check_at'          => time(),
+            'login_time'           => time(),
+            'must_change_password' => false,
+        ]);
+
+        $guard->record('pwchange_success', $user['email'] ?? null, $userId);
+
+        try {
+            (new \App\Services\MailService())->sendPasswordChangedEmail(
+                $user['email'] ?? '',
+                $user['name'] ?? '',
+                $guard->ip(),
+                $now
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'PerfilController::changePassword aviso email — ' . $e->getMessage());
+        }
+
+        return redirect()->to('/perfil')->with('success', 'Contraseña actualizada. Las sesiones en otros dispositivos se cerrarán.');
     }
 }

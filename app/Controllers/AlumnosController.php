@@ -86,7 +86,7 @@ class AlumnosController extends BaseController
             'birth_date'    => $this->request->getPost('birth_date'),
             'height'        => $this->request->getPost('height'),
             'weight'        => $this->request->getPost('weight'),
-            'position'      => $this->request->getPost('position'),
+            'position'      => \App\Models\PlayerProfileModel::encodePositions((array) $this->request->getPost('position')),
             'level'         => $this->request->getPost('level'),
             'category'      => $this->request->getPost('category') ?: null,
             'team'          => $this->request->getPost('team') ?: null,
@@ -119,7 +119,7 @@ class AlumnosController extends BaseController
      */
     public function store()
     {
-        $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
+        $password = (new \App\Services\AuthGuardService())->generateTempPassword();
 
         $userData = [
             'name'     => $this->request->getPost('name'),
@@ -133,7 +133,7 @@ class AlumnosController extends BaseController
             'birth_date'    => $this->request->getPost('birth_date') ?: null,
             'height'        => $this->request->getPost('height') ?: null,
             'weight'        => $this->request->getPost('weight') ?: null,
-            'position'      => $this->request->getPost('position') ?: null,
+            'position'      => \App\Models\PlayerProfileModel::encodePositions((array) $this->request->getPost('position')),
             'level'         => $this->request->getPost('level') ?: null,
             'category'      => $this->request->getPost('category') ?: null,
             'team'          => $this->request->getPost('team') ?: null,
@@ -208,7 +208,7 @@ class AlumnosController extends BaseController
             'birth_date'    => $this->request->getPost('birth_date') ?: null,
             'height'        => $this->request->getPost('height') ?: null,
             'weight'        => $this->request->getPost('weight') ?: null,
-            'position'      => $this->request->getPost('position') ?: null,
+            'position'      => \App\Models\PlayerProfileModel::encodePositions((array) $this->request->getPost('position')),
             'level'         => $this->request->getPost('level') ?: null,
             'category'      => $this->request->getPost('category') ?: null,
             'team'          => $this->request->getPost('team') ?: null,

@@ -12,6 +12,19 @@ use App\Models\UserModel;
 
 class ClasesService
 {
+    /**
+     * Roles que pueden figurar como responsable técnico de una sesión
+     * (selector "Entrenadores" / session_type = 'coach').
+     * admin y superadmin se incluyen porque también imparten clases.
+     */
+    public const RESPONSABLE_TECNICO_ROLES = ['coach', 'admin', 'superadmin'];
+
+    /**
+     * Roles que pueden figurar como responsable de staff de una sesión
+     * (selector "Staff responsable" / session_type = 'staff').
+     */
+    public const RESPONSABLE_STAFF_ROLES = ['staff', 'admin', 'superadmin'];
+
     protected ClassModel $classModel;
     protected ClassSessionModel $sessionModel;
     protected ClassSessionCoachModel $coachModel;
@@ -279,6 +292,33 @@ class ClasesService
     public function getUpcomingSessions(int $limit = 5): array
     {
         return $this->sessionModel->getUpcoming($limit);
+    }
+
+    /**
+     * ¿Se puede escribir el feedback ("Después") de una sesión?
+     *
+     * El feedback está disponible cuando la clase ya se ha impartido:
+     *   - la sesión está completada, o
+     *   - ya se ha pasado lista (lista_pasada_at), o
+     *   - al menos un alumno está marcado como presente.
+     *
+     * @param array $session Sesión tal cual la devuelve getSession()
+     *                       (debe incluir 'status', 'lista_pasada_at' y 'players').
+     */
+    public static function isFeedbackUnlocked(array $session): bool
+    {
+        if (($session['status'] ?? '') === 'completed') {
+            return true;
+        }
+        if (!empty($session['lista_pasada_at'])) {
+            return true;
+        }
+        foreach ($session['players'] ?? [] as $p) {
+            if (($p['attendance'] ?? '') === 'present') {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -993,8 +1033,8 @@ class ClasesService
     public function getCoachOptions(): array
     {
         return $this->db->table('users')
-            ->select('id, name, email')
-            ->where('role', 'coach')
+            ->select('id, name, email, role')
+            ->whereIn('role', self::RESPONSABLE_TECNICO_ROLES)
             ->where('status', 'active')
             ->orderBy('name')
             ->get()->getResultArray();
@@ -1013,8 +1053,8 @@ class ClasesService
     public function getStaffOptions(): array
     {
         return $this->db->table('users')
-            ->select('id, name, email')
-            ->where('role', 'staff')
+            ->select('id, name, email, role')
+            ->whereIn('role', self::RESPONSABLE_STAFF_ROLES)
             ->where('status', 'active')
             ->orderBy('name')
             ->get()->getResultArray();

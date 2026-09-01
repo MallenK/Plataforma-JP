@@ -156,8 +156,10 @@ class App extends BaseConfig
      * made via a secure connection (HTTPS). If the incoming request is not
      * secure, the user will be redirected to a secure version of the page
      * and the HTTP Strict Transport Security (HSTS) header will be set.
+     *
+     * Solo en producción (que va por HTTPS). En local seguiría en http.
      */
-    public bool $forceGlobalSecureRequests = false;
+    public bool $forceGlobalSecureRequests = (ENVIRONMENT === 'production');
 
     /**
      * --------------------------------------------------------------------------

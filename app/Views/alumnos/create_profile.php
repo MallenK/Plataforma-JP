@@ -46,12 +46,11 @@ $isEditing = !empty($profile);
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <div class="form-group">
-                                <label class="form-label">Posición</label>
-                                <input type="text" name="position" class="form-control-jp"
-                                    placeholder="Ej: Base, Escolta, Pivot..."
-                                    value="<?= esc($profile['position'] ?? '') ?>">
-                            </div>
+                            <?php
+                            $selectedPositions = old('position')
+                                ?? \App\Models\PlayerProfileModel::decodePositions($profile['position'] ?? null);
+                            ?>
+                            <?= $this->include('alumnos/_position_checkboxes') ?>
                         </div>
 
                         <div class="col-12 col-md-4">

@@ -433,8 +433,8 @@ $sec  = $section;        // sección activa
                             <div class="col-12 col-md-4">
                                 <label class="form-label">Longitud mínima de contraseña</label>
                                 <input type="number" name="sec_min_password" class="form-control-jp"
-                                       min="6" max="32"
-                                       value="<?= (int)($s['sec_min_password'] ?? 8) ?>">
+                                       min="8" max="64"
+                                       value="<?= max(8, (int)($s['sec_min_password'] ?? 8)) ?>">
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label">Tiempo de inactividad (minutos)</label>
@@ -443,6 +443,18 @@ $sec  = $section;        // sección activa
                                         <option value="<?= $val ?>" <?= (int)($s['sec_session_timeout'] ?? 10) === $val ? 'selected' : '' ?>><?= $lbl ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label">Intentos antes de bloquear</label>
+                                <input type="number" name="sec_lockout_threshold" class="form-control-jp"
+                                       min="3" max="20"
+                                       value="<?= max(3, (int)($s['sec_lockout_threshold'] ?? 5)) ?>">
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label">Minutos de bloqueo</label>
+                                <input type="number" name="sec_lockout_minutes" class="form-control-jp"
+                                       min="5" max="120"
+                                       value="<?= max(5, (int)($s['sec_lockout_minutes'] ?? 15)) ?>">
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Requisitos de contraseña</label>
@@ -467,6 +479,51 @@ $sec  = $section;        // sección activa
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Actividad de seguridad -->
+            <div class="card-jp mb-3">
+                <div class="card-jp-header">
+                    <span class="card-jp-title"><i class="bi bi-shield-exclamation me-2" style="color:#dc2626"></i>Actividad de seguridad reciente</span>
+                    <span style="font-size:12px;color:var(--text-muted)">Logins fallidos, bloqueos y cambios de contraseña</span>
+                </div>
+                <div class="card-jp-body p-0">
+                    <?php if (empty($securityEvents)): ?>
+                        <div class="empty-state p-4">
+                            <i class="bi bi-shield-check" style="font-size:2rem;color:var(--text-muted)"></i>
+                            <p class="mt-2 mb-0" style="color:var(--text-muted)">Sin eventos de seguridad registrados.</p>
+                        </div>
+                    <?php else: ?>
+                    <?php
+                    $evtLabels = [
+                        'login_fail'       => ['Login fallido', '#dc2626'],
+                        'lockout'          => ['Cuenta/IP bloqueada', '#b91c1c'],
+                        'pwreset_request'  => ['Solicitud de recuperación', '#d97706'],
+                        'pwreset_success'  => ['Contraseña restablecida', '#059669'],
+                        'pwchange_success' => ['Contraseña cambiada', '#059669'],
+                        'admin_pwreset'    => ['Reset por admin', '#7c3aed'],
+                    ];
+                    ?>
+                    <div class="table-responsive" style="max-height:360px;overflow-y:auto">
+                        <table class="table-jp">
+                            <thead>
+                                <tr><th>Fecha</th><th>Evento</th><th>Cuenta / usuario</th><th>IP</th></tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($securityEvents as $ev): ?>
+                                <?php [$lbl, $color] = $evtLabels[$ev['event_type']] ?? [$ev['event_type'], 'var(--text-muted)']; ?>
+                                <tr>
+                                    <td style="font-size:12px;white-space:nowrap"><?= date('d/m/Y H:i', strtotime($ev['created_at'])) ?></td>
+                                    <td><span style="font-size:12px;font-weight:600;color:<?= $color ?>"><?= esc($lbl) ?></span></td>
+                                    <td style="font-size:12px"><?= esc($ev['user_name'] ?? $ev['identifier'] ?? '—') ?></td>
+                                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap"><?= esc($ev['ip_address']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

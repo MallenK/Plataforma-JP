@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.0",
+        "date": "2026-09-01 20:00:00",
+        "description": "Seguridad de acceso: bloqueo temporal tras varios intentos fallidos de login, nueva pantalla \"cambiar mi contraseña\", aviso por email al cambiarla, y los usuarios nuevos definen su contraseña en el primer acceso. CSRF y cabeceras de seguridad HTTP activados en todas las respuestas. Recuperación de contraseña y correo de bienvenida operativos. Alumnos: un alumno puede tener varias posiciones elegidas de una lista y se corrige el desbordamiento de texto en la ficha. Clases: los admin y el staff pueden ser responsables de una sesión, y el feedback \"Después\" se puede escribir en cuanto se imparte la clase o se pasa lista."
+    },
+    {
         "version": "1.0.0",
         "date": "2026-08-27 00:30:00",
         "description": "Mensajes: corrige el botón \"Nueva conversación\" oculto en móvil, hace clicables las notificaciones de nuevo mensaje, añade manejo de errores con reporte automático de problemas (crea ticket al superadmin) y detección de sesión caducada en peticiones AJAX. Entrenadores: añade reseteo de contraseña. Se introduce el panel de historial de versiones (este)."

@@ -506,6 +506,14 @@ $routes->get('perfil', 'PerfilController::index', [
     'filter' => 'auth',
 ]);
 
+// Cambiar la propia contraseña (re-autenticación con la actual).
+$routes->get('perfil/password',  'PerfilController::changePasswordForm', [
+    'filter' => 'auth',
+]);
+$routes->post('perfil/password', 'PerfilController::changePassword', [
+    'filter' => 'auth',
+]);
+
 $routes->get('perfil/(:num)', 'PerfilController::index/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

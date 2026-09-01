@@ -83,6 +83,11 @@ class CoachService
      */
     public function createCoach(array $userData): array
     {
+        // Alta creada por un admin: contraseña temporal, obligatorio cambiarla
+        // en el primer acceso.
+        $userData['must_change_password'] = 1;
+        $userData['password_changed_at']  = date('Y-m-d H:i:s');
+
         $userId = $this->userModel->insert($userData, true);
 
         if ($userId === false) {
@@ -90,6 +95,20 @@ class CoachService
         }
 
         (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
+
+        // Email de bienvenida — best-effort, no bloquea el alta
+        try {
+            if (!empty($userData['email'])) {
+                (new \App\Services\MailService())->sendWelcomeEmail(
+                    $userData['email'],
+                    $userData['name'] ?? '',
+                    $userData['role'] ?? 'coach',
+                    $userData['password'] ?? null
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'CoachService::createCoach welcome email — ' . $e->getMessage());
+        }
 
         return ['success' => true, 'userId' => $userId, 'errors' => []];
     }

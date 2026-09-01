@@ -3,8 +3,9 @@
 <?= $this->section('page_content') ?>
 
 <?php
-$canEdit       = in_array(session('role'), ['admin', 'superadmin', 'player']);
-$pos           = esc($profile['position'] ?? '—');
+$canEdit         = in_array(session('role'), ['admin', 'superadmin', 'player']);
+$positionLabels  = \App\Models\PlayerProfileModel::decodePositionLabels($profile['position'] ?? null);
+$pos             = empty($positionLabels) ? '—' : implode(' / ', array_map('esc', $positionLabels));
 $categoryLabel = match($profile['category'] ?? '') {
     'prebenjamin' => 'Prebenjamín',
     'benjamin'    => 'Benjamín',
@@ -33,10 +34,12 @@ $categoryLabel = match($profile['category'] ?? '') {
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Posición</span>
+                <span class="metric-label"><?= count($positionLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
                 <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
             </div>
-            <div class="metric-value" style="font-size:20px"><?= $pos ?></div>
+            <div class="metric-value" style="font-size:<?= count($positionLabels) > 1 ? '16px' : '20px' ?>">
+                <?= esc(empty($positionLabels) ? '—' : implode(' / ', $positionLabels)) ?>
+            </div>
         </div>
     </div>
     <div class="col-6 col-md-3">

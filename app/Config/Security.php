@@ -23,8 +23,12 @@ class Security extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Randomize the CSRF Token for added security.
+     *
+     * Activado: mitiga ataques tipo BREACH. El token que se renderiza cambia
+     * en cada respuesta pero el secreto subyacente no, así que los tokens
+     * previos siguen validando (pestañas múltiples y polling AJAX no se rompen).
      */
-    public bool $tokenRandomize = false;
+    public bool $tokenRandomize = true;
 
     /**
      * --------------------------------------------------------------------------

@@ -100,8 +100,9 @@ $pageSubtitle = 'Gestión de alumnos registrados';
                             <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
                             <div>
                                 <div class="td-name"><?= esc($p['name']) ?></div>
-                                <?php if (!empty($p['position'])): ?>
-                                <div class="td-sub"><?= esc($p['position']) ?></div>
+                                <?php $posLabels = \App\Models\PlayerProfileModel::decodePositionLabels($p['position'] ?? null); ?>
+                                <?php if (!empty($posLabels)): ?>
+                                <div class="td-sub"><?= esc(implode(' / ', $posLabels)) ?></div>
                                 <?php endif; ?>
                             </div>
                         </div>
