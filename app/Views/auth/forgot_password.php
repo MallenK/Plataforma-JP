@@ -2,31 +2,34 @@
 
 <?= $this->section('content') ?>
 
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0f172a,#1e3a8a)">
+<div class="auth-page">
+    <div class="auth-card">
 
-    <div style="width:100%;max-width:380px;padding:32px 28px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);color:white;box-shadow:0 20px 40px rgba(0,0,0,0.3)">
+        <div class="auth-logo"><i class="bi bi-key-fill"></i></div>
+        <h1 class="auth-title">Recuperar contraseña</h1>
+        <p class="auth-subtitle">Introduce tu email y te enviaremos un enlace de recuperación.</p>
 
-        <h3 style="text-align:center;margin-bottom:8px">Recuperar contraseña</h3>
-        <p style="text-align:center;color:#93c5fd;font-size:13px;margin-bottom:24px">
-            Introduce tu email y te enviaremos un enlace de recuperación.
-        </p>
+        <div id="errorBox" class="alert-jp danger d-none"></div>
+        <div id="infoBox" class="alert-jp success d-none"></div>
 
-        <div id="errorBox" style="color:#fca5a5;margin-bottom:12px;font-size:13px"></div>
+        <form id="forgotForm" novalidate>
 
-        <form id="forgotForm">
-            <input type="email" name="email" placeholder="Email"
-                style="width:100%;padding:12px;margin-bottom:16px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;font-size:14px">
+            <div class="form-group mb-3">
+                <label class="form-label" for="forgot-email">Email</label>
+                <input type="email" id="forgot-email" name="email" class="form-control-jp"
+                       placeholder="tucorreo@ejemplo.com" required autocomplete="username">
+            </div>
 
-            <button type="submit"
-                style="width:100%;padding:12px;background:#3b82f6;color:white;border:none;border-radius:10px;font-weight:600;cursor:pointer">
-                Enviar enlace
+            <button type="submit" class="btn-jp btn-jp-primary w-100">
+                <span class="btn-label">Enviar enlace</span>
+                <span class="btn-spinner d-none">
+                    <span class="spinner-border spinner-border-sm me-1"></span>Enviando...
+                </span>
             </button>
         </form>
 
-        <div style="text-align:center;margin-top:16px">
-            <a href="<?= base_url('login') ?>" style="color:#93c5fd;font-size:13px">
-                ← Volver al login
-            </a>
+        <div class="auth-links center">
+            <a href="<?= base_url('login') ?>"><i class="bi bi-arrow-left me-1"></i>Volver al login</a>
         </div>
 
     </div>

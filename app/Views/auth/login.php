@@ -2,24 +2,53 @@
 
 <?= $this->section('content') ?>
 
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0f172a,#1e3a8a);">
+<div class="login-stage">
+    <div class="login-aura-layer login-aura-grid" aria-hidden="true"></div>
+    <div class="login-aura-layer login-aura-glow-primary" aria-hidden="true"></div>
+    <div class="login-aura-layer login-aura-glow-secondary" aria-hidden="true"></div>
 
-    <div style="width:100%;max-width:380px;padding:32px 28px;border-radius:20px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.3);color:white;">
-        <h2 style="text-align:center;margin-bottom:30px;">JP Preparation</h2>
+    <div class="login-card">
 
-        <div id="errorBox" style="color:#fca5a5;margin-bottom:15px;"></div>
+        <h1 class="login-title">Bienvenido</h1>
+        <p class="login-subtitle">Accede a tu plataforma JP Preparation</p>
 
-        <form id="loginForm">
+        <div id="errorBox" class="login-error d-none"></div>
 
-            <input type="email" name="email" placeholder="Email"
-                style="width:100%;padding:12px;margin-bottom:15px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+        <form id="loginForm" novalidate>
 
-            <input type="password" name="password" placeholder="Password"
-                style="width:100%;padding:12px;margin-bottom:20px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);color:white;">
+            <div class="login-field">
+                <div class="login-input-wrap">
+                    <i class="bi bi-envelope icon-leading"></i>
+                    <input type="email" id="login-email" name="email" placeholder="Email" required autocomplete="username">
+                </div>
+            </div>
 
-            <button type="submit"
-                style="width:100%;padding:12px;border:none;border-radius:10px;background:#3b82f6;color:white;font-weight:bold;">
-                Entrar
+            <div class="login-field">
+                <div class="login-input-wrap">
+                    <i class="bi bi-lock icon-leading"></i>
+                    <input type="password" id="login-password" name="password" placeholder="Contraseña" required autocomplete="current-password">
+                    <button type="button" class="login-toggle-pw" id="togglePw" aria-label="Mostrar contraseña">
+                        <i class="bi bi-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="login-field-row">
+                <label class="login-remember">
+                    <input type="checkbox" id="remember" name="remember" value="1">
+                    <span class="login-check-box">
+                        <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.3L4 7.3L10 1.3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    Recuérdame
+                </label>
+                <a href="<?= base_url('forgot-password') ?>">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="login-btn-submit">
+                <span class="btn-label">Entrar</span>
+                <span class="btn-spinner d-none">
+                    <span class="spinner-border spinner-border-sm me-1" style="width:14px;height:14px"></span>Entrando…
+                </span>
             </button>
         </form>
 
@@ -39,7 +68,7 @@
 
 <script src="<?= base_url('assets/js/auth.js') ?>"></script>
 <?php if (service('request')->getGet('expired')): ?>
-<script>document.getElementById('errorBox').textContent = 'Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.';</script>
+<script>window.showAuthError('Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.');</script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>
