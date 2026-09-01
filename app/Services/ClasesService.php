@@ -12,6 +12,19 @@ use App\Models\UserModel;
 
 class ClasesService
 {
+    /**
+     * Roles que pueden figurar como responsable técnico de una sesión
+     * (selector "Entrenadores" / session_type = 'coach').
+     * admin y superadmin se incluyen porque también imparten clases.
+     */
+    public const RESPONSABLE_TECNICO_ROLES = ['coach', 'admin', 'superadmin'];
+
+    /**
+     * Roles que pueden figurar como responsable de staff de una sesión
+     * (selector "Staff responsable" / session_type = 'staff').
+     */
+    public const RESPONSABLE_STAFF_ROLES = ['staff', 'admin', 'superadmin'];
+
     protected ClassModel $classModel;
     protected ClassSessionModel $sessionModel;
     protected ClassSessionCoachModel $coachModel;
@@ -993,8 +1006,8 @@ class ClasesService
     public function getCoachOptions(): array
     {
         return $this->db->table('users')
-            ->select('id, name, email')
-            ->where('role', 'coach')
+            ->select('id, name, email, role')
+            ->whereIn('role', self::RESPONSABLE_TECNICO_ROLES)
             ->where('status', 'active')
             ->orderBy('name')
             ->get()->getResultArray();
@@ -1013,8 +1026,8 @@ class ClasesService
     public function getStaffOptions(): array
     {
         return $this->db->table('users')
-            ->select('id, name, email')
-            ->where('role', 'staff')
+            ->select('id, name, email, role')
+            ->whereIn('role', self::RESPONSABLE_STAFF_ROLES)
             ->where('status', 'active')
             ->orderBy('name')
             ->get()->getResultArray();
