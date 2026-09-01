@@ -299,7 +299,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                     <?php $pfpPosLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null); ?>
                     <?php if (!empty($pfpPosLabels)): ?>
                     <div class="d-flex justify-content-between align-items-center gap-2">
-                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0">Posición<?= count($pfpPosLabels) > 1 ? 'es' : '' ?></span>
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0"><?= count($pfpPosLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
                         <span style="font-size:13px;font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(', ', $pfpPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
@@ -401,7 +401,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
             <?php
             $metricsPositionLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null);
             $metrics4 = [
-                ['label' => 'Posición' . (count($metricsPositionLabels) > 1 ? 'es' : ''),
+                ['label' => count($metricsPositionLabels) > 1 ? 'Posiciones' : 'Posición',
                  'val'   => empty($metricsPositionLabels) ? '—' : implode(', ', $metricsPositionLabels),
                  'icon'  => 'bi-geo-alt-fill', 'color' => 'var(--accent)'],
                 ['label' => 'Categoría', 'val' => ($pfp['category'] ?? '') ? $categoryLabel : '—',       'icon' => 'bi-trophy-fill',         'color' => '#f59e0b'],

@@ -34,7 +34,7 @@ $categoryLabel = match($profile['category'] ?? '') {
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Posición<?= count($positionLabels) > 1 ? 'es' : '' ?></span>
+                <span class="metric-label"><?= count($positionLabels) > 1 ? 'Posiciones' : 'Posición' ?></span>
                 <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
             </div>
             <?php if (empty($positionLabels)): ?>
