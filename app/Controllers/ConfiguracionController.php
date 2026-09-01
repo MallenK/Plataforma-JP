@@ -31,14 +31,16 @@ class ConfiguracionController extends BaseController
         $staff     = $isAdmin ? $this->cfgService->getStaffUsers()   : [];
         $bonoTypes = $isAdmin ? $this->cfgService->getBonoTypes()    : [];
         $logs      = $isAdmin ? $this->cfgService->getRecentLogs(50) : [];
+        $securityEvents = $isAdmin ? (new \App\Models\AuthEventModel())->recentForPanel(30) : [];
 
         return view('configuracion/index', [
-            'title'        => 'Configuración — JP Preparation',
-            'settings'     => $settings,
-            'locations'    => $locations,
-            'staff'        => $staff,
-            'bonoTypes'    => $bonoTypes,
-            'logs'         => $logs,
+            'title'          => 'Configuración — JP Preparation',
+            'settings'       => $settings,
+            'locations'      => $locations,
+            'staff'          => $staff,
+            'bonoTypes'      => $bonoTypes,
+            'logs'           => $logs,
+            'securityEvents' => $securityEvents,
             'isAdmin'      => $isAdmin,
             'isSuperAdmin' => $isSuperAdmin,
             'currentUserId'=> $this->currentUserId(),
@@ -232,15 +234,19 @@ class ConfiguracionController extends BaseController
 
     public function saveSeguridad()
     {
-        $minPass = max(6, (int)($this->request->getPost('sec_min_password') ?? 8));
-        $timeout = max(5, (int)($this->request->getPost('sec_session_timeout') ?? 10));
+        $minPass    = min(64, max(8, (int)($this->request->getPost('sec_min_password') ?? 8)));
+        $timeout    = max(5, (int)($this->request->getPost('sec_session_timeout') ?? 10));
+        $lockoutN   = min(20, max(3, (int)($this->request->getPost('sec_lockout_threshold') ?? 5)));
+        $lockoutMin = min(120, max(5, (int)($this->request->getPost('sec_lockout_minutes') ?? 15)));
 
         $this->cfgService->saveSettings([
-            'sec_min_password'   => (string)$minPass,
-            'sec_require_upper'  => $this->request->getPost('sec_require_upper')   ? '1' : '0',
-            'sec_require_numbers'=> $this->request->getPost('sec_require_numbers') ? '1' : '0',
-            'sec_require_special'=> $this->request->getPost('sec_require_special') ? '1' : '0',
-            'sec_session_timeout'=> (string)$timeout,
+            'sec_min_password'      => (string)$minPass,
+            'sec_require_upper'     => $this->request->getPost('sec_require_upper')   ? '1' : '0',
+            'sec_require_numbers'   => $this->request->getPost('sec_require_numbers') ? '1' : '0',
+            'sec_require_special'   => $this->request->getPost('sec_require_special') ? '1' : '0',
+            'sec_session_timeout'   => (string)$timeout,
+            'sec_lockout_threshold' => (string)$lockoutN,
+            'sec_lockout_minutes'   => (string)$lockoutMin,
         ], $this->currentUserId());
 
         session()->setFlashdata('success', 'Configuración de seguridad guardada correctamente.');

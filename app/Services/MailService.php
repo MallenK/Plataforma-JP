@@ -113,6 +113,38 @@ class MailService
     }
 
     /**
+     * Aviso de seguridad: la contraseña de la cuenta se acaba de cambiar.
+     * Se envía tras un reset por email, un cambio desde el perfil o un
+     * reset forzado por un admin.
+     */
+    public function sendPasswordChangedEmail(string $to, string $name, string $ip, string $whenIso): bool
+    {
+        helper('url');
+        $when = date('d/m/Y H:i', strtotime($whenIso) ?: time());
+        $body = '
+            <div style="font-family:sans-serif;max-width:480px;margin:auto;color:#0f172a">
+                <h2 style="margin-bottom:4px">Hola, ' . esc($name) . '</h2>
+                <p style="margin-top:0">La contraseña de tu cuenta de
+                   <strong>JP Preparation</strong> se ha cambiado
+                   el <strong>' . esc($when) . '</strong>
+                   (IP ' . esc($ip) . ').</p>
+                <p><strong>Si has sido tú, no tienes que hacer nada.</strong></p>
+                <p style="color:#b91c1c">Si <u>no</u> has sido tú, tu cuenta puede estar
+                   comprometida: entra cuanto antes usando
+                   <a href="' . rtrim(base_url(), '/') . '/forgot-password">¿Olvidaste tu contraseña?</a>
+                   y avisa al equipo de JP Preparation.</p>
+                <p style="color:#888;font-size:12px;margin-top:24px">
+                    Este es un aviso automático de seguridad.
+                </p>
+            </div>';
+
+        return $this->send($to, 'Tu contraseña de JP Preparation ha cambiado', $body, [
+            'sender_id'      => 0,
+            'recipient_type' => 'individual',
+        ]);
+    }
+
+    /**
      * HTML del email de bienvenida.
      */
     public function buildWelcomeEmailHtml(string $name, string $email, string $role, ?string $tempPassword): string
@@ -140,7 +172,8 @@ class MailService
                         <td style="padding:4px 0;font-weight:600;font-family:monospace">' . esc($tempPassword) . '</td></tr>
                 </table>
                 <p style="color:#64748b;font-size:13px;margin:0 0 16px">
-                    Por seguridad, cámbiala en cuanto entres desde tu perfil.
+                    Es una contraseña temporal: la plataforma te pedirá que elijas
+                    una propia la primera vez que entres.
                 </p>';
         } else {
             $credentialsBlock = '

@@ -53,8 +53,11 @@ class Cookie extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Cookie will only be set if a secure HTTPS connection exists.
+     *
+     * En producción (HTTPS) las cookies se marcan Secure. En local (http)
+     * se dejan sin marcar para no romper el desarrollo.
      */
-    public bool $secure = false;
+    public bool $secure = (ENVIRONMENT === 'production');
 
     /**
      * --------------------------------------------------------------------------

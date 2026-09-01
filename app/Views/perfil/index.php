@@ -515,14 +515,17 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Contraseña</div>
                         <div style="font-size:12px;color:var(--text-muted)">
                             <?php if ($isProtected): ?>
-                                <i class="bi bi-lock-fill"></i> Perfil protegido — no modificable desde la plataforma
+                                <i class="bi bi-lock-fill"></i> Perfil protegido — es la cuenta raíz de la plataforma.
+                                Solo el administrador técnico puede modificarla, directamente en la base de datos.
+                            <?php elseif (!empty($user['password_changed_at'])): ?>
+                                Última modificación: <?= esc(date('d/m/Y', strtotime($user['password_changed_at']))) ?>
                             <?php else: ?>
                                 Última modificación desconocida
                             <?php endif; ?>
                         </div>
                     </div>
                     <?php if ($isSelf && !$isProtected): ?>
-                    <a href="<?= base_url('forgot-password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                    <a href="<?= base_url('perfil/password') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-key-fill"></i> Cambiar contraseña
                     </a>
                     <?php elseif ($isAdmin && !$isSelf && !$isProtected): ?>

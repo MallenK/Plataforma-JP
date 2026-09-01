@@ -67,9 +67,11 @@ class AuthController extends BaseController
     {
         $validation = \Config\Services::validation();
 
+        // No se valida longitud de contraseña en el login para no revelar la
+        // política; una entrada corta simplemente fallará la autenticación.
         $rules = [
-            'email' => 'required|valid_email',
-            'password' => 'required|min_length[6]'
+            'email'    => 'required|valid_email',
+            'password' => 'required',
         ];
 
         if (!$this->validate($rules)) {
@@ -118,8 +120,18 @@ class AuthController extends BaseController
 
     public function resetPassword()
     {
-        $token = $this->request->getGet('token');
-        return view('auth/reset_password', ['token' => $token]);
+        $token  = $this->request->getGet('token');
+        $policy = (new \App\Models\SettingsModel())->getAll();
+
+        return view('auth/reset_password', [
+            'token'  => $token,
+            'policy' => [
+                'minLength'      => max(8, (int)($policy['sec_min_password'] ?? 8)),
+                'requireUpper'   => (bool)($policy['sec_require_upper']   ?? false),
+                'requireNumbers' => (bool)($policy['sec_require_numbers'] ?? false),
+                'requireSpecial' => (bool)($policy['sec_require_special'] ?? false),
+            ],
+        ]);
     }
 
     public function resetPasswordPost()
@@ -147,6 +159,14 @@ class AuthController extends BaseController
 
     public function logout()
     {
+        $uid   = session()->get('id');
+        $email = null;
+        if ($uid) {
+            $u = (new \App\Models\UserModel())->find($uid);
+            $email = $u['email'] ?? null;
+        }
+        (new \App\Services\AuthGuardService())->record('logout', $email, $uid ? (int) $uid : null);
+
         session()->destroy();
         return redirect()->to('/login');
     }

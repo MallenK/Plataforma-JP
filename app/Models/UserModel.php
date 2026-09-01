@@ -17,6 +17,8 @@ class UserModel extends Model
         'name',
         'email',
         'password',
+        'password_changed_at',
+        'must_change_password',
         'role',
         'staff_title',
         'status',

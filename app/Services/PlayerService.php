@@ -70,6 +70,11 @@ class PlayerService
      */
     public function createAlumno(array $userData, array $profileData): array
     {
+        // Alta creada por un admin: contraseña temporal, obligatorio cambiarla
+        // en el primer acceso.
+        $userData['must_change_password'] = 1;
+        $userData['password_changed_at']  = date('Y-m-d H:i:s');
+
         $userId = $this->userModel->insert($userData, true);
 
         if ($userId === false) {

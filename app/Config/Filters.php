@@ -39,6 +39,9 @@ class Filters extends BaseFilters
         // Filtro de roles — se usa junto a 'auth' en las rutas protegidas.
         // Sintaxis: 'role:superadmin,admin'  →  solo esos roles pueden acceder.
         'role' => \App\Filters\RoleFilter::class,
+
+        // Cabeceras de seguridad en toda respuesta (sustituye a 'secureheaders').
+        'securityheaders' => \App\Filters\SecurityHeadersFilter::class,
     ];
 
     /**
@@ -78,12 +81,12 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
+            'csrf',
+            'invalidchars',
         ],
         'after' => [
             // 'honeypot',
-            // 'secureheaders',
+            'securityheaders',
         ],
     ];
 

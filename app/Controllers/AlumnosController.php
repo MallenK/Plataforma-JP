@@ -119,7 +119,7 @@ class AlumnosController extends BaseController
      */
     public function store()
     {
-        $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
+        $password = (new \App\Services\AuthGuardService())->generateTempPassword();
 
         $userData = [
             'name'     => $this->request->getPost('name'),

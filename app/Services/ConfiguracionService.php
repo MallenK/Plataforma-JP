@@ -103,17 +103,19 @@ class ConfiguracionService
             return ['success' => false, 'error' => 'Este email ya está registrado.'];
         }
 
-        $password = 'Jp' . bin2hex(random_bytes(3)) . '!';
+        $password = (new \App\Services\AuthGuardService())->generateTempPassword();
         $now      = date('Y-m-d H:i:s');
 
         $inserted = $db->table('users')->insert([
-            'name'       => $name,
-            'email'      => $email,
-            'password'   => password_hash($password, PASSWORD_BCRYPT),
-            'role'       => $role,
-            'status'     => 'active',
-            'created_at' => $now,
-            'updated_at' => $now,
+            'name'                 => $name,
+            'email'                => $email,
+            'password'             => password_hash($password, PASSWORD_BCRYPT),
+            'password_changed_at'  => $now,
+            'must_change_password' => 1,
+            'role'                 => $role,
+            'status'               => 'active',
+            'created_at'           => $now,
+            'updated_at'           => $now,
         ]);
 
         if (!$inserted) {
