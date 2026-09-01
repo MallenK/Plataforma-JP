@@ -5,27 +5,36 @@ limpieza del repositorio <https://github.com/MallenK/Plataforma-JP>.
 
 ---
 
-## 1. Estado actual (2026-09-01) — el desorden a corregir
+## 1. Estado (2026-09-01, tras release v1.1.2)
 
-- **28 ramas locales · 15 remotas.** Muchas obsoletas, duplicadas o con
-  nombres basura.
-- **`main` local va 47 commits por detrás de `origin/main`.** Fuente de
-  errores: hay que trabajar siempre contra `origin/main`.
-- **Las ramas de trabajo divergen de `origin/main`** (~24 commits que
-  `origin/main` tiene y ellas no) porque el histórico se ha integrado con
-  **PRs squasheados desde `developing-branch`** (46+ «Merge pull request
-  #NN from MallenK/developing-branch»). El contenido es semánticamente
-  parecido pero los árboles no coinciden.
-- **Dos ramas de integración con nombres distintos:** `Dev` y `dev-auth`
-  (+ `developing-branch`, la histórica).
-- **Ramas basura:** `checkout`, `cheout`.
-- **9 ramas `claude/*`** de sesiones de marzo–mayo, muertas.
-- **4 `git worktree`** en `.claude/worktrees/` de sesiones huérfanas.
+- **Release v1.1.2 desplegada en Hostinger y verificada** (cabeceras de
+  seguridad, HSTS, bloqueo de login, `/perfil/password`, `auth_events`).
+  Contiene el trabajo de 2026-09-01: endurecimiento de auth, posiciones
+  múltiples, admin/staff en clases, feedback de sesión, email transaccional
+  y el rediseño de las pantallas de acceso.
+- **Tags pusheados:** `v1.1.0` (`6b5c687`) y `v1.1.2` (`6645d65`). El commit
+  de v1.1.2 ya está en el remoto **a través del tag**.
+- ⚠️ **`origin/main` (rama) sigue apuntando a `v1.1.0`** (`6b5c687`). El
+  `main` local está en `v1.1.2` (`6645d65`), 2 commits por delante. Falta el
+  `git push origin main` — **lo bloquea el clasificador de Claude Code**, lo
+  hace el humano a mano (los tags sí se pushean desde el agente).
+- **Cómo se consolidó:** las 6 ramas `feat/*`/`fix/*` salían de `dev-auth`
+  (`186445f`), no de `origin/main` (`a6e155c`). En vez de mergear `dev-auth`
+  entero (arrastraba componentes Radix, etc. que el cliente no quería), se
+  **cherry-pickearon los ~12 commits propios** sobre `a6e155c`. El rediseño
+  de login se trajo aparte en v1.1.2 (rama `feat/login-redesign`).
+- Ramas locales transitorias a borrar tras validar: `develop`,
+  `release/2026-09`, `feat/login-redesign`, y las 6 `feat/*`/`fix/*` de la
+  release (ver §8.3).
+
+### Pendiente de limpieza (heredado)
+
+- **Ramas de integración duplicadas:** `Dev`, `dev-auth`, `developing-branch`
+  → dejar solo `develop`.
+- **Ramas basura:** `checkout`, `cheout`. **9 ramas `claude/*`** muertas.
+- **`git worktree`** huérfanos en `.claude/worktrees/`.
 - **Sin ramas protegidas** ni CI.
-- **`deploy/` y `*.zip` no están en `.gitignore`** → riesgo de subir
-  secretos / binarios grandes.
-- **Commits inconsistentes:** «Tickets» ×5, «cambios test 04/06», «protect
-  me» conviven con Conventional Commits en los recientes.
+- ~~`deploy/` y `*.zip` fuera de `.gitignore`~~ → **hecho** (ya se ignoran).
 
 ---
 
@@ -117,30 +126,18 @@ Tipos: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `build`.
 
 ---
 
-## 6. `.gitignore` — añadir
+## 6. `.gitignore` — hecho
 
-El `.gitignore` actual ignora `.env`, `deploy/.env`, `vendor/`,
-`writable/*`, `.claude/`. **Falta:**
+Desde v1.1.0 el `.gitignore` ya ignora **`deploy/` entero** (contiene
+`deploy/.env` con secretos y el front-controller de producción) y **`*.zip`**
+además de lo anterior (`.env`, `vendor/`, `writable/*`, `.claude/`, …).
 
-```gitignore
-# Bundle de despliegue (contiene .env de producción y front-controller)
-deploy/
+El contenido de `deploy/` se documenta en
+[`01-protocolo-despliegue.md`](01-protocolo-despliegue.md) §10. Los `.sql` de
+migración para producción se guardan **en el repo** bajo `docs/deploy/`.
 
-# Artefactos comprimidos
-*.zip
-/plataforma.zip
-
-# QA manual (opcional — si se prefiere mantenerlos fuera del repo)
-# test-app*.md
-```
-
-> Si se decide **mantener en el repo** una plantilla de `deploy/` (útil para
-> el runbook), entonces ignorar solo lo sensible:
-> `deploy/.env` (ya está) y cualquier `deploy/**/*.env`, y **verificar a mano
-> antes de cada `git add`** que no entra nada real. La opción segura por
-> defecto es ignorar `deploy/` entero y documentar su contenido aquí.
-
-Acción inmediata: sacar `plataforma.zip` (18 MB) del árbol de trabajo.
+Pendiente: sacar `plataforma.zip` (18 MB) del árbol de trabajo (no se
+commitea porque está ignorado, pero estorba).
 
 ---
 
@@ -188,20 +185,22 @@ Con eso se puede activar «Require status checks» en la protección de `main`.
 
 | Rama | Acción |
 |------|--------|
-| `developing-branch` | Es la integración histórica. **Renombrar a `develop`** (`git branch -m developing-branch develop`, push, actualizar default de PRs) o crear `develop` limpio desde `origin/main` y borrar esta. |
-| `Dev` | Duplicado de integración. Confirmar que su contenido está en `origin/main`; borrar. |
-| `dev-auth` | Igual que `Dev`. Su contenido (`186445f`, panel de versiones) parece ya en `origin/main`. Verificar y borrar. |
-| `feat/mensajes-polling-adaptativo` | `186445f`, superseded por `origin/main` (`a6e155c`). Verificar y borrar. |
+| `developing-branch` | Integración histórica. Crear `develop` limpio desde `origin/main` y borrar esta. |
+| `Dev` | Duplicado de integración. Verificar que su contenido está en `origin/main`; borrar. |
+| `dev-auth` (`186445f`) | Su trabajo **ya está en `main` (`v1.1.2`)** vía cherry-pick (v1.1.0 + el rediseño de login en v1.1.2). Verificar y borrar. |
+| `feat/mensajes-polling-adaptativo` | Local, = `dev-auth`. Borrar junto con `dev-auth`. |
 
-### 8.3 Mantener (activas — 2026-09-01)
+### 8.3 Ramas de la release v1.1.2 — YA integradas en `main`
 
 `feat/seguridad-auth-hardening`, `feat/email-recuperar-password-y-bienvenida`,
 `feat/multiples-posiciones-alumno`, `fix/clases-asignar-admin-staff`,
 `fix/overflow-texto-ficha`, `fix/feedback-textarea-desbloqueo`,
-`test/integracion-fixes` (transitoria).
+`feat/login-redesign` → todo esto está en `main` (`v1.1.2`, `6645d65`).
+`develop` y `release/2026-09` fueron transitorias.
 
-→ Todas deben rebasar/mergear sobre el nuevo `develop` (que parte de
-`origin/main`) para eliminar la divergencia, y luego seguir el flujo de §3.
+→ **Borrar todas** una vez el `git push origin main` esté hecho y confirmado
+el humo en producción. Trabajo futuro: crear `develop` desde `origin/main` y
+ramas `feat/*`/`fix/*` desde ahí (§3).
 
 ### 8.4 Worktrees huérfanos
 
@@ -236,16 +235,22 @@ git branch --merged origin/main
 
 ---
 
-## 9. Sincronizar `main` local
+## 9. Sincronizar `main`
+
+**Ahora mismo es al revés:** el `main` local (`6645d65`, v1.1.2) va **por
+delante** de `origin/main` (`6b5c687`, v1.1.0). Lo que falta es subir el local:
 
 ```bash
 git checkout main
-git fetch origin
-git reset --hard origin/main   # el main local está 47 commits atrás; alinearlo
+git push origin main   # lo bloquea el clasificador del agente → hazlo tú
 ```
 
-(Seguro: el `main` local no tiene commits propios que no estén en
-`origin/main`.)
+Después, cualquier `main` local desalineado se realinea con:
+
+```bash
+git fetch origin
+git reset --hard origin/main   # seguro solo si tu main local no tiene commits propios
+```
 
 ---
 

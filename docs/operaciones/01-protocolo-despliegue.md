@@ -4,6 +4,25 @@
 > batería de humo completa, y **solo si está en verde** se sube a
 > Hostinger (producción real). Nunca al revés, nunca directo a Hostinger.
 
+## Estado (2026-09-01, tras release v1.1.2)
+
+- **Producción (Hostinger):** `v1.1.2` desplegada (seguridad de acceso +
+  posiciones múltiples + admin/staff en clases + email; y rediseño de las
+  pantallas de acceso). Migraciones de BD aplicadas a mano en phpMyAdmin.
+- **Render:** la BD (TiDB Serverless) tuvo problemas de credenciales; el
+  `spark migrate` automático **no funciona con TiDB**. En el despliegue del
+  2026-09-01 se subió **directo a Hostinger** saltándose Render (decisión del
+  cliente) tras pasar la suite completa (153/153) y humo en local Docker.
+- **Email:** `RESEND_API_KEY` rotada (`re_au3n6kdT_…`), dominio
+  `jppreparation.com` **verificado** en Resend, remitente
+  `hola@jppreparation.com`. La key **debe estar en el `.env` del servidor**
+  (un `HTTP 401` en `email_log` = key incorrecta en `.env`).
+- **Git:** local `main` = `v1.1.2` (`6645d65`); tags `v1.1.0` y `v1.1.2`
+  pusheados. **Falta `git push origin main`** (la rama remota sigue en
+  `v1.1.0`) — lo bloquea el clasificador del agente, lo hace el humano.
+- Ramas locales transitorias de la integración: `develop`, `release/2026-09`,
+  `feat/login-redesign` y las 6 `feat/*`/`fix/*` (borrar tras validar).
+
 ---
 
 ## 0. Mapa de entornos
@@ -11,8 +30,8 @@
 | Entorno | URL | Infra | Despliegue | BD | Migraciones |
 |---------|-----|-------|-----------|----|-----|
 | **Local** | `http://localhost:8080` | Docker Compose (`jp_app` + `jp_db` + `jp_phpmyadmin`) | `docker compose up -d --build` | `jp_db` (MySQL 8, contenedor) | `php spark migrate` a mano |
-| **Render** (validación) | `https://plataforma-jp.onrender.com` | Contenedor Docker (`Dockerfile`) | **Automático al hacer push a `main`** en GitHub | MySQL gestionada (add-on / externa) | **Automáticas** — `docker/start.sh` ejecuta `php spark migrate --all` en cada arranque |
-| **Hostinger** (producción) | `https://app.jppreparation.com` | Hosting compartido Apache + PHP 8.3 (hPanel) | **Manual** — subida de archivos (ZIP por hPanel o FTP) | `u912370917_jpapp` (MySQL de Hostinger) | **Manuales** — SQL ejecutado en phpMyAdmin |
+| **Render** (validación) | `https://plataforma-jp.onrender.com` | Contenedor Docker (`Dockerfile`), plan Free (se duerme) | **Automático al hacer push a `main`** en GitHub | **TiDB Cloud Serverless** (`*.tidbcloud.com:4000`, TLS) | ⚠️ `docker/start.sh` intenta `php spark migrate --all` pero **falla con TiDB** (AUTO_INCREMENT roto en la tabla `migrations`) — aplicar el SQL a mano en el SQL Editor de TiDB (igual que Hostinger) |
+| **Hostinger** (producción) | `https://app.jppreparation.com` | Hosting compartido Apache + PHP 8.3 (hPanel) | **Manual** — subida de ZIP por hPanel | `u912370917_jpapp` (MariaDB de Hostinger) | **Manuales** — SQL en phpMyAdmin |
 
 ### Particularidades de Hostinger
 
@@ -121,19 +140,18 @@ git push origin main
    | `APP_BASE_URL` | `https://plataforma-jp.onrender.com/` |
    | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASS` / `DB_PORT` | BD de Render |
    | `ENCRYPTION_KEY` | **Debe ser fija y no cambiar entre deploys** — si cambia, se invalidan sesiones y tokens cifrados |
-   | `RESEND_API_KEY` | 🔴 la del `.env`/`deploy/.env` está **revocada** — rotar (ver §7) |
-   | `MAIL_FROM` / `MAIL_FROM_EMAIL` / `MAIL_FROM_NAME` | `noreply@jppreparation.com` (dominio verificado en Resend) |
+   | `RESEND_API_KEY` | la clave `re_au3n6kdT_…` (válida, `sending` habilitado). **Valor completo solo en el `.env` de cada servidor / gestor de secretos, nunca en el repo.** Sin espacios ni comillas. |
+   | `MAIL_FROM` | `JP Preparation <hola@jppreparation.com>` — dominio `jppreparation.com` **verificado** en Resend |
 
    > `start.sh` genera también variables `email.SMTP*` (Brevo) que el código
    > actual **no usa** (el envío es por Resend API vía `MailService`). No
    > estorban, pero no confiar en ellas.
 
-2. `php spark migrate --all -n` — corre **todas** las migraciones.
-   - Si la tabla `migrations` de la BD de Render no está al día, migraciones
-     antiguas (tickets de jun/ago) pueden intentar re-ejecutarse. El
-     `|| echo "[WARN] Migrations failed, continuing..."` lo silencia pero el
-     esquema puede quedar a medias. **Revisar en los logs** que no haya
-     `[WARN]`; si lo hay, entrar a la BD y comprobar tabla por tabla.
+2. `php spark migrate --all -n` — **con TiDB Serverless esto NO crea bien las
+   migraciones nuevas** (AUTO_INCREMENT roto en la tabla `migrations`). El
+   `|| echo "[WARN] Migrations failed, continuing..."` lo silencia. Para
+   Render/TiDB: aplicar el mismo SQL de `docs/deploy/*.sql` a mano en el
+   **SQL Editor de TiDB Cloud** (§4.2), como en Hostinger.
 
 3. Arranca Apache.
 
@@ -160,15 +178,16 @@ corrige, se repite el ciclo.
 2. Marcar **«Continuar en caso de error»** (columnas/tablas que ya existan
    darán error y seguirá).
 3. Ejecutar los scripts que apliquen, en orden:
-   - [`docs/deploy/migraciones_seguridad.sql`](../deploy/migraciones_seguridad.sql)
-     → tabla `auth_events` + columnas `users.password_changed_at` y
-     `users.must_change_password`.
+   - **v1.1.0** — [`docs/deploy/migraciones_seguridad.sql`](../deploy/migraciones_seguridad.sql)
+     (tabla `auth_events` + `users.password_changed_at` + `users.must_change_password`)
+     y [`docs/deploy/migraciones_posiciones.sql`](../deploy/migraciones_posiciones.sql)
+     (`player_profiles.position` → `TEXT`).
+   - **v1.1.2** — sin cambios de BD.
    - [`deploy/migraciones_pendientes.sql`](../../deploy/migraciones_pendientes.sql)
-     → solo si falta algo (el módulo Tickets y otras tablas de ese script
-     **ya están vivas** en producción; revisar antes).
-   - Cualquier `.sql` nuevo que se genere para esta release a partir de las
-     migraciones de CodeIgniter.
-4. Verificar a mano que las tablas/columnas nuevas existen.
+     → solo si falta algo (Tickets y demás **ya están vivas** en producción).
+   - Cualquier `.sql` nuevo de futuras releases.
+4. Verificar a mano que las tablas/columnas nuevas existen (`auth_events`,
+   `users.must_change_password`, `player_profiles.position` = `text`).
 
 ### 4.3 Subir el código
 
@@ -193,10 +212,12 @@ Método:
 - `public_html/app/.env` (basado en [`deploy/.env`](../../deploy/.env)):
   - `CI_ENVIRONMENT = production`
   - `app.baseURL = 'https://app.jppreparation.com/'`
-  - `database.default.*` → credenciales reales de Hostinger (rellenar
-    `database.default.password`).
-  - `RESEND_API_KEY=` → **clave nueva** (la del repo está revocada).
-  - `MAIL_FROM="JP Preparation <noreply@jppreparation.com>"`
+  - `database.default.*` → credenciales reales de Hostinger.
+  - `RESEND_API_KEY=` → la clave `re_au3n6kdT_…` **completa** (sin comillas ni
+    espacios). El valor íntegro se copia desde Resend / el gestor de secretos,
+    **nunca desde el repo**. Si en `email_log` aparece `HTTP 401` → la línea del
+    `.env` está mal escrita.
+  - `MAIL_FROM="JP Preparation <hola@jppreparation.com>"` (dominio verificado).
   - `encryption.key` → fija; si no existía, generarla una vez y no volver a
     cambiarla.
 - Permisos: `writable/` debe ser escribible (755/775).
@@ -227,11 +248,14 @@ entrada nueva (la más reciente **primero**) a [`app/version.json`](../../app/ve
 
 ```json
 {
-    "version": "1.1.0",
-    "date": "2026-09-01 18:30:00",
+    "version": "1.1.2",
+    "date": "2026-09-01 21:30:00",
     "description": "Resumen en una frase de lo que cambia de cara al usuario."
 }
 ```
+
+Última en producción: **v1.1.2** (rediseño de las pantallas de acceso).
+Anterior: v1.1.0 (seguridad de acceso, posiciones múltiples, admin/staff en clases).
 
 - `version`: semver-ish — *patch* para fixes pequeños, *minor* para features.
 - `date`: formato `Y-m-d H:i:s`.
@@ -291,14 +315,14 @@ Ejecutar en **cada** entorno tras desplegar. Cuenta `superadmin` + cuenta
 
 | # | Riesgo | Estado | Acción |
 |---|--------|--------|--------|
-| 🔴 1 | `RESEND_API_KEY` (`re_ivw6y5KV_…`) **revocada** en `.env` y `deploy/.env` | Vivo | Generar key nueva en <https://resend.com/api-keys>, verificar dominio `jppreparation.com` (SPF+DKIM), poner en `.env` de Render **y** de Hostinger. Sin esto: reset de contraseña y correo de bienvenida **no se envían** (el código degrada, registra `failed` en `email_log` y el alta/reset continúa). |
-| 🟠 2 | `deploy/` **no está en `.gitignore`** (solo `deploy/.env` lo está) | Vivo | Añadir `deploy/` y `*.zip` a `.gitignore` (ver [`03-organizacion-github.md`](03-organizacion-github.md)). |
-| 🟠 3 | `plataforma.zip` (18 MB) sin trackear en la raíz | Vivo | Borrarlo o moverlo fuera del repo. Nunca `git add`. |
-| 🟠 4 | Render `spark migrate --all` puede re-ejecutar migraciones ya aplicadas a mano | Vivo | Revisar la tabla `migrations` de la BD de Render y sincronizarla; vigilar `[WARN]` en logs. |
+| ✅ 1 | Email transaccional (Resend) | **Resuelto** | Key `re_au3n6kdT_…` válida, dominio `jppreparation.com` **verificado**, remitente `hola@jppreparation.com`. Único cuidado: que esa key esté **exacta** en el `.env` de cada servidor (un `HTTP 401` en `email_log` = key mal escrita). |
+| ✅ 2 | `deploy/` fuera de `.gitignore` | **Resuelto** | `.gitignore` ya ignora `deploy/` y `*.zip`. |
+| 🟠 3 | `plataforma.zip` (18 MB) sin trackear en la raíz | Vivo | Borrarlo del árbol de trabajo. Ya está en `.gitignore`, nunca `git add`. |
+| 🔴 4 | **`spark migrate` NO funciona con TiDB Serverless** (Render): AUTO_INCREMENT roto en la tabla `migrations` → las migraciones nuevas no se registran/crean | Vivo | Aplicar el SQL de `docs/deploy/*.sql` a mano en el **SQL Editor de TiDB Cloud**, e insertar las filas correspondientes en `migrations` para que no se reintente. Mismo procedimiento que Hostinger. |
 | 🟡 5 | `must_change_password`: las altas nuevas obligan a definir contraseña en el primer acceso | Por diseño | Avisar al equipo del cambio de UX. Usuarios existentes no se ven afectados (columna default 0). |
 | 🟡 6 | Cambio de contraseña cierra sesión en otros dispositivos (`pw_stamp`) | Por diseño | Sesiones antiguas sin `pw_stamp` se adoptan (no se tiran). |
 | 🟡 7 | `encryption.key` inestable entre deploys invalida sesiones/tokens | Vigilar | Fijarla como variable persistente en ambos entornos. |
-| 🟡 8 | `main` diverge de las ramas de trabajo (histórico de PRs squasheados) | Vivo | Consolidar con cuidado en §2; revisar el diff antes de mergear. |
+| 🟠 8 | `origin/main` (rama) sigue en `v1.1.0`; el `main` local está en `v1.1.2` | Vivo | Falta `git push origin main` (lo hace el humano). El código de v1.1.2 sí está en el remoto vía el tag `v1.1.2`. |
 
 ---
 
@@ -350,7 +374,8 @@ curl -sI https://app.jppreparation.com/login
 | Front-controller de producción | [`deploy/public/index.php`](../../deploy/public/index.php) |
 | `.htaccess` de producción | [`deploy/public/.htaccess`](../../deploy/public/.htaccess) |
 | Plantilla `.env` de producción | [`deploy/.env`](../../deploy/.env) |
-| SQL de seguridad (auth) | [`docs/deploy/migraciones_seguridad.sql`](../deploy/migraciones_seguridad.sql) |
+| SQL v1.1.0 — seguridad (auth) | [`docs/deploy/migraciones_seguridad.sql`](../deploy/migraciones_seguridad.sql) |
+| SQL v1.1.0 — posiciones alumno | [`docs/deploy/migraciones_posiciones.sql`](../deploy/migraciones_posiciones.sql) |
 | SQL pendientes (histórico) | [`deploy/migraciones_pendientes.sql`](../../deploy/migraciones_pendientes.sql) |
 | Arranque del contenedor Render | [`docker/start.sh`](../../docker/start.sh) |
 | Config Docker Render/Railway | [`Dockerfile`](../../Dockerfile), [`railway.toml`](../../railway.toml) |

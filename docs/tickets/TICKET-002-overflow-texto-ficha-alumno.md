@@ -4,10 +4,11 @@
 |--------------|-----------------------------------------|
 | Categoría    | `bug` — Error / Bug                     |
 | Prioridad    | `media`                                 |
-| Estado       | `resuelto`                              |
+| Estado       | `resuelto` — en producción              |
 | Módulo       | Alumnos (ficha / perfil)               |
 | Ramas        | `fix/overflow-texto-ficha`, `feat/multiples-posiciones-alumno` |
 | Detectado en | Producción (móvil, iPhone)             |
+| Entregado en | `v1.1.0` (2026-09-01), desplegado en Hostinger |
 
 ## Descripción
 

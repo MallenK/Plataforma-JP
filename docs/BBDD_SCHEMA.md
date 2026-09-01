@@ -1,8 +1,8 @@
 # JP Preparation — Esquema de Base de Datos (TiDB/MySQL)
 
-**Última actualización:** 2026-05-26  
-**Motor:** TiDB (compatible MySQL 5.7+)  
-**Base de datos:** `jp_preparation`
+**Última actualización:** 2026-09-01 (release v1.1.2)  
+**Motor:** Render/validación = TiDB (compatible MySQL 5.7+); Hostinger/producción = MariaDB  
+**Base de datos:** `jp_preparation` (Render) · `u912370917_jpapp` (Hostinger)
 
 ---
 
@@ -60,6 +60,8 @@ Tabla central. Todos los usuarios del sistema independientemente del rol.
 | `name` | VARCHAR(150) | NO | — | Nombre completo |
 | `email` | VARCHAR(150) | NO | — | UNIQUE |
 | `password` | VARCHAR(255) | NO | — | bcrypt hash |
+| `password_changed_at` | DATETIME | SÍ | NULL | v1.1.0 · última vez que se cambió la contraseña; `AuthFilter` lo compara con `session('pw_stamp')` para cerrar sesiones tras un cambio |
+| `must_change_password` | TINYINT(1) | NO | 0 | v1.1.0 · si `1`, el usuario debe pasar por `/perfil/password` antes de navegar (altas por admin y reset por admin) |
 | `avatar` | VARCHAR(255) | SÍ | NULL | Ruta relativa al avatar |
 | `role` | ENUM | NO | player | `superadmin`, `admin`, `staff`, `coach`, `player` |
 | `staff_title` | VARCHAR(100) | SÍ | NULL | Cargo libre (ej: "Director técnico") |
@@ -82,7 +84,7 @@ Extensión 1:1 de `users` para alumnos. Datos deportivos y físicos.
 | `birth_date` | DATE | SÍ | NULL | Fecha de nacimiento |
 | `height` | INT | SÍ | NULL | Altura en cm |
 | `weight` | INT | SÍ | NULL | Peso en kg |
-| `position` | VARCHAR(50) | SÍ | NULL | Posición en el campo |
+| `position` | TEXT | SÍ | NULL | v1.1.0 · lista JSON de posiciones (`["extremo_derecho","mediapunta"]`), claves del catálogo `PlayerProfileModel::POSITIONS` (11 posiciones de fútbol). Valores antiguos en texto libre se siguen leyendo (`decodePositions()` los parte por `/`, `,`, `;`). Antes era `VARCHAR(50)` |
 | `level` | ENUM | SÍ | NULL | `beginner`, `intermediate`, `advanced` (legacy) |
 | `category` | ENUM | SÍ | NULL | `prebenjamin`, `benjamin`, `alevin`, `infantil`, `cadete`, `juvenil`, `junior`, `senior`, `veterano` |
 | `team` | VARCHAR(120) | SÍ | NULL | Equipo en el que juega |
@@ -496,6 +498,30 @@ Historial de emails enviados desde la plataforma.
 
 ---
 
+### `auth_events`
+**v1.1.0** · Registro de eventos de autenticación. Doble uso: (1) decisiones de
+rate-limit / bloqueo por fuerza bruta (`App\Services\AuthGuardService` cuenta
+`login_fail` por `identifier` o por `ip_address` dentro de una ventana), y
+(2) auditoría en Configuración → Seguridad → "Actividad de seguridad reciente".
+
+| Columna | Tipo | Nulo | Default | Notas |
+|---------|------|------|---------|-------|
+| `id` | BIGINT UNSIGNED AUTO_INCREMENT | NO | — | PK |
+| `event_type` | VARCHAR(40) | NO | — | `login_success`, `login_fail`, `logout`, `lockout`, `pwreset_request`, `pwreset_success`, `pwreset_fail`, `pwchange_success`, `pwchange_fail`, `admin_pwreset` |
+| `identifier` | VARCHAR(191) | SÍ | NULL | email en minúsculas (o `uid:<n>` para `pwchange_fail`) |
+| `user_id` | INT UNSIGNED | SÍ | NULL | |
+| `ip_address` | VARCHAR(45) | NO | — | |
+| `user_agent` | VARCHAR(255) | SÍ | NULL | |
+| `meta` | JSON | SÍ | NULL | contexto extra (`reason`, `by`…) |
+| `created_at` | DATETIME | NO | — | |
+
+**Índices:** `PRIMARY (id)`, `idx_ident_time (identifier, created_at)`, `idx_ip_time (ip_address, created_at)`, `idx_type_time (event_type, created_at)`
+
+Sin FK (se conserva el histórico aunque se borre el usuario). Conviene purgar
+filas > 90 días periódicamente.
+
+---
+
 ### `session_attendance` *(legacy)*
 Sistema de asistencia antiguo. Reemplazado por `class_session_players.attendance`.
 
@@ -540,6 +566,26 @@ Las siguientes tablas existen en BD pero las rutas de torneos están comentadas:
 
 ---
 
+## Migraciones de las releases (aplicar a mano)
+
+> En **Render (TiDB)** el `php spark migrate --all` del arranque **no crea
+> bien las migraciones nuevas** (AUTO_INCREMENT roto en la tabla `migrations`).
+> En **Hostinger** no hay CLI. En ambos entornos las migraciones de las
+> releases se ejecutan como SQL a mano.
+
+**v1.1.0** — ver `docs/deploy/migraciones_seguridad.sql` + `docs/deploy/migraciones_posiciones.sql`:
+
+```sql
+CREATE TABLE IF NOT EXISTS `auth_events` ( ... );  -- ver sección auth_events
+ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL DEFAULT NULL AFTER `password`;
+ALTER TABLE `users` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0 AFTER `password_changed_at`;
+ALTER TABLE `player_profiles` MODIFY COLUMN `position` TEXT NULL DEFAULT NULL;
+```
+
+**v1.1.2** — sin cambios de BD (solo rediseño de las pantallas de acceso).
+
+---
+
 ## Pendiente en BD (fixes)
 
 ```sql
@@ -557,4 +603,7 @@ ALTER TABLE `player_profiles` DROP INDEX `player_id_2`;
 -- 3. Auto increment seguro en class_session_players (recomendado)
 -- SELECT MAX(id) FROM class_session_players; → usa ese valor + 100
 ALTER TABLE `class_session_players` AUTO_INCREMENT = <max+100>;
+
+-- 4. Purga periódica de auth_events (opcional)
+DELETE FROM `auth_events` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL 90 DAY);
 ```

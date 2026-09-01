@@ -4,9 +4,10 @@
 |--------------|------------------------------------------------|
 | Categoría    | `mejora` — Sugerencia / Mejora                 |
 | Prioridad    | `alta`                                         |
-| Estado       | `abierto`                                      |
+| Estado       | `resuelto` — en producción                     |
 | Módulo       | Auth / Onboarding / Email transaccional        |
 | Rama         | `feat/email-recuperar-password-y-bienvenida`   |
+| Entregado en | `v1.1.0` (2026-09-01), desplegado en Hostinger |
 
 ## Contexto
 
@@ -27,8 +28,10 @@ que los fallos pasaban desapercibidos.
 
 ### Email transaccional (`app/Services/MailService.php`)
 
-- Remitente por defecto → `JP Preparation <noreply@jppreparation.com>`
-  (dominio verificado). Configurable por `MAIL_FROM` en `.env`.
+- Remitente por defecto → `JP Preparation <noreply@jppreparation.com>` en
+  código; en producción se usa `MAIL_FROM="JP Preparation <hola@jppreparation.com>"`
+  (dominio `jppreparation.com` verificado en Resend). Configurable por
+  `MAIL_FROM` en `.env`.
 - Se añade `RESEND_API_KEY` y `MAIL_FROM` documentados en `.env.example`.
 - Todos los envíos (y sus fallos) se registran en la tabla `email_log`
   (`status`, `error_msg`, asunto, destinatario). Registro best-effort:
@@ -53,28 +56,22 @@ que los fallos pasaban desapercibidos.
 - Incluye email + contraseña temporal + enlace de acceso. Envío
   best-effort: si el correo falla, el alta ya se completó.
 
-## ⚠️ BLOQUEANTE — acción manual requerida antes de que funcione
+## Bloqueante (RESUELTO)
 
-La `RESEND_API_KEY` que hay en `.env` / `deploy/.env`
-(`re_ivw6y5KV_…`) **está revocada**. Comprobado contra
-`GET https://api.resend.com/domains`:
+La `RESEND_API_KEY` anterior (`re_ivw6y5KV_…`) estaba **revocada**. Se
+rotó a una clave nueva (`re_au3n6kdT_…`; valor completo solo en el `.env`
+de cada entorno) y se **verificó el dominio `jppreparation.com`** (SPF +
+DKIM) en Resend — estado `verified`, envío habilitado.
 
-```
-{"statusCode":400,"message":"API key is invalid","name":"validation_error"}
-```
+Único cuidado operativo: esa key debe estar **exacta** (sin comillas ni
+espacios) en el `.env` de cada entorno. Un `HTTP 401` en `email_log` = la
+línea del `.env` del servidor está mal. Ver
+[`../operaciones/01-protocolo-despliegue.md`](../operaciones/01-protocolo-despliegue.md)
+§4.4 y §7.
 
-Coincide con la nota de deuda técnica de `CLAUDE.md` ("contenía una API
-key de Resend real, pendiente de rotar"). Ningún envío puede funcionar
-—ni con este código ni con el anterior— hasta que:
-
-1. Se genere una **API key nueva** en https://resend.com/api-keys
-2. Se ponga en `.env` **y** `deploy/.env` (`RESEND_API_KEY=`)
-3. Se **verifique el dominio `jppreparation.com`** (SPF + DKIM) en esa
-   cuenta de Resend para poder enviar desde `noreply@jppreparation.com`
-
-El código ya degrada con elegancia: si la key falta o es inválida, el
-envío devuelve `false`, se registra en `email_log` con `status='failed'`
-y el error concreto, y el alta / el reset de contraseña continúan.
+El código degrada con elegancia: si la key falta o es inválida, el envío
+devuelve `false`, se registra en `email_log` con `status='failed'` y el
+error concreto, y el alta / el reset de contraseña continúan.
 
 ## Notas de despliegue
 

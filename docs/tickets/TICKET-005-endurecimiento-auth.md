@@ -4,9 +4,10 @@
 |--------------|------------------------------------------------|
 | Categoría    | `mejora` — Sugerencia / Mejora                 |
 | Prioridad    | `alta`                                         |
-| Estado       | `abierto`                                      |
+| Estado       | `resuelto` — en producción                     |
 | Módulo       | Auth / Perfil / Configuración                  |
 | Rama         | `feat/seguridad-auth-hardening` (sobre `feat/email-recuperar-password-y-bienvenida`) |
+| Entregado en | `v1.1.0` (2026-09-01), desplegado y verificado en Hostinger (cabeceras, HSTS, bloqueo de login, `/perfil/password`, `auth_events`) |
 
 ## Contexto
 
@@ -83,7 +84,8 @@ tabla `auth_events` + columnas `users.password_changed_at` /
 ## Verificación
 
 - `tests/unit/AuthGuardServiceTest.php`, `AuthGuardLockoutTest.php`,
-  `AuthHardeningWiringTest.php` (34 tests). Suite completa: 126/126.
+  `AuthHardeningWiringTest.php` (34 tests). Suite completa tras integrar toda
+  la release: **153/153**.
 - E2E con curl: lockout tras 5 intentos, throttle de forgot, token hasheado en
   BD, flujo `must_change_password`, cambio propio con re-autenticación,
   cabeceras de seguridad presentes. Regresión OK en Mensajes/Tickets/Clases.
@@ -95,4 +97,6 @@ tabla `auth_events` + columnas `users.password_changed_at` /
 - Content-Security-Policy (requiere sacar el JS/CSS inline)
 - HIBP Pwned Passwords API
 - Driver de sesión en BD (revocar sesiones al instante en vez de ≤5 min)
-- Verificar el dominio en Resend para que el email de aviso entregue en real
+- `PruneAuthEvents`: limpieza de `auth_events` > 90 días (hoy manual, ver
+  [`../BBDD_SCHEMA.md`](../BBDD_SCHEMA.md) "Pendiente en BD")
+- ~~Verificar el dominio en Resend~~ → **hecho** (`jppreparation.com` verificado)

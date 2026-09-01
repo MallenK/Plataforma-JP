@@ -4,10 +4,11 @@
 |--------------|-----------------------------------------|
 | Categoría    | `bug` — Error / Bug                     |
 | Prioridad    | `media`                                 |
-| Estado       | `abierto`                               |
+| Estado       | `resuelto` — en producción              |
 | Módulo       | Clases / Ficha de sesión               |
 | Rama         | `fix/feedback-textarea-desbloqueo`      |
 | Detectado en | Producción (revisión funcional)         |
+| Entregado en | `v1.1.0` (2026-09-01), desplegado en Hostinger |
 
 ## Descripción
 

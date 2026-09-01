@@ -141,12 +141,11 @@ Antes de fusionar a la rama de integración / `main`:
 | `.env` local | máquina de cada dev | ❌ (`.gitignore`) |
 | `.env` de Hostinger | `public_html/app/.env` en el servidor | ❌ |
 | `.env` de Render | variables de entorno del panel de Render | ❌ |
-| `deploy/.env` (plantilla) | repo, **sin valores reales** | ⚠️ `deploy/.env` está en `.gitignore` pero **el resto de `deploy/` no** |
-| `RESEND_API_KEY` | `.env` de cada entorno | ❌ — 🔴 la actual está **revocada**, pendiente de rotar |
+| `deploy/` (plantilla + SQL) | repo local, **sin valores reales** | ❌ (`deploy/` entero en `.gitignore`) |
+| `RESEND_API_KEY` | `.env` de cada entorno (`re_au3n6kdT_…`) | ❌ — válida, dominio `jppreparation.com` verificado |
 | `MYSQL_ROOT_PASSWORD` | `.env` local (Docker) | ❌ |
 
-Acciones pendientes: rotar la key de Resend y verificar el dominio; añadir
-`deploy/` y `*.zip` a `.gitignore`.
+Los `.sql` de migración para producción sí van en el repo, en `docs/deploy/`.
 
 ---
 
@@ -154,15 +153,15 @@ Acciones pendientes: rotar la key de Resend y verificar el dominio; añadir
 
 Fuente principal: sección «Deuda técnica y seguridad conocida» de
 [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md). Estado verificado a
-2026-09-01:
+2026-09-01 (tras release v1.1.2):
 
 | Punto | Estado real |
 |-------|-------------|
 | CSRF deshabilitado globalmente | ✅ **Reactivado** en `app/Config/Filters.php` (`csrf` activo en `globals.before`, `tokenRandomize=true`). CLAUDE.md está desactualizado en esto. |
 | `MYSQL_ROOT_PASSWORD` hardcodeado en `docker-compose.yml` | ✅ **Resuelto** — ahora `${MYSQL_ROOT_PASSWORD}` desde `.env`. |
-| `secureheaders` / `honeypot` desactivados | 🟡 `honeypot` sigue comentado. `secureheaders` sustituido por `SecurityHeadersFilter` propio (activo en `globals.after`). |
-| `deploy/.env` fuera de `.gitignore` | 🟠 `deploy/.env` sí está; **`deploy/` (resto) no**. |
-| `RESEND_API_KEY` real commiteada y sin rotar | 🔴 sigue **revocada y sin rotar**. |
+| `secureheaders` / `honeypot` desactivados | 🟡 `honeypot` sigue comentado. `secureheaders` sustituido por `SecurityHeadersFilter` propio (activo en `globals.after`) — verificado en producción (cabeceras + HSTS presentes). |
+| `deploy/` fuera de `.gitignore` | ✅ **Resuelto** — `.gitignore` ignora `deploy/` entero y `*.zip`. |
+| `RESEND_API_KEY` real commiteada | ✅ **Resuelto** — la key anterior quedó revocada; la actual (`re_au3n6kdT_…`) vive solo en el `.env` de cada entorno y el dominio `jppreparation.com` está verificado en Resend. |
 | Módulos Torneos y Compras | Desactivados a propósito (rutas comentadas / redirigidas). No reactivar sin confirmación. |
 
 Otros:
@@ -176,33 +175,37 @@ Otros:
 
 ---
 
-## 6. Snapshot del repo — 2026-09-01
+## 6. Snapshot del repo — 2026-09-01 (tras release v1.1.2)
 
-Momento de integración con **varias ramas de trabajo abiertas en paralelo**,
-creadas el 2026-09-01 y **no fusionadas a `main`**:
+Toda la tanda de trabajo del 2026-09-01 **está consolidada en `main`**
+(`6645d65`, `v1.1.2`) y **desplegada y verificada en Hostinger**. Los tags
+`v1.1.0` y `v1.1.2` están pusheados; la rama `origin/main` aún apunta a
+`v1.1.0` — falta el `git push origin main` (ver
+[`03-organizacion-github.md`](03-organizacion-github.md) §1 y §9).
 
-| Rama | Contenido |
-|------|-----------|
-| `feat/seguridad-auth-hardening` | Capa de seguridad de auth (TICKET-005): `AuthGuardService`, tabla `auth_events`, bloqueo por cuenta/IP, tokens de reset hasheados, `must_change_password`, pantalla `/perfil/password`, `SecurityHeadersFilter`. ~34 tests nuevos, suite 126/126. Basada en `feat/email-recuperar-password-y-bienvenida`. |
-| `feat/email-recuperar-password-y-bienvenida` | `MailService` con `email_log`, `sendWelcomeEmail()`, `MAIL_FROM` → `noreply@jppreparation.com` (TICKET-003). |
-| `feat/multiples-posiciones-alumno` | Varias posiciones por alumno en `PlayerProfileModel` + vistas de ficha/dashboard. Incluye seeder de admin de prueba. |
-| `fix/clases-asignar-admin-staff` | `ClasesService` permite asignar admin/staff como responsables de sesión. |
-| `fix/overflow-texto-ficha` | Overflow de texto en tarjetas de métrica (`app.css`) — TICKET-002. |
-| `fix/feedback-textarea-desbloqueo` | Desbloqueo del feedback «Después» de una clase tras impartirla. |
-| `test/integracion-fixes` | Rama de integración local que fusiona varias de las anteriores. |
+| Área | Qué entró | Contenido |
+|------|-----------|-----------|
+| Seguridad de auth (TICKET-005) | v1.1.0 | `AuthGuardService`, tabla `auth_events`, bloqueo por cuenta/IP, tokens de reset hasheados (sha256), `must_change_password`, pantalla `/perfil/password`, `SecurityHeadersFilter`, CSRF reactivado. |
+| Email transaccional (TICKET-003) | v1.1.0 | `MailService` con `email_log`, `sendWelcomeEmail()`, `sendPasswordChangedEmail()`, recuperación de contraseña operativa. `MAIL_FROM` → `hola@jppreparation.com`. |
+| Posiciones múltiples | v1.1.0 | Varias posiciones por alumno en `PlayerProfileModel` (JSON) + checkboxes en alta/edición + `formatPositions()` (`Extremo / Mediapunta`). Overflow de texto en tarjetas de métrica corregido (TICKET-002). |
+| Clases | v1.1.0 | Admin/staff pueden ser responsables de una sesión (TICKET-001). Feedback «Después» editable en cuanto se imparte la clase o se pasa lista (TICKET-004). |
+| Rediseño de acceso | v1.1.2 | Login con fondo Aura Gradient + tarjeta de cristal, pantallas de recuperar/restablecer a juego, casilla «Recuérdame» (sesión 7 días), se elimina el formulario de auto-registro. |
 
-- **`main` local** está 47 commits por detrás de `origin/main`. Trabajar
-  siempre contra `origin/main`.
-- **`origin/main` (`a6e155c`)** ≈ lo que hay desplegado en Render y
-  Hostinger a 2026-08-27 (login glassmorphism antiguo, módulo Tickets vivo,
-  sin cabeceras de seguridad).
-- Las ramas `feat/*`/`fix/*` **divergen** de `origin/main` (~24 commits que
-  `origin/main` tiene y ellas no, por PRs squasheados). Consolidar con
-  cuidado.
+- **Cómo se consolidó:** las 6 ramas `feat/*`/`fix/*` salían de `dev-auth`
+  (`186445f`), no de `origin/main` (`a6e155c`). Se **cherry-pickearon los ~12
+  commits propios** sobre `a6e155c` en vez de mergear `dev-auth` entero (que
+  arrastraba componentes Radix que el cliente no quería). El rediseño de login
+  se trajo aparte en v1.1.2. Detalle en
+  [`03-organizacion-github.md`](03-organizacion-github.md) §1.
+- **Migraciones en producción:** `spark migrate` **no funciona con TiDB
+  Serverless** (Render) — `AUTO_INCREMENT` roto en la tabla `migrations`. Las
+  migraciones de esta release se aplicaron a mano en phpMyAdmin de Hostinger
+  con los `.sql` de `docs/deploy/` (`migraciones_seguridad.sql`,
+  `migraciones_posiciones.sql`). Render quedó sin validar esta vuelta.
+- Ramas locales transitorias pendientes de borrar tras confirmar el humo:
+  `develop`, `release/2026-09`, `feat/login-redesign`, y las 6 `feat/*`/`fix/*`
+  de la release. Plan en
+  [`03-organizacion-github.md`](03-organizacion-github.md) §8.
 - **Varios `git worktree`** activos en `.claude/worktrees/`. Puede haber más
   de una sesión trabajando en el repo a la vez: coordinar antes de hacer
   checkout/commit/merge en el worktree principal.
-
-Objetivo inmediato: consolidar una `release/2026-09` con lo que deba entrar,
-validarla en Render y subirla a Hostinger siguiendo
-[`01-protocolo-despliegue.md`](01-protocolo-despliegue.md).

@@ -4,10 +4,11 @@
 |--------------|-----------------------------------------|
 | Categoría    | `bug` — Error / Bug                     |
 | Prioridad    | `alta`                                  |
-| Estado       | `abierto`                               |
+| Estado       | `resuelto` — en producción              |
 | Módulo       | Clases / Calendario                     |
 | Rama         | `fix/clases-asignar-admin-staff`        |
 | Detectado en | Producción (revisión funcional)         |
+| Entregado en | `v1.1.0` (2026-09-01), desplegado en Hostinger |
 
 ## Descripción
 
