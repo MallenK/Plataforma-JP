@@ -1,6 +1,14 @@
 .env
+# Bundle de despliegue: contiene deploy/.env (secreto), el front-controller
+# de producción y los .sql de migración. Se documenta en docs/operaciones/.
+deploy/
 users.txt
 database.txt
+
+# Artefactos comprimidos (nunca se commitean)
+*.zip
+/plataforma.zip
+
 vendor/
 writable/logs/
 writable/cache/
