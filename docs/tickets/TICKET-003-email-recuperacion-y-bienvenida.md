@@ -53,10 +53,31 @@ que los fallos pasaban desapercibidos.
 - Incluye email + contraseña temporal + enlace de acceso. Envío
   best-effort: si el correo falla, el alta ya se completó.
 
-## Pendiente / notas de despliegue
+## ⚠️ BLOQUEANTE — acción manual requerida antes de que funcione
 
-- Verificar en Resend que el dominio `jppreparation.com` está
-  confirmado (SPF + DKIM) para el remitente `noreply@`.
+La `RESEND_API_KEY` que hay en `.env` / `deploy/.env`
+(`re_ivw6y5KV_…`) **está revocada**. Comprobado contra
+`GET https://api.resend.com/domains`:
+
+```
+{"statusCode":400,"message":"API key is invalid","name":"validation_error"}
+```
+
+Coincide con la nota de deuda técnica de `CLAUDE.md` ("contenía una API
+key de Resend real, pendiente de rotar"). Ningún envío puede funcionar
+—ni con este código ni con el anterior— hasta que:
+
+1. Se genere una **API key nueva** en https://resend.com/api-keys
+2. Se ponga en `.env` **y** `deploy/.env` (`RESEND_API_KEY=`)
+3. Se **verifique el dominio `jppreparation.com`** (SPF + DKIM) en esa
+   cuenta de Resend para poder enviar desde `noreply@jppreparation.com`
+
+El código ya degrada con elegancia: si la key falta o es inválida, el
+envío devuelve `false`, se registra en `email_log` con `status='failed'`
+y el error concreto, y el alta / el reset de contraseña continúan.
+
+## Notas de despliegue
+
 - `deploy/.env` ya apuntaba a `noreply@jppreparation.com`; se alinea el
   resto de entornos a ese valor.
 - No requiere migración: `email_log` y las columnas `user_id` /
