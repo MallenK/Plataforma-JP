@@ -30,11 +30,38 @@ class DevTestDataSeeder extends Seeder
 
     public function run()
     {
+        $this->seedTestAdmin();
         $playerIds = $this->seedTestPlayers();
         $this->seedTestClasses($playerIds);
         $this->seedResolvedTickets();
 
         echo "DevTestDataSeeder: listo.\n";
+    }
+
+    /**
+     * Admin de prueba para poder revisar en el navegador, sin usar
+     * credenciales reales, las pantallas que solo ve un admin
+     * (asignación de responsable en clases, /tickets, /alumnos...).
+     */
+    private function seedTestAdmin(): void
+    {
+        $userModel = new UserModel();
+        $email     = 'test.admin' . self::DOMAIN;
+
+        if ($userModel->where('email', $email)->first()) {
+            echo "  ya existe: {$email}\n";
+            return;
+        }
+
+        $userModel->insert([
+            'name'     => 'TEST Admin QA',
+            'email'    => $email,
+            'password' => 'Test1234!',
+            'role'     => 'admin',
+            'status'   => 'active',
+        ], true);
+
+        echo "  creado admin de prueba: {$email}\n";
     }
 
     // ────────────────────────────────────────────────────────────────
