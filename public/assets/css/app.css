@@ -410,13 +410,19 @@ body {
     padding: 20px 22px;
     box-shadow: var(--shadow-sm);
     height: 100%;
+    /* Evita que un valor largo sin espacios (p. ej. "Extremo/mediapunta")
+       desborde la tarjeta y se solape con la de al lado. */
+    overflow: hidden;
+    min-width: 0;
 }
 
 .metric-card-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    gap: 10px;
     margin-bottom: 12px;
+    min-width: 0;
 }
 
 .metric-label {
@@ -425,6 +431,8 @@ body {
     text-transform: uppercase;
     letter-spacing: .6px;
     color: var(--text-muted);
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .metric-icon {
@@ -435,6 +443,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    flex-shrink: 0;
 }
 
 .metric-icon.blue   { background: #eff6ff; color: var(--accent); }
@@ -447,8 +456,12 @@ body {
     font-size: 28px;
     font-weight: 800;
     color: var(--text-h);
-    line-height: 1;
+    line-height: 1.15;
     margin-bottom: 8px;
+    /* Permite partir textos largos (posiciones, categorías) sin desbordar. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
 }
 
 .metric-footer {
