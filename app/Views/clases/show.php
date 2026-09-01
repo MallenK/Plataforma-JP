@@ -21,6 +21,11 @@ $isStaffSession   = ($session['session_type'] ?? 'coach') === 'staff';
 $responsibleLabel = $isStaffSession ? 'Staff responsable' : 'Entrenadores';
 $responsibleIcon  = $isStaffSession ? '#7c3aed'           : '#059669';
 $responsibleEmpty = $isStaffSession ? 'Sin staff responsable asignado' : 'Sin entrenadores asignados';
+
+// El feedback ("Después") se puede escribir cuando la clase ya se ha
+// impartido: sesión completada, lista pasada, o al menos un alumno
+// marcado como presente. (ver ClasesService::isFeedbackUnlocked)
+$feedbackUnlocked = \App\Services\ClasesService::isFeedbackUnlocked($session);
 ?>
 
 <?= $this->section('page_content') ?>
@@ -234,13 +239,13 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                             <label class="form-label">
                                 <i class="bi bi-check-circle me-1" style="color:#059669"></i>
                                 Después — Feedback
-                                <?php if ($session['status'] !== 'completed'): ?>
-                                <small style="color:var(--text-muted)">(disponible tras completar)</small>
+                                <?php if (!$feedbackUnlocked): ?>
+                                <small style="color:var(--text-muted)">(disponible tras impartir la clase o marcar asistencia)</small>
                                 <?php endif; ?>
                             </label>
                             <textarea name="post_notes" class="form-control-jp" rows="4"
                                       placeholder="Qué salió bien, puntos de mejora, incidencias…"
-                                      <?= $session['status'] !== 'completed' ? 'disabled' : '' ?>><?= esc($session['post_notes'] ?? '') ?></textarea>
+                                      <?= $feedbackUnlocked ? '' : 'disabled' ?>><?= esc($session['post_notes'] ?? '') ?></textarea>
                         </div>
                     </div>
                     <div class="text-end mt-3">
@@ -608,7 +613,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <label class="form-label"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Después (feedback)</label>
                         <textarea id="obsPostInput" class="form-control-jp" rows="4"
                                   placeholder="Notas post-sesión…"
-                                  <?= $session['status'] !== 'completed' ? 'disabled' : '' ?>></textarea>
+                                  <?= $feedbackUnlocked ? '' : 'disabled' ?>></textarea>
                     </div>
                 </div>
                 <div id="obsHiddenFields"></div>

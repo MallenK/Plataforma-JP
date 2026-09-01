@@ -294,6 +294,33 @@ class ClasesService
         return $this->sessionModel->getUpcoming($limit);
     }
 
+    /**
+     * ¿Se puede escribir el feedback ("Después") de una sesión?
+     *
+     * El feedback está disponible cuando la clase ya se ha impartido:
+     *   - la sesión está completada, o
+     *   - ya se ha pasado lista (lista_pasada_at), o
+     *   - al menos un alumno está marcado como presente.
+     *
+     * @param array $session Sesión tal cual la devuelve getSession()
+     *                       (debe incluir 'status', 'lista_pasada_at' y 'players').
+     */
+    public static function isFeedbackUnlocked(array $session): bool
+    {
+        if (($session['status'] ?? '') === 'completed') {
+            return true;
+        }
+        if (!empty($session['lista_pasada_at'])) {
+            return true;
+        }
+        foreach ($session['players'] ?? [] as $p) {
+            if (($p['attendance'] ?? '') === 'present') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ────────────────────────────────────────────────────────────────
     //  Actualizar
     // ────────────────────────────────────────────────────────────────
