@@ -91,6 +91,20 @@ class CoachService
 
         (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
 
+        // Email de bienvenida — best-effort, no bloquea el alta
+        try {
+            if (!empty($userData['email'])) {
+                (new \App\Services\MailService())->sendWelcomeEmail(
+                    $userData['email'],
+                    $userData['name'] ?? '',
+                    $userData['role'] ?? 'coach',
+                    $userData['password'] ?? null
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'CoachService::createCoach welcome email — ' . $e->getMessage());
+        }
+
         return ['success' => true, 'userId' => $userId, 'errors' => []];
     }
 

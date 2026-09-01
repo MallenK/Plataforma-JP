@@ -83,7 +83,31 @@ class PlayerService
 
         (new DocumentService())->getOrCreatePersonalFolder((int)$userId);
 
+        $this->sendWelcomeEmail($userData);
+
         return ['success' => true, 'userId' => $userId, 'errors' => []];
+    }
+
+    /**
+     * Envía el email de bienvenida al nuevo alumno. Best-effort:
+     * si el correo falla, el alta ya se ha completado igualmente.
+     */
+    private function sendWelcomeEmail(array $userData): void
+    {
+        try {
+            $email = $userData['email'] ?? '';
+            if (!$email) {
+                return;
+            }
+            (new \App\Services\MailService())->sendWelcomeEmail(
+                $email,
+                $userData['name'] ?? '',
+                $userData['role'] ?? 'player',
+                $userData['password'] ?? null
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'PlayerService::sendWelcomeEmail — ' . $e->getMessage());
+        }
     }
 
     /**

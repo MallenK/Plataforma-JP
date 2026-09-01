@@ -105,9 +105,11 @@ class AuthService
         $db->table('password_resets')->where('email', $email)->delete();
 
         $db->table('password_resets')->insert([
+            'user_id'    => $user['id'] ?? null,
             'email'      => $email,
             'token'      => $token,
             'expires_at' => $expires,
+            'created_at' => date('Y-m-d H:i:s'),
         ]);
 
         // Construye el enlace de reset y envía el email real via MailService
@@ -117,7 +119,11 @@ class AuthService
         $sent = $mail->send(
             $email,
             'Recuperación de contraseña — JP Preparation',
-            $this->buildResetEmailHtml($user['name'], $resetLink)
+            $this->buildResetEmailHtml($user['name'], $resetLink),
+            [
+                'sender_id'    => 0,
+                'recipient_id' => (int)($user['id'] ?? 0) ?: null,
+            ]
         );
 
         if (!$sent) {

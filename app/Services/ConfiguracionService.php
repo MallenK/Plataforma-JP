@@ -133,6 +133,13 @@ class ConfiguracionService
 
         (new DocumentService())->getOrCreatePersonalFolder($id);
 
+        // Email de bienvenida con las credenciales — best-effort
+        try {
+            (new \App\Services\MailService())->sendWelcomeEmail($email, $name, $role, $password);
+        } catch (\Throwable $e) {
+            log_message('error', 'ConfiguracionService::createStaffUser welcome email — ' . $e->getMessage());
+        }
+
         return [
             'success'  => true,
             'userId'   => $id,
