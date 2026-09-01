@@ -83,7 +83,7 @@ class EntrenadoresController extends BaseController
         $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
 
         return view('entrenadores/show', [
-            'title'          => esc($coach['name']) . ' — JP Preparation',
+            'title'          => $coach['name'] . ' — JP Preparation',
             'coach'          => $coach,
             'personalFolder' => $personalFolder,
             'documents'      => $documents,

@@ -95,7 +95,7 @@ class TorneosController extends BaseController
         $externalParticipants = $this->isAdmin() ? $this->torneosService->getExternalParticipants()    : [];
 
         return view('torneos/show', [
-            'title'                => esc($event['name']) . ' — JP Preparation',
+            'title'                => $event['name'] . ' — JP Preparation',
             'event'                => $event,
             'myMembership'         => $myMembership,
             'selectableUsers'      => $selectableUsers,

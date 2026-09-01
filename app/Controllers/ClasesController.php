@@ -185,7 +185,7 @@ class ClasesController extends BaseController
         }
 
         return view('clases/show', [
-            'title'           => esc($session['title']) . ' — JP Preparation',
+            'title'           => $session['title'] . ' — JP Preparation',
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'canManage'       => $canManage,
@@ -424,7 +424,7 @@ class ClasesController extends BaseController
         unset($p);
 
         return view('clases/pasar_lista', [
-            'title'         => 'Pasar Lista — ' . esc($session['title']),
+            'title'         => 'Pasar Lista — ' . $session['title'],
             'session'       => $session,
             'isAdmin'       => $this->isAdmin(),
             'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],

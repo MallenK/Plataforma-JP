@@ -246,8 +246,17 @@ class NotificacionesController extends BaseController
         ];
     }
 
+    /** Extensiones permitidas en adjuntos de notificación (lista blanca real). */
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx',
+        'txt', 'mp4',
+    ];
+
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file, string $subfolder): array
     {
+        helper('upload');
+
         $maxSize  = 5 * 1024 * 1024; // 5 MB
         $allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif',
                      'application/pdf', 'application/msword',
@@ -264,12 +273,18 @@ class NotificacionesController extends BaseController
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        // La extensión declarada por el cliente NO es de confianza: se valida
+        // contra lista blanca para que no se pueda guardar un .php camuflado
+        // con un MIME permitido (p. ej. polyglot GIF89a + <?php …).
+        $ext = upload_allowed_extension($file->getClientExtension(), self::ALLOWED_EXTENSIONS);
+        if ($ext === null) {
+            return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $file->getClientExtension();
+        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
+        upload_harden_dir($uploadDir);
+
+        $newName = bin2hex(random_bytes(16)) . '.' . $ext;
         $file->move($uploadDir, $newName);
 
         return [

@@ -491,15 +491,16 @@ class MensajesController extends BaseController
         // getClientExtension() no es de confianza (nombre puesto por el cliente):
         // se valida contra lista blanca para no poder guardar un .php camuflado
         // con un MIME permitido (p. ej. detectado como text/plain).
-        $ext = strtolower($file->getClientExtension());
-        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+        helper('upload');
+        $ext = upload_allowed_extension($file->getClientExtension(), self::ALLOWED_EXTENSIONS);
+        if ($ext === null) {
             return ['error' => 'Extensión de archivo no permitida.'];
         }
 
         $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
-        $this->secureUploadDir($uploadDir);
+        upload_harden_dir($uploadDir);
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $ext;
+        $newName = bin2hex(random_bytes(16)) . '.' . $ext;
         try {
             $file->move($uploadDir, $newName);
         } catch (\Throwable $e) {

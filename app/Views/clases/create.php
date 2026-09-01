@@ -431,10 +431,13 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 
 <?= $this->section('scripts') ?>
 <?php
-// Opciones para JS
-$coachOptionsJs  = json_encode(array_map(fn($c) => ['id' => $c['id'], 'name' => $c['name']], $coachOptions));
-$staffOptionsJs  = json_encode(array_map(fn($s) => ['id' => $s['id'], 'name' => $s['name']], $staffOptions));
-$playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name']], $playerOptions));
+// Opciones para JS. Los nombres los controla el usuario (un alumno puede
+// cambiar el suyo), así que se escapan <, >, ', ", & para que no puedan
+// romper el bloque <script> aunque cambien las flags por defecto de PHP.
+$jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE;
+$coachOptionsJs  = json_encode(array_map(fn($c) => ['id' => $c['id'], 'name' => $c['name']], $coachOptions), $jsonFlags);
+$staffOptionsJs  = json_encode(array_map(fn($s) => ['id' => $s['id'], 'name' => $s['name']], $staffOptions), $jsonFlags);
+$playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name']], $playerOptions), $jsonFlags);
 ?>
 <style>
 .day-label { user-select: none; }
