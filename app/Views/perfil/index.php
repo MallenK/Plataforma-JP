@@ -296,10 +296,11 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($levelLabel) ?></span>
                     </div>
                     <?php endif; ?>
-                    <?php if (!empty($pfp['position'])): ?>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Posición</span>
-                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($pfp['position']) ?></span>
+                    <?php $pfpPosLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null); ?>
+                    <?php if (!empty($pfpPosLabels)): ?>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0">Posición<?= count($pfpPosLabels) > 1 ? 'es' : '' ?></span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(', ', $pfpPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($pfp['team'])): ?>
@@ -398,19 +399,22 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
         <!-- Métricas: posición, categoría, altura, peso -->
         <div class="row g-2 mb-1">
             <?php
+            $metricsPositionLabels = \App\Models\PlayerProfileModel::decodePositionLabels($pfp['position'] ?? null);
             $metrics4 = [
-                ['label' => 'Posición',  'val' => $pfp['position'] ?? '—',                               'icon' => 'bi-geo-alt-fill',       'color' => 'var(--accent)'],
+                ['label' => 'Posición' . (count($metricsPositionLabels) > 1 ? 'es' : ''),
+                 'val'   => empty($metricsPositionLabels) ? '—' : implode(', ', $metricsPositionLabels),
+                 'icon'  => 'bi-geo-alt-fill', 'color' => 'var(--accent)'],
                 ['label' => 'Categoría', 'val' => ($pfp['category'] ?? '') ? $categoryLabel : '—',       'icon' => 'bi-trophy-fill',         'color' => '#f59e0b'],
                 ['label' => 'Altura',    'val' => ($pfp['height']   ?? '') ? $pfp['height'] . ' cm' : '—', 'icon' => 'bi-arrows-vertical',   'color' => '#f97316'],
                 ['label' => 'Peso',      'val' => ($pfp['weight']   ?? '') ? $pfp['weight'] . ' kg' : '—', 'icon' => 'bi-activity',          'color' => '#8b5cf6'],
             ];
             foreach ($metrics4 as $m): ?>
             <div class="col-6">
-                <div class="card-jp" style="padding:12px 14px">
+                <div class="card-jp" style="padding:12px 14px;overflow:hidden;min-width:0">
                     <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
                         <?= $m['label'] ?>
                     </div>
-                    <div style="font-size:18px;font-weight:700;color:var(--text-h)"><?= esc($m['val']) ?></div>
+                    <div style="font-size:18px;font-weight:700;color:var(--text-h);overflow-wrap:anywhere;word-break:break-word"><?= esc($m['val']) ?></div>
                 </div>
             </div>
             <?php endforeach; ?>

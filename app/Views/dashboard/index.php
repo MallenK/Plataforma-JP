@@ -290,10 +290,11 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                 </div>
 
                 <div class="d-flex flex-column gap-2" style="font-size:13px">
-                    <?php if (!empty($dbPfp['position'])): ?>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span style="color:var(--text-muted)"><i class="bi bi-geo-alt me-1"></i>Posición</span>
-                        <span style="font-weight:600;color:var(--text-h)"><?= esc($dbPfp['position']) ?></span>
+                    <?php $dbPosLabels = \App\Models\PlayerProfileModel::decodePositionLabels($dbPfp['position'] ?? null); ?>
+                    <?php if (!empty($dbPosLabels)): ?>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <span style="color:var(--text-muted);flex-shrink:0"><i class="bi bi-geo-alt me-1"></i>Posición<?= count($dbPosLabels) > 1 ? 'es' : '' ?></span>
+                        <span style="font-weight:600;color:var(--text-h);text-align:right;overflow-wrap:anywhere"><?= esc(implode(', ', $dbPosLabels)) ?></span>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($dbPfp['team'])): ?>

@@ -3,8 +3,9 @@
 <?= $this->section('page_content') ?>
 
 <?php
-$canEdit       = in_array(session('role'), ['admin', 'superadmin', 'player']);
-$pos           = esc($profile['position'] ?? '—');
+$canEdit         = in_array(session('role'), ['admin', 'superadmin', 'player']);
+$positionLabels  = \App\Models\PlayerProfileModel::decodePositionLabels($profile['position'] ?? null);
+$pos             = empty($positionLabels) ? '—' : implode(', ', array_map('esc', $positionLabels));
 $categoryLabel = match($profile['category'] ?? '') {
     'prebenjamin' => 'Prebenjamín',
     'benjamin'    => 'Benjamín',
@@ -33,10 +34,18 @@ $categoryLabel = match($profile['category'] ?? '') {
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Posición</span>
+                <span class="metric-label">Posición<?= count($positionLabels) > 1 ? 'es' : '' ?></span>
                 <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
             </div>
-            <div class="metric-value" style="font-size:20px"><?= $pos ?></div>
+            <?php if (empty($positionLabels)): ?>
+            <div class="metric-value" style="font-size:20px">—</div>
+            <?php else: ?>
+            <ul class="metric-value" style="font-size:15px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px">
+                <?php foreach ($positionLabels as $label): ?>
+                <li><?= esc($label) ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-6 col-md-3">

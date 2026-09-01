@@ -9,6 +9,8 @@ $name        = $alumno['name']   ?? '?';
 $userAvatar  = $alumno['avatar'] ?? null;
 $isAdminUser = in_array(session('role'), ['superadmin', 'admin']);
 
+$positionLabels = \App\Models\PlayerProfileModel::decodePositionLabels($alumno['position'] ?? null);
+
 $levelLabel = match($alumno['level'] ?? '') {
     'beginner'     => 'Principiante',
     'intermediate' => 'Intermedio',
@@ -282,10 +284,18 @@ $formatTime = static function (?string $hms): string {
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-card-header">
-                        <span class="metric-label">Posición</span>
+                        <span class="metric-label">Posición<?= count($positionLabels) > 1 ? 'es' : '' ?></span>
                         <div class="metric-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
                     </div>
-                    <div class="metric-value" style="font-size:18px"><?= esc($alumno['position'] ?? '—') ?></div>
+                    <?php if (empty($positionLabels)): ?>
+                    <div class="metric-value" style="font-size:18px">—</div>
+                    <?php else: ?>
+                    <ul class="metric-value" style="font-size:14px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px">
+                        <?php foreach ($positionLabels as $label): ?>
+                        <li><?= esc($label) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="col-6 col-md-3">
