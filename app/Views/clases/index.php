@@ -160,7 +160,12 @@
     line-height:1.4;
 }
 .cal-chip:hover { opacity:.85; }
-.cal-more { font-size:10px;color:var(--text-muted);padding:1px 4px; }
+.cal-more {
+    display:block;width:100%;text-align:left;
+    background:none;border:none;font-family:inherit;
+    font-size:10px;color:var(--text-muted);padding:1px 4px;cursor:pointer;
+}
+.cal-more:hover { color:var(--accent);text-decoration:underline; }
 
 /* ── Calendario Semanal ────────────────────────────────────────── */
 .cal-week-wrap { overflow-x:auto; }
@@ -201,6 +206,152 @@
 }
 </style>
 
+<script>
+/* ── Clases solapadas (misma hora): columnas + pop-up selector ──────
+   Va inline en la vista (no como assets/js/*.js) para no depender de
+   que el estático se sirva bien en el servidor. Mismo código en
+   clases/index.php y dashboard/index.php. */
+window.CalOverlap = (function () {
+    'use strict';
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    function toMin(t) {
+        var p = String(t || '0').split(':');
+        return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+    }
+
+    var eventsProvider = function () { return []; };
+    function useEvents(fn) { if (typeof fn === 'function') eventsProvider = fn; }
+
+    function packColumns(evts) {
+        var sorted = evts.slice().sort(function (a, b) {
+            return toMin(a.start) - toMin(b.start) ||
+                   toMin(a.end || a.start) - toMin(b.end || b.start);
+        });
+        var laneEnd = [];
+        var placements = sorted.map(function (ev) {
+            var s = toMin(ev.start);
+            var e = Math.max(toMin(ev.end || ev.start), s + 10);
+            var col = -1;
+            for (var i = 0; i < laneEnd.length; i++) {
+                if (laneEnd[i] <= s) { col = i; break; }
+            }
+            if (col === -1) { col = laneEnd.length; laneEnd.push(e); }
+            else { laneEnd[col] = e; }
+            return { ev: ev, col: col };
+        });
+        return { cols: laneEnd.length || 1, placements: placements };
+    }
+
+    function slotHtml(evts, dateStr, hour, opts) {
+        if (!evts || !evts.length) return '';
+        opts = opts || {};
+        var slotH   = opts.slotH   || 56;
+        var maxCols = opts.maxCols || 3;
+        var hh      = String(hour).padStart(2, '0');
+
+        if (evts.length > maxCols) {
+            return '<button type="button" class="cal-event-more" ' +
+                'title="Ver las ' + evts.length + ' clases de las ' + hh + ':00" ' +
+                "onclick=\"event.stopPropagation();CalOverlap.openPopup('" +
+                    esc(dateStr) + "'," + (parseInt(hour, 10) || 0) + ')">' +
+                '<i class="bi bi-layers-half"></i> ' + evts.length + ' clases &middot; ' + hh + ':00' +
+                '</button>';
+        }
+
+        var packed = packColumns(evts);
+        var w      = 100 / packed.cols;
+
+        return packed.placements.map(function (p) {
+            var ev = p.ev;
+            var sp = String(ev.start).split(':');
+            var ep = String(ev.end || ev.start).split(':');
+            var sh = +sp[0] || 0, sm = +sp[1] || 0;
+            var eh = +ep[0] || 0, em = +ep[1] || 0;
+            var topPx    = (sm / 60) * slotH;
+            var durMin   = (eh * 60 + em) - (sh * 60 + sm);
+            var heightPx = Math.max((durMin / 60) * slotH, 20);
+            var leftPct  = p.col * w;
+
+            return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
+                'style="top:' + topPx + 'px;height:' + heightPx + 'px;' +
+                    'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
+                    'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
+                'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
+                'onclick="event.stopPropagation()">' +
+                esc(ev.start) + ' ' + esc(ev.title) +
+                '</a>';
+        }).join('');
+    }
+
+    function closePopup() {
+        var el = document.getElementById('cal-picker');
+        if (el) el.remove();
+        document.removeEventListener('keydown', onKey);
+        document.body.style.overflow = '';
+    }
+    function onKey(e) { if (e.key === 'Escape') closePopup(); }
+
+    function openPopup(dateStr, hour) {
+        var all = eventsProvider() || [];
+        var evts = all.filter(function (e) {
+            if (e.date !== dateStr) return false;
+            if (hour == null) return true;
+            return (parseInt(String(e.start).split(':')[0], 10) || 0) === hour;
+        }).sort(function (a, b) {
+            return String(a.start).localeCompare(String(b.start));
+        });
+
+        var d = new Date(dateStr + 'T00:00:00');
+        var dn = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        var titleTxt = dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()];
+        if (hour != null) titleTxt += ' · ' + String(hour).padStart(2, '0') + ':00';
+
+        var rows = evts.map(function (ev) {
+            return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-picker-row">' +
+                '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
+                '<span class="cal-picker-time">' + esc(ev.start) +
+                    (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
+                '<span class="cal-picker-title">' + esc(ev.title) + '</span>' +
+                '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
+                '</a>';
+        }).join('') || '<div class="cal-picker-empty">No hay clases.</div>';
+
+        closePopup();
+
+        var overlay = document.createElement('div');
+        overlay.id = 'cal-picker';
+        overlay.className = 'cal-picker-overlay';
+        overlay.innerHTML =
+            '<div class="cal-picker-modal" role="dialog" aria-modal="true">' +
+                '<div class="cal-picker-head">' +
+                    '<span><i class="bi bi-calendar3"></i> ' + esc(titleTxt) + '</span>' +
+                    '<button type="button" class="cal-picker-close" aria-label="Cerrar">' +
+                        '<i class="bi bi-x-lg"></i></button>' +
+                '</div>' +
+                '<div class="cal-picker-hint">Elige qué clase quieres ver</div>' +
+                '<div class="cal-picker-list">' + rows + '</div>' +
+            '</div>';
+
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) closePopup(); });
+        overlay.querySelector('.cal-picker-close').addEventListener('click', closePopup);
+        document.addEventListener('keydown', onKey);
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+    }
+
+    return {
+        esc: esc, useEvents: useEvents, packColumns: packColumns,
+        slotHtml: slotHtml, openPopup: openPopup, closePopup: closePopup
+    };
+})();
+</script>
 <script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
 <script>
 const canManage = <?= $canManage ? 'true' : 'false' ?>;
@@ -314,14 +465,18 @@ const CAL = {
 
             const shown = dayEvts.slice(0, 3);
             shown.forEach(ev => {
+                const t = CalOverlap.esc(ev.title);
                 html += `<a href="/clases/${ev.id}" class="cal-chip"
                             style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
-                            title="${ev.title} ${ev.start}–${ev.end}">
-                            ${ev.start} ${ev.title}
+                            title="${t} ${ev.start}–${ev.end}">
+                            ${ev.start} ${t}
                          </a>`;
             });
             if (dayEvts.length > 3) {
-                html += `<div class="cal-more">+${dayEvts.length - 3} más</div>`;
+                html += `<button type="button" class="cal-more"
+                            onclick="event.stopPropagation();CalOverlap.openPopup('${dateStr}', null)">
+                            +${dayEvts.length - 3} más
+                         </button>`;
             }
 
             html += '</div>';
@@ -371,30 +526,15 @@ const CAL = {
         for (let h = HOUR_START; h < HOUR_END; h++) {
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
             dates.forEach((dateStr, di) => {
-                const dayEvts = this.events.filter(e => {
-                    if (e.date !== dateStr) return false;
-                    const eh = parseInt(e.start.split(':')[0]);
-                    return eh === h;
-                });
+                const dayEvts = this.events.filter(e =>
+                    e.date === dateStr && parseInt(e.start.split(':')[0]) === h);
 
                 html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
                               data-date="${dateStr}" data-hour="${h}"
                               onclick="handleSlotClick(event, '${dateStr}', ${h})">`;
 
-                dayEvts.forEach(ev => {
-                    const [sh, sm] = ev.start.split(':').map(Number);
-                    const [eh2, em] = (ev.end || ev.start).split(':').map(Number);
-                    const topPx = (sm / 60) * SLOT_H;
-                    const durMin = (eh2 * 60 + em) - (sh * 60 + sm);
-                    const heightPx = Math.max((durMin / 60) * SLOT_H, 22);
-
-                    html += `<a href="/clases/${ev.id}" class="cal-event-block"
-                                style="top:${topPx}px;height:${heightPx}px;background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
-                                title="${ev.title} ${ev.start}–${ev.end}"
-                                onclick="event.stopPropagation()">
-                                ${ev.start} ${ev.title}
-                             </a>`;
-                });
+                // Reparto en columnas + pop-up si hay demasiadas (ver calendar-overlap.js).
+                html += CalOverlap.slotHtml(dayEvts, dateStr, h, { slotH: SLOT_H, maxCols: 2 });
 
                 html += '</div>';
             });
@@ -432,19 +572,8 @@ const CAL = {
             html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
                          data-date="${this.day}" data-hour="${h}"
                          onclick="handleSlotClick(event, '${this.day}', ${h})">`;
-            slotEvts.forEach(ev => {
-                const [sh, sm] = ev.start.split(':').map(Number);
-                const [eh2, em] = (ev.end || ev.start).split(':').map(Number);
-                const topPx   = (sm / 60) * SLOT_H;
-                const durMin  = (eh2 * 60 + em) - (sh * 60 + sm);
-                const heightPx = Math.max((durMin / 60) * SLOT_H, 22);
-                html += `<a href="/clases/${ev.id}" class="cal-event-block"
-                            style="top:${topPx}px;height:${heightPx}px;background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
-                            title="${ev.title} ${ev.start}–${ev.end}"
-                            onclick="event.stopPropagation()">
-                            ${ev.start} ${ev.title}
-                         </a>`;
-            });
+            // Reparto en columnas + pop-up si hay demasiadas (ver calendar-overlap.js).
+            html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 3 });
             html += '</div>';
         }
 
@@ -487,6 +616,7 @@ function handleSlotClick(e, date, hour) {
 }
 
 // Inicializar
+CalOverlap.useEvents(() => CAL.events);
 CAL.load();
 
 <?php if ($canManage): ?>

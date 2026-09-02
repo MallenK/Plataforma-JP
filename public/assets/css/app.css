@@ -778,6 +778,92 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
+/* ── Calendario: clases solapadas (varias a la misma hora) ── */
+/* Chip que sustituye a un montón de clases simultáneas y abre el pop-up */
+.cal-event-more {
+    position: absolute;
+    left: 2px; right: 2px; top: 2px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 3px 4px;
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font: 700 10.5px/1.2 inherit;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    z-index: 3;
+}
+.cal-event-more:hover { filter: brightness(.96); }
+
+/* Pop-up para elegir qué clase ver cuando no caben una al lado de otra */
+.cal-picker-overlay {
+    position: fixed; inset: 0; z-index: 1100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, .55);
+}
+.cal-picker-modal {
+    width: 100%; max-width: 420px; max-height: 85vh;
+    display: flex; flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+    overflow: hidden;
+}
+.cal-picker-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; font-weight: 700; color: var(--text-h);
+}
+.cal-picker-head i { color: var(--accent); margin-right: 4px; }
+.cal-picker-close {
+    flex: none;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; border-radius: 6px;
+    background: none; color: var(--text-muted);
+    font-size: 15px; cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.cal-picker-close:hover { background: var(--bg-app); color: var(--text-h); }
+.cal-picker-hint {
+    padding: 10px 16px 4px;
+    font-size: 12px; color: var(--text-muted);
+}
+.cal-picker-list {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 8px 16px 16px;
+    overflow-y: auto;
+}
+.cal-picker-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-body);
+    transition: background .12s, border-color .12s;
+}
+.cal-picker-row:hover { background: var(--bg-app); border-color: var(--accent); }
+.cal-picker-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.cal-picker-time {
+    flex: none; min-width: 46px;
+    font-size: 12px; font-weight: 700; color: var(--text-h);
+}
+.cal-picker-time small { font-weight: 600; color: var(--text-muted); }
+.cal-picker-title {
+    flex: 1; min-width: 0;
+    font-size: 13px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-picker-arrow { flex: none; font-size: 12px; color: var(--text-muted); }
+.cal-picker-empty { padding: 16px; text-align: center; font-size: 13px; color: var(--text-muted); }
+
 /* ── Items de lista (torneos, clases, etc.) ──────────────── */
 .list-item-jp {
     display: flex;

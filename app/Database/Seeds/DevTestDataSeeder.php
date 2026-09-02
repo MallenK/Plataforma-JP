@@ -33,6 +33,7 @@ class DevTestDataSeeder extends Seeder
         $this->seedTestAdmin();
         $playerIds = $this->seedTestPlayers();
         $this->seedTestClasses($playerIds);
+        $this->seedOverlappingClasses($playerIds);
         $this->seedResolvedTickets();
 
         echo "DevTestDataSeeder: listo.\n";
@@ -217,6 +218,78 @@ class DevTestDataSeeder extends Seeder
             if ($sid) {
                 $service->cerrarSesion($sid, $creatorId);
             }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Clases a la MISMA HORA (bug del calendario: se solapaban)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Reproduce el error reportado: varias clases distintas en la misma
+     * franja horaria. Crea:
+     *   - 2 clases simultáneas (miércoles siguiente, 11:00-12:00) → deben
+     *     verse una al lado de otra en las vistas Semana y Día.
+     *   - 4 clases simultáneas (jueves siguiente, 10:00-11:00) → no caben
+     *     en columnas, debe aparecer el chip "4 clases · 10:00" que abre
+     *     el pop-up para elegir cuál ver.
+     *
+     * Se colocan en la semana siguiente (fechas dentro de un mismo mes)
+     * para que se vean también en la vista Semana sin cruzar el límite
+     * de mes.
+     */
+    private function seedOverlappingClasses(array $playerIds): void
+    {
+        $db      = \Config\Database::connect();
+        $service = new ClasesService();
+
+        $userModel = new UserModel();
+        $admin     = $userModel->where('role', 'admin')->where('status', 'active')->first();
+        $coach     = $userModel->where('role', 'coach')->where('status', 'active')->first();
+        $staff     = $userModel->where('role', 'staff')->where('status', 'active')->first();
+
+        $creatorId = (int) ($admin['id']
+            ?? $userModel->where('role', 'superadmin')->first()['id']
+            ?? 1);
+
+        $players = array_values($playerIds);
+
+        // Responsable por defecto: el primer coach; si no hay, admin.
+        $resp = (int) ($coach['id'] ?? $admin['id'] ?? $creatorId);
+        $respStaff = (int) ($staff['id'] ?? $resp);
+
+        // Semana siguiente, mismo mes a poder ser (la vista Semana solo
+        // carga los eventos del mes del lunes de esa semana).
+        $mondayNext = strtotime('monday next week');
+        $date2 = date('Y-m-d', strtotime('+2 days', $mondayNext)); // miércoles
+        $date4 = date('Y-m-d', strtotime('+3 days', $mondayNext)); // jueves
+
+        $sessions = [
+            // 2 simultáneas → una al lado de otra
+            ['title' => 'TEST - Solape A (misma hora)', 'session_date' => $date2,
+             'start_time' => '11:00', 'end_time' => '12:00', 'session_type' => 'coach',
+             'coach_ids' => [$resp], 'player_ids' => isset($players[0]) ? [$players[0]] : []],
+            ['title' => 'TEST - Solape B (misma hora)', 'session_date' => $date2,
+             'start_time' => '11:00', 'end_time' => '12:30', 'session_type' => 'staff',
+             'coach_ids' => [$respStaff], 'player_ids' => isset($players[1]) ? [$players[1]] : []],
+
+            // 4 simultáneas → chip + pop-up
+            ['title' => 'TEST - Solape lleno 1', 'session_date' => $date4,
+             'start_time' => '10:00', 'end_time' => '11:00', 'session_type' => 'coach',
+             'coach_ids' => [$resp], 'player_ids' => isset($players[0]) ? [$players[0]] : []],
+            ['title' => 'TEST - Solape lleno 2', 'session_date' => $date4,
+             'start_time' => '10:00', 'end_time' => '11:00', 'session_type' => 'coach',
+             'coach_ids' => [$resp], 'player_ids' => isset($players[1]) ? [$players[1]] : []],
+            ['title' => 'TEST - Solape lleno 3', 'session_date' => $date4,
+             'start_time' => '10:00', 'end_time' => '11:30', 'session_type' => 'staff',
+             'coach_ids' => [$respStaff], 'player_ids' => isset($players[2]) ? [$players[2]] : []],
+            ['title' => 'TEST - Solape lleno 4', 'session_date' => $date4,
+             'start_time' => '10:00', 'end_time' => '11:00', 'session_type' => 'coach',
+             'coach_ids' => [$resp], 'player_ids' => []],
+        ];
+
+        foreach ($sessions as $s) {
+            $this->createTestSession($service, $db, $creatorId, $s);
         }
     }
 

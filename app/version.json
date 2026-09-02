@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.3",
+        "date": "2026-09-02 19:05:00",
+        "description": "Calendario de clases: cuando hay dos o más sesiones a la misma hora ya no se dibujan una encima de otra. Ahora se muestran en columnas, una al lado de otra, en las vistas Semana y Día. Si hay demasiadas para caber, aparece un aviso \"N clases · HH:00\" que abre un desplegable para elegir qué clase abrir. Afecta también al mini-calendario del panel de inicio."
+    },
+    {
         "version": "1.1.2",
         "date": "2026-09-01 21:30:00",
         "description": "Rediseño de las pantallas de acceso: login con fondo Aura Gradient y tarjeta de cristal, y pantallas de recuperar/restablecer contraseña a juego. Casilla \"Recuérdame\" operativa (sesión de 7 días). Se elimina el formulario de auto-registro (ya estaba desactivado)."
