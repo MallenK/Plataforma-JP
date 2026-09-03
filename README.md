@@ -9,6 +9,7 @@ Desarrollada con **CodeIgniter 4 + Docker**. Server-rendered (vistas PHP +
 jQuery + JS vanilla por página), sin build step de frontend.
 
 > **Documentación operativa** (léela antes de tocar producción o el repo):
+> - [`docs/operaciones/00-COMO-TRABAJAR.md`](docs/operaciones/00-COMO-TRABAJAR.md) — **empieza aquí:** forma de trabajar, ramas, versionado
 > - [`docs/operaciones/`](docs/operaciones/) — protocolo de despliegue, modelo de trabajo, organización de GitHub
 > - [`docs/BBDD_SCHEMA.md`](docs/BBDD_SCHEMA.md) — esquema de base de datos
 > - [`docs/tickets/`](docs/tickets/) — tickets internos
@@ -16,7 +17,7 @@ jQuery + JS vanilla por página), sin build step de frontend.
 >
 > **Producción real:** Hostinger — `https://app.jppreparation.com`.
 > **Validación:** Render — `https://plataforma-jp.onrender.com`.
-> Versión actual: **v1.1.2** (ver [`app/version.json`](app/version.json)).
+> Versión actual: **v1.1.5** (ver [`app/version.json`](app/version.json)).
 
 ---
 
