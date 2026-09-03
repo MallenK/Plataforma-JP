@@ -208,9 +208,11 @@ Conventional Commits. `feat` → *minor* en `version.json`; `fix` → *patch*.
 
 ## 🌱 Ramas y despliegue
 
-No se trabaja directo en `main`. Rama por ticket (`feat/`, `fix/`, …) →
-integración → `release/X.Y.Z` → `main` (tag `vX.Y.Z`) → deploy.
-Flujo completo en [`docs/operaciones/03-organizacion-github.md`](docs/operaciones/03-organizacion-github.md)
+**`main` no se toca a mano** (está protegido). Trunk-based: rama por cambio
+(`feat/`, `fix/`, `hotfix/`, `chore/`, `docs/`) → **Pull Request a `main`** →
+merge → tag `vX.Y.Z` → deploy. Sin `develop` ni `release/*`.
+Guía en una página: [`docs/operaciones/00-COMO-TRABAJAR.md`](docs/operaciones/00-COMO-TRABAJAR.md).
+Detalle: [`docs/operaciones/03-organizacion-github.md`](docs/operaciones/03-organizacion-github.md)
 y [`docs/operaciones/01-protocolo-despliegue.md`](docs/operaciones/01-protocolo-despliegue.md).
 
 **Cada subida a producción añade una entrada a [`app/version.json`](app/version.json)**
