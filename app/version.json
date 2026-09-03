@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.6",
+        "date": "2026-09-03 20:30:00",
+        "description": "Calendario del panel de inicio y de Clases. Vista Mes en el móvil: ya no se descuadra cuando una clase tiene el nombre largo (el nombre se recorta y las siete columnas quedan siempre iguales). Vistas Semana y Día: ahora se ven también las clases de después de las 20:00, que antes quedaban cortadas. Clases a la misma hora: en el ordenador se muestran una al lado de otra (hasta 2 en Semana, hasta 6 en Día) y, si hay más, un botón 'Ver todas'; en el móvil aparece directamente ese botón, que abre el listado para elegir la clase."
+    },
+    {
         "version": "1.1.5",
         "date": "2026-09-03 00:00:00",
         "description": "Refuerzo de seguridad (auditoría). Se blinda la subida de archivos adjuntos en notificaciones, incidencias y mensajes: solo se aceptan formatos seguros y los adjuntos privados se guardan fuera de la zona pública, de modo que ya no se pueden descargar adivinando la dirección. Se reactivan los archivos adjuntos del chat, que llevaban tiempo sin funcionar. Se corrigen además varios puntos menores detectados en la auditoría (redirecciones, indexación, escapado de texto)."

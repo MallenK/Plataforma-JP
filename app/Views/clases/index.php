@@ -125,7 +125,7 @@
 <style>
 /* ── Calendario Mensual ────────────────────────────────────────── */
 .cal-month-headers {
-    display:grid;grid-template-columns:repeat(7,1fr);
+    display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
     background:var(--bg-app);border:1px solid var(--border);
     border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0;
 }
@@ -134,12 +134,12 @@
     text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);
 }
 .cal-month-grid {
-    display:grid;grid-template-columns:repeat(7,1fr);
+    display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
     gap:1px;background:var(--border);
     border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);overflow:hidden;
 }
 .cal-cell {
-    background:var(--bg-card);min-height:90px;padding:5px;cursor:default;
+    background:var(--bg-card);min-height:90px;min-width:0;padding:5px;cursor:default;
     transition:background .1s;
 }
 .cal-cell:hover { background:#f8fafc; }
@@ -251,7 +251,12 @@ window.CalOverlap = (function () {
         if (!evts || !evts.length) return '';
         opts = opts || {};
         var slotH   = opts.slotH   || 56;
-        var maxCols = opts.maxCols || 3;
+        // En móvil las columnas lado a lado no se leen: a partir de 2 clases
+        // en la misma franja se muestra directamente el botón "Ver todas".
+        // En escritorio se permiten hasta 6 columnas antes de colapsar.
+        var isMobile = typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(max-width: 768px)').matches;
+        var maxCols = isMobile ? 1 : (opts.maxCols || 6);
         var hh      = String(hour).padStart(2, '0');
 
         if (evts.length > maxCols) {
@@ -259,7 +264,7 @@ window.CalOverlap = (function () {
                 'title="Ver las ' + evts.length + ' clases de las ' + hh + ':00" ' +
                 "onclick=\"event.stopPropagation();CalOverlap.openPopup('" +
                     esc(dateStr) + "'," + (parseInt(hour, 10) || 0) + ')">' +
-                '<i class="bi bi-layers-half"></i> ' + evts.length + ' clases &middot; ' + hh + ':00' +
+                '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + evts.length +
                 '</button>';
         }
 
@@ -533,7 +538,7 @@ const CAL = {
                               data-date="${dateStr}" data-hour="${h}"
                               onclick="handleSlotClick(event, '${dateStr}', ${h})">`;
 
-                // Reparto en columnas + pop-up si hay demasiadas (ver calendar-overlap.js).
+                // Semana: solo 2 columnas caben legibles; 3+ → botón "Ver todas".
                 html += CalOverlap.slotHtml(dayEvts, dateStr, h, { slotH: SLOT_H, maxCols: 2 });
 
                 html += '</div>';
@@ -572,8 +577,8 @@ const CAL = {
             html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
                          data-date="${this.day}" data-hour="${h}"
                          onclick="handleSlotClick(event, '${this.day}', ${h})">`;
-            // Reparto en columnas + pop-up si hay demasiadas (ver calendar-overlap.js).
-            html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 3 });
+            // Día: hasta 6 columnas; más → botón "Ver todas" (CalOverlap, arriba en esta vista).
+            html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 6 });
             html += '</div>';
         }
 

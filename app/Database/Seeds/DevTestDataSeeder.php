@@ -19,6 +19,8 @@ use App\Services\ClasesService;
  *  - TICKET-002: varias posiciones por alumno, mostradas en lista
  *  - TICKET-003: email de recuperación / bienvenida
  *  - TICKET-004: feedback "Después" desbloqueado sin sesión completada
+ *  - TICKET-007: calendario en móvil con clases recurrentes que se apilan
+ *    (hasta 8 el mismo día y hora) sin descuadrar la vista Mes
  *
  * Ejecutar:  docker compose exec app php spark db:seed DevTestDataSeeder
  * Idempotente: si el usuario/sesión/ticket ya existe (por email/título),
@@ -34,6 +36,7 @@ class DevTestDataSeeder extends Seeder
         $playerIds = $this->seedTestPlayers();
         $this->seedTestClasses($playerIds);
         $this->seedOverlappingClasses($playerIds);
+        $this->seedRecurringOverloadedClasses($playerIds);
         $this->seedResolvedTickets();
 
         echo "DevTestDataSeeder: listo.\n";
@@ -291,6 +294,101 @@ class DevTestDataSeeder extends Seeder
         foreach ($sessions as $s) {
             $this->createTestSession($service, $db, $creatorId, $s);
         }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Clases RECURRENTES que ocasionalmente se apilan hasta 8 el mismo
+    //  día a la misma hora (TICKET-007: estrés del calendario en móvil)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Crea 8 plantillas recurrentes semanales, todas los MIÉRCOLES a las
+     * 20:00–21:00 (misma franja que el caso real reportado), con rangos de
+     * vigencia escalonados para que:
+     *
+     *   - En casi todos los miércoles coincidan 3 clases.
+     *   - En las semanas cercanas al "pico" coincidan 5.
+     *   - En un único miércoles ("pico", ~3 semanas vista) coincidan las 8
+     *     → dispara el chip "8 clases · 20:00" y el pop-up selector, y en la
+     *       vista Mes prueba que la celda no se descuadra con el nombre largo.
+     *
+     * Idempotente: se identifica cada plantilla por su título en `classes`.
+     */
+    private function seedRecurringOverloadedClasses(array $playerIds): void
+    {
+        $db      = \Config\Database::connect();
+        $service = new ClasesService();
+
+        $userModel = new UserModel();
+        $admin     = $userModel->where('role', 'admin')->where('status', 'active')->first();
+        $coaches   = $userModel->where('role', 'coach')->where('status', 'active')->findAll();
+
+        $creatorId = (int) ($admin['id']
+            ?? $userModel->where('role', 'superadmin')->first()['id']
+            ?? 1);
+
+        // Lista de responsables disponibles (coaches; si no hay, el admin).
+        $responsables = array_map(static fn ($c) => (int) $c['id'], $coaches);
+        if (empty($responsables)) {
+            $responsables = [(int) ($admin['id'] ?? $creatorId)];
+        }
+
+        $players = array_values($playerIds);
+
+        // Miércoles de la semana que viene como ancla (determinista).
+        $baseWed = strtotime('wednesday next week');
+        // "Pico": 3 semanas después → sigue estando a la vista este mes / el que viene.
+        $peakWed = strtotime('+21 days', $baseWed);
+
+        $fullStart = date('Y-m-d', $baseWed);
+        $fullEnd   = date('Y-m-d', strtotime('+77 days', $baseWed)); // ~11 semanas
+        $peakStart = date('Y-m-d', strtotime('-7 days', $peakWed));
+        $peakEnd   = date('Y-m-d', strtotime('+7 days', $peakWed));
+        $peakOnly  = date('Y-m-d', $peakWed);
+
+        // 3 permanentes + 2 en la ventana del pico + 3 solo el día pico = 8.
+        $templates = [
+            ['title' => 'TEST Recurrente · Tecnificación Grupo A',      'from' => $fullStart, 'to' => $fullEnd],
+            ['title' => 'TEST Recurrente · Tecnificación Grupo B',      'from' => $fullStart, 'to' => $fullEnd],
+            ['title' => 'TEST Recurrente · Oriol Rodríguez (individual)', 'from' => $fullStart, 'to' => $fullEnd],
+            ['title' => 'TEST Recurrente · Refuerzo porteros',          'from' => $peakStart, 'to' => $peakEnd],
+            ['title' => 'TEST Recurrente · Alto rendimiento juvenil',   'from' => $peakStart, 'to' => $peakEnd],
+            ['title' => 'TEST Recurrente · Sesión puntual extra 1',     'from' => $peakOnly,  'to' => $peakOnly],
+            ['title' => 'TEST Recurrente · Sesión puntual extra 2',     'from' => $peakOnly,  'to' => $peakOnly],
+            ['title' => 'TEST Recurrente · Sesión puntual extra 3',     'from' => $peakOnly,  'to' => $peakOnly],
+        ];
+
+        foreach ($templates as $i => $t) {
+            if ($db->table('classes')->where('title', $t['title'])->countAllResults() > 0) {
+                echo "  ya existe plantilla recurrente: {$t['title']}\n";
+                continue;
+            }
+
+            $resp   = $responsables[$i % count($responsables)];
+            $player = $players[$i % max(1, count($players))] ?? null;
+
+            $result = $service->quickCreate([
+                'type'             => 'recurring',
+                'title'            => $t['title'],
+                'class_format'     => 'individual',
+                'session_type'     => 'coach',
+                'recurrence_days'  => [3], // 3 = miércoles (ISO-8601, 1=lunes)
+                'recurrence_start' => $t['from'],
+                'recurrence_end'   => $t['to'],
+                'start_time'       => '20:00',
+                'end_time'         => '21:00',
+                'coach_ids'        => [$resp],
+                'player_ids'       => $player ? [$player] : [],
+            ], $creatorId);
+
+            if (!empty($result['success'])) {
+                echo "  creada plantilla recurrente: {$t['title']} ({$result['count']} sesiones)\n";
+            } else {
+                echo "  ERROR creando plantilla '{$t['title']}': " . ($result['error'] ?? '?') . "\n";
+            }
+        }
+
+        echo "  → pico de 8 clases simultáneas el miércoles {$peakOnly} a las 20:00\n";
     }
 
     /**
