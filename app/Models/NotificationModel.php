@@ -93,6 +93,20 @@ class NotificationModel extends Model
     }
 
     /**
+     * Cuenta las notificaciones creadas por un remitente en los últimos
+     * $minutes minutos (anti-spam / rate-limit del envío).
+     */
+    public function countRecentBySender(int $senderId, int $minutes): int
+    {
+        $since = date('Y-m-d H:i:s', time() - $minutes * 60);
+
+        return (int) $this->db->table('notifications')
+            ->where('sender_id', $senderId)
+            ->where('created_at >=', $since)
+            ->countAllResults();
+    }
+
+    /**
      * Marca como leída una notificación específica para un usuario.
      */
     public function markRead(int $userId, int $notificationId): void

@@ -312,8 +312,9 @@ class MensajesController extends BaseController
                 return $this->response->setStatusCode(403);
             }
 
-            $fullPath = FCPATH . $msg['file_path'];
-            if (!file_exists($fullPath)) {
+            helper('upload');
+            $fullPath = upload_resolve_stored($msg['file_path']);
+            if ($fullPath === null) {
                 return $this->response->setStatusCode(404);
             }
 
@@ -491,15 +492,17 @@ class MensajesController extends BaseController
         // getClientExtension() no es de confianza (nombre puesto por el cliente):
         // se valida contra lista blanca para no poder guardar un .php camuflado
         // con un MIME permitido (p. ej. detectado como text/plain).
-        $ext = strtolower($file->getClientExtension());
-        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+        helper('upload');
+        $ext = upload_allowed_extension($file->getClientExtension(), self::ALLOWED_EXTENSIONS);
+        if ($ext === null) {
             return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
-        $this->secureUploadDir($uploadDir);
+        // Fuera del webroot: solo se sirve por MensajesController::download().
+        $uploadDir = upload_private_dir($subfolder);
+        upload_harden_dir($uploadDir);
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $ext;
+        $newName = bin2hex(random_bytes(16)) . '.' . $ext;
         try {
             $file->move($uploadDir, $newName);
         } catch (\Throwable $e) {
@@ -508,7 +511,7 @@ class MensajesController extends BaseController
         }
 
         return [
-            'path' => 'uploads/' . $subfolder . '/' . $newName,
+            'path' => upload_stored_path($subfolder, $newName),
             'name' => $file->getClientName(),
             'size' => $file->getSize(),
             'mime' => $mime,

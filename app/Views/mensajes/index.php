@@ -795,7 +795,7 @@ $roleLabels = [
         if (avatarPath) {
             return '<img src="' + BASE + avatarPath + '" alt="' + escHtml(initials) + '" class="' + cssClass + '" style="object-fit:cover;border-radius:50%;">';
         }
-        return '<div class="' + cssClass + '">' + initials + '</div>';
+        return '<div class="' + cssClass + '">' + escHtml(initials) + '</div>';
     }
 
     function fileIcon(mime) {

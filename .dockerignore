@@ -11,4 +11,13 @@ writable/uploads/*
 tests/
 phpunit.xml.dist
 users.txt
+database.txt
 app/Database/Database.zip
+
+# Bundle de despliegue a hosting compartido: contiene deploy/.env con
+# secretos de PRODUCCIÓN (API key de Resend, credenciales de BD). No debe
+# viajar dentro de la imagen Docker.
+deploy/
+
+# Artefactos comprimidos (snapshots completos de la app)
+*.zip

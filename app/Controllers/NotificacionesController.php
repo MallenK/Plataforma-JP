@@ -101,11 +101,19 @@ class NotificacionesController extends BaseController
     // ENVIAR notificación individual o grupal
     // ─────────────────────────────────────────────────────────
 
+    /** Máx. notificaciones que un usuario puede crear en la ventana (anti-spam). */
+    private const RATE_WINDOW_MIN   = 10;
+    private const RATE_MAX_PLAYER   = 8;
+    private const RATE_MAX_STANDARD = 40;
+
     public function send(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $userId = $this->currentUserId();
-        $role   = $this->currentRole();
-        $type   = $this->request->getPost('type'); // 'individual' | 'group'
+        $userId = (int) $this->currentUserId();
+        $role   = (string) $this->currentRole();
+
+        // Solo se aceptan estos dos tipos; cualquier otro valor se rechaza
+        // (antes un 'type' inventado por un player se colaba en la rama grupal).
+        $type = $this->request->getPost('type') === 'group' ? 'group' : 'individual';
 
         // Coach no puede enviar notificaciones (solo mensajes)
         if ($role === 'coach') {
@@ -125,11 +133,18 @@ class NotificacionesController extends BaseController
             return $this->response->setJSON(['error' => 'Sin permisos para notificaciones grupales.'])->setStatusCode(403);
         }
 
+        // Rate-limit anti-spam (por remitente, ventana móvil)
+        $isPlayer = in_array($role, ['player', 'alumno'], true);
+        $rateMax  = $isPlayer ? self::RATE_MAX_PLAYER : self::RATE_MAX_STANDARD;
+        if ($this->notifModel->countRecentBySender($userId, self::RATE_WINDOW_MIN) >= $rateMax) {
+            return $this->response->setJSON(['error' => 'Has enviado demasiadas notificaciones en poco tiempo. Espera unos minutos.'])->setStatusCode(429);
+        }
+
         // Resolver destinatarios
-        $recipientIds = $this->resolveRecipients($type, $userId);
+        $recipientIds = $this->resolveRecipients($type, $userId, $role);
 
         if (empty($recipientIds)) {
-            return $this->response->setJSON(['error' => 'No se encontraron destinatarios.'])->setStatusCode(422);
+            return $this->response->setJSON(['error' => 'No se encontraron destinatarios válidos.'])->setStatusCode(422);
         }
 
         // Archivo adjunto (opcional)
@@ -193,8 +208,9 @@ class NotificacionesController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        $fullPath = FCPATH . $notif['file_path'];
-        if (!file_exists($fullPath)) {
+        helper('upload');
+        $fullPath = upload_resolve_stored($notif['file_path']);
+        if ($fullPath === null) {
             return $this->response->setStatusCode(404);
         }
 
@@ -205,13 +221,28 @@ class NotificacionesController extends BaseController
     // Helpers privados
     // ─────────────────────────────────────────────────────────
 
-    private function resolveRecipients(string $type, int $senderId): array
+    private function resolveRecipients(string $type, int $senderId, string $senderRole = ''): array
     {
         if ($type === 'individual') {
             $recipientId = (int) $this->request->getPost('recipient_id');
-            if (!$recipientId) return [];
-            // El remitente no se incluye a sí mismo
-            return $recipientId !== $senderId ? [$recipientId] : [];
+            if (!$recipientId || $recipientId === $senderId) {
+                return [];
+            }
+
+            $recipient = $this->userModel->find($recipientId);
+            if (!$recipient || ($recipient['status'] ?? 'active') !== 'active') {
+                return [];
+            }
+
+            // Misma regla que Mensajes: un jugador solo puede dirigirse a
+            // no-jugadores (nada de spam jugador → jugador).
+            $senderIsPlayer    = in_array($senderRole, ['player', 'alumno'], true);
+            $recipientIsPlayer = in_array($recipient['role'] ?? '', ['player', 'alumno'], true);
+            if ($senderIsPlayer && $recipientIsPlayer) {
+                return [];
+            }
+
+            return [$recipientId];
         }
 
         // Grupal: filtrar por grupo seleccionado
@@ -246,8 +277,17 @@ class NotificacionesController extends BaseController
         ];
     }
 
+    /** Extensiones permitidas en adjuntos de notificación (lista blanca real). */
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx',
+        'txt', 'mp4',
+    ];
+
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file, string $subfolder): array
     {
+        helper('upload');
+
         $maxSize  = 5 * 1024 * 1024; // 5 MB
         $allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif',
                      'application/pdf', 'application/msword',
@@ -264,16 +304,23 @@ class NotificacionesController extends BaseController
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        // La extensión declarada por el cliente NO es de confianza: se valida
+        // contra lista blanca para que no se pueda guardar un .php camuflado
+        // con un MIME permitido (p. ej. polyglot GIF89a + <?php …).
+        $ext = upload_allowed_extension($file->getClientExtension(), self::ALLOWED_EXTENSIONS);
+        if ($ext === null) {
+            return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $newName = uniqid('', true) . '_' . time() . '.' . $file->getClientExtension();
+        // Fuera del webroot: solo se sirve por NotificacionesController::download().
+        $uploadDir = upload_private_dir($subfolder);
+        upload_harden_dir($uploadDir);
+
+        $newName = bin2hex(random_bytes(16)) . '.' . $ext;
         $file->move($uploadDir, $newName);
 
         return [
-            'path' => 'uploads/' . $subfolder . '/' . $newName,
+            'path' => upload_stored_path($subfolder, $newName),
             'name' => $file->getClientName(),
             'size' => $file->getSize(),
         ];

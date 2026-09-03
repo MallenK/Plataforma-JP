@@ -169,7 +169,7 @@ class AlumnosController extends BaseController
         $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
 
         return view('alumnos/show', [
-            'title'       => esc($alumno['name']) . ' — JP Preparation',
+            'title'       => $alumno['name'] . ' — JP Preparation',
             'alumno'      => $alumno,
             'annotations' => $annotationModel->getForPlayer($id, $types),
             'canInternal' => $role !== 'player',

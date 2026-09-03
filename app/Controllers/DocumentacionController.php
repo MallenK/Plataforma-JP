@@ -110,7 +110,10 @@ class DocumentacionController extends BaseController
             session()->setFlashdata('success', 'Archivo subido correctamente.');
         }
 
-        if ($redirectTo && preg_match('#^/[a-zA-Z0-9/_-]#', $redirectTo)) {
+        // Solo se permite redirigir a una ruta interna: debe empezar por "/"
+        // seguido de un carácter alfanumérico (rechaza "//evil.com", "/\evil",
+        // esquemas y URLs absolutas) y contener solo caracteres de ruta seguros.
+        if ($redirectTo && preg_match('#^/[a-zA-Z0-9][a-zA-Z0-9/_?=&.\#-]*$#', $redirectTo)) {
             return redirect()->to($redirectTo);
         }
 
@@ -319,10 +322,17 @@ class DocumentacionController extends BaseController
             ob_end_clean();
         }
 
-        // Enviar headers directamente via PHP, sin pasar por el response object de CI4
+        // Enviar headers directamente via PHP, sin pasar por el response object de CI4.
+        // OJO: este método hace exit(), así que SecurityHeadersFilter (filtro
+        // 'after') no llega a ejecutarse — las cabeceras de seguridad mínimas
+        // hay que ponerlas aquí a mano.
         header('Content-Type: ' . $doc['mime_type']);
         header("Content-Disposition: {$disposition}; filename*=UTF-8''{$safeName}");
         header('Content-Length: ' . filesize($path));
+        // Impide que el navegador "esnife" el tipo real de un archivo servido
+        // 'inline' (previsualización) y lo trate como HTML/JS del propio origen.
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
 
         if ($doc['sensitive']) {
             header('Cache-Control: no-store, no-cache, must-revalidate');

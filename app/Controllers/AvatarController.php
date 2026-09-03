@@ -55,10 +55,17 @@ class AvatarController extends BaseController
             return redirect()->back();
         }
 
-        // Crear directorio si no existe
-        if (!is_dir(self::UPLOAD_PATH)) {
-            mkdir(self::UPLOAD_PATH, 0755, true);
+        // Extensión final validada contra lista blanca de imágenes (el MIME por
+        // sí solo no impide guardar un polyglot con extensión ejecutable).
+        helper('upload');
+        $ext = upload_allowed_extension($file->getClientExtension(), ['jpg', 'jpeg', 'png', 'webp', 'gif']);
+        if ($ext === null) {
+            session()->setFlashdata('error', 'Formato no permitido. Usa JPG, PNG, WebP o GIF.');
+            return redirect()->back();
         }
+
+        // Crear directorio (y dejar el .htaccess de protección) si no existe
+        upload_harden_dir(self::UPLOAD_PATH);
 
         // Eliminar avatar anterior si existe
         $model    = new UserModel();
@@ -69,7 +76,7 @@ class AvatarController extends BaseController
         }
 
         // Nombre único para evitar colisiones
-        $newName = 'avatar_' . $userId . '_' . time() . '.' . $file->getExtension();
+        $newName = 'avatar_' . $userId . '_' . time() . '.' . $ext;
         $file->move(self::UPLOAD_PATH, $newName);
 
         $relativePath = 'uploads/avatars/' . $newName;
