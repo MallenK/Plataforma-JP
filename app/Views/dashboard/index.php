@@ -863,10 +863,11 @@ const DBCAL = {
         let hs = 7, he = 20;
         (evts || []).forEach(e => {
             const sh = parseInt(String(e.start).split(':')[0]) || 0;
-            const ep = String(e.end || '').split(':');
+            const ep = String(e.end || e.start).split(':');
             const eh = (parseInt(ep[0]) || sh) + ((parseInt(ep[1]) || 0) > 0 ? 1 : 0);
             if (sh < hs) hs = Math.max(0, sh);
-            if (eh > he) he = Math.min(24, eh);
+            // Aunque falte la hora de fin, la franja de inicio debe caber.
+            he = Math.min(24, Math.max(he, sh + 1, eh));
         });
         return [hs, he];
     },

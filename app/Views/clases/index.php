@@ -577,7 +577,7 @@ const CAL = {
             html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
                          data-date="${this.day}" data-hour="${h}"
                          onclick="handleSlotClick(event, '${this.day}', ${h})">`;
-            // Reparto en columnas + pop-up si hay demasiadas (ver calendar-overlap.js).
+            // Día: hasta 6 columnas; más → botón "Ver todas" (CalOverlap, arriba en esta vista).
             html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 6 });
             html += '</div>';
         }
