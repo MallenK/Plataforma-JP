@@ -496,10 +496,10 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
 
 <?= $this->section('scripts') ?>
 <style>
-.cal-month-headers { display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg-app);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0; }
+.cal-month-headers { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--bg-app);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0; }
 .cal-day-header { padding:7px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
-.cal-month-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);overflow:hidden; }
-.cal-cell { background:var(--bg-card);min-height:80px;padding:5px;transition:background .1s; }
+.cal-month-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);overflow:hidden; }
+.cal-cell { background:var(--bg-card);min-height:80px;min-width:0;padding:5px;transition:background .1s; }
 .cal-cell:hover { background:#f8fafc; }
 .cal-cell.other { background:#f8fafc;opacity:.5; }
 .cal-cell.today { background:var(--accent-light); }
@@ -566,7 +566,12 @@ window.CalOverlap = (function () {
         if (!evts || !evts.length) return '';
         opts = opts || {};
         var slotH   = opts.slotH   || 56;
-        var maxCols = opts.maxCols || 3;
+        // En móvil las columnas lado a lado no se leen: a partir de 2 clases
+        // en la misma franja se muestra directamente el botón "Ver todas".
+        // En escritorio se permiten hasta 6 columnas antes de colapsar.
+        var isMobile = typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(max-width: 768px)').matches;
+        var maxCols = isMobile ? 1 : (opts.maxCols || 6);
         var hh      = String(hour).padStart(2, '0');
 
         if (evts.length > maxCols) {
@@ -574,7 +579,7 @@ window.CalOverlap = (function () {
                 'title="Ver las ' + evts.length + ' clases de las ' + hh + ':00" ' +
                 "onclick=\"event.stopPropagation();CalOverlap.openPopup('" +
                     esc(dateStr) + "'," + (parseInt(hour, 10) || 0) + ')">' +
-                '<i class="bi bi-layers-half"></i> ' + evts.length + ' clases &middot; ' + hh + ':00' +
+                '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + evts.length +
                 '</button>';
         }
 
@@ -772,7 +777,10 @@ const DBCAL = {
         const days=[],dates=[];
         for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);days.push(d);dates.push(this.fmt(d));}
         const dn=['L','M','X','J','V','S','D'];
-        const HS=7, HE=20, SH=52;
+        const SH=52;
+        // Rango horario: 07–20 por defecto, ampliado si hay clases antes o
+        // después (p. ej. sesiones a las 20:00 que antes quedaban ocultas).
+        const [HS, HE] = this.hourRange(this.events.filter(e => dates.includes(e.date)));
         let html='<div class="cal-week-wrap"><div class="cal-week-grid">';
         html+='<div class="cal-week-head time-col"></div>';
         days.forEach((d,i)=>{
@@ -784,6 +792,7 @@ const DBCAL = {
             dates.forEach(ds=>{
                 const evts=this.events.filter(e=>e.date===ds && parseInt(e.start.split(':')[0])===h);
                 html+=`<div class="cal-hour-slot${dbCanManage?' cal-can-create':''}" onclick="dbHandleSlot(event,'${ds}',${h})">`;
+                // Semana: solo 2 columnas caben legibles; 3+ → botón "Ver todas".
                 html+=CalOverlap.slotHtml(evts, ds, h, { slotH: SH, maxCols: 2 });
                 html+='</div>';
             });
@@ -829,8 +838,9 @@ const DBCAL = {
         document.getElementById('db-cal-label').textContent =
             `${dnames[d.getDay()]}, ${d.getDate()} de ${mn[d.getMonth()]} ${d.getFullYear()}`;
 
-        const HS=7, HE=20, SH=52;
+        const SH=52;
         const dayEvts = this.events.filter(e => e.date === this.day);
+        const [HS, HE] = this.hourRange(dayEvts);
 
         let html='<div class="cal-week-wrap"><div class="cal-day-grid">';
         html+=`<div class="cal-week-head time-col"></div>`;
@@ -840,13 +850,26 @@ const DBCAL = {
             html+=`<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
             const slotEvts=dayEvts.filter(e=>parseInt(e.start.split(':')[0])===h);
             html+=`<div class="cal-hour-slot${dbCanManage?' cal-can-create':''}" onclick="dbHandleSlot(event,'${this.day}',${h})">`;
-            html+=CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SH, maxCols: 3 });
+            html+=CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SH, maxCols: 6 });
             html+='</div>';
         }
         html+='</div></div>';
         document.getElementById('db-cal-grid').innerHTML = html;
     },
 
+    // Rango de horas [inicio, fin) a pintar en Semana/Día: 07–20 salvo que
+    // haya clases fuera de esa franja (las de las 20:00 antes se perdían).
+    hourRange(evts) {
+        let hs = 7, he = 20;
+        (evts || []).forEach(e => {
+            const sh = parseInt(String(e.start).split(':')[0]) || 0;
+            const ep = String(e.end || '').split(':');
+            const eh = (parseInt(ep[0]) || sh) + ((parseInt(ep[1]) || 0) > 0 ? 1 : 0);
+            if (sh < hs) hs = Math.max(0, sh);
+            if (eh > he) he = Math.min(24, eh);
+        });
+        return [hs, he];
+    },
     getMonday(d) { const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return this.fmt(new Date(d.setDate(diff))); },
     fmt(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; },
 };
