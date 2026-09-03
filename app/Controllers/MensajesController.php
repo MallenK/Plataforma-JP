@@ -312,8 +312,9 @@ class MensajesController extends BaseController
                 return $this->response->setStatusCode(403);
             }
 
-            $fullPath = FCPATH . $msg['file_path'];
-            if (!file_exists($fullPath)) {
+            helper('upload');
+            $fullPath = upload_resolve_stored($msg['file_path']);
+            if ($fullPath === null) {
                 return $this->response->setStatusCode(404);
             }
 
@@ -497,7 +498,8 @@ class MensajesController extends BaseController
             return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/' . $subfolder . '/';
+        // Fuera del webroot: solo se sirve por MensajesController::download().
+        $uploadDir = upload_private_dir($subfolder);
         upload_harden_dir($uploadDir);
 
         $newName = bin2hex(random_bytes(16)) . '.' . $ext;
@@ -509,7 +511,7 @@ class MensajesController extends BaseController
         }
 
         return [
-            'path' => 'uploads/' . $subfolder . '/' . $newName,
+            'path' => upload_stored_path($subfolder, $newName),
             'name' => $file->getClientName(),
             'size' => $file->getSize(),
             'mime' => $mime,

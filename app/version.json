@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.5",
+        "date": "2026-09-03 00:00:00",
+        "description": "Refuerzo de seguridad (auditoría). Se blinda la subida de archivos adjuntos en notificaciones, incidencias y mensajes: solo se aceptan formatos seguros y los adjuntos privados se guardan fuera de la zona pública, de modo que ya no se pueden descargar adivinando la dirección. Se reactivan los archivos adjuntos del chat, que llevaban tiempo sin funcionar. Se corrigen además varios puntos menores detectados en la auditoría (redirecciones, indexación, escapado de texto)."
+    },
+    {
         "version": "1.1.4",
         "date": "2026-09-03 17:00:00",
         "description": "Corrige la hora de toda la plataforma: iba una hora por detrás de la hora de España. Ahora las fechas y horas (anotaciones, clases, mensajes, notificaciones, historial) se muestran siempre en hora peninsular, con el cambio de horario de verano/invierno automático."

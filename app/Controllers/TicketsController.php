@@ -349,8 +349,9 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(403);
         }
 
-        $fullPath = FCPATH . $attach['file_path'];
-        if (!file_exists($fullPath)) {
+        helper('upload');
+        $fullPath = upload_resolve_stored($attach['file_path']);
+        if ($fullPath === null) {
             return $this->response->setStatusCode(404);
         }
 
@@ -397,14 +398,15 @@ class TicketsController extends BaseController
             return ['error' => 'Extensión de archivo no permitida.'];
         }
 
-        $uploadDir = FCPATH . 'uploads/tickets/';
+        // Fuera del webroot: solo se sirve por TicketsController::download().
+        $uploadDir = upload_private_dir('tickets');
         upload_harden_dir($uploadDir);
 
         $newName = bin2hex(random_bytes(16)) . '.' . $ext;
         $file->move($uploadDir, $newName);
 
         return [
-            'path' => 'uploads/tickets/' . $newName,
+            'path' => upload_stored_path('tickets', $newName),
             'name' => $file->getClientName(),
             'size' => $file->getSize(),
             'mime' => $file->getMimeType(),

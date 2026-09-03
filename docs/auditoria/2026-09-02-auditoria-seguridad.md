@@ -11,6 +11,11 @@
 
 > ⚠️ Documento sensible: contiene detalle de vulnerabilidades explotables. No publicar fuera del equipo. Está excluido de la imagen Docker (`.dockerignore` ignora `*.md`).
 
+> **Nota de despliegue (2026-09-03).** El trabajo de la auditoría se parte en dos para producción:
+> - **Tanda A — `fix/seguridad-rce-uploads` (este PR).** RCE de subida (H1/H2), adjuntos privados fuera del webroot (M1), open-redirect (M3), XSS latentes (L3/L5/L6), `.dockerignore` (M2), `Notificaciones::send` (L8), `robots.txt` (L9), `www→https` (L10), uploads trackeados en git (L12). **No cambia nada visible para el usuario** salvo que reactiva los adjuntos del chat. Sin ventana especial.
+> - **Tanda B — pendiente (una noche de bajo tráfico).** `logout` solo POST (L1) y rename de los nombres de CSRF (L2): invalidan los formularios abiertos en el momento del deploy.
+> En este documento, L1 y L2 figuran como "hechos en rama" porque el código existe, pero **NO entran en la Tanda A**.
+
 ---
 
 ## 1. Resumen ejecutivo
@@ -19,24 +24,27 @@ La base es **sólida**: CSRF activo globalmente, auto-routing desactivado, contr
 
 El problema serio está en **tres manejadores de subida de archivos** (`Notificaciones`, `Tickets`, `Mensajes`) que **no validan la extensión final** del archivo y lo guardan **dentro de `public/`**. Con un archivo polyglot (cabecera de imagen válida + código PHP) y nombre `algo.php` se conseguía **ejecución remota de código autenticada**. El caso de `Notificaciones` lo podía disparar **cualquier usuario, incluido un alumno**.
 
+> **Actualización 2026-09-02 (2ª tanda):** tras aprobar el informe se han aplicado también las recomendaciones 1–4 de la sección 4. Ver **§6**. Estados actualizados abajo.
+
 | # | Severidad | Hallazgo | Estado |
 |---|-----------|----------|--------|
-| **H1** | 🔴 Alta / Crítica | Subida arbitraria de archivos → RCE en `NotificacionesController` y `TicketsController` (sin lista blanca de extensión, guardado en webroot) | ✅ **Corregido en esta rama** |
-| **H2** | 🟠 Media | `MensajesController::handleFileUpload()` llama a un método inexistente (`secureUploadDir`) → adjuntos de chat rotos + endurecimiento de directorio que nunca ocurría | ✅ **Corregido en esta rama** |
-| **M1** | 🟠 Media | Archivos subidos servidos sin cabeceras de seguridad ni control de acceso (servido estático por Apache / `serveFile()` con `exit`) | ⚠️ **Mitigado** (nosniff + `.htaccess`); pendiente mover fuera de webroot |
+| **H1** | 🔴 Alta / Crítica | Subida arbitraria de archivos → RCE en `NotificacionesController` y `TicketsController` (sin lista blanca de extensión, guardado en webroot) | ✅ **Corregido** (lista blanca + **uploads movidos fuera de `public/`**, §6) |
+| **H2** | 🟠 Media | `MensajesController::handleFileUpload()` llama a un método inexistente (`secureUploadDir`) → adjuntos de chat rotos + endurecimiento de directorio que nunca ocurría | ✅ **Corregido** |
+| **M1** | 🟠 Media | Archivos subidos servidos sin cabeceras de seguridad ni control de acceso (servido estático por Apache / `serveFile()` con `exit`) | ✅ **Corregido** — adjuntos privados fuera de webroot y solo por controlador (§6); avatares siguen estáticos pero con lista blanca + `.htaccess` |
 | **M2** | 🟠 Media | `deploy/.env` (secretos de PRODUCCIÓN) se copia dentro de la imagen Docker | ✅ **Corregido** (`.dockerignore`) |
-| **M3** | 🟡 Media-baja | Open redirect en `DocumentacionController::upload()` (`//evil.com`) | ✅ **Corregido en esta rama** |
-| **L1** | 🟢 Baja | `logout` por GET → cierre de sesión forzado vía CSRF | 📋 Recomendación |
-| **L2** | 🟢 Baja | Config CSRF con nombres por defecto (`csrf_test_name`); CLAUDE.md dice `jp_csrf_token` (inexacto) | 📋 Recomendación + doc corregida |
-| **L3** | 🟢 Baja | `<title>` sin `esc()` en `layouts/base.php` (XSS latente) | ✅ **Corregido en esta rama** |
+| **M3** | 🟡 Media-baja | Open redirect en `DocumentacionController::upload()` (`//evil.com`) | ✅ **Corregido** |
+| **L1** | 🟢 Baja | `logout` por GET → cierre de sesión forzado vía CSRF | 🅱️ **Tanda B** — código listo en rama, no en el PR de la Tanda A |
+| **L2** | 🟢 Baja | Config CSRF con nombres por defecto (`csrf_test_name`); CLAUDE.md dice `jp_csrf_token` (inexacto) | 🅱️ **Tanda B** — código listo en rama; invalida forms abiertos al desplegar |
+| **L3** | 🟢 Baja | `<title>` sin `esc()` en `layouts/base.php` (XSS latente) | ✅ **Corregido** |
 | **L4** | 🟢 Baja | SQL construido por interpolación de string en `DocumentService::getAccessibleFolders()` | 📋 Recomendación (hoy no explotable) |
-| **L5** | 🟢 Baja | `json_encode` dentro de `<script>` sin `JSON_HEX_TAG` en `clases/create.php` (nombre lo controla el alumno) | ✅ **Corregido en esta rama** |
-| **L6** | 🟢 Baja | `buildAvatarHtml()` (JS de mensajes) no escapa las iniciales en la rama sin imagen | ✅ **Corregido en esta rama** |
+| **L5** | 🟢 Baja | `json_encode` dentro de `<script>` sin `JSON_HEX_TAG` en `clases/create.php` (nombre lo controla el alumno) | ✅ **Corregido** |
+| **L6** | 🟢 Baja | `buildAvatarHtml()` (JS de mensajes) no escapa las iniciales en la rama sin imagen | ✅ **Corregido** |
 | **L7** | ⚪ Info | DoS por bloqueo de cuenta (quien conoce un email puede bloquearla 5 fallos/15 min) | Aceptado (compromiso documentado) |
-| **L8** | 🟢 Baja | `Notificaciones` individual: cualquiera (incl. alumno) puede notificar a cualquiera, sin rate-limit; incoherente con el bloqueo alumno↔alumno de Mensajes | 📋 Recomendación |
+| **L8** | 🟢 Baja | `Notificaciones` individual: cualquiera (incl. alumno) puede notificar a cualquiera, sin rate-limit; incoherente con el bloqueo alumno↔alumno de Mensajes | ✅ **Corregido** — regla alumno→no-alumno + rate-limit + `type` estricto (§6) |
 | **L9** | ⚪ Info | `robots.txt` permite indexar toda la app (backoffice tras login) | 📋 Recomendación |
 | **L10** | ⚪ Info | Redirección `www→no-www` en `public/.htaccess` baja a `http://` | 📋 Recomendación |
 | **L11** | ⚪ Info | `.env` de desarrollo en el árbol de trabajo (`CI_ENVIRONMENT = development` + clave Resend). No commiteado. | Vigilar |
+| **L12** | 🟡 Media-baja | Ficheros subidos por usuarios **trackeados en git** pese al `.gitignore` (commit "Subida 29/04"): 2 avatares, 1 adjunto de mensaje privado, 2 PDF de carpetas personales/públicas. `.gitignore` no destrackea lo ya trackeado. | 📋 Recomendación (`git rm --cached`) — ver §7 |
 
 ---
 
@@ -172,24 +180,97 @@ Al estar fuera del docroot (`public/`) no son accesibles por web, pero quedan en
 | `.dockerignore` | Ignora `deploy/`, `database.txt`, `*.zip`. |
 | `.claude/CLAUDE.md` | Sección de deuda técnica actualizada con estos hallazgos. |
 
+**2ª tanda (§6):** `app/Helpers/upload_helper.php` (+3 funciones), `app/Commands/MigrateUploadsOutOfWebroot.php` (nuevo), `Mensajes/Notificaciones/TicketsController.php` (upload→WRITEPATH, download→`upload_resolve_stored`), `app/Models/NotificationModel.php` (`countRecentBySender`), `NotificacionesController.php` (`send` endurecido), `app/Config/Routes.php` (logout POST), `app/Config/Security.php` (nombres CSRF), `app/Views/components/sidebar.php` + `public/assets/css/app.css` (form de logout), `tests/unit/UploadHardeningTest.php` (nuevo).
+
 **Verificación:**
 - `php -l` OK en todos los archivos tocados.
-- **Suite de tests: 156/156 OK** (622 assertions) — incluye `NotificacionesTest` (subida de archivos).
+- **Suite de tests: 167/167 OK** (663 assertions) — `NotificacionesTest` + nuevo `UploadHardeningTest`.
 - `.htaccess` probado contra el Apache del contenedor: `.php` → 403, estáticos → 200, sintaxis OK.
-- App levantada: `/login` → 200, `/dashboard` → 302.
+- App levantada: `/login` → 200, `/dashboard` → 302, `GET /logout` → 302, `POST /logout` sin CSRF → 403.
+- `php spark uploads:migrate` probado end-to-end.
 
 ---
 
 ## 4. Recomendaciones pendientes (requieren decisión / coordinación)
 
-1. **(Alta) Mover todos los `uploads/` fuera de `public/`** y servirlos siempre por controlador con comprobación de permisos. Patrón de referencia ya en el repo: `DocumentService` (`WRITEPATH . 'uploads/'` + `.htaccess` + nombre CSPRNG). Elimina de raíz H1/M1.
-2. **(Media) `logout` por POST** (L1).
-3. **(Media) Renombrar `tokenName`/`cookieName` de CSRF** a valores propios (L2) — coordinar con un despliegue.
-4. **(Media) Igualar el control de `Notificaciones::send` al de `Mensajes`** + rate-limit (L8).
+> Los puntos 1–4 se aplicaron en la 2ª tanda — ver **§6**. Quedan pendientes:
+
 5. **(Baja) Bindings en `getAccessibleFolders()`** (L4).
 6. **(Baja) `robots.txt` → `Disallow: /`; `.htaccess` www→no-www a `https://`** (L9/L10).
-7. **Rotar la API key de Resend** `re_ivw6…` si la imagen Docker con `deploy/` se ha publicado alguna vez.
+7. **Rotar la API key de Resend** `re_ivw6…` si la imagen Docker con `deploy/` se ha publicado alguna vez. *(No es un cambio de código.)*
 8. Fase 2 ya prevista en CLAUDE.md: 2FA/TOTP, CAPTCHA, CSP, HIBP, driver de sesión en BD.
+
+---
+
+## 6. Segunda tanda — recomendaciones 1–4 aplicadas (2026-09-02)
+
+Tras aprobar el informe se pidió aplicar **todo lo pendiente menos rotar la key de Resend** (punto 7, acción externa).
+
+### 6.1 Adjuntos privados fuera del webroot (resuelve H1 y M1 del todo)
+
+- **Nuevas funciones en `app/Helpers/upload_helper.php`**:
+  - `upload_private_dir($sub)` → `WRITEPATH/uploads/<sub>/` (fuera de `public/`, junto a lo que ya usa `DocumentService`).
+  - `upload_stored_path()` → valor que se guarda en BD, formato `uploads/<sub>/<nombre>` (igual que antes → **sin migración de BD**).
+  - `upload_resolve_stored()` → resuelve ese valor a ruta absoluta comprobando **primero `WRITEPATH`, luego `FCPATH`** (los adjuntos antiguos siguen sirviéndose). Incluye defensa anti path-traversal (regex + rechazo de `..`).
+- **`Mensajes` / `Notificaciones` / `Tickets`**: `handleFileUpload()` guarda en `upload_private_dir()`; `download()` resuelve con `upload_resolve_stored()` en vez de `FCPATH . $fila['file_path']`.
+- **Comando de migración**: `php spark uploads:migrate` mueve los adjuntos ya subidos de `public/uploads/{mensajes,notificaciones,tickets}` a `writable/uploads/…` (copia → verifica tamaño → borra; idempotente; `--dry-run` disponible). **En prod (Hostinger) ejecutarlo por SSH después de desplegar.** Si no se ejecuta, los antiguos siguen funcionando por el fallback.
+- Avatares: se mantienen en `public/uploads/avatars/` (son públicos, se incrustan como `<img>` en toda la app; meterlos tras un controlador = 1 consulta + auth por avatar y por fila de tabla). Quedan con lista blanca de extensión + `.htaccess` anti-ejecución.
+
+### 6.2 `logout` solo por POST (L1)
+
+- `Routes.php`: `POST /logout` (con CSRF) hace el logout real; `GET /logout` solo redirige (a `/dashboard` o `/login`) — así un `<img src=".../logout">` ya no cierra la sesión y los enlaces/marcadores viejos no dan 404.
+- `components/sidebar.php`: el enlace pasa a `<form method="post">` + `<button class="sidebar-logout">` + `csrf_field()`. CSS ajustado (`app.css`).
+- `perfil/change_password.php` ya usaba un form POST con CSRF — sin cambios.
+
+### 6.3 Nombres de CSRF propios (L2)
+
+- `Config/Security.php`: `tokenName` `csrf_test_name` → **`jp_csrf_token`**; `cookieName` `csrf_cookie_name` → **`jp_csrf_cookie`**.
+- Todas las vistas usan `csrf_field()`/`csrf_token()`/`csrf_hash()` (dinámico) → se propaga solo. Verificado: la página de login ya emite `jp_csrf_token`.
+- ⚠️ **Al desplegar**: las pestañas ya abiertas con el token viejo fallarán un POST hasta recargar. Desplegar en horario de bajo tráfico.
+
+### 6.4 `Notificaciones::send` endurecido (L8)
+
+- `type` se normaliza a exactamente `individual` | `group` (antes un `type` inventado por un alumno se colaba en la rama grupal).
+- Individual: se comprueba que el destinatario **existe y está activo**, y se aplica la **misma regla que Mensajes** — un alumno solo puede notificar a no-alumnos.
+- **Rate-limit** por remitente (ventana de 10 min): 8 envíos para alumno, 40 para el resto → HTTP 429. Nuevo `NotificationModel::countRecentBySender()`.
+
+### 6.5 Verificación (2ª tanda)
+
+- `php -l` OK en todo lo tocado.
+- **Tests: 167/167 OK** (+11 nuevos en `tests/unit/UploadHardeningTest.php`: lista blanca de extensión, anti-traversal, almacenamiento en `WRITEPATH`, y *code-scan* que fija el wiring de los 3 handlers + logout POST + nombres CSRF).
+- `.htaccess` generado probado contra Apache del contenedor: `.php` → 403, estáticos → 200, `apachectl -t` OK.
+- `php spark uploads:migrate` probado end-to-end (movió un fichero real, creó `.htaccess`).
+- `GET /logout` → 302; `POST /logout` sin token → 403; login emite `jp_csrf_token`.
+
+### 6.6 Nota operativa
+
+En **Hostinger** (prod) la CLI y el servidor web corren con el mismo usuario → `spark uploads:migrate` no da problemas de permisos. En Docker/Render, si el comando se ejecuta como `root` y el web como `www-data`, hacer `chown -R www-data:www-data writable/uploads` después (el comando lo avisa).
+
+---
+
+## 7. Hallazgo adicional (L12) — uploads trackeados en git
+
+Durante la 2ª tanda se detectó que hay contenido subido por usuarios **dentro del repositorio git**, a pesar de que `.gitignore` ignora `public/uploads/` y `writable/uploads/` (no destrackea lo que ya estaba trackeado):
+
+```
+public/uploads/avatars/avatar_2_1776705808.jpeg
+public/uploads/avatars/avatar_2_1776706042.jpeg
+public/uploads/mensajes/69f1d60c0263e6..._1777456652.png   ← adjunto de un mensaje privado
+writable/uploads/personal/8/632a7a42...pdf                 ← PDF de carpeta personal de un usuario
+writable/uploads/public/3/a8b0299e...pdf
+```
+
+**No se ha tocado en esta rama** (borrarlos de git puede eliminarlos en el próximo `git pull` de producción si el deploy es por git). Recomendación, a coordinar:
+
+```bash
+git rm --cached public/uploads/avatars/*.jpeg \
+                 public/uploads/mensajes/*.png \
+                 writable/uploads/personal/8/*.pdf \
+                 writable/uploads/public/3/*.pdf
+# confirmar que en producción esos ficheros existen en disco ANTES de desplegar el commit
+```
+
+Y verificar que el resto de `public/uploads/` y `writable/uploads/` no tiene nada más trackeado: `git ls-files public/uploads writable/uploads`.
 
 ---
 
