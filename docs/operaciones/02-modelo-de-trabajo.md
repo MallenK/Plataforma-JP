@@ -54,8 +54,8 @@ docker compose down              # parar
 ## 3. Ciclo de vida de un cambio
 
 ```
-  Ticket  ─▶  Rama  ─▶  Implementación  ─▶  Test  ─▶  PR  ─▶  Integración  ─▶  Release  ─▶  Deploy  ─▶  version.json
- docs/tickets/       feat|fix/*        Services       tests/unit/       develop        release/*     Render→Hostinger
+  Ticket  ─▶  Rama  ─▶  Implementación  ─▶  Test  ─▶  PR a main  ─▶  Tag + version.json  ─▶  Deploy
+ docs/tickets/     feat|fix/*        Services       tests/unit/                              Render→Hostinger
 ```
 
 ### 3.1 Ticket
@@ -120,9 +120,12 @@ Antes de fusionar a la rama de integración / `main`:
 
 ### 3.6 Integración y release
 
-- Las ramas se juntan en una rama de integración (`develop` / histórico
-  `developing-branch`) o directamente en una `release/YYYY-MM-DD`.
-- Se corre la suite completa y la batería de humo en Render.
+- **Trunk-based:** cada `feat/*`/`fix/*` sale de `main` y vuelve a `main` por
+  PR. **No hay `develop` ni `release/*`** (ver
+  [`03-organizacion-github.md`](03-organizacion-github.md) §2).
+- Antes de mergear: suite completa en verde + `/code-review` (+
+  `/security-review` si toca auth/subidas/permisos/SQL/secretos).
+- Para subir a producción: bump `version.json` + tag `vX.Y.Z` + deploy.
 - Ver [`01-protocolo-despliegue.md`](01-protocolo-despliegue.md).
 
 ### 3.7 Registro de versión
@@ -175,13 +178,22 @@ Otros:
 
 ---
 
-## 6. Snapshot del repo — 2026-09-01 (tras release v1.1.2)
+## 6. Snapshot del repo — 2026-09-03 (tras la limpieza)
 
-Toda la tanda de trabajo del 2026-09-01 **está consolidada en `main`**
-(`6645d65`, `v1.1.2`) y **desplegada y verificada en Hostinger**. Los tags
-`v1.1.0` y `v1.1.2` están pusheados; la rama `origin/main` aún apunta a
-`v1.1.0` — falta el `git push origin main` (ver
-[`03-organizacion-github.md`](03-organizacion-github.md) §1 y §9).
+El repo se ordenó a fondo el 2026-09-03: se borraron ~26 ramas ya liberadas o
+basura y 4 worktrees huérfanos. Estado limpio y detalle completo en
+[`03-organizacion-github.md`](03-organizacion-github.md) §1.
+
+- **Local = remoto:** `main` (`fa2b11d`) sin commits sin pushear. Solo queda
+  además la rama `fix/seguridad-uploads` (auditoría de seguridad rehecha limpia
+  sobre `main`, pendiente de PR + deploy con ventana — §6 de `03`).
+- **Backup** de todas las ramas previas:
+  `Desktop/Plataforma-JP/_backups/ramas-backup-2026-09-03.bundle`.
+- Añadido sobre v1.1.2: fix del solapamiento de clases en el calendario, fix de
+  zona horaria (`appTimezone` pasó de `Europe/London` a `Europe/Madrid` — la
+  plataforma iba 1h por detrás de España).
+
+### Histórico — trabajo consolidado en v1.1.0 / v1.1.2 (2026-09-01)
 
 | Área | Qué entró | Contenido |
 |------|-----------|-----------|
@@ -202,10 +214,5 @@ Toda la tanda de trabajo del 2026-09-01 **está consolidada en `main`**
   migraciones de esta release se aplicaron a mano en phpMyAdmin de Hostinger
   con los `.sql` de `docs/deploy/` (`migraciones_seguridad.sql`,
   `migraciones_posiciones.sql`). Render quedó sin validar esta vuelta.
-- Ramas locales transitorias pendientes de borrar tras confirmar el humo:
-  `develop`, `release/2026-09`, `feat/login-redesign`, y las 6 `feat/*`/`fix/*`
-  de la release. Plan en
-  [`03-organizacion-github.md`](03-organizacion-github.md) §8.
-- **Varios `git worktree`** activos en `.claude/worktrees/`. Puede haber más
-  de una sesión trabajando en el repo a la vez: coordinar antes de hacer
-  checkout/commit/merge en el worktree principal.
+- Todas las ramas transitorias de esta consolidación se borraron el
+  2026-09-03 (ver [`03-organizacion-github.md`](03-organizacion-github.md) §1).
