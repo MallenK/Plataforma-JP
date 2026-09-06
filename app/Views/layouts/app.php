@@ -17,6 +17,14 @@
         <?= view('components/navbar') ?>
 
         <div class="page-body">
+            <?php if ($reportUrl = session()->getFlashdata('error_report_url')): ?>
+            <div class="alert-jp error mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error_report_msg') ?? 'Ha ocurrido un error.') ?></span>
+                <a href="<?= esc($reportUrl, 'attr') ?>" class="btn btn-sm btn-light">
+                    <i class="bi bi-flag me-1"></i>Reportar
+                </a>
+            </div>
+            <?php endif; ?>
             <?= $this->renderSection('page_content') ?>
         </div>
 
