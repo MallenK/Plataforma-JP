@@ -214,3 +214,128 @@ Cada fase = su rama + PR + validación en pre-producción antes de Hostinger.
    una clase", "Acceso / contraseña", "Facturación / bono")?
 4. **Borrado de tickets**: ¿de verdad lo quieres, o mejor solo "archivar"
    (nunca se borra, desaparece de las bandejas)?
+
+---
+
+# ANEXO — Reporte contextual de errores ("Reportar problema" desde la alerta)
+
+> Añadido tras la revisión: además de facilitar el reporte a **todos** los
+> roles, cuando un usuario se topa con un **error (500)** o una
+> **prohibición (403)**, o falla una petición AJAX, debe poder **abrir un
+> ticket directamente desde la alerta**, con el contexto ya rellenado.
+
+## Qué se guarda automáticamente en el ticket
+
+| Dato | Origen | Cómo |
+|---|---|---|
+| **Usuario** | sesión | ya lo tiene el ticket (`user_id`) + se cita en la descripción |
+| **Fecha/hora** | servidor + cliente | `created_at` + timestamp del navegador en `context` |
+| **URL / pantalla** | `window.location` | en `context` y en el título |
+| **Acción que falló** | el `fetch` / la ruta | endpoint + método |
+| **Mensaje del servidor + Referencia** | `error_ref` | código corto (6 hex) que correlaciona con el log del servidor |
+| **Navegador** | `navigator.userAgent` | en `context` |
+| **Captura de pantalla** | *opcional* | el usuario adjunta la suya, **o** botón "Capturar" (html2canvas) |
+| **Reporte del error (texto libre)** | el usuario | "¿qué estabas haciendo?" |
+
+## Arquitectura
+
+### A) Backend — `ErrorReportTrait` (en `BaseController`)
+Generaliza lo que ya hace `MensajesController`:
+```php
+protected function errorRef(\Throwable $e, string $where): string   // genera ref + log estructurado
+protected function jsonFail(string $msg, int $status = 500, ?string $ref = null): ResponseInterface
+protected function guard(string $where, callable $fn)               // ejecuta y captura → jsonFail
+```
+`log_message('critical', "[ref] {$where} · url={$url} · user={$uid} · rol={$rol} · {$msg}\n{$trace}")`.
+Respuesta AJAX: `{ "error": "...", "error_ref": "A3F91C", "reportable": true }`.
+
+### B) Handler global de excepciones (`Config/Exceptions.php`)
+Handler propio: toda excepción no capturada → `ref` + log + en producción
+renderiza `errors/html/production.php` **personalizada** con:
+- "Algo ha fallado. Referencia **A3F91C**."
+- Botón **"Reportar este problema"** → abre el modal precargado.
+
+### C) Página 403 (`error_403.php`)
+Botón "¿Deberías tener acceso? **Reportar**" → ticket `categoria=consulta`,
+título "Sin permiso para {ruta}".
+
+### D) Frontend — `window.reportProblem(ctx)` + `showAlert` extendido
+- Helper JS global (en `app.js`): abre `#modalTicketRapido` con
+  `category=bug`, `priority=alta`, título y descripción **precargados** con
+  el contexto (URL, endpoint, ref, navegador, hora). El usuario solo escribe
+  "qué hacía" y, si quiere, adjunta captura.
+- `showAlert(msg, type, { ref, context })` — si hay `ref`, el toast muestra
+  un botón **"Reportar"**.
+- Los `fetch` que devuelvan `error_ref` lo disparan automáticamente.
+
+### E) Captura de pantalla
+- **Manual** (por defecto): campo de adjunto en el modal.
+- **Automática** (opción): botón "📷 Capturar pantalla" → `html2canvas`
+  (CDN `cdnjs`, permitido por la CSP) genera un PNG del estado actual y lo
+  adjunta. *Decisión pendiente: ¿añadimos html2canvas?*
+
+### F) Datos extra en `tickets` (migración pequeña, aditiva)
+| Columna | Tipo |
+|---|---|
+| `origin` | `ENUM('manual','error','permiso') DEFAULT 'manual'` |
+| `context` | `JSON NULL` — url, endpoint, ref, userAgent, ts cliente |
+| `error_ref` | `VARCHAR(12) NULL` — para que el gestor busque el log |
+
+En el detalle del ticket, si `origin != 'manual'`, se muestra un bloque
+"Contexto técnico" formateado (solo para gestores).
+
+## Dónde poner los `try/catch` — estudio de puntos
+
+Ordenado por **(probabilidad de fallo × uso × complejidad × importancia)**:
+
+### P0 — Subidas de archivos (todas)
+`handleFileUpload()` en **Tickets, Mensajes, Notificaciones, Documentación,
+Avatares** (15 puntos de subida en el repo). Fallan por tamaño, extensión,
+MIME, permisos de carpeta, disco lleno, `move()` fallido. Alto uso, y el
+usuario no entiende el error crudo.
+
+### P1 — Clases (`ClasesController`, 25 métodos — lo más complejo y usado)
+- `quickCreate`, `store`, `update` — creación de sesiones (puntuales + recurrentes)
+- `guardarLista` — pasar lista + **descuento de bono** (operación con varias escrituras)
+- `deductBono` — el del 403 histórico
+- `addPlayer` / `addCoach` / `removePlayer` / `removeCoach`
+- `cancel`, `destroy`
+- `calendario`, `buscar` — AJAX de alto tráfico
+
+### P1 — Bonos (`BonosController`)
+- `store` — el `#1062 Duplicate entry` histórico
+- `assign`, y el consumo de sesiones
+
+### P1 — Notificaciones (`NotificacionesController`)
+- `send` — adjuntos + rate-limit + resolución de destinatarios
+- `download`
+
+### P2 — Auth (`AuthController`)
+- `loginPost`, `forgotPasswordPost`, `resetPasswordPost` — dependen de BD +
+  email (Resend) + rate-limit (`auth_events`)
+
+### P2 — Alumnos (`AlumnosController`)
+- `store`, `update`, `saveProfile` — posiciones múltiples, JSON, subida de avatar
+
+### P2 — Configuración (`ConfiguracionController`, 16 métodos, 0 try/catch hoy)
+- `createStaff`, `createSede`, `createBonoType` + sus `edit` / `delete`
+
+### P3 — resto
+Entrenadores, Anotaciones, `DashboardController::getStats`
+(recordatorio: `TicketModel::getStats` petaba), Perfil (completar cobertura).
+
+### Red global
+El handler de excepciones (B) cubre **todo lo demás** que no se envuelva
+explícitamente — así ningún error acaba en un "Whoops!" sin referencia.
+
+## Fases
+
+| Fase | Contenido |
+|---|---|
+| **E1** | `ErrorReportTrait` + handler global + `production.php`/`error_403.php` con botón · `window.reportProblem` + `showAlert` con "Reportar" · migración (`origin`, `context`, `error_ref`) · captura manual |
+| **E2** | Envolver P0 (subidas) + P1 (Clases, Bonos, Notificaciones) con `guard()` |
+| **E3** | Envolver P2 + P3 · bloque "Contexto técnico" en el detalle del ticket para gestores |
+| **E4** | (opcional) captura automática con html2canvas |
+
+Encaja en paralelo a las fases del sistema de tickets. La **F1** de tickets
+(alumnos pueden reportar) es prerrequisito de **E1**.
