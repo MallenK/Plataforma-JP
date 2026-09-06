@@ -361,6 +361,83 @@ class ClasesService
         ], $sessions);
     }
 
+    /**
+     * Buscador de sesiones por nombre de clase, entrenador o jugador.
+     * Respeta el rol: coach/staff solo ven las suyas, el alumno solo las
+     * suyas, admin/superadmin ven todas.
+     *
+     * @return array<int, array{id:int,title:string,date:string,start:string,
+     *                           status:string,coaches:string,players:int}>
+     */
+    public function search(string $q, int $userId, string $role): array
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 2) {
+            return [];
+        }
+
+        $isPlayer     = in_array($role, ['alumno', 'player'], true);
+        $isCoachStaff = in_array($role, ['coach', 'staff'], true);
+
+        $b = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.status')
+            ->distinct()
+            ->join('class_session_coaches csc', 'csc.session_id = cs.id', 'left')
+            ->join('users uc', 'uc.id = csc.user_id', 'left')
+            ->join('class_session_players csp', 'csp.session_id = cs.id', 'left')
+            ->join('users up', 'up.id = csp.user_id', 'left')
+            ->groupStart()
+                ->like('cs.title', $q)
+                ->orLike('uc.name', $q)
+                ->orLike('up.name', $q)
+            ->groupEnd()
+            ->orderBy('cs.session_date', 'DESC')
+            ->orderBy('cs.start_time', 'ASC')
+            ->limit(20);
+
+        if ($isPlayer) {
+            $b->where('cs.id IN (SELECT session_id FROM class_session_players WHERE user_id = ' . (int) $userId . ')', null, false);
+        } elseif ($isCoachStaff) {
+            $b->where('cs.id IN (SELECT session_id FROM class_session_coaches WHERE user_id = ' . (int) $userId . ')', null, false);
+        }
+
+        $rows = $b->get()->getResultArray();
+        $ids  = array_map('intval', array_column($rows, 'id'));
+        if (!$ids) {
+            return [];
+        }
+
+        // Entrenadores y nº de jugadores por sesión (una consulta cada uno).
+        $coachMap = [];
+        foreach ($this->db->table('class_session_coaches csc')
+            ->select('csc.session_id, GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ", ") AS names')
+            ->join('users u', 'u.id = csc.user_id')
+            ->whereIn('csc.session_id', $ids)
+            ->groupBy('csc.session_id')
+            ->get()->getResultArray() as $r) {
+            $coachMap[(int) $r['session_id']] = $r['names'];
+        }
+
+        $playerMap = [];
+        foreach ($this->db->table('class_session_players')
+            ->select('session_id, COUNT(*) AS n')
+            ->whereIn('session_id', $ids)
+            ->groupBy('session_id')
+            ->get()->getResultArray() as $r) {
+            $playerMap[(int) $r['session_id']] = (int) $r['n'];
+        }
+
+        return array_map(fn ($s) => [
+            'id'      => (int) $s['id'],
+            'title'   => $s['title'],
+            'date'    => $s['session_date'],
+            'start'   => substr((string) $s['start_time'], 0, 5),
+            'status'  => $s['status'],
+            'coaches' => $coachMap[(int) $s['id']] ?? '',
+            'players' => $playerMap[(int) $s['id']] ?? 0,
+        ], $rows);
+    }
+
     public function getSession(int $id): ?array
     {
         $session = $this->sessionModel->find($id);

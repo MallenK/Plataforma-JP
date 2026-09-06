@@ -545,19 +545,19 @@ window.CalOverlap = (function () {
     var eventsProvider = function () { return []; };
     function useEvents(fn) { if (typeof fn === 'function') eventsProvider = fn; }
 
-    // â”€â”€ Reparto en columnas por solapamiento REAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Antes el reparto se hacÃ­a por franja horaria (cada hora su <div>),
-    // asÃ­ que dos clases que se solapaban pero empezaban en horas
+    // ── Reparto en columnas por solapamiento REAL ────────────────────
+    // Antes el reparto se hacía por franja horaria (cada hora su <div>),
+    // así que dos clases que se solapaban pero empezaban en horas
     // distintas (15:30 y 16:00) se dibujaban una encima de otra.
-    // Ahora se agrupan por "cluster" de solapamiento sobre TODO el dÃ­a.
+    // Ahora se agrupan por "cluster" de solapamiento sobre TODO el día.
 
     function endMin(ev) {
         var s = toMin(ev.start);
         var e = toMin(ev.end || ev.start);
-        return e > s ? e : s + 60; // sin hora de fin â†’ 1h por defecto
+        return e > s ? e : s + 60; // sin hora de fin → 1h por defecto
     }
 
-    // Devuelve [{ cols, placed:[{ev,col}], group:[ev...] }] â€” un elemento por cluster.
+    // Devuelve [{ cols, placed:[{ev,col}], group:[ev...] }] — un elemento por cluster.
     function clusterPack(evts) {
         var sorted = evts.slice().sort(function (a, b) {
             return toMin(a.start) - toMin(b.start) || endMin(a) - endMin(b);
@@ -589,7 +589,7 @@ window.CalOverlap = (function () {
         });
     }
 
-    // Compat: reparto plano (sin clusters) usado por algÃºn test/consumidor antiguo.
+    // Compat: reparto plano (sin clusters) usado por algún test/consumidor antiguo.
     function packColumns(evts) {
         var clusters = clusterPack(evts);
         var placements = [];
@@ -601,17 +601,17 @@ window.CalOverlap = (function () {
         return { cols: cols, placements: placements };
     }
 
-    // â”€â”€ Capa de eventos de un dÃ­a (Semana/DÃ­a) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Se renderiza una sola vez por columna-dÃ­a, posicionada en pÃ­xeles
-    // desde `hourStart`. Un cluster con mÃ¡s de `maxCols` columnas colapsa
-    // a un Ãºnico botÃ³n "Ver todas" que cubre su franja.
+    // ── Capa de eventos de un día (Semana/Día) ───────────────────────
+    // Se renderiza una sola vez por columna-día, posicionada en píxeles
+    // desde `hourStart`. Un cluster con más de `maxCols` columnas colapsa
+    // a un único botón "Ver todas" que cubre su franja.
     function dayLayerHtml(evts, dateStr, opts) {
         if (!evts || !evts.length) return '';
         opts = opts || {};
         var slotH = opts.slotH || 52;
         var hs    = opts.hourStart || 0;
-        // En mÃ³vil las columnas lado a lado no se leen: cualquier cluster
-        // con 2+ clases colapsa al botÃ³n "Ver todas".
+        // En móvil las columnas lado a lado no se leen: cualquier cluster
+        // con 2+ clases colapsa al botón "Ver todas".
         var isMobile = typeof window !== 'undefined' && window.matchMedia
             && window.matchMedia('(max-width: 768px)').matches;
         var maxCols = isMobile ? 1 : (opts.maxCols || 4);
@@ -646,7 +646,7 @@ window.CalOverlap = (function () {
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
                         'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
-                    'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + 'â€“' + esc(ev.end || '') + '" ' +
+                    'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
                     'onclick="event.stopPropagation()">' +
                     esc(ev.start) + ' ' + esc(ev.title) +
                     '</a>';
@@ -664,7 +664,7 @@ window.CalOverlap = (function () {
         });
     }
 
-    // â”€â”€ Pop-up selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Pop-up selector ─────────────────────────────────────────────
     function closePopup() {
         var el = document.getElementById('cal-picker');
         if (el) el.remove();
@@ -678,7 +678,7 @@ window.CalOverlap = (function () {
             return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-picker-row">' +
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
                 '<span class="cal-picker-time">' + esc(ev.start) +
-                    (ev.end ? '<small>â€“' + esc(ev.end) + '</small>' : '') + '</span>' +
+                    (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
                 '<span class="cal-picker-title">' + esc(ev.title) + '</span>' +
                 '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
                 '</a>';
@@ -696,7 +696,7 @@ window.CalOverlap = (function () {
                     '<button type="button" class="cal-picker-close" aria-label="Cerrar">' +
                         '<i class="bi bi-x-lg"></i></button>' +
                 '</div>' +
-                '<div class="cal-picker-hint">Elige quÃ© clase quieres ver</div>' +
+                '<div class="cal-picker-hint">Elige qué clase quieres ver</div>' +
                 '<div class="cal-picker-list">' + rows + '</div>' +
             '</div>';
 
@@ -710,12 +710,12 @@ window.CalOverlap = (function () {
 
     function dayLabel(dateStr, extra) {
         var d = new Date(dateStr + 'T00:00:00');
-        var dn = ['Domingo', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado'];
+        var dn = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-        return dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()] + (extra ? ' Â· ' + extra : '');
+        return dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()] + (extra ? ' · ' + extra : '');
     }
 
-    // Franja horaria (compat: openPopup por hora de inicio o dÃ­a entero).
+    // Franja horaria (compat: openPopup por hora de inicio o día entero).
     function openPopup(dateStr, hour) {
         var all = eventsProvider() || [];
         var evts = all.filter(function (e) {
@@ -727,7 +727,7 @@ window.CalOverlap = (function () {
         showPicker(dayLabel(dateStr, hour != null ? String(hour).padStart(2, '0') + ':00' : ''), evts);
     }
 
-    // Rango [startMin, endMin) â€” usado por el botÃ³n "Ver todas" de un cluster.
+    // Rango [startMin, endMin) — usado por el botón "Ver todas" de un cluster.
     function openPopupRange(dateStr, startMin, endMin) {
         var all = eventsProvider() || [];
         var evts = all.filter(function (e) {

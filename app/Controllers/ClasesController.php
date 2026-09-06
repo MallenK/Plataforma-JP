@@ -58,6 +58,19 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  AJAX: buscador (clase / entrenador / jugador)
+    // ────────────────────────────────────────────────────────────────
+
+    public function buscar(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $q = (string) ($this->request->getGet('q') ?? '');
+
+        return $this->response->setJSON(
+            $this->clasesService->search($q, (int) $this->currentUserId(), (string) session('role'))
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  AJAX: opciones para quick-create
     // ────────────────────────────────────────────────────────────────
 
