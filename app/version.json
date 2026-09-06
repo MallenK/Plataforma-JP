@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.7",
+        "date": "2026-09-06 13:30:00",
+        "description": "Clases: la hora de inicio y de fin de una sesión se comprueba siempre al crear y al editar. Si la hora de inicio falta o no es válida, la sesión ya no se guarda con la hora en 00:00: se muestra un aviso y no se crea/modifica nada. La hora de fin sigue siendo opcional (se calcula una hora después de la de inicio) y debe ser posterior a la de inicio. Ajustes internos menores de coherencia (textos de permisos)."
+    },
+    {
         "version": "1.1.6",
         "date": "2026-09-03 20:30:00",
         "description": "Calendario del panel de inicio y de Clases. Vista Mes en el móvil: ya no se descuadra cuando una clase tiene el nombre largo (el nombre se recorta y las siete columnas quedan siempre iguales). Vistas Semana y Día: ahora se ven también las clases de después de las 20:00, que antes quedaban cortadas. Clases a la misma hora: en el ordenador se muestran una al lado de otra (hasta 2 en Semana, hasta 6 en Día) y, si hay más, un botón 'Ver todas'; en el móvil aparece directamente ese botón, que abre el listado para elegir la clase."

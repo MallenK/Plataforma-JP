@@ -428,7 +428,7 @@ $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionControlle
 // ------------------------------------------------------------
 // CONFIGURACIÓN
 //
-//  GET  /configuracion          → todos los roles (no-admin ve solo General, read-only)
+//  GET  /configuracion          → solo admin y superadmin (403 para el resto)
 //  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 

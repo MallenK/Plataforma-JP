@@ -83,12 +83,16 @@ class PerfilController extends BaseController
         $targetId = $id ?: $actorId;
         $isSelf   = ($targetId === $actorId);
 
+        // Un no-admin solo puede aterrizar en /perfil (sin :id): la ruta
+        // /perfil/:id lleva filtro role:superadmin,admin y le daría un 403.
+        $backTo = $this->isAdmin() ? '/perfil/' . $targetId : '/perfil';
+
         if (!$isSelf && !$this->isAdmin()) {
             return redirect()->to('/perfil')->with('error', 'No tienes permiso para editar este perfil.');
         }
 
         if ($this->isProtectedUser($targetId)) {
-            return redirect()->to('/perfil/' . $targetId)
+            return redirect()->to($backTo)
                 ->with('error', 'Este perfil está protegido y no puede modificarse desde la plataforma.');
         }
 
