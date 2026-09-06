@@ -55,6 +55,10 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
         <?php if ($pageSubtitle): ?><p><?= esc($pageSubtitle) ?></p><?php endif; ?>
     </div>
 
+    <?php if (trim((string) env('APP_ENV_LABEL', '')) !== ''): ?>
+    <div class="topbar-env-badge" title="Entorno de pruebas — los datos no son reales">PRE-PRODUCCIÓN</div>
+    <?php endif; ?>
+
     <div class="topbar-right">
 
         <!-- Ticket rápido — todos los roles excepto player/alumno -->
