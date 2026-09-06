@@ -171,11 +171,11 @@
 .cal-week-wrap { overflow-x:auto; }
 .cal-week-grid {
     display:grid;grid-template-columns:48px repeat(7,1fr);
-    min-width:640px;
+    min-width:640px;position:relative;
 }
 .cal-week-head {
     padding:8px;text-align:center;border-bottom:2px solid var(--border);
-    position:sticky;top:0;background:var(--bg-card);z-index:2;
+    position:sticky;top:0;background:var(--bg-card);z-index:6;
 }
 .cal-week-head.time-col { border-right:1px solid var(--border); }
 .cal-wday-name { font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px; }
@@ -190,10 +190,13 @@
 .cal-hour-slot {
     position:relative;border-bottom:1px solid #f1f5f9;height:56px;
 }
+/* El primer slot de cada columna-día aloja la capa de eventos completa,
+   que se desborda hacia abajo por encima del resto de slots. */
+.cal-hour-slot.cal-anchor { overflow:visible;z-index:4; }
 .cal-event-block {
     position:absolute;left:2px;right:2px;border-radius:5px;padding:3px 6px;
     font-size:11px;font-weight:600;text-decoration:none;overflow:hidden;
-    white-space:nowrap;text-overflow:ellipsis;z-index:1;cursor:pointer;
+    white-space:nowrap;text-overflow:ellipsis;z-index:2;cursor:pointer;box-sizing:border-box;
 }
 .cal-event-block:hover { filter:brightness(.92); }
 .cal-can-create { cursor:pointer; }
@@ -202,7 +205,7 @@
 /* ── Calendario Día ────────────────────────────────────────────── */
 .cal-day-grid {
     display:grid;grid-template-columns:48px 1fr;
-    min-width:280px;
+    min-width:280px;position:relative;
 }
 </style>
 
@@ -227,72 +230,126 @@ window.CalOverlap = (function () {
     var eventsProvider = function () { return []; };
     function useEvents(fn) { if (typeof fn === 'function') eventsProvider = fn; }
 
-    function packColumns(evts) {
-        var sorted = evts.slice().sort(function (a, b) {
-            return toMin(a.start) - toMin(b.start) ||
-                   toMin(a.end || a.start) - toMin(b.end || b.start);
-        });
-        var laneEnd = [];
-        var placements = sorted.map(function (ev) {
-            var s = toMin(ev.start);
-            var e = Math.max(toMin(ev.end || ev.start), s + 10);
-            var col = -1;
-            for (var i = 0; i < laneEnd.length; i++) {
-                if (laneEnd[i] <= s) { col = i; break; }
-            }
-            if (col === -1) { col = laneEnd.length; laneEnd.push(e); }
-            else { laneEnd[col] = e; }
-            return { ev: ev, col: col };
-        });
-        return { cols: laneEnd.length || 1, placements: placements };
+    // â”€â”€ Reparto en columnas por solapamiento REAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Antes el reparto se hacÃ­a por franja horaria (cada hora su <div>),
+    // asÃ­ que dos clases que se solapaban pero empezaban en horas
+    // distintas (15:30 y 16:00) se dibujaban una encima de otra.
+    // Ahora se agrupan por "cluster" de solapamiento sobre TODO el dÃ­a.
+
+    function endMin(ev) {
+        var s = toMin(ev.start);
+        var e = toMin(ev.end || ev.start);
+        return e > s ? e : s + 60; // sin hora de fin â†’ 1h por defecto
     }
 
-    function slotHtml(evts, dateStr, hour, opts) {
+    // Devuelve [{ cols, placed:[{ev,col}], group:[ev...] }] â€” un elemento por cluster.
+    function clusterPack(evts) {
+        var sorted = evts.slice().sort(function (a, b) {
+            return toMin(a.start) - toMin(b.start) || endMin(a) - endMin(b);
+        });
+
+        var clusters = [], cur = [], curEnd = -1;
+        sorted.forEach(function (ev) {
+            if (cur.length && toMin(ev.start) >= curEnd) {
+                clusters.push(cur); cur = []; curEnd = -1;
+            }
+            cur.push(ev);
+            curEnd = Math.max(curEnd, endMin(ev));
+        });
+        if (cur.length) clusters.push(cur);
+
+        return clusters.map(function (group) {
+            var laneEnd = [];
+            var placed = group.map(function (ev) {
+                var s = toMin(ev.start), e = endMin(ev);
+                var col = -1;
+                for (var i = 0; i < laneEnd.length; i++) {
+                    if (laneEnd[i] <= s) { col = i; break; }
+                }
+                if (col === -1) { col = laneEnd.length; laneEnd.push(e); }
+                else { laneEnd[col] = e; }
+                return { ev: ev, col: col };
+            });
+            return { cols: laneEnd.length || 1, placed: placed, group: group };
+        });
+    }
+
+    // Compat: reparto plano (sin clusters) usado por algÃºn test/consumidor antiguo.
+    function packColumns(evts) {
+        var clusters = clusterPack(evts);
+        var placements = [];
+        var cols = 1;
+        clusters.forEach(function (cl) {
+            cols = Math.max(cols, cl.cols);
+            cl.placed.forEach(function (p) { placements.push(p); });
+        });
+        return { cols: cols, placements: placements };
+    }
+
+    // â”€â”€ Capa de eventos de un dÃ­a (Semana/DÃ­a) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Se renderiza una sola vez por columna-dÃ­a, posicionada en pÃ­xeles
+    // desde `hourStart`. Un cluster con mÃ¡s de `maxCols` columnas colapsa
+    // a un Ãºnico botÃ³n "Ver todas" que cubre su franja.
+    function dayLayerHtml(evts, dateStr, opts) {
         if (!evts || !evts.length) return '';
         opts = opts || {};
-        var slotH   = opts.slotH   || 56;
-        // En móvil las columnas lado a lado no se leen: a partir de 2 clases
-        // en la misma franja se muestra directamente el botón "Ver todas".
-        // En escritorio se permiten hasta 6 columnas antes de colapsar.
+        var slotH = opts.slotH || 52;
+        var hs    = opts.hourStart || 0;
+        // En mÃ³vil las columnas lado a lado no se leen: cualquier cluster
+        // con 2+ clases colapsa al botÃ³n "Ver todas".
         var isMobile = typeof window !== 'undefined' && window.matchMedia
             && window.matchMedia('(max-width: 768px)').matches;
-        var maxCols = isMobile ? 1 : (opts.maxCols || 6);
-        var hh      = String(hour).padStart(2, '0');
+        var maxCols = isMobile ? 1 : (opts.maxCols || 4);
 
-        if (evts.length > maxCols) {
-            return '<button type="button" class="cal-event-more" ' +
-                'title="Ver las ' + evts.length + ' clases de las ' + hh + ':00" ' +
-                "onclick=\"event.stopPropagation();CalOverlap.openPopup('" +
-                    esc(dateStr) + "'," + (parseInt(hour, 10) || 0) + ')">' +
-                '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + evts.length +
-                '</button>';
-        }
+        var out = '';
+        clusterPack(evts).forEach(function (cl) {
+            var gStart = Math.min.apply(null, cl.group.map(function (e) { return toMin(e.start); }));
+            var gEnd   = Math.max.apply(null, cl.group.map(endMin));
+            var top    = ((gStart - hs * 60) / 60) * slotH;
 
-        var packed = packColumns(evts);
-        var w      = 100 / packed.cols;
+            if (cl.cols > maxCols) {
+                var bh = Math.max(((gEnd - gStart) / 60) * slotH, 24);
+                out += '<button type="button" class="cal-event-block cal-event-more" ' +
+                    'style="top:' + top + 'px;height:' + bh + 'px;left:2px;right:2px;width:auto;padding:3px 6px;" ' +
+                    'title="Ver las ' + cl.group.length + ' clases solapadas" ' +
+                    "onclick=\"event.stopPropagation();CalOverlap.openPopupRange('" +
+                        esc(dateStr) + "'," + gStart + ',' + gEnd + ')">' +
+                    '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + cl.group.length +
+                    '</button>';
+                return;
+            }
 
-        return packed.placements.map(function (p) {
-            var ev = p.ev;
-            var sp = String(ev.start).split(':');
-            var ep = String(ev.end || ev.start).split(':');
-            var sh = +sp[0] || 0, sm = +sp[1] || 0;
-            var eh = +ep[0] || 0, em = +ep[1] || 0;
-            var topPx    = (sm / 60) * slotH;
-            var durMin   = (eh * 60 + em) - (sh * 60 + sm);
-            var heightPx = Math.max((durMin / 60) * slotH, 20);
-            var leftPct  = p.col * w;
+            var w = 100 / cl.cols;
+            cl.placed.forEach(function (p) {
+                var ev = p.ev;
+                var s = toMin(ev.start), e = endMin(ev);
+                var t   = ((s - hs * 60) / 60) * slotH;
+                var hgt = Math.max(((e - s) / 60) * slotH, 20);
+                var leftPct = p.col * w;
 
-            return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
-                'style="top:' + topPx + 'px;height:' + heightPx + 'px;' +
-                    'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                    'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
-                'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
-                'onclick="event.stopPropagation()">' +
-                esc(ev.start) + ' ' + esc(ev.title) +
-                '</a>';
-        }).join('');
+                out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
+                    'style="top:' + t + 'px;height:' + hgt + 'px;' +
+                        'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
+                    'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + 'â€“' + esc(ev.end || '') + '" ' +
+                    'onclick="event.stopPropagation()">' +
+                    esc(ev.start) + ' ' + esc(ev.title) +
+                    '</a>';
+            });
+        });
+        return out;
     }
 
+    // Compat: firma antigua (una franja de una hora). Redirige a dayLayerHtml
+    // tratando `hour` como hora de inicio del rango.
+    function slotHtml(evts, dateStr, hour, opts) {
+        opts = opts || {};
+        return dayLayerHtml(evts, dateStr, {
+            slotH: opts.slotH, hourStart: parseInt(hour, 10) || 0, maxCols: opts.maxCols
+        });
+    }
+
+    // â”€â”€ Pop-up selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function closePopup() {
         var el = document.getElementById('cal-picker');
         if (el) el.remove();
@@ -301,27 +358,12 @@ window.CalOverlap = (function () {
     }
     function onKey(e) { if (e.key === 'Escape') closePopup(); }
 
-    function openPopup(dateStr, hour) {
-        var all = eventsProvider() || [];
-        var evts = all.filter(function (e) {
-            if (e.date !== dateStr) return false;
-            if (hour == null) return true;
-            return (parseInt(String(e.start).split(':')[0], 10) || 0) === hour;
-        }).sort(function (a, b) {
-            return String(a.start).localeCompare(String(b.start));
-        });
-
-        var d = new Date(dateStr + 'T00:00:00');
-        var dn = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-        var titleTxt = dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()];
-        if (hour != null) titleTxt += ' · ' + String(hour).padStart(2, '0') + ':00';
-
+    function showPicker(titleTxt, evts) {
         var rows = evts.map(function (ev) {
             return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-picker-row">' +
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
                 '<span class="cal-picker-time">' + esc(ev.start) +
-                    (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
+                    (ev.end ? '<small>â€“' + esc(ev.end) + '</small>' : '') + '</span>' +
                 '<span class="cal-picker-title">' + esc(ev.title) + '</span>' +
                 '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
                 '</a>';
@@ -339,7 +381,7 @@ window.CalOverlap = (function () {
                     '<button type="button" class="cal-picker-close" aria-label="Cerrar">' +
                         '<i class="bi bi-x-lg"></i></button>' +
                 '</div>' +
-                '<div class="cal-picker-hint">Elige qué clase quieres ver</div>' +
+                '<div class="cal-picker-hint">Elige quÃ© clase quieres ver</div>' +
                 '<div class="cal-picker-list">' + rows + '</div>' +
             '</div>';
 
@@ -351,9 +393,43 @@ window.CalOverlap = (function () {
         document.body.style.overflow = 'hidden';
     }
 
+    function dayLabel(dateStr, extra) {
+        var d = new Date(dateStr + 'T00:00:00');
+        var dn = ['Domingo', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado'];
+        var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        return dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()] + (extra ? ' Â· ' + extra : '');
+    }
+
+    // Franja horaria (compat: openPopup por hora de inicio o dÃ­a entero).
+    function openPopup(dateStr, hour) {
+        var all = eventsProvider() || [];
+        var evts = all.filter(function (e) {
+            if (e.date !== dateStr) return false;
+            if (hour == null) return true;
+            return (parseInt(String(e.start).split(':')[0], 10) || 0) === hour;
+        }).sort(function (a, b) { return String(a.start).localeCompare(String(b.start)); });
+
+        showPicker(dayLabel(dateStr, hour != null ? String(hour).padStart(2, '0') + ':00' : ''), evts);
+    }
+
+    // Rango [startMin, endMin) â€” usado por el botÃ³n "Ver todas" de un cluster.
+    function openPopupRange(dateStr, startMin, endMin) {
+        var all = eventsProvider() || [];
+        var evts = all.filter(function (e) {
+            if (e.date !== dateStr) return false;
+            var s = toMin(e.start);
+            return s >= startMin && s < endMin;
+        }).sort(function (a, b) { return String(a.start).localeCompare(String(b.start)); });
+
+        var lbl = String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0');
+        showPicker(dayLabel(dateStr, lbl), evts);
+    }
+
     return {
-        esc: esc, useEvents: useEvents, packColumns: packColumns,
-        slotHtml: slotHtml, openPopup: openPopup, closePopup: closePopup
+        esc: esc, toMin: toMin, useEvents: useEvents,
+        packColumns: packColumns, clusterPack: clusterPack,
+        dayLayerHtml: dayLayerHtml, slotHtml: slotHtml,
+        openPopup: openPopup, openPopupRange: openPopupRange, closePopup: closePopup
     };
 })();
 </script>
@@ -514,8 +590,8 @@ const CAL = {
         document.getElementById('cal-label').textContent =
             `${ws.getDate()} ${mn[ws.getMonth()]} – ${we.getDate()} ${mn[we.getMonth()]} ${we.getFullYear()}`;
 
-        const HOUR_START = 7, HOUR_END = 22;
         const SLOT_H = 56;
+        const [HOUR_START, HOUR_END] = this.hourRange(this.events.filter(e => dates.includes(e.date)));
 
         let html = '<div class="cal-week-wrap"><div class="cal-week-grid">';
 
@@ -528,18 +604,20 @@ const CAL = {
                      </div>`;
         });
 
+        // La capa de eventos de cada columna-día se pinta una vez (primer
+        // slot) y se posiciona en píxeles: las clases que se solapan aunque
+        // empiecen en horas distintas salen en columnas, no una sobre otra.
+        const colEvts = dates.map(ds => this.events.filter(e => e.date === ds));
         for (let h = HOUR_START; h < HOUR_END; h++) {
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
             dates.forEach((dateStr, di) => {
-                const dayEvts = this.events.filter(e =>
-                    e.date === dateStr && parseInt(e.start.split(':')[0]) === h);
-
-                html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
+                const anchor = h === HOUR_START;
+                html += `<div class="cal-hour-slot${anchor ? ' cal-anchor' : ''}${canManage ? ' cal-can-create' : ''}"
                               data-date="${dateStr}" data-hour="${h}"
                               onclick="handleSlotClick(event, '${dateStr}', ${h})">`;
 
-                // Semana: solo 2 columnas caben legibles; 3+ → botón "Ver todas".
-                html += CalOverlap.slotHtml(dayEvts, dateStr, h, { slotH: SLOT_H, maxCols: 2 });
+                // Semana: hasta 2 columnas legibles por cluster; más → "Ver todas".
+                if (anchor) html += CalOverlap.dayLayerHtml(colEvts[di], dateStr, { slotH: SLOT_H, hourStart: HOUR_START, maxCols: 2 });
 
                 html += '</div>';
             });
@@ -547,6 +625,20 @@ const CAL = {
 
         html += '</div></div>';
         document.getElementById('cal-grid').innerHTML = html;
+    },
+
+    // Rango de horas [inicio, fin) a pintar en Semana/Día: 07–22 salvo que
+    // haya clases fuera de esa franja.
+    hourRange(evts) {
+        let hs = 7, he = 22;
+        (evts || []).forEach(e => {
+            const sh = parseInt(String(e.start).split(':')[0]) || 0;
+            const ep = String(e.end || '').split(':');
+            const eh = (parseInt(ep[0]) || sh) + ((parseInt(ep[1]) || 0) > 0 ? 1 : 0);
+            if (sh < hs) hs = Math.max(0, sh);
+            if (Math.max(eh, sh + 1) > he) he = Math.min(24, Math.max(eh, sh + 1));
+        });
+        return [hs, he];
     },
 
     renderDay() {
@@ -560,8 +652,9 @@ const CAL = {
         document.getElementById('cal-label').textContent =
             `${dnames[d.getDay()]}, ${d.getDate()} de ${mn[d.getMonth()]} ${d.getFullYear()}`;
 
-        const HOUR_START = 7, HOUR_END = 22, SLOT_H = 56;
+        const SLOT_H = 56;
         const dayEvts = this.events.filter(e => e.date === this.day);
+        const [HOUR_START, HOUR_END] = this.hourRange(dayEvts);
 
         let html = '<div class="cal-week-wrap"><div class="cal-day-grid">';
 
@@ -572,13 +665,13 @@ const CAL = {
                  </div>`;
 
         for (let h = HOUR_START; h < HOUR_END; h++) {
+            const anchor = h === HOUR_START;
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
-            const slotEvts = dayEvts.filter(e => parseInt(e.start.split(':')[0]) === h);
-            html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
+            html += `<div class="cal-hour-slot${anchor ? ' cal-anchor' : ''}${canManage ? ' cal-can-create' : ''}"
                          data-date="${this.day}" data-hour="${h}"
                          onclick="handleSlotClick(event, '${this.day}', ${h})">`;
-            // Día: hasta 6 columnas; más → botón "Ver todas" (CalOverlap, arriba en esta vista).
-            html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 6 });
+            // Día: hasta 6 columnas por cluster; más → botón "Ver todas".
+            if (anchor) html += CalOverlap.dayLayerHtml(dayEvts, this.day, { slotH: SLOT_H, hourStart: HOUR_START, maxCols: 6 });
             html += '</div>';
         }
 
