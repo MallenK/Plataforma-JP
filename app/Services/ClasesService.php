@@ -41,20 +41,90 @@ class ClasesService
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  Validación / normalización de horas
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Normaliza una hora a formato 'HH:MM' de 24h.
+     * Acepta '9:5', '09:05', '09:05:00', ' 09:05 '. Devuelve null si no es
+     * una hora válida (fuera de rango, texto, vacío…).
+     */
+    public static function normalizeTime(?string $time): ?string
+    {
+        $time = trim((string) $time);
+        if ($time === '' || ! preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $time, $m)) {
+            return null;
+        }
+        $h = (int) $m[1];
+        $min = (int) $m[2];
+        if ($h > 23 || $min > 59) {
+            return null;
+        }
+        return sprintf('%02d:%02d', $h, $min);
+    }
+
+    /**
+     * Resuelve y valida el par (start_time, end_time) de una sesión.
+     * - start_time es obligatorio y debe ser una hora válida.
+     * - end_time es opcional: si falta, se calcula como start + 1h.
+     * - end_time, si se indica, debe ser posterior a start_time.
+     *
+     * @return array{start:?string, end:?string, error:?string}
+     */
+    private function resolveTimes(array $data): array
+    {
+        $start = self::normalizeTime($data['start_time'] ?? null);
+        if ($start === null) {
+            return ['start' => null, 'end' => null, 'error' => 'La hora de inicio es obligatoria y debe tener el formato HH:MM.'];
+        }
+
+        $rawEnd = trim((string) ($data['end_time'] ?? ''));
+        if ($rawEnd === '') {
+            $end = date('H:i', strtotime($start) + 3600);
+        } else {
+            $end = self::normalizeTime($rawEnd);
+            if ($end === null) {
+                return ['start' => null, 'end' => null, 'error' => 'La hora de fin no es válida (formato HH:MM).'];
+            }
+            // '00:00' como fin = medianoche del día siguiente (sesión que cruza medianoche): se permite.
+            if ($end !== '00:00' && $end <= $start) {
+                return ['start' => null, 'end' => null, 'error' => 'La hora de fin debe ser posterior a la hora de inicio.'];
+            }
+        }
+
+        return ['start' => $start, 'end' => $end, 'error' => null];
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Crear
     // ────────────────────────────────────────────────────────────────
 
     public function createSession(array $data, int $userId): array
     {
-        $type = $data['type'] ?? 'single';
+        $type = ($data['type'] ?? 'single') === 'recurring' ? 'recurring' : 'single';
 
         if ($type === 'recurring') {
             return $this->createRecurring($data, $userId);
         }
 
+        if (empty(trim($data['title'] ?? ''))) {
+            return ['success' => false, 'error' => 'El título es obligatorio.'];
+        }
+        if (empty($data['session_date'] ?? '') || strtotime((string) $data['session_date']) === false) {
+            return ['success' => false, 'error' => 'La fecha es obligatoria.'];
+        }
+
+        $times = $this->resolveTimes($data);
+        if ($times['error'] !== null) {
+            return ['success' => false, 'error' => $times['error']];
+        }
+        $data['start_time'] = $times['start'];
+        $data['end_time']   = $times['end'];
+
         $id = $this->insertSingle($data, $userId);
         if (!$id) {
-            return ['success' => false, 'error' => 'Error al crear la sesión.'];
+            $errors = $this->sessionModel->errors();
+            return ['success' => false, 'error' => !empty($errors) ? implode(' ', $errors) : 'Error al crear la sesión.'];
         }
 
         $this->syncCoaches($id, $data['coach_ids'] ?? []);
@@ -67,12 +137,21 @@ class ClasesService
     {
         $fmt  = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
         $sType = in_array($data['session_type'] ?? '', ['coach', 'staff']) ? $data['session_type'] : 'coach';
+
+        // Salvaguarda: nunca persistir horas inválidas aunque un caller se
+        // salte resolveTimes(). start_time es NOT NULL en BD.
+        $start = self::normalizeTime($data['start_time'] ?? null);
+        if ($start === null) {
+            throw new \InvalidArgumentException('ClasesService::insertSingle recibió start_time inválido: ' . var_export($data['start_time'] ?? null, true));
+        }
+        $end = self::normalizeTime($data['end_time'] ?? null) ?? date('H:i', strtotime($start) + 3600);
+
         return (int)$this->sessionModel->insert([
             'class_id'        => $classId ?? ($data['class_id'] ?? null),
             'title'           => trim($data['title']),
             'session_date'    => $data['session_date'],
-            'start_time'      => $data['start_time'],
-            'end_time'        => $data['end_time'] ?: date('H:i', strtotime($data['start_time'] ?? '00:00') + 3600),
+            'start_time'      => $start,
+            'end_time'        => $end,
             'location_id'     => ($data['location_id'] ?? '') ?: null,
             'location_custom' => ($data['location_custom'] ?? '') ?: null,
             'focus'           => ($data['focus'] ?? '') ?: null,
@@ -89,9 +168,22 @@ class ClasesService
     {
         $days = array_map('intval', (array)($data['recurrence_days'] ?? []));
 
+        if (empty(trim($data['title'] ?? ''))) {
+            return ['success' => false, 'error' => 'El título es obligatorio.'];
+        }
         if (empty($days) || empty($data['recurrence_start']) || empty($data['recurrence_end'])) {
             return ['success' => false, 'error' => 'Faltan datos de recurrencia (días, inicio o fin).'];
         }
+        if (strtotime((string) $data['recurrence_end']) < strtotime((string) $data['recurrence_start'])) {
+            return ['success' => false, 'error' => 'La fecha "hasta" debe ser posterior a la fecha "desde".'];
+        }
+
+        $times = $this->resolveTimes($data);
+        if ($times['error'] !== null) {
+            return ['success' => false, 'error' => $times['error']];
+        }
+        $data['start_time'] = $times['start'];
+        $data['end_time']   = $times['end'];
 
         // Guardar plantilla
         $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
@@ -164,9 +256,6 @@ class ClasesService
         if (empty(trim($data['title'] ?? ''))) {
             return ['success' => false, 'error' => 'El título es obligatorio.'];
         }
-        if (empty($data['start_time'] ?? '')) {
-            return ['success' => false, 'error' => 'La hora de inicio es obligatoria.'];
-        }
 
         if ($type === 'recurring') {
             $result = $this->createRecurring($data, $userId);
@@ -184,6 +273,13 @@ class ClasesService
         if (empty($data['session_date'] ?? '')) {
             return ['success' => false, 'error' => 'La fecha es obligatoria.'];
         }
+
+        $times = $this->resolveTimes($data);
+        if ($times['error'] !== null) {
+            return ['success' => false, 'error' => $times['error']];
+        }
+        $data['start_time'] = $times['start'];
+        $data['end_time']   = $times['end'];
 
         try {
             $id = $this->insertSingle($data, $userId);
@@ -265,6 +361,83 @@ class ClasesService
         ], $sessions);
     }
 
+    /**
+     * Buscador de sesiones por nombre de clase, entrenador o jugador.
+     * Respeta el rol: coach/staff solo ven las suyas, el alumno solo las
+     * suyas, admin/superadmin ven todas.
+     *
+     * @return array<int, array{id:int,title:string,date:string,start:string,
+     *                           status:string,coaches:string,players:int}>
+     */
+    public function search(string $q, int $userId, string $role): array
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 2) {
+            return [];
+        }
+
+        $isPlayer     = in_array($role, ['alumno', 'player'], true);
+        $isCoachStaff = in_array($role, ['coach', 'staff'], true);
+
+        $b = $this->db->table('class_sessions cs')
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.status')
+            ->distinct()
+            ->join('class_session_coaches csc', 'csc.session_id = cs.id', 'left')
+            ->join('users uc', 'uc.id = csc.user_id', 'left')
+            ->join('class_session_players csp', 'csp.session_id = cs.id', 'left')
+            ->join('users up', 'up.id = csp.user_id', 'left')
+            ->groupStart()
+                ->like('cs.title', $q)
+                ->orLike('uc.name', $q)
+                ->orLike('up.name', $q)
+            ->groupEnd()
+            ->orderBy('cs.session_date', 'DESC')
+            ->orderBy('cs.start_time', 'ASC')
+            ->limit(20);
+
+        if ($isPlayer) {
+            $b->where('cs.id IN (SELECT session_id FROM class_session_players WHERE user_id = ' . (int) $userId . ')', null, false);
+        } elseif ($isCoachStaff) {
+            $b->where('cs.id IN (SELECT session_id FROM class_session_coaches WHERE user_id = ' . (int) $userId . ')', null, false);
+        }
+
+        $rows = $b->get()->getResultArray();
+        $ids  = array_map('intval', array_column($rows, 'id'));
+        if (!$ids) {
+            return [];
+        }
+
+        // Entrenadores y nº de jugadores por sesión (una consulta cada uno).
+        $coachMap = [];
+        foreach ($this->db->table('class_session_coaches csc')
+            ->select('csc.session_id, GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ", ") AS names')
+            ->join('users u', 'u.id = csc.user_id')
+            ->whereIn('csc.session_id', $ids)
+            ->groupBy('csc.session_id')
+            ->get()->getResultArray() as $r) {
+            $coachMap[(int) $r['session_id']] = $r['names'];
+        }
+
+        $playerMap = [];
+        foreach ($this->db->table('class_session_players')
+            ->select('session_id, COUNT(*) AS n')
+            ->whereIn('session_id', $ids)
+            ->groupBy('session_id')
+            ->get()->getResultArray() as $r) {
+            $playerMap[(int) $r['session_id']] = (int) $r['n'];
+        }
+
+        return array_map(fn ($s) => [
+            'id'      => (int) $s['id'],
+            'title'   => $s['title'],
+            'date'    => $s['session_date'],
+            'start'   => substr((string) $s['start_time'], 0, 5),
+            'status'  => $s['status'],
+            'coaches' => $coachMap[(int) $s['id']] ?? '',
+            'players' => $playerMap[(int) $s['id']] ?? 0,
+        ], $rows);
+    }
+
     public function getSession(int $id): ?array
     {
         $session = $this->sessionModel->find($id);
@@ -327,18 +500,57 @@ class ClasesService
 
     public function updateSession(int $id, array $data): bool
     {
+        // Campos que, si vienen, no pueden quedar vacíos ni ponerse a NULL
+        // (son NOT NULL en BD y su vacío rompería la sesión).
+        $requiredIfPresent = ['title', 'session_date'];
+        foreach ($requiredIfPresent as $key) {
+            if (array_key_exists($key, $data) && trim((string) $data[$key]) === '') {
+                return false;
+            }
+        }
+
+        // Horas: validar y normalizar antes de tocar la BD. start_time es NOT NULL.
+        if (array_key_exists('start_time', $data) || array_key_exists('end_time', $data)) {
+            $current = $this->sessionModel->find($id);
+            if (!$current) {
+                return false;
+            }
+            $times = $this->resolveTimes([
+                'start_time' => $data['start_time'] ?? $current['start_time'],
+                'end_time'   => array_key_exists('end_time', $data) ? $data['end_time'] : $current['end_time'],
+            ]);
+            if ($times['error'] !== null) {
+                return false;
+            }
+            $data['start_time'] = $times['start'];
+            $data['end_time']   = $times['end'];
+        }
+
         $allowed = ['title', 'session_date', 'start_time', 'end_time',
                     'location_id', 'location_custom', 'focus',
                     'pre_notes', 'post_notes', 'status', 'session_type'];
 
+        // Campos opcionales: '' se guarda como NULL.
+        $nullable = ['location_id', 'location_custom', 'focus', 'pre_notes', 'post_notes'];
+        // Campos NOT NULL: si vienen vacíos se ignoran (no se tocan en BD).
+        $notNull  = ['title', 'session_date', 'start_time', 'end_time', 'status'];
+
         $update = [];
         foreach ($allowed as $key) {
-            if (array_key_exists($key, $data)) {
-                if ($key === 'session_type') {
-                    $update[$key] = in_array($data[$key], ['coach', 'staff']) ? $data[$key] : 'coach';
-                } else {
-                    $update[$key] = $data[$key] !== '' ? $data[$key] : null;
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+            if ($key === 'session_type') {
+                $update[$key] = in_array($data[$key], ['coach', 'staff']) ? $data[$key] : 'coach';
+            } elseif (in_array($key, $nullable, true)) {
+                $update[$key] = $data[$key] !== '' ? $data[$key] : null;
+            } elseif (in_array($key, $notNull, true)) {
+                $val = is_string($data[$key]) ? trim($data[$key]) : $data[$key];
+                if ($val !== '' && $val !== null) {
+                    $update[$key] = $val;
                 }
+            } else {
+                $update[$key] = $data[$key];
             }
         }
 

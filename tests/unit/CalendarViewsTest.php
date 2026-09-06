@@ -69,16 +69,40 @@ final class CalendarViewsTest extends CIUnitTestCase
     {
         $html = $this->leer($ruta);
 
-        // Móvil → 1 columna (botón "Ver todas" con 2+ clases); escritorio → opts.
+        // Móvil → 1 columna (botón "Ver todas" con 2+ clases solapadas); escritorio → opts.
         $this->assertStringContainsString("matchMedia('(max-width: 768px)')", $html);
-        $this->assertStringContainsString('var maxCols = isMobile ? 1 : (opts.maxCols || 6)', $html);
+        $this->assertStringContainsString('var maxCols = isMobile ? 1 : (opts.maxCols || 4)', $html);
 
-        // Texto del botón colapsado.
-        $this->assertStringContainsString("Ver todas &middot; ' + evts.length", $html);
+        // Texto del botón colapsado (por cluster de solape).
+        $this->assertStringContainsString("Ver todas &middot; ' + cl.group.length", $html);
 
-        // Semana pide 2 columnas, Día hasta 6.
-        $this->assertMatchesRegularExpression('/slotHtml\([^;]*maxCols:\s*2\s*\}/s', $html, 'Semana debe pedir maxCols: 2');
-        $this->assertMatchesRegularExpression('/slotHtml\([^;]*maxCols:\s*6\s*\}/s', $html, 'Día debe pedir maxCols: 6');
+        // La capa de eventos se pinta por columna-día (dayLayerHtml), no por
+        // franja horaria: Semana pide 2 columnas, Día hasta 6.
+        $this->assertMatchesRegularExpression('/dayLayerHtml\([^;]*maxCols:\s*2\s*\}/s', $html, 'Semana debe pedir maxCols: 2');
+        $this->assertMatchesRegularExpression('/dayLayerHtml\([^;]*maxCols:\s*6\s*\}/s', $html, 'Día debe pedir maxCols: 6');
+    }
+
+    /**
+     * Regresión: las clases que se solapan aunque empiecen en horas
+     * distintas (p. ej. 15:30 y 16:00) deben repartirse en columnas, no
+     * dibujarse una encima de otra. El reparto se hace sobre TODO el día
+     * (clusterPack + capa posicionada en píxeles), no por franja horaria.
+     *
+     * @dataProvider vistas
+     */
+    public function testEventosSeRepartenPorSolapeRealNoPorFranjaHoraria(string $ruta): void
+    {
+        $html = $this->leer($ruta);
+
+        // El motor agrupa por cluster de solapamiento real.
+        $this->assertStringContainsString('function clusterPack(', $html);
+        $this->assertStringContainsString('function dayLayerHtml(', $html);
+
+        // Las vistas Semana/Día pintan la capa una sola vez, en el primer
+        // slot de cada columna (cal-anchor), y ya NO filtran por hora exacta.
+        $this->assertStringContainsString('cal-anchor', $html);
+        $this->assertStringNotContainsString("parseInt(e.start.split(':')[0]) === h", $html);
+        $this->assertStringNotContainsString("parseInt(e.start.split(':')[0])===h", $html);
     }
 
     public function testDashboardAmpliaElRangoHorarioConClasesTardias(): void

@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.1.8",
+        "date": "2026-09-06 15:00:00",
+        "description": "Clases: la hora de inicio y de fin de una sesión se comprueba siempre al crear y al editar. Si la hora de inicio falta o no es válida, la sesión ya no se guarda con la hora en 00:00: se muestra un aviso y no se crea/modifica nada. La hora de fin sigue siendo opcional (se calcula una hora después de la de inicio) y debe ser posterior a la de inicio. Calendario (vistas Semana y Día): las clases que se solapan en el tiempo se muestran SIEMPRE en columnas una al lado de otra, aunque empiecen en horas distintas (antes solo funcionaba si empezaban a la misma hora en punto; si no, se dibujaban una encima de otra). Cuando hay demasiadas clases solapadas para caber, aparece el botón 'Ver todas', y se corrige el símbolo raro que salía en el título de ese desplegable. Además, en la vista Semana que cae a caballo entre dos meses (p. ej. 31 ago – 6 sep) ya se ven también las clases del otro mes, que antes no aparecían. NUEVO: buscador en la pantalla de Clases para encontrar una sesión por su nombre, por el entrenador o por el jugador; al pulsar un resultado se abre la ficha de esa clase. Ajustes internos menores de coherencia (textos de permisos)."
+    },
+    {
         "version": "1.1.7",
         "date": "2026-09-05 20:00:00",
         "description": "Clases · Pasar lista: el botón 'Descontar bono' de un alumno volvía a dar un error de permisos y no llegaba a descontar la sesión. Ya funciona: al marcar al alumno como presente y pulsar 'Descontar bono', el contador de su bono baja correctamente."

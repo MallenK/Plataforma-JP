@@ -136,12 +136,12 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
                                 <label class="form-label">Fecha <span style="color:var(--danger)">*</span></label>
-                                <input type="date" name="session_date" class="form-control-jp"
+                                <input type="date" name="session_date" class="form-control-jp" required
                                        value="<?= $v('session_date', date('Y-m-d')) ?>">
                             </div>
                             <div class="col-6 col-md-4">
                                 <label class="form-label">Hora inicio <span style="color:var(--danger)">*</span></label>
-                                <input type="time" name="start_time" class="form-control-jp"
+                                <input type="time" name="start_time" class="form-control-jp" required
                                        value="<?= $v('start_time') ?>">
                             </div>
                             <div class="col-6 col-md-4">
@@ -211,8 +211,8 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                    value="<?= $v('session_date') ?>">
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label">Hora inicio</label>
-                            <input type="time" name="start_time" class="form-control-jp"
+                            <label class="form-label">Hora inicio <span style="color:var(--danger)">*</span></label>
+                            <input type="time" name="start_time" class="form-control-jp" required
                                    value="<?= $v('start_time') ?>">
                         </div>
                         <div class="col-6 col-md-4">

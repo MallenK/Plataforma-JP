@@ -176,6 +176,9 @@ $routes->get('clases/api/calendario', 'ClasesController::calendario', [
 $routes->get('clases/api/opciones', 'ClasesController::opciones', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
+$routes->get('clases/api/buscar', 'ClasesController::buscar', [
+    'filter' => 'auth',
+]);
 $routes->get('clases/api/check-location', 'ClasesController::checkLocation', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
@@ -428,7 +431,7 @@ $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionControlle
 // ------------------------------------------------------------
 // CONFIGURACIÓN
 //
-//  GET  /configuracion          → todos los roles (no-admin ve solo General, read-only)
+//  GET  /configuracion          → solo admin y superadmin (403 para el resto)
 //  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 

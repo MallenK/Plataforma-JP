@@ -109,6 +109,17 @@
             <?php endif; ?>
         </div>
 
+        <!-- Buscador: nombre de clase / entrenador / jugador -->
+        <div class="cal-search" id="cal-search">
+            <i class="bi bi-search cal-search-icon"></i>
+            <input type="text" id="cal-search-input" autocomplete="off" spellcheck="false"
+                   placeholder="Buscar una clase por nombre, entrenador o jugador…">
+            <button type="button" id="cal-search-clear" aria-label="Limpiar búsqueda" hidden>
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <div class="cal-search-panel" id="cal-search-panel" hidden></div>
+        </div>
+
         <!-- Grid del calendario -->
         <div id="cal-grid"></div>
     </div>
@@ -171,11 +182,11 @@
 .cal-week-wrap { overflow-x:auto; }
 .cal-week-grid {
     display:grid;grid-template-columns:48px repeat(7,1fr);
-    min-width:640px;
+    min-width:640px;position:relative;
 }
 .cal-week-head {
     padding:8px;text-align:center;border-bottom:2px solid var(--border);
-    position:sticky;top:0;background:var(--bg-card);z-index:2;
+    position:sticky;top:0;background:var(--bg-card);z-index:6;
 }
 .cal-week-head.time-col { border-right:1px solid var(--border); }
 .cal-wday-name { font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px; }
@@ -190,10 +201,13 @@
 .cal-hour-slot {
     position:relative;border-bottom:1px solid #f1f5f9;height:56px;
 }
+/* El primer slot de cada columna-día aloja la capa de eventos completa,
+   que se desborda hacia abajo por encima del resto de slots. */
+.cal-hour-slot.cal-anchor { overflow:visible;z-index:4; }
 .cal-event-block {
     position:absolute;left:2px;right:2px;border-radius:5px;padding:3px 6px;
     font-size:11px;font-weight:600;text-decoration:none;overflow:hidden;
-    white-space:nowrap;text-overflow:ellipsis;z-index:1;cursor:pointer;
+    white-space:nowrap;text-overflow:ellipsis;z-index:2;cursor:pointer;box-sizing:border-box;
 }
 .cal-event-block:hover { filter:brightness(.92); }
 .cal-can-create { cursor:pointer; }
@@ -202,7 +216,55 @@
 /* ── Calendario Día ────────────────────────────────────────────── */
 .cal-day-grid {
     display:grid;grid-template-columns:48px 1fr;
-    min-width:280px;
+    min-width:280px;position:relative;
+}
+
+/* ── Buscador de clases ────────────────────────────────────────── */
+.cal-search { position:relative;margin:0 0 14px; }
+.cal-search-icon {
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:var(--text-muted);font-size:14px;pointer-events:none;
+}
+#cal-search-input {
+    width:100%;box-sizing:border-box;
+    padding:9px 36px 9px 34px;
+    border:1px solid var(--border);border-radius:9px;
+    font-size:13.5px;background:var(--bg-card);color:var(--text-h);
+    transition:border-color .15s,box-shadow .15s;
+}
+#cal-search-input:focus {
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);
+}
+#cal-search-clear {
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:var(--text-muted);cursor:pointer;
+    padding:4px;line-height:0;border-radius:6px;font-size:12px;
+}
+#cal-search-clear:hover { background:var(--bg-app);color:var(--text-h); }
+.cal-search-panel {
+    position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;
+    background:var(--bg-card);border:1px solid var(--border);
+    border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);
+    max-height:340px;overflow-y:auto;padding:4px;
+}
+.cal-search-row {
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:7px;text-decoration:none;
+    color:var(--text-h);font-size:13px;
+}
+.cal-search-row:hover,.cal-search-row:focus { background:var(--bg-app); }
+.cal-search-row .csr-dot { flex:none;width:9px;height:9px;border-radius:50%; }
+.cal-search-row .csr-main { flex:1;min-width:0; }
+.cal-search-row .csr-title {
+    font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cal-search-row .csr-sub {
+    font-size:11.5px;color:var(--text-muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cal-search-empty,.cal-search-hint {
+    padding:12px 10px;font-size:12.5px;color:var(--text-muted);text-align:center;
 }
 </style>
 
@@ -227,72 +289,126 @@ window.CalOverlap = (function () {
     var eventsProvider = function () { return []; };
     function useEvents(fn) { if (typeof fn === 'function') eventsProvider = fn; }
 
-    function packColumns(evts) {
-        var sorted = evts.slice().sort(function (a, b) {
-            return toMin(a.start) - toMin(b.start) ||
-                   toMin(a.end || a.start) - toMin(b.end || b.start);
-        });
-        var laneEnd = [];
-        var placements = sorted.map(function (ev) {
-            var s = toMin(ev.start);
-            var e = Math.max(toMin(ev.end || ev.start), s + 10);
-            var col = -1;
-            for (var i = 0; i < laneEnd.length; i++) {
-                if (laneEnd[i] <= s) { col = i; break; }
-            }
-            if (col === -1) { col = laneEnd.length; laneEnd.push(e); }
-            else { laneEnd[col] = e; }
-            return { ev: ev, col: col };
-        });
-        return { cols: laneEnd.length || 1, placements: placements };
+    // ── Reparto en columnas por solapamiento REAL ────────────────────
+    // Antes el reparto se hacía por franja horaria (cada hora su <div>),
+    // así que dos clases que se solapaban pero empezaban en horas
+    // distintas (15:30 y 16:00) se dibujaban una encima de otra.
+    // Ahora se agrupan por "cluster" de solapamiento sobre TODO el día.
+
+    function endMin(ev) {
+        var s = toMin(ev.start);
+        var e = toMin(ev.end || ev.start);
+        return e > s ? e : s + 60; // sin hora de fin → 1h por defecto
     }
 
-    function slotHtml(evts, dateStr, hour, opts) {
+    // Devuelve [{ cols, placed:[{ev,col}], group:[ev...] }] — un elemento por cluster.
+    function clusterPack(evts) {
+        var sorted = evts.slice().sort(function (a, b) {
+            return toMin(a.start) - toMin(b.start) || endMin(a) - endMin(b);
+        });
+
+        var clusters = [], cur = [], curEnd = -1;
+        sorted.forEach(function (ev) {
+            if (cur.length && toMin(ev.start) >= curEnd) {
+                clusters.push(cur); cur = []; curEnd = -1;
+            }
+            cur.push(ev);
+            curEnd = Math.max(curEnd, endMin(ev));
+        });
+        if (cur.length) clusters.push(cur);
+
+        return clusters.map(function (group) {
+            var laneEnd = [];
+            var placed = group.map(function (ev) {
+                var s = toMin(ev.start), e = endMin(ev);
+                var col = -1;
+                for (var i = 0; i < laneEnd.length; i++) {
+                    if (laneEnd[i] <= s) { col = i; break; }
+                }
+                if (col === -1) { col = laneEnd.length; laneEnd.push(e); }
+                else { laneEnd[col] = e; }
+                return { ev: ev, col: col };
+            });
+            return { cols: laneEnd.length || 1, placed: placed, group: group };
+        });
+    }
+
+    // Compat: reparto plano (sin clusters) usado por algún test/consumidor antiguo.
+    function packColumns(evts) {
+        var clusters = clusterPack(evts);
+        var placements = [];
+        var cols = 1;
+        clusters.forEach(function (cl) {
+            cols = Math.max(cols, cl.cols);
+            cl.placed.forEach(function (p) { placements.push(p); });
+        });
+        return { cols: cols, placements: placements };
+    }
+
+    // ── Capa de eventos de un día (Semana/Día) ───────────────────────
+    // Se renderiza una sola vez por columna-día, posicionada en píxeles
+    // desde `hourStart`. Un cluster con más de `maxCols` columnas colapsa
+    // a un único botón "Ver todas" que cubre su franja.
+    function dayLayerHtml(evts, dateStr, opts) {
         if (!evts || !evts.length) return '';
         opts = opts || {};
-        var slotH   = opts.slotH   || 56;
-        // En móvil las columnas lado a lado no se leen: a partir de 2 clases
-        // en la misma franja se muestra directamente el botón "Ver todas".
-        // En escritorio se permiten hasta 6 columnas antes de colapsar.
+        var slotH = opts.slotH || 52;
+        var hs    = opts.hourStart || 0;
+        // En móvil las columnas lado a lado no se leen: cualquier cluster
+        // con 2+ clases colapsa al botón "Ver todas".
         var isMobile = typeof window !== 'undefined' && window.matchMedia
             && window.matchMedia('(max-width: 768px)').matches;
-        var maxCols = isMobile ? 1 : (opts.maxCols || 6);
-        var hh      = String(hour).padStart(2, '0');
+        var maxCols = isMobile ? 1 : (opts.maxCols || 4);
 
-        if (evts.length > maxCols) {
-            return '<button type="button" class="cal-event-more" ' +
-                'title="Ver las ' + evts.length + ' clases de las ' + hh + ':00" ' +
-                "onclick=\"event.stopPropagation();CalOverlap.openPopup('" +
-                    esc(dateStr) + "'," + (parseInt(hour, 10) || 0) + ')">' +
-                '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + evts.length +
-                '</button>';
-        }
+        var out = '';
+        clusterPack(evts).forEach(function (cl) {
+            var gStart = Math.min.apply(null, cl.group.map(function (e) { return toMin(e.start); }));
+            var gEnd   = Math.max.apply(null, cl.group.map(endMin));
+            var top    = ((gStart - hs * 60) / 60) * slotH;
 
-        var packed = packColumns(evts);
-        var w      = 100 / packed.cols;
+            if (cl.cols > maxCols) {
+                var bh = Math.max(((gEnd - gStart) / 60) * slotH, 24);
+                out += '<button type="button" class="cal-event-block cal-event-more" ' +
+                    'style="top:' + top + 'px;height:' + bh + 'px;left:2px;right:2px;width:auto;padding:3px 6px;" ' +
+                    'title="Ver las ' + cl.group.length + ' clases solapadas" ' +
+                    "onclick=\"event.stopPropagation();CalOverlap.openPopupRange('" +
+                        esc(dateStr) + "'," + gStart + ',' + gEnd + ')">' +
+                    '<i class="bi bi-layers-half"></i> Ver todas &middot; ' + cl.group.length +
+                    '</button>';
+                return;
+            }
 
-        return packed.placements.map(function (p) {
-            var ev = p.ev;
-            var sp = String(ev.start).split(':');
-            var ep = String(ev.end || ev.start).split(':');
-            var sh = +sp[0] || 0, sm = +sp[1] || 0;
-            var eh = +ep[0] || 0, em = +ep[1] || 0;
-            var topPx    = (sm / 60) * slotH;
-            var durMin   = (eh * 60 + em) - (sh * 60 + sm);
-            var heightPx = Math.max((durMin / 60) * slotH, 20);
-            var leftPct  = p.col * w;
+            var w = 100 / cl.cols;
+            cl.placed.forEach(function (p) {
+                var ev = p.ev;
+                var s = toMin(ev.start), e = endMin(ev);
+                var t   = ((s - hs * 60) / 60) * slotH;
+                var hgt = Math.max(((e - s) / 60) * slotH, 20);
+                var leftPct = p.col * w;
 
-            return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
-                'style="top:' + topPx + 'px;height:' + heightPx + 'px;' +
-                    'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                    'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
-                'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
-                'onclick="event.stopPropagation()">' +
-                esc(ev.start) + ' ' + esc(ev.title) +
-                '</a>';
-        }).join('');
+                out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
+                    'style="top:' + t + 'px;height:' + hgt + 'px;' +
+                        'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
+                    'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
+                    'onclick="event.stopPropagation()">' +
+                    esc(ev.start) + ' ' + esc(ev.title) +
+                    '</a>';
+            });
+        });
+        return out;
     }
 
+    // Compat: firma antigua (una franja de una hora). Redirige a dayLayerHtml
+    // tratando `hour` como hora de inicio del rango.
+    function slotHtml(evts, dateStr, hour, opts) {
+        opts = opts || {};
+        return dayLayerHtml(evts, dateStr, {
+            slotH: opts.slotH, hourStart: parseInt(hour, 10) || 0, maxCols: opts.maxCols
+        });
+    }
+
+    // ── Pop-up selector ─────────────────────────────────────────────
     function closePopup() {
         var el = document.getElementById('cal-picker');
         if (el) el.remove();
@@ -301,22 +417,7 @@ window.CalOverlap = (function () {
     }
     function onKey(e) { if (e.key === 'Escape') closePopup(); }
 
-    function openPopup(dateStr, hour) {
-        var all = eventsProvider() || [];
-        var evts = all.filter(function (e) {
-            if (e.date !== dateStr) return false;
-            if (hour == null) return true;
-            return (parseInt(String(e.start).split(':')[0], 10) || 0) === hour;
-        }).sort(function (a, b) {
-            return String(a.start).localeCompare(String(b.start));
-        });
-
-        var d = new Date(dateStr + 'T00:00:00');
-        var dn = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-        var titleTxt = dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()];
-        if (hour != null) titleTxt += ' · ' + String(hour).padStart(2, '0') + ':00';
-
+    function showPicker(titleTxt, evts) {
         var rows = evts.map(function (ev) {
             return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-picker-row">' +
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
@@ -351,9 +452,43 @@ window.CalOverlap = (function () {
         document.body.style.overflow = 'hidden';
     }
 
+    function dayLabel(dateStr, extra) {
+        var d = new Date(dateStr + 'T00:00:00');
+        var dn = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        var mn = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        return dn[d.getDay()] + ' ' + d.getDate() + ' ' + mn[d.getMonth()] + (extra ? ' · ' + extra : '');
+    }
+
+    // Franja horaria (compat: openPopup por hora de inicio o día entero).
+    function openPopup(dateStr, hour) {
+        var all = eventsProvider() || [];
+        var evts = all.filter(function (e) {
+            if (e.date !== dateStr) return false;
+            if (hour == null) return true;
+            return (parseInt(String(e.start).split(':')[0], 10) || 0) === hour;
+        }).sort(function (a, b) { return String(a.start).localeCompare(String(b.start)); });
+
+        showPicker(dayLabel(dateStr, hour != null ? String(hour).padStart(2, '0') + ':00' : ''), evts);
+    }
+
+    // Rango [startMin, endMin) — usado por el botón "Ver todas" de un cluster.
+    function openPopupRange(dateStr, startMin, endMin) {
+        var all = eventsProvider() || [];
+        var evts = all.filter(function (e) {
+            if (e.date !== dateStr) return false;
+            var s = toMin(e.start);
+            return s >= startMin && s < endMin;
+        }).sort(function (a, b) { return String(a.start).localeCompare(String(b.start)); });
+
+        var lbl = String(Math.floor(startMin / 60)).padStart(2, '0') + ':' + String(startMin % 60).padStart(2, '0');
+        showPicker(dayLabel(dateStr, lbl), evts);
+    }
+
     return {
-        esc: esc, useEvents: useEvents, packColumns: packColumns,
-        slotHtml: slotHtml, openPopup: openPopup, closePopup: closePopup
+        esc: esc, toMin: toMin, useEvents: useEvents,
+        packColumns: packColumns, clusterPack: clusterPack,
+        dayLayerHtml: dayLayerHtml, slotHtml: slotHtml,
+        openPopup: openPopup, openPopupRange: openPopupRange, closePopup: closePopup
     };
 })();
 </script>
@@ -373,18 +508,30 @@ const CAL = {
     events: [],
 
     async load() {
-        let year = this.year, month = this.month;
+        // Meses a cargar. La vista Semana puede solapar dos meses (p. ej.
+        // 31 ago – 6 sep): hay que pedir los dos o las clases del mes que
+        // no coincide con weekStart no aparecen.
+        const months = [];
+        const add = (y, m) => { const k = y + '-' + m; if (!months.some(x => x.k === k)) months.push({ k, y, m }); };
+
         if (this.view === 'week') {
-            year = this.weekStartYear(); month = this.weekStartMonth();
+            const ws = new Date((this.weekStart || this.getMonday(new Date())) + 'T00:00:00');
+            const we = new Date(ws); we.setDate(we.getDate() + 6);
+            add(ws.getFullYear(), ws.getMonth() + 1);
+            add(we.getFullYear(), we.getMonth() + 1);
         } else if (this.view === 'day' && this.day) {
             const p = this.day.split('-');
-            year = parseInt(p[0]); month = parseInt(p[1]);
+            add(parseInt(p[0]), parseInt(p[1]));
+        } else {
+            add(this.year, this.month);
         }
-        const url = `/clases/api/calendario?year=${year}&month=${month}`;
+
         try {
-            const res = await fetch(url);
-            this.events = await res.json();
-        } catch(e) { this.events = []; }
+            const lists = await Promise.all(months.map(x =>
+                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}`).then(r => r.json())));
+            const seen = new Set();
+            this.events = lists.flat().filter(e => !seen.has(e.id) && seen.add(e.id));
+        } catch (e) { this.events = []; }
         this.render();
     },
 
@@ -514,8 +661,8 @@ const CAL = {
         document.getElementById('cal-label').textContent =
             `${ws.getDate()} ${mn[ws.getMonth()]} – ${we.getDate()} ${mn[we.getMonth()]} ${we.getFullYear()}`;
 
-        const HOUR_START = 7, HOUR_END = 22;
         const SLOT_H = 56;
+        const [HOUR_START, HOUR_END] = this.hourRange(this.events.filter(e => dates.includes(e.date)));
 
         let html = '<div class="cal-week-wrap"><div class="cal-week-grid">';
 
@@ -528,18 +675,20 @@ const CAL = {
                      </div>`;
         });
 
+        // La capa de eventos de cada columna-día se pinta una vez (primer
+        // slot) y se posiciona en píxeles: las clases que se solapan aunque
+        // empiecen en horas distintas salen en columnas, no una sobre otra.
+        const colEvts = dates.map(ds => this.events.filter(e => e.date === ds));
         for (let h = HOUR_START; h < HOUR_END; h++) {
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
             dates.forEach((dateStr, di) => {
-                const dayEvts = this.events.filter(e =>
-                    e.date === dateStr && parseInt(e.start.split(':')[0]) === h);
-
-                html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
+                const anchor = h === HOUR_START;
+                html += `<div class="cal-hour-slot${anchor ? ' cal-anchor' : ''}${canManage ? ' cal-can-create' : ''}"
                               data-date="${dateStr}" data-hour="${h}"
                               onclick="handleSlotClick(event, '${dateStr}', ${h})">`;
 
-                // Semana: solo 2 columnas caben legibles; 3+ → botón "Ver todas".
-                html += CalOverlap.slotHtml(dayEvts, dateStr, h, { slotH: SLOT_H, maxCols: 2 });
+                // Semana: hasta 2 columnas legibles por cluster; más → "Ver todas".
+                if (anchor) html += CalOverlap.dayLayerHtml(colEvts[di], dateStr, { slotH: SLOT_H, hourStart: HOUR_START, maxCols: 2 });
 
                 html += '</div>';
             });
@@ -547,6 +696,20 @@ const CAL = {
 
         html += '</div></div>';
         document.getElementById('cal-grid').innerHTML = html;
+    },
+
+    // Rango de horas [inicio, fin) a pintar en Semana/Día: 07–22 salvo que
+    // haya clases fuera de esa franja.
+    hourRange(evts) {
+        let hs = 7, he = 22;
+        (evts || []).forEach(e => {
+            const sh = parseInt(String(e.start).split(':')[0]) || 0;
+            const ep = String(e.end || '').split(':');
+            const eh = (parseInt(ep[0]) || sh) + ((parseInt(ep[1]) || 0) > 0 ? 1 : 0);
+            if (sh < hs) hs = Math.max(0, sh);
+            if (Math.max(eh, sh + 1) > he) he = Math.min(24, Math.max(eh, sh + 1));
+        });
+        return [hs, he];
     },
 
     renderDay() {
@@ -560,8 +723,9 @@ const CAL = {
         document.getElementById('cal-label').textContent =
             `${dnames[d.getDay()]}, ${d.getDate()} de ${mn[d.getMonth()]} ${d.getFullYear()}`;
 
-        const HOUR_START = 7, HOUR_END = 22, SLOT_H = 56;
+        const SLOT_H = 56;
         const dayEvts = this.events.filter(e => e.date === this.day);
+        const [HOUR_START, HOUR_END] = this.hourRange(dayEvts);
 
         let html = '<div class="cal-week-wrap"><div class="cal-day-grid">';
 
@@ -572,13 +736,13 @@ const CAL = {
                  </div>`;
 
         for (let h = HOUR_START; h < HOUR_END; h++) {
+            const anchor = h === HOUR_START;
             html += `<div class="cal-time-label">${String(h).padStart(2,'0')}:00</div>`;
-            const slotEvts = dayEvts.filter(e => parseInt(e.start.split(':')[0]) === h);
-            html += `<div class="cal-hour-slot${canManage ? ' cal-can-create' : ''}"
+            html += `<div class="cal-hour-slot${anchor ? ' cal-anchor' : ''}${canManage ? ' cal-can-create' : ''}"
                          data-date="${this.day}" data-hour="${h}"
                          onclick="handleSlotClick(event, '${this.day}', ${h})">`;
-            // Día: hasta 6 columnas; más → botón "Ver todas" (CalOverlap, arriba en esta vista).
-            html += CalOverlap.slotHtml(slotEvts, this.day, h, { slotH: SLOT_H, maxCols: 6 });
+            // Día: hasta 6 columnas por cluster; más → botón "Ver todas".
+            if (anchor) html += CalOverlap.dayLayerHtml(dayEvts, this.day, { slotH: SLOT_H, hourStart: HOUR_START, maxCols: 6 });
             html += '</div>';
         }
 
@@ -594,8 +758,6 @@ const CAL = {
     fmt(d) {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     },
-    weekStartYear()  { return this.weekStart ? parseInt(this.weekStart.split('-')[0]) : this.year; },
-    weekStartMonth() { return this.weekStart ? parseInt(this.weekStart.split('-')[1]) : this.month; },
 };
 
 function handleCellClick(e, date) {
@@ -619,6 +781,86 @@ function handleSlotClick(e, date, hour) {
         ClaseModal.open({ date, time: `${h}:00` });
     }
 }
+
+// ── Buscador de clases (nombre / entrenador / jugador) ────────────
+const ClaseSearch = (function () {
+    const input = document.getElementById('cal-search-input');
+    const panel = document.getElementById('cal-search-panel');
+    const clear = document.getElementById('cal-search-clear');
+    if (!input) return {};
+
+    const esc = CalOverlap.esc;
+    const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const COLOR = { scheduled:'#3b82f6', completed:'#10b981', cancelled:'#94a3b8' };
+    let timer = null, lastQ = '', ctrl = null;
+
+    function fmtDate(d) {
+        const p = String(d).split('-');
+        return p.length === 3 ? (parseInt(p[2],10) + ' ' + MESES[parseInt(p[1],10)-1] + ' ' + p[0]) : d;
+    }
+
+    function open()  { panel.hidden = false; }
+    function close() { panel.hidden = true; }
+
+    function render(rows) {
+        if (!rows.length) {
+            panel.innerHTML = '<div class="cal-search-empty">Sin resultados para “' + esc(lastQ) + '”.</div>';
+            open(); return;
+        }
+        panel.innerHTML = rows.map(function (r) {
+            const sub = [fmtDate(r.date) + (r.start ? ' · ' + esc(r.start) : '')];
+            if (r.coaches) sub.push(esc(r.coaches));
+            if (r.players) sub.push(r.players + (r.players === 1 ? ' jugador' : ' jugadores'));
+            return '<a class="cal-search-row" href="/clases/' + encodeURIComponent(r.id) + '">' +
+                '<span class="csr-dot" style="background:' + (COLOR[r.status] || '#3b82f6') + '"></span>' +
+                '<span class="csr-main">' +
+                    '<span class="csr-title">' + esc(r.title) + '</span>' +
+                    '<span class="csr-sub">' + sub.join(' &nbsp;·&nbsp; ') + '</span>' +
+                '</span>' +
+                '<i class="bi bi-chevron-right" style="color:var(--text-muted);font-size:12px"></i>' +
+            '</a>';
+        }).join('');
+        open();
+    }
+
+    async function run(q) {
+        lastQ = q;
+        if (q.trim().length < 2) { close(); return; }
+        panel.innerHTML = '<div class="cal-search-hint">Buscando…</div>'; open();
+        if (ctrl) ctrl.abort();
+        ctrl = new AbortController();
+        try {
+            const res = await fetch('/clases/api/buscar?q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: ctrl.signal
+            });
+            if (!res.ok) throw new Error(res.status);
+            render(await res.json());
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+            panel.innerHTML = '<div class="cal-search-empty">No se pudo buscar. Inténtalo de nuevo.</div>'; open();
+        }
+    }
+
+    input.addEventListener('input', function () {
+        const q = input.value;
+        clear.hidden = q.length === 0;
+        clearTimeout(timer);
+        timer = setTimeout(function () { run(q); }, 220);
+    });
+    input.addEventListener('focus', function () { if (input.value.trim().length >= 2) run(input.value); });
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { close(); input.blur(); }
+        if (e.key === 'Enter') { const a = panel.querySelector('.cal-search-row'); if (a) a.click(); }
+    });
+    clear.addEventListener('click', function () {
+        input.value = ''; clear.hidden = true; close(); input.focus();
+    });
+    document.addEventListener('click', function (e) {
+        if (!document.getElementById('cal-search').contains(e.target)) close();
+    });
+
+    return { run: run };
+})();
 
 // Inicializar
 CalOverlap.useEvents(() => CAL.events);

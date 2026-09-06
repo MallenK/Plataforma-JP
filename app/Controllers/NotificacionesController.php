@@ -30,6 +30,10 @@ class NotificacionesController extends BaseController
         $userId = $this->currentUserId();
         $role   = $this->currentRole();
 
+        // Por diseño: un alumno SÍ puede enviar notificaciones individuales,
+        // pero solo a NO-alumnos (misma regla que Mensajes; se aplica en
+        // resolveRecipients() + rate-limit por remitente). El coach es el
+        // único rol sin envío de notificaciones (usa Mensajes).
         $canSendNotif = !in_array($role, ['coach']);
         $canSendGroup = in_array($role, ['superadmin', 'admin']);
         $canSeeSent   = in_array($role, ['superadmin', 'admin']);
