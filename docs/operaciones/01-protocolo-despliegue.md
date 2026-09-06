@@ -344,8 +344,8 @@ el deploy manual a Hostinger, no una rama.
 | App | Servicio Web de Render, rama `main`, auto-deploy. Región **Frankfurt** (cerca del datacenter EU de Hostinger). |
 | BBDD | 2ª base de datos en la cuenta de Hostinger, con su propio usuario (solo esa BBDD). Remote MySQL restringido a las IPs de salida de Render. **Datos, host, usuario y BBDD: en el panel de env de Render** — no se versionan. |
 | Datos | de prueba: `DatabaseSeeder` + `BulkDemoDataSeeder` + `PreprodTicketsSeeder`. **Nunca** datos reales. |
-| Email | `MAIL_FROM_EMAIL=onboarding@resend.dev` (solo llega al dueño de la cuenta Resend) o sin `RESEND_API_KEY` (no envía). |
-| Banner | barra roja "PRE-PRODUCCIÓN" arriba (variable `APP_ENV_LABEL`). |
+| Email | **`RESEND_API_KEY` NO se pone** en Render → `MailService` no envía nada (solo lo registra en `email_log`). Si algún día hace falta probar el flujo de email, ponerla + `MAIL_FROM="JP PRE <onboarding@resend.dev>"` (solo llega al dueño de la cuenta Resend). |
+| Banner | píldora roja "PRE-PRODUCCIÓN" centrada en el topbar (variable `APP_ENV_LABEL`). |
 
 ### Variables de entorno en Render
 
@@ -354,17 +354,16 @@ Se configuran en el panel de Render (Environment). **Nunca en git.**
 ```
 CI_ENVIRONMENT  = production
 APP_BASE_URL    = https://plataforma-jp.onrender.com/
-APP_ENV_LABEL   = PRE-PRODUCCIÓN
+APP_ENV_LABEL   = PPR             # cualquier valor que no sea "produccion" -> banner
 DB_HOST         = <host MySQL que muestra hPanel>
 DB_PORT         = 3306
 DB_NAME         = <2ª BBDD de Hostinger>
 DB_USER         = <usuario de esa BBDD>
 DB_PASS         = <secreto — solo en Render>
-DB_ENCRYPT      = false          # Hostinger remoto va en claro
+DB_ENCRYPT      = false           # Hostinger remoto va en claro (sin TLS)
 ENCRYPTION_KEY  = <64 hex, distinto de prod>
-SEED_DEMO       = 1              # solo siembra si la tabla users está vacía
-MAIL_FROM_EMAIL = onboarding@resend.dev
-MAIL_FROM_NAME  = JP PRE
+SEED_DEMO       = 1               # solo siembra si la tabla users está vacía
+# RESEND_API_KEY : NO ponerla (no queremos que pre-prod mande correos)
 ```
 
 ### Montaje inicial de la BBDD (una vez)

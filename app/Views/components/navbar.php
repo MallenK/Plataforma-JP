@@ -55,7 +55,12 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
         <?php if ($pageSubtitle): ?><p><?= esc($pageSubtitle) ?></p><?php endif; ?>
     </div>
 
-    <?php if (trim((string) env('APP_ENV_LABEL', '')) !== ''): ?>
+    <?php
+    // Indicador de entorno. Aparece si APP_ENV_LABEL tiene un valor que NO
+    // sea de producción (p. ej. "PPR"). Vacío o "produccion"/"production" → nada.
+    $envLabel = strtolower(trim((string) env('APP_ENV_LABEL', '')));
+    ?>
+    <?php if ($envLabel !== '' && !in_array($envLabel, ['produccion', 'producción', 'production', 'prod'], true)): ?>
     <div class="topbar-env-badge" title="Entorno de pruebas — los datos no son reales">PRE-PRODUCCIÓN</div>
     <?php endif; ?>
 
