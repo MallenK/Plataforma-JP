@@ -738,3 +738,55 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ── F2 · nota interna + historial ───────────────────────── */
+.ticket-message--internal .ticket-message-body {
+    background: #fffbeb;
+    border: 1px dashed #f59e0b;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.ticket-internal-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    color: #92400e;
+    background: #fde68a;
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+.ticket-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.ticket-timeline-item {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    padding: 0 0 12px 4px;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+.ticket-timeline-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 14px;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-color, #e5e7eb);
+}
+.ticket-timeline-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: var(--brand, #2563eb);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}

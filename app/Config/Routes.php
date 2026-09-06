@@ -652,6 +652,8 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 //  GET  /tickets/download/:id         → descargar adjunto (dueño o gestor)
 //  GET  /tickets/admin[/dashboard|/export] → gestión — admin + superadmin
 //  POST /tickets/:id/reply · /status  → responder / estado — admin + superadmin
+//  POST /tickets/:id/asignar          → asignar / desasignar — admin + superadmin
+//                                        (reply acepta is_internal=1 → nota interna)
 // ------------------------------------------------------------
 
 $routes->get('tickets', 'TicketsController::index', [
@@ -695,6 +697,10 @@ $routes->post('tickets/(:num)/reply', 'TicketsController::reply/$1', [
 ]);
 
 $routes->post('tickets/(:num)/status', 'TicketsController::updateStatus/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('tickets/(:num)/asignar', 'TicketsController::assign/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 

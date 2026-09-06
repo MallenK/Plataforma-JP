@@ -86,6 +86,29 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 <?php endforeach; ?>
             </ul>
         </div>
+        <!-- Asignar -->
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-person-check me-1"></i>Asignar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <button class="dropdown-item btn-assign" data-assign="">
+                        <i class="bi bi-dash-circle me-1"></i>Sin asignar
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <?php foreach ($managers as $m): ?>
+                <li>
+                    <button class="dropdown-item btn-assign <?= (int) $m['id'] === (int) ($ticket['assigned_to'] ?? 0) ? 'active' : '' ?>"
+                            data-assign="<?= (int) $m['id'] ?>">
+                        <?= esc($m['name']) ?>
+                        <span class="text-muted small">· <?= esc(ucfirst($m['role'])) ?></span>
+                    </button>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
     </div>
     <?php elseif ($isOwner && !$isClosed): ?>
     <!-- El creador puede cambiar prioridad si el ticket no está cerrado -->
@@ -186,8 +209,11 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 
         <!-- Respuestas -->
         <?php foreach ($replies as $reply): ?>
-        <?php $isAdmin = in_array($reply['user_role'], ['superadmin', 'admin']); ?>
-        <div class="ticket-message <?= $isAdmin ? 'ticket-message--admin' : '' ?>">
+        <?php
+            $isAdmin    = in_array($reply['user_role'], ['superadmin', 'admin']);
+            $isInternal = !empty($reply['is_internal']);
+        ?>
+        <div class="ticket-message <?= $isAdmin ? 'ticket-message--admin' : '' ?> <?= $isInternal ? 'ticket-message--internal' : '' ?>">
             <div class="ticket-message-avatar">
                 <?= avatar_html($reply['user_avatar'], $reply['user_name'], 'ticket-avatar') ?>
             </div>
@@ -206,6 +232,11 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     <span class="ticket-message-time">
                         <?= date('d/m/Y H:i', strtotime($reply['created_at'])) ?>
                     </span>
+                    <?php if ($isInternal): ?>
+                    <span class="ticket-internal-badge">
+                        <i class="bi bi-eye-slash me-1"></i>Nota interna
+                    </span>
+                    <?php endif; ?>
                 </div>
                 <div class="ticket-message-content">
                     <?= nl2br(esc($reply['body'])) ?>
@@ -238,6 +269,15 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     <input type="hidden" name="<?= $csrfName ?>" value="<?= $csrfHash ?>" id="reply-csrf">
                     <textarea name="body" id="reply-body" class="form-control mb-2" rows="4"
                               placeholder="Escribe tu respuesta..." maxlength="5000"></textarea>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               name="is_internal" value="1" id="reply-internal">
+                        <label class="form-check-label small" for="reply-internal">
+                            <i class="bi bi-eye-slash me-1"></i>Nota interna
+                            <span class="text-muted">— solo la ven los gestores, no el solicitante</span>
+                        </label>
+                    </div>
 
                     <!-- Adjunto en respuesta -->
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -308,6 +348,52 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 </div>
             </div>
         </div>
+
+        <div class="ticket-info-card mt-3">
+            <h6 class="ticket-info-title">Asignado a</h6>
+            <?php if (!empty($ticket['assignee_name'])): ?>
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <?= avatar_html($ticket['assignee_avatar'] ?? null, $ticket['assignee_name'], 'ticket-avatar-sm') ?>
+                <div>
+                    <div class="fw-semibold" style="font-size:13px"><?= esc($ticket['assignee_name']) ?></div>
+                    <div class="text-muted" style="font-size:11px"><?= esc(ucfirst($ticket['assignee_role'] ?? '')) ?></div>
+                </div>
+            </div>
+            <?php else: ?>
+            <p class="text-muted mb-0 mt-2" style="font-size:12px">Sin asignar</p>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($events)): ?>
+        <div class="ticket-info-card mt-3">
+            <h6 class="ticket-info-title">Historial</h6>
+            <ul class="ticket-timeline mt-2">
+                <?php
+                $evLabels = [
+                    'created'         => fn($e) => 'creó el ticket',
+                    'reply'           => fn($e) => 'respondió',
+                    'internal_note'   => fn($e) => 'añadió una nota interna',
+                    'status_changed'  => fn($e) => 'cambió el estado' . ($e['to_value'] ? ' a «' . ($statuses[$e['to_value']] ?? $e['to_value']) . '»' : ''),
+                    'reopened'        => fn($e) => 'reabrió el ticket',
+                    'closed'          => fn($e) => 'cerró el ticket',
+                    'priority_changed'=> fn($e) => 'cambió la prioridad' . ($e['to_value'] ? ' a «' . ($priorities[$e['to_value']] ?? $e['to_value']) . '»' : ''),
+                    'assigned'        => fn($e) => 'asignó el ticket' . ($e['to_value'] ? ' a ' . $e['to_value'] : ''),
+                    'unassigned'      => fn($e) => 'quitó la asignación',
+                ];
+                ?>
+                <?php foreach ($events as $e): ?>
+                <li class="ticket-timeline-item">
+                    <span class="ticket-timeline-dot"></span>
+                    <div>
+                        <span class="fw-semibold"><?= esc($e['actor_name'] ?? 'Sistema') ?></span>
+                        <?= esc(isset($evLabels[$e['event_type']]) ? $evLabels[$e['event_type']]($e) : $e['event_type']) ?>
+                        <div class="text-muted" style="font-size:11px"><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></div>
+                    </div>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
 
@@ -366,6 +452,30 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     showToast(data.error || 'No se pudo actualizar la prioridad', true);
                 }
             } catch (_) { showToast('Error de conexión al actualizar la prioridad', true); }
+        });
+    });
+
+    // ── Asignar ────────────────────────────────────────────
+    document.querySelectorAll('.btn-assign').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const fd = new FormData();
+            fd.append(CSRF_NAME, csrfHash);
+            fd.append('assigned_to', btn.dataset.assign || '');
+            try {
+                const res  = await fetch(BASE + 'tickets/' + TICKET_ID + '/asignar', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (data.csrf) csrfHash = data.csrf;
+                if (data.ok) {
+                    showToast(data.assignee_name ? ('Asignado a ' + data.assignee_name) : 'Asignación retirada');
+                    setTimeout(() => location.reload(), 800);
+                } else if (!(window.handleApiError && window.handleApiError(data, 'tickets.asignar'))) {
+                    showToast(data.error || 'No se pudo asignar', true);
+                }
+            } catch (_) { showToast('Error de conexión al asignar', true); }
         });
     });
 

@@ -14,7 +14,7 @@ class TicketModel extends Model
 
     protected $allowedFields = [
         'ticket_number', 'user_id', 'category', 'priority',
-        'title', 'description', 'status',
+        'title', 'description', 'status', 'assigned_to',
         'origin', 'error_ref', 'context',
         'resolved_at', 'closed_at', 'created_at', 'updated_at',
     ];
@@ -92,6 +92,13 @@ class TicketModel extends Model
         if (!empty($filters['category'])) {
             $builder->where('t.category', $filters['category']);
         }
+        if (!empty($filters['assigned_to'])) {
+            if ($filters['assigned_to'] === 'none') {
+                $builder->where('t.assigned_to IS NULL', null, false);
+            } else {
+                $builder->where('t.assigned_to', (int) $filters['assigned_to']);
+            }
+        }
         if (isset($filters['search']) && trim((string) $filters['search']) !== '') {
             $term = trim((string) $filters['search']);
             $builder->groupStart()
@@ -122,8 +129,10 @@ class TicketModel extends Model
     {
         $builder = $this->db->table('tickets t')
             ->select('t.*, u.name AS user_name, u.avatar AS user_avatar, u.role AS user_role,
+                      a.name AS assignee_name,
                       (SELECT COUNT(*) FROM ticket_replies tr WHERE tr.ticket_id = t.id) AS reply_count')
-            ->join('users u', 'u.id = t.user_id');
+            ->join('users u', 'u.id = t.user_id')
+            ->join('users a', 'a.id = t.assigned_to', 'left');
 
         $this->applyFilters($builder, $filters);
 
@@ -135,7 +144,8 @@ class TicketModel extends Model
     public function countAll(array $filters = []): int
     {
         $builder = $this->db->table('tickets t')
-            ->join('users u', 'u.id = t.user_id');
+            ->join('users u', 'u.id = t.user_id')
+            ->join('users a', 'a.id = t.assigned_to', 'left');
 
         $this->applyFilters($builder, $filters);
 
@@ -149,12 +159,26 @@ class TicketModel extends Model
     public function getWithUser(int $id): ?array
     {
         $row = $this->db->table('tickets t')
-            ->select('t.*, u.name AS user_name, u.avatar AS user_avatar, u.role AS user_role')
+            ->select('t.*, u.name AS user_name, u.avatar AS user_avatar, u.role AS user_role,
+                      a.name AS assignee_name, a.avatar AS assignee_avatar, a.role AS assignee_role')
             ->join('users u', 'u.id = t.user_id')
+            ->join('users a', 'a.id = t.assigned_to', 'left')
             ->where('t.id', $id)
             ->get()->getRowArray();
 
         return $row ?: null;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // ASIGNACIÓN
+    // ─────────────────────────────────────────────────────────
+
+    public function assign(int $id, ?int $assigneeId): void
+    {
+        $this->db->table('tickets')->where('id', $id)->update([
+            'assigned_to' => $assigneeId ?: null,
+            'updated_at'  => date('Y-m-d H:i:s'),
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────

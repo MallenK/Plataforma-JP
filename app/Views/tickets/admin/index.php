@@ -37,10 +37,11 @@ $priorityColors = [
         </a>
         <?php
         $expQs = http_build_query(array_filter([
-            'search'   => $filters['search'],
-            'status'   => $filters['status'],
-            'priority' => $filters['priority'],
-            'category' => $filters['category'],
+            'search'      => $filters['search'],
+            'status'      => $filters['status'],
+            'priority'    => $filters['priority'],
+            'category'    => $filters['category'],
+            'assigned_to' => $filters['assigned_to'] ?? '',
         ]));
         ?>
         <div class="dropdown">
@@ -90,6 +91,19 @@ $priorityColors = [
                 <?php endforeach; ?>
             </select>
         </div>
+        <div class="col-sm-3 col-lg-2">
+            <select name="assigned_to" class="form-select form-select-sm">
+                <option value="">Cualquier asignación</option>
+                <option value="none" <?= ($filters['assigned_to'] ?? '') === 'none' ? 'selected' : '' ?>>Sin asignar</option>
+                <?php if (!empty($currentUserId)): ?>
+                <option value="<?= $currentUserId ?>" <?= (string) ($filters['assigned_to'] ?? '') === (string) $currentUserId ? 'selected' : '' ?>>Asignados a mí</option>
+                <?php endif; ?>
+                <?php foreach (($managers ?? []) as $m): ?>
+                <?php if ((int) $m['id'] === (int) $currentUserId) continue; ?>
+                <option value="<?= (int) $m['id'] ?>" <?= (string) ($filters['assigned_to'] ?? '') === (string) $m['id'] ? 'selected' : '' ?>><?= esc($m['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div class="col-sm-2 col-lg-1">
             <button type="submit" class="btn btn-sm btn-primary w-100">
                 <i class="bi bi-search"></i>
@@ -120,6 +134,7 @@ $priorityColors = [
                 <th>Nº Ticket</th>
                 <th>Título</th>
                 <th>Solicitante</th>
+                <th>Asignado</th>
                 <th>Categoría</th>
                 <th>Prioridad</th>
                 <th>Estado</th>
@@ -142,6 +157,13 @@ $priorityColors = [
                     <span class="ticket-admin-title"><?= esc($t['title']) ?></span>
                 </td>
                 <td><?= esc($t['user_name']) ?></td>
+                <td>
+                    <?php if (!empty($t['assignee_name'])): ?>
+                        <?= esc($t['assignee_name']) ?>
+                    <?php else: ?>
+                        <span class="text-muted small">Sin asignar</span>
+                    <?php endif; ?>
+                </td>
                 <td>
                     <span class="ticket-category-badge">
                         <?= esc($categories[$t['category']] ?? $t['category']) ?>
@@ -181,6 +203,7 @@ $priorityColors = [
                 <?= $filters['priority'] ? '&priority=' . urlencode($filters['priority']) : '' ?>
                 <?= $filters['category'] ? '&category=' . urlencode($filters['category']) : '' ?>
                 <?= $filters['search']   ? '&search='   . urlencode($filters['search'])   : '' ?>
+                <?= !empty($filters['assigned_to']) ? '&assigned_to=' . urlencode($filters['assigned_to']) : '' ?>
             "><?= $p ?></a>
         </li>
         <?php endfor; ?>
