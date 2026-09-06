@@ -101,13 +101,8 @@ class Exceptions extends BaseConfig
      */
     public function handler(int $statusCode, Throwable $exception): ExceptionHandlerInterface
     {
-        // 5xx en una petición HTML de producción → página con "Reportar problema".
-        if (
-            $statusCode >= 500
-            && ! is_cli()
-            && ENVIRONMENT === 'production'
-            && str_contains((string) service('request')->getHeaderLine('accept'), 'text/html')
-        ) {
+        // 5xx en producción (HTML o AJAX) → respuesta con referencia + "Reportar".
+        if ($statusCode >= 500 && ! is_cli() && ENVIRONMENT === 'production') {
             return new \App\Libraries\ReportableExceptionHandler($this);
         }
 

@@ -40,23 +40,33 @@ final class ReportableExceptionHandler extends BaseExceptionHandler implements E
             $exception->getTraceAsString(),
         ));
 
-        if (! headers_sent()) {
-            header('HTTP/1.1 500 Internal Server Error', true, 500);
-            header('Content-Type: text/html; charset=UTF-8');
-        }
-
-        // Limpia cualquier buffer parcial antes de pintar la página de error.
+        // Limpia cualquier buffer parcial antes de responder.
         while (ob_get_level() > $this->obLevel) {
             ob_end_clean();
         }
 
-        try {
-            echo view('errors/html/production_reportable', ['ref' => $ref]);
-        } catch (Throwable) {
-            // Si hasta la vista falla, cae al handler estándar.
-            (new DefaultExceptionHandler($this->config))
-                ->handle($exception, $request, $response, $statusCode, $exitCode);
-            return;
+        $wantsHtml = str_contains($request->getHeaderLine('accept'), 'text/html')
+            && ! $request->isAJAX();
+
+        if (! headers_sent()) {
+            header('HTTP/1.1 500 Internal Server Error', true, 500);
+            header('Content-Type: ' . ($wantsHtml ? 'text/html' : 'application/json') . '; charset=UTF-8');
+        }
+
+        if ($wantsHtml) {
+            try {
+                echo view('errors/html/production_reportable', ['ref' => $ref]);
+            } catch (Throwable) {
+                (new DefaultExceptionHandler($this->config))
+                    ->handle($exception, $request, $response, $statusCode, $exitCode);
+                return;
+            }
+        } else {
+            echo json_encode([
+                'error'      => 'Ha ocurrido un error inesperado. Puedes reportarlo para que lo revisemos.',
+                'error_ref'  => $ref,
+                'reportable' => true,
+            ]);
         }
 
         if (ENVIRONMENT !== 'testing') {
