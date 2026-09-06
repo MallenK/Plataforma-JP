@@ -72,6 +72,14 @@
             return;
         }
 
+        // Cierra cualquier otro modal abierto (p. ej. el de enviar notificación).
+        document.querySelectorAll('.modal.show').forEach(function (m) {
+            if (m !== modalEl) {
+                var i = window.bootstrap.Modal.getInstance(m);
+                if (i) i.hide();
+            }
+        });
+
         var f = modalEl.querySelector('form');
         var set = function (name, val) {
             var el = f.querySelector('[name="' + name + '"]');

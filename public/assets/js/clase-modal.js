@@ -323,6 +323,8 @@
             if (data.success) {
                 close();
                 if (typeof opts.onCreated === 'function') opts.onCreated(data);
+            } else if (window.handleApiError && window.handleApiError(data, 'clases.rapida')) {
+                close();
             } else {
                 errEl.textContent = data.error || 'Error al crear la sesión.';
                 show(errEl);

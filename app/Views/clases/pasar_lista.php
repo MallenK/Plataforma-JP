@@ -279,7 +279,9 @@ $attendanceOpts = [
                         self.outerHTML = '<span style="font-size:11px;color:#059669;font-weight:600"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>';
                     }
                 } else {
-                    showAlert(data.error || 'Error al descontar el bono.');
+                    if (!(window.handleApiError && window.handleApiError(data, 'clases.descontar-bono'))) {
+                        showAlert(data.error || 'Error al descontar el bono.');
+                    }
                     self.disabled = false;
                     self.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Descontar bono';
                 }

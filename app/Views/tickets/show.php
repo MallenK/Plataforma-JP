@@ -337,9 +337,12 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     body: fd,
                 });
                 const data = await res.json();
-                if (data.ok) { showToast('Estado actualizado a: ' + data.label); setTimeout(() => location.reload(), 800); }
                 if (data.csrf) csrfHash = data.csrf;
-            } catch (_) { showToast('Error al actualizar estado', true); }
+                if (data.ok) { showToast('Estado actualizado a: ' + data.label); setTimeout(() => location.reload(), 800); }
+                else if (!(window.handleApiError && window.handleApiError(data, 'tickets.status'))) {
+                    showToast(data.error || 'No se pudo actualizar el estado', true);
+                }
+            } catch (_) { showToast('Error de conexión al actualizar el estado', true); }
         });
     });
 
@@ -357,9 +360,12 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     body: fd,
                 });
                 const data = await res.json();
-                if (data.ok) { showToast('Prioridad actualizada a: ' + data.label); setTimeout(() => location.reload(), 800); }
                 if (data.csrf) csrfHash = data.csrf;
-            } catch (_) { showToast('Error al actualizar prioridad', true); }
+                if (data.ok) { showToast('Prioridad actualizada a: ' + data.label); setTimeout(() => location.reload(), 800); }
+                else if (!(window.handleApiError && window.handleApiError(data, 'tickets.priority'))) {
+                    showToast(data.error || 'No se pudo actualizar la prioridad', true);
+                }
+            } catch (_) { showToast('Error de conexión al actualizar la prioridad', true); }
         });
     });
 
@@ -404,14 +410,14 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     body: fd,
                 });
                 const data = await res.json();
+                if (data.csrf) csrfHash = data.csrf;
                 if (data.ok) {
                     showToast('Respuesta enviada');
                     setTimeout(() => location.reload(), 600);
-                } else {
+                } else if (!(window.handleApiError && window.handleApiError(data, 'tickets.reply'))) {
                     errBox.textContent = data.error ?? 'Error inesperado.';
                     errBox.classList.remove('d-none');
                 }
-                if (data.csrf) csrfHash = data.csrf;
             } catch (_) {
                 errBox.textContent = 'Error de conexión.';
                 errBox.classList.remove('d-none');
