@@ -201,16 +201,18 @@ class TicketModel extends Model
             ->groupBy('priority')
             ->get()->getResultArray();
 
+        // Nota: selectAvg() rechaza expresiones con comas y whereNotNull() no
+        // existe en el query builder de CI4 — hay que usar select()/where() crudos.
         $avgResolution = $this->db->table('tickets')
-            ->selectAvg('TIMESTAMPDIFF(HOUR, created_at, resolved_at)', 'avg_hours')
+            ->select('AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)) AS avg_hours', false)
             ->where('status !=', 'abierto')
-            ->whereNotNull('resolved_at')
+            ->where('resolved_at IS NOT NULL', null, false)
             ->get()->getRowArray();
 
         $last30 = $this->db->table('tickets')
-            ->select('DATE(created_at) AS day, COUNT(*) AS total')
+            ->select('DATE(created_at) AS day, COUNT(*) AS total', false)
             ->where('created_at >=', date('Y-m-d', strtotime('-30 days')))
-            ->groupBy('DATE(created_at)')
+            ->groupBy('day')
             ->orderBy('day', 'ASC')
             ->get()->getResultArray();
 
