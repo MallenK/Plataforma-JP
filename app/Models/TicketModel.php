@@ -74,14 +74,43 @@ class TicketModel extends Model
     // LISTADOS
     // ─────────────────────────────────────────────────────────
 
-    public function getForUser(int $userId, int $limit = 20, int $offset = 0): array
+    /**
+     * Aplica los filtros comunes (estado, prioridad, categoría, búsqueda) a
+     * un query builder de la tabla `tickets t` (con join a `users u`).
+     */
+    private function applyFilters($builder, array $filters): void
     {
-        return $this->db->table('tickets t')
+        if (!empty($filters['status'])) {
+            $builder->where('t.status', $filters['status']);
+        }
+        if (!empty($filters['priority'])) {
+            $builder->where('t.priority', $filters['priority']);
+        }
+        if (!empty($filters['category'])) {
+            $builder->where('t.category', $filters['category']);
+        }
+        if (isset($filters['search']) && trim((string) $filters['search']) !== '') {
+            $term = trim((string) $filters['search']);
+            $builder->groupStart()
+                ->like('t.title', $term)
+                ->orLike('t.ticket_number', $term)
+                ->orLike('t.description', $term)
+                ->orLike('u.name', $term)
+                ->groupEnd();
+        }
+    }
+
+    public function getForUser(int $userId, array $filters = [], int $limit = 500, int $offset = 0): array
+    {
+        $builder = $this->db->table('tickets t')
             ->select('t.*, u.name AS user_name, u.avatar AS user_avatar, u.role AS user_role,
                       (SELECT COUNT(*) FROM ticket_replies tr WHERE tr.ticket_id = t.id) AS reply_count')
             ->join('users u', 'u.id = t.user_id')
-            ->where('t.user_id', $userId)
-            ->orderBy('t.created_at', 'DESC')
+            ->where('t.user_id', $userId);
+
+        $this->applyFilters($builder, $filters);
+
+        return $builder->orderBy('t.created_at', 'DESC')
             ->limit($limit, $offset)
             ->get()->getResultArray();
     }
@@ -93,23 +122,7 @@ class TicketModel extends Model
                       (SELECT COUNT(*) FROM ticket_replies tr WHERE tr.ticket_id = t.id) AS reply_count')
             ->join('users u', 'u.id = t.user_id');
 
-        if (!empty($filters['status'])) {
-            $builder->where('t.status', $filters['status']);
-        }
-        if (!empty($filters['priority'])) {
-            $builder->where('t.priority', $filters['priority']);
-        }
-        if (!empty($filters['category'])) {
-            $builder->where('t.category', $filters['category']);
-        }
-        if (!empty($filters['search'])) {
-            $term = '%' . $filters['search'] . '%';
-            $builder->groupStart()
-                ->like('t.title', $filters['search'])
-                ->orLike('t.ticket_number', $filters['search'])
-                ->orLike('u.name', $filters['search'])
-                ->groupEnd();
-        }
+        $this->applyFilters($builder, $filters);
 
         return $builder->orderBy('t.created_at', 'DESC')
             ->limit($limit, $offset)
@@ -121,22 +134,7 @@ class TicketModel extends Model
         $builder = $this->db->table('tickets t')
             ->join('users u', 'u.id = t.user_id');
 
-        if (!empty($filters['status'])) {
-            $builder->where('t.status', $filters['status']);
-        }
-        if (!empty($filters['priority'])) {
-            $builder->where('t.priority', $filters['priority']);
-        }
-        if (!empty($filters['category'])) {
-            $builder->where('t.category', $filters['category']);
-        }
-        if (!empty($filters['search'])) {
-            $builder->groupStart()
-                ->like('t.title', $filters['search'])
-                ->orLike('t.ticket_number', $filters['search'])
-                ->orLike('u.name', $filters['search'])
-                ->groupEnd();
-        }
+        $this->applyFilters($builder, $filters);
 
         return (int) $builder->countAllResults();
     }

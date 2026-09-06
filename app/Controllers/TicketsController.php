@@ -193,6 +193,103 @@ class TicketsController extends BaseController
     }
 
     // ─────────────────────────────────────────────────────────
+    // EXPORTAR — CSV (Excel) o vista imprimible (PDF vía navegador)
+    // ─────────────────────────────────────────────────────────
+
+    /** Filtros de la query string, comunes a listado y exportación. */
+    private function requestFilters(): array
+    {
+        return [
+            'status'   => $this->request->getGet('status')   ?? '',
+            'priority' => $this->request->getGet('priority') ?? '',
+            'category' => $this->request->getGet('category') ?? '',
+            'search'   => $this->request->getGet('search')   ?? '',
+        ];
+    }
+
+    /** Exporta los tickets del usuario que ha entrado. */
+    public function export()
+    {
+        return $this->exportTickets(
+            $this->ticketModel->getForUser((int) $this->currentUserId(), $this->requestFilters(), 5000),
+            false
+        );
+    }
+
+    /** Exporta TODOS los tickets del sistema (solo superadmin). */
+    public function adminExport()
+    {
+        return $this->exportTickets(
+            $this->ticketModel->getAll($this->requestFilters(), 5000),
+            true
+        );
+    }
+
+    private function exportTickets(array $tickets, bool $withUser)
+    {
+        $format = strtolower((string) ($this->request->getGet('format') ?? 'csv'));
+
+        if ($format === 'pdf' || $format === 'print') {
+            return view('tickets/export_print', [
+                'title'      => 'Tickets — export',
+                'tickets'    => $tickets,
+                'withUser'   => $withUser,
+                'filters'    => $this->requestFilters(),
+                'autoPrint'  => true,
+                'categories' => TicketModel::CATEGORIES,
+                'priorities' => TicketModel::PRIORITIES,
+                'statuses'   => TicketModel::STATUSES,
+            ]);
+        }
+
+        // CSV (por defecto) — BOM UTF-8 para que Excel lo abra bien.
+        $cats = TicketModel::CATEGORIES;
+        $pris = TicketModel::PRIORITIES;
+        $stas = TicketModel::STATUSES;
+
+        $filename = 'tickets-' . date('Y-m-d_His') . '.csv';
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF");
+
+        $header = ['Nº', 'Título', 'Categoría', 'Prioridad', 'Estado'];
+        if ($withUser) {
+            $header[] = 'Usuario';
+        }
+        $header = array_merge($header, ['Respuestas', 'Creado', 'Resuelto', 'Cerrado', 'Descripción']);
+        fputcsv($fh, $header, ';');
+
+        foreach ($tickets as $t) {
+            $row = [
+                $t['ticket_number'],
+                $t['title'],
+                $cats[$t['category']] ?? $t['category'],
+                $pris[$t['priority']] ?? $t['priority'],
+                $stas[$t['status']] ?? $t['status'],
+            ];
+            if ($withUser) {
+                $row[] = $t['user_name'] ?? '';
+            }
+            $row = array_merge($row, [
+                (int) ($t['reply_count'] ?? 0),
+                $t['created_at'] ?? '',
+                $t['resolved_at'] ?? '',
+                $t['closed_at'] ?? '',
+                preg_replace('/\s+/', ' ', (string) ($t['description'] ?? '')),
+            ]);
+            fputcsv($fh, $row, ';');
+        }
+
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // ADMIN — dashboard de estadísticas
     // ─────────────────────────────────────────────────────────
 

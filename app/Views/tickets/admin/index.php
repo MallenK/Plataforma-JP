@@ -35,6 +35,26 @@ $priorityColors = [
         <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-person me-1"></i>Mis tickets
         </a>
+        <?php
+        $expQs = http_build_query(array_filter([
+            'search'   => $filters['search'],
+            'status'   => $filters['status'],
+            'priority' => $filters['priority'],
+            'category' => $filters['category'],
+        ]));
+        ?>
+        <div class="dropdown">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download me-1"></i>Exportar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="<?= base_url('tickets/admin/export') ?>?format=csv<?= $expQs ? '&' . $expQs : '' ?>">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel (CSV)</a></li>
+                <li><a class="dropdown-item" target="_blank" href="<?= base_url('tickets/admin/export') ?>?format=pdf<?= $expQs ? '&' . $expQs : '' ?>">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>PDF (imprimir)</a></li>
+            </ul>
+        </div>
     </div>
 </div>
 
