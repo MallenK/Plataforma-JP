@@ -15,8 +15,11 @@ class TicketModel extends Model
     protected $allowedFields = [
         'ticket_number', 'user_id', 'category', 'priority',
         'title', 'description', 'status',
+        'origin', 'error_ref', 'context',
         'resolved_at', 'closed_at', 'created_at', 'updated_at',
     ];
+
+    public const ORIGINS = ['manual', 'error', 'permiso'];
 
     // ─────────────────────────────────────────────────────────
     // CONSTANTES

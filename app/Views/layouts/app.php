@@ -42,6 +42,9 @@
             <form id="form-ticket-rapido" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" id="ticket-rapido-csrf">
+                    <input type="hidden" name="origin" value="manual">
+                    <input type="hidden" name="error_ref" value="">
+                    <input type="hidden" name="context" value="">
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
@@ -77,6 +80,16 @@
                         <textarea name="description" class="form-control" rows="5"
                                   placeholder="Describe el problema con detalle: ¿qué ocurrió?, ¿dónde?, ¿qué esperabas que pasara?"
                                   maxlength="5000" required></textarea>
+                    </div>
+
+                    <div id="tk-shot-wrap" class="mb-2" hidden>
+                        <label class="form-label fw-semibold">Captura de pantalla</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="tk-shot-btn">
+                                <i class="bi bi-camera me-1"></i>Capturar pantalla
+                            </button>
+                            <span class="form-text m-0" id="tk-shot-status"></span>
+                        </div>
                     </div>
 
                     <div class="mb-1">
@@ -121,6 +134,17 @@
         errBox.classList.add('d-none');
         btnLbl.classList.remove('d-none');
         btnSpin.classList.add('d-none');
+        const sw = document.getElementById('tk-shot-wrap');
+        if (sw) sw.hidden = true;
+        const ss = document.getElementById('tk-shot-status');
+        if (ss) ss.textContent = '';
+    });
+
+    // Al abrir manualmente (botón del topbar) → asegurar estado "manual".
+    document.getElementById('topbar-ticket-btn')?.addEventListener('click', () => {
+        form.querySelector('[name="origin"]').value = 'manual';
+        form.querySelector('[name="error_ref"]').value = '';
+        form.querySelector('[name="context"]').value = '';
     });
 
     form?.addEventListener('submit', async (e) => {

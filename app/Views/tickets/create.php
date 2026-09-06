@@ -7,11 +7,28 @@
 <?php
 $csrfName = csrf_token();
 $csrfHash = csrf_hash();
+$pf = $prefill ?? null;
+
+$pfTitle = '';
+$pfDesc  = '';
+$pfCat   = '';
+if ($pf) {
+    $pfCat   = $pf['category'];
+    $secc    = $pf['url'] ? parse_url($pf['url'], PHP_URL_PATH) : '';
+    $pfTitle = $pf['origin'] === 'permiso'
+        ? 'No puedo acceder a ' . ($secc ?: 'una sección')
+        : 'Error en ' . ($secc ?: 'la plataforma');
+    $pfDesc  = "— Descríbenos qué estabas haciendo cuando ocurrió —\n\n"
+             . "———————————————\n"
+             . ($pf['url']     ? "Página: " . $pf['url'] . "\n" : '')
+             . ($pf['message'] ? "Mensaje: " . $pf['message'] . "\n" : '')
+             . ($pf['ref']     ? "Referencia: " . $pf['ref'] . "\n" : '');
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fw-bold mb-1" style="font-size:1.25rem">Nuevo Ticket</h2>
+        <h2 class="fw-bold mb-1" style="font-size:1.25rem"><?= $pf ? 'Reportar un problema' : 'Nuevo Ticket' ?></h2>
         <p class="text-muted mb-0" style="font-size:13px">Describe el problema o sugerencia con el mayor detalle posible</p>
     </div>
     <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
@@ -19,14 +36,29 @@ $csrfHash = csrf_hash();
     </a>
 </div>
 
+<?php if ($pf): ?>
+<div class="alert alert-info d-flex align-items-start gap-2" style="font-size:13px">
+    <i class="bi bi-info-circle-fill mt-1"></i>
+    <div>
+        Estás reportando <?= $pf['origin'] === 'permiso' ? 'un problema de permisos' : 'un error' ?>.
+        Hemos guardado automáticamente la página, la hora y la referencia técnica.
+        Solo tienes que contarnos qué hacías y, si quieres, adjuntar una captura.
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="ticket-form-wrap">
     <form id="ticket-create-form" enctype="multipart/form-data">
         <input type="hidden" name="<?= $csrfName ?>" value="<?= $csrfHash ?>" id="csrf-input">
+        <input type="hidden" name="origin" id="tk-origin" value="<?= esc($pf['origin'] ?? 'manual', 'attr') ?>">
+        <input type="hidden" name="error_ref" id="tk-error-ref" value="<?= esc($pf['ref'] ?? '', 'attr') ?>">
+        <input type="hidden" name="context" id="tk-context" value="">
 
         <!-- Título -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
             <input type="text" name="title" id="ticket-title" class="form-control"
+                   value="<?= esc($pfTitle, 'attr') ?>"
                    placeholder="Ej: Error al cargar la sección de clases" maxlength="255" required>
             <div class="form-text">Resume el problema en una frase corta y clara.</div>
         </div>
@@ -38,7 +70,7 @@ $csrfHash = csrf_hash();
                 <select name="category" class="form-select" required>
                     <option value="">Selecciona una categoría</option>
                     <?php foreach ($categories as $key => $label): ?>
-                    <option value="<?= $key ?>"><?= esc($label) ?></option>
+                    <option value="<?= $key ?>" <?= $key === $pfCat ? 'selected' : '' ?>><?= esc($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -60,7 +92,7 @@ $csrfHash = csrf_hash();
             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
             <textarea name="description" id="ticket-desc" class="form-control" rows="6"
                       placeholder="Explica el problema con detalle: ¿qué ocurrió?, ¿qué esperabas que ocurriera?, ¿en qué sección?"
-                      maxlength="5000" required></textarea>
+                      maxlength="5000" required><?= esc($pfDesc) ?></textarea>
             <div class="d-flex justify-content-between mt-1">
                 <div class="form-text">Incluye pasos para reproducir el problema si es posible.</div>
                 <span class="ticket-char-count" id="desc-count">0 / 5000</span>
@@ -108,6 +140,18 @@ $csrfHash = csrf_hash();
     const BASE      = '<?= base_url() ?>';
     const CSRF_NAME = '<?= $csrfName ?>';
     let   csrfHash  = '<?= $csrfHash ?>';
+
+    // Contexto técnico (solo si el ticket nace de un error/permiso)
+    const originEl = document.getElementById('tk-origin');
+    if (originEl && originEl.value !== 'manual') {
+        const ctxEl = document.getElementById('tk-context');
+        ctxEl.value = JSON.stringify({
+            url:       <?= json_encode($pf['url'] ?? '') ?> || document.referrer || '',
+            endpoint:  '',
+            message:   <?= json_encode($pf['message'] ?? '') ?>,
+            client_ts: new Date().toISOString(),
+        });
+    }
 
     // Contador de caracteres
     const desc      = document.getElementById('ticket-desc');

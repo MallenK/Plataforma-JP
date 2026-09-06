@@ -52,10 +52,26 @@ class TicketsController extends BaseController
 
     public function create(): string
     {
+        // Prefill cuando se llega desde una alerta de error / permiso.
+        $originIn = $this->request->getGet('origin');
+        $origin   = in_array($originIn, TicketModel::ORIGINS, true) ? $originIn : 'manual';
+
+        $prefill = null;
+        if ($origin !== 'manual') {
+            $prefill = [
+                'origin'    => $origin,
+                'ref'       => substr(preg_replace('/[^A-Z0-9]/i', '', (string) $this->request->getGet('ref')), 0, 12),
+                'url'       => mb_substr((string) $this->request->getGet('url'), 0, 300),
+                'message'   => mb_substr((string) $this->request->getGet('msg'), 0, 500),
+                'category'  => $origin === 'permiso' ? 'consulta' : 'bug',
+            ];
+        }
+
         return view('tickets/create', [
             'title'      => 'Nuevo Ticket',
             'categories' => TicketModel::CATEGORIES,
             'priorities' => TicketModel::PRIORITIES,
+            'prefill'    => $prefill,
         ]);
     }
 
@@ -84,12 +100,33 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
+        // Contexto de reporte (cuando el ticket nace de una alerta de error/permiso)
+        $originIn  = $this->request->getPost('origin');
+        $origin    = in_array($originIn, TicketModel::ORIGINS, true) ? $originIn : 'manual';
+        $errorRef  = substr(preg_replace('/[^A-Z0-9]/i', '', (string) $this->request->getPost('error_ref')), 0, 12) ?: null;
+
+        $context = null;
+        if ($origin !== 'manual') {
+            $ctxRaw  = json_decode((string) $this->request->getPost('context'), true);
+            $context = json_encode([
+                'url'        => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['url'] ?? ''), 0, 300) : null,
+                'endpoint'   => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['endpoint'] ?? ''), 0, 200) : null,
+                'message'    => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['message'] ?? ''), 0, 500) : null,
+                'user_agent' => mb_substr((string) $this->request->getUserAgent()->getAgentString(), 0, 300),
+                'client_ts'  => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['client_ts'] ?? ''), 0, 40) : null,
+                'error_ref'  => $errorRef,
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
         $ticketId = $this->ticketModel->createTicket([
             'user_id'     => $userId,
             'title'       => $title,
             'description' => $description,
             'category'    => $category,
             'priority'    => $priority,
+            'origin'      => $origin,
+            'error_ref'   => $errorRef,
+            'context'     => $context,
         ]);
 
         if (!$ticketId) {

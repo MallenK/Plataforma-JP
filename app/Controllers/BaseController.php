@@ -6,6 +6,7 @@ use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
+use App\Traits\ErrorReportTrait;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -17,6 +18,8 @@ use Psr\Log\LoggerInterface;
  */
 abstract class BaseController extends Controller
 {
+    use ErrorReportTrait;
+
     protected $playerService;
 
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)

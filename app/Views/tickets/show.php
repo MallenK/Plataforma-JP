@@ -150,7 +150,37 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     <span class="ticket-category-badge">
                         <?= esc($categories[$ticket['category']] ?? $ticket['category']) ?>
                     </span>
+                    <?php if (($ticket['origin'] ?? 'manual') !== 'manual'): ?>
+                    <span class="ticket-category-badge" style="background:#fef3c7;color:#92400e">
+                        <i class="bi bi-<?= $ticket['origin'] === 'permiso' ? 'shield-lock' : 'bug' ?>"></i>
+                        <?= $ticket['origin'] === 'permiso' ? 'Reporte de permiso' : 'Reporte de error' ?>
+                    </span>
+                    <?php endif; ?>
                 </div>
+
+                <?php
+                // Contexto técnico — solo para gestores, solo si viene de una alerta.
+                if ($canManage && ($ticket['origin'] ?? 'manual') !== 'manual'):
+                    $ctx = json_decode((string) ($ticket['context'] ?? ''), true) ?: [];
+                ?>
+                <details class="mt-3" style="border:1px solid var(--border-color,#e5e7eb);border-radius:8px;padding:8px 12px;font-size:12.5px">
+                    <summary style="cursor:pointer;font-weight:600;color:var(--text-muted,#6b7280)">
+                        <i class="bi bi-terminal me-1"></i>Contexto técnico
+                    </summary>
+                    <div style="margin-top:8px;line-height:1.7;color:var(--text-secondary,#4b5563)">
+                        <?php if (!empty($ticket['error_ref'])): ?>
+                        <div><b>Referencia:</b> <code><?= esc($ticket['error_ref']) ?></code>
+                            <span class="text-muted">— busca <code>TICKET-REF <?= esc($ticket['error_ref']) ?></code> en <code>writable/logs/</code></span>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($ctx['url'])): ?><div><b>Página:</b> <?= esc($ctx['url']) ?></div><?php endif; ?>
+                        <?php if (!empty($ctx['endpoint'])): ?><div><b>Endpoint:</b> <?= esc($ctx['endpoint']) ?></div><?php endif; ?>
+                        <?php if (!empty($ctx['message'])): ?><div><b>Mensaje:</b> <?= esc($ctx['message']) ?></div><?php endif; ?>
+                        <?php if (!empty($ctx['user_agent'])): ?><div><b>Navegador:</b> <?= esc($ctx['user_agent']) ?></div><?php endif; ?>
+                        <?php if (!empty($ctx['client_ts'])): ?><div><b>Hora (cliente):</b> <?= esc($ctx['client_ts']) ?></div><?php endif; ?>
+                    </div>
+                </details>
+                <?php endif; ?>
             </div>
         </div>
 

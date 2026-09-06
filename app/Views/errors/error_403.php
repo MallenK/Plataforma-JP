@@ -108,11 +108,23 @@
 
     <br>
 
-    <a href="<?= base_url('dashboard') ?>" class="btn-back">
-        Volver al dashboard
-    </a>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="<?= base_url('dashboard') ?>" class="btn-back">Volver al dashboard</a>
+        <a href="#" id="report-403" class="btn-back" style="background:#f97316;color:#fff">
+            Reportar
+        </a>
+    </div>
 
 </div>
+
+<script>
+(function () {
+    var url = document.referrer || window.location.href;
+    document.getElementById('report-403').href =
+        '<?= base_url('tickets/create') ?>?origin=permiso&url=' + encodeURIComponent(url) +
+        '&msg=' + encodeURIComponent('Acceso denegado (403)');
+})();
+</script>
 
 </body>
 </html>
