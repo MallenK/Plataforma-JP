@@ -28,7 +28,7 @@
 
 <script src="<?= base_url('assets/js/doc-preview.js') ?>"></script>
 
-<?php if (!in_array(session('role'), ['player', 'alumno'])): ?>
+<?php /* Modal de reporte — disponible para todos los roles */ ?>
 <!-- ── Modal ticket rápido — fuera de cualquier contenedor posicionado ── -->
 <div class="modal fade" id="modalTicketRapido" tabindex="-1" aria-labelledby="modalTicketRapidoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -161,6 +161,5 @@
     });
 })();
 </script>
-<?php endif; ?>
 
 <?= $this->endSection() ?>

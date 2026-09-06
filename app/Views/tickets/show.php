@@ -27,7 +27,7 @@ $priorityColors = [
 $statusCls   = $statusColors[$ticket['status']]   ?? '';
 $priorityCls = $priorityColors[$ticket['priority']] ?? '';
 $isOwner     = (int)$ticket['user_id'] === (int)$userId;
-$canManage   = $isSuperAdmin;
+$canManage   = $isManager ?? $isSuperAdmin;
 $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 ?>
 
@@ -35,7 +35,7 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
-            <a href="<?= base_url($isSuperAdmin ? 'tickets/admin' : 'tickets') ?>"
+            <a href="<?= base_url($canManage ? 'tickets/admin' : 'tickets') ?>"
                class="btn btn-sm btn-outline-secondary py-0 px-2">
                 <i class="bi bi-arrow-left"></i>
             </a>

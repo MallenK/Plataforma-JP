@@ -132,8 +132,9 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // El usuario solo puede ver sus propios tickets; superadmin ve todos
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        // Cada usuario ve sus propios tickets; los gestores (admin/superadmin) ven todos.
+        $isManager = in_array($role, ['admin', 'superadmin'], true);
+        if ($ticket['user_id'] !== $userId && !$isManager) {
             return $this->response->setStatusCode(403);
         }
 
@@ -156,6 +157,7 @@ class TicketsController extends BaseController
             'priorities'       => TicketModel::PRIORITIES,
             'statuses'         => TicketModel::STATUSES,
             'isSuperAdmin'     => $role === 'superadmin',
+            'isManager'        => $isManager,
         ]);
     }
 
@@ -397,8 +399,9 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
         }
 
-        // Usuario normal solo puede cambiar prioridad si el ticket es suyo y está abierto
-        if ($role !== 'superadmin') {
+        // Los gestores (admin/superadmin) cambian cualquier prioridad.
+        // El dueño solo la de su ticket y solo si sigue abierto / en progreso.
+        if (!in_array($role, ['admin', 'superadmin'], true)) {
             if ($ticket['user_id'] !== $userId) {
                 return $this->response->setJSON(['error' => 'Sin permisos.'])->setStatusCode(403);
             }
@@ -441,8 +444,8 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // Solo el creador o superadmin puede descargar
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        // Solo el creador o un gestor (admin/superadmin) puede descargar
+        if ($ticket['user_id'] !== $userId && !in_array($role, ['admin', 'superadmin'], true)) {
             return $this->response->setStatusCode(403);
         }
 
@@ -512,15 +515,15 @@ class TicketsController extends BaseController
 
     private function notifyAdmins(int $ticketId, string $ticketTitle, int $fromUserId): void
     {
-        $ticket    = $this->ticketModel->find($ticketId);
-        $superadmins = $this->userModel
-            ->where('role', 'superadmin')
+        $ticket   = $this->ticketModel->find($ticketId);
+        $managers = $this->userModel
+            ->whereIn('role', ['admin', 'superadmin'])
             ->where('id !=', $fromUserId)
             ->where('status', 'active')
             ->select('id')
             ->findAll();
 
-        $ids = array_column($superadmins, 'id');
+        $ids = array_column($managers, 'id');
         if (empty($ids)) return;
 
         $this->notifModel->createWithRecipients([

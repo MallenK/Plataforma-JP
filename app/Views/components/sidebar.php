@@ -126,8 +126,7 @@ if ($isAdmin) {
                 </a>
             </li>
 
-            <!-- Tickets — todos excepto player -->
-            <?php if (!$isAlumno): ?>
+            <!-- Soporte / Tickets — todos los roles -->
             <li class="sidebar-nav-item">
                 <a href="<?= base_url('tickets') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/tickets', $currentUri) ?>">
@@ -135,7 +134,6 @@ if ($isAdmin) {
                     Soporte
                 </a>
             </li>
-            <?php endif; ?>
 
             <!-- Configuración — admin, superadmin -->
             <?php if ($isAdmin): ?>

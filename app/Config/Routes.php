@@ -641,65 +641,63 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 // ------------------------------------------------------------
 // TICKETS — sistema de soporte y reporte de incidencias
 //
-//  Acceso para todos los roles excepto 'player'.
-//  La gestión (cambio de estado, respuestas) es exclusiva del superadmin.
+//  Reportar (crear / ver los suyos): TODOS los roles, incluido alumno.
+//  Gestión (ver todos, responder, cambiar estado): admin + superadmin.
 //
-//  GET  /tickets                      → lista de tickets del usuario
-//  GET  /tickets/create               → formulario de nuevo ticket
-//  POST /tickets                      → guardar nuevo ticket
-//  GET  /tickets/:id                  → detalle de un ticket
-//  POST /tickets/:id/reply            → responder ticket (superadmin)
-//  POST /tickets/:id/status           → cambiar estado (superadmin)
-//  POST /tickets/:id/priority         → cambiar prioridad (usuario dueño o superadmin)
-//  GET  /tickets/download/:id         → descargar adjunto
-//  GET  /tickets/admin                → panel de gestión (superadmin)
-//  GET  /tickets/admin/dashboard      → dashboard de estadísticas (superadmin)
+//  GET  /tickets                      → lista de tickets del usuario — todos
+//  GET  /tickets/create · POST        → nuevo ticket — todos
+//  GET  /tickets/export               → exportar los suyos — todos
+//  GET  /tickets/:id                  → detalle (dueño o gestor)
+//  POST /tickets/:id/priority         → prioridad (dueño si abierto, o gestor)
+//  GET  /tickets/download/:id         → descargar adjunto (dueño o gestor)
+//  GET  /tickets/admin[/dashboard|/export] → gestión — admin + superadmin
+//  POST /tickets/:id/reply · /status  → responder / estado — admin + superadmin
 // ------------------------------------------------------------
 
 $routes->get('tickets', 'TicketsController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->get('tickets/create', 'TicketsController::create', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->post('tickets', 'TicketsController::store', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 // Exportar (CSV / vista imprimible). Antes de las rutas con :num y de admin.
 $routes->get('tickets/export', 'TicketsController::export', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 $routes->get('tickets/admin/export', 'TicketsController::adminExport', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->get('tickets/admin/dashboard', 'TicketsController::dashboard', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->get('tickets/admin', 'TicketsController::adminIndex', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->get('tickets/download/(:num)', 'TicketsController::download/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->get('tickets/(:num)', 'TicketsController::show/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->post('tickets/(:num)/reply', 'TicketsController::reply/$1', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->post('tickets/(:num)/status', 'TicketsController::updateStatus/$1', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->post('tickets/(:num)/priority', 'TicketsController::updatePriority/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);

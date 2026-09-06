@@ -30,7 +30,7 @@ $priorityColors = [
         </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <?php if ($role === 'superadmin'): ?>
+        <?php if (in_array($role, ['admin', 'superadmin'], true)): ?>
         <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-bar-chart-fill me-1"></i>Dashboard
         </a>
