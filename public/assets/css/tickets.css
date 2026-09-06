@@ -54,6 +54,53 @@
     font-weight: 500;
 }
 
+/* ── Buscador + filtros ────────────────────────────────────── */
+.ticket-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.ticket-toolbar-search {
+    position: relative;
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+.ticket-toolbar-search > .bi-search {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted, #6b7280); font-size: 13px; pointer-events: none;
+}
+#tf-search {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 30px 8px 32px;
+    border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px;
+    font-size: 13px; background: var(--card-bg, #fff); color: inherit;
+}
+#tf-search:focus { outline: none; border-color: var(--accent, #3b82f6); }
+#tf-search-clear {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; color: var(--text-muted, #6b7280);
+    cursor: pointer; padding: 4px; line-height: 0; font-size: 11px;
+}
+.ticket-toolbar-select {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px;
+    font-size: 13px; background: var(--card-bg, #fff); color: inherit;
+    max-width: 190px;
+}
+.ticket-toolbar-reset {
+    background: none; border: 0; color: var(--accent, #3b82f6);
+    font-size: 12.5px; cursor: pointer; padding: 6px 4px;
+}
+.ticket-toolbar-export { margin-left: auto; }
+
+.ticket-noresults {
+    text-align: center; padding: 48px 20px; color: var(--text-muted, #6b7280);
+}
+.ticket-noresults .bi { font-size: 26px; display: block; margin-bottom: 8px; opacity: .6; }
+.ticket-noresults p { margin: 0; font-size: 13.5px; }
+
 /* ── Lista de tickets (vista usuario) ──────────────────────── */
 .ticket-list {
     display: grid;

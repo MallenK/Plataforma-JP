@@ -668,6 +668,14 @@ $routes->post('tickets', 'TicketsController::store', [
     'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
 ]);
 
+// Exportar (CSV / vista imprimible). Antes de las rutas con :num y de admin.
+$routes->get('tickets/export', 'TicketsController::export', [
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+]);
+$routes->get('tickets/admin/export', 'TicketsController::adminExport', [
+    'filter' => ['auth', 'role:superadmin'],
+]);
+
 $routes->get('tickets/admin/dashboard', 'TicketsController::dashboard', [
     'filter' => ['auth', 'role:superadmin'],
 ]);

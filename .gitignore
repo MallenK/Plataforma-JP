@@ -23,3 +23,6 @@ nul
 app/Database/Database/
 public/uploads/
 build/
+
+# scripts locales con credenciales
+writable/*.sh

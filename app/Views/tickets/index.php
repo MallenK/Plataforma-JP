@@ -5,10 +5,7 @@
 <?= $this->section('page_content') ?>
 
 <?php
-$userId   = session('id');
-$role     = session('role');
-$csrfName = csrf_token();
-$csrfHash = csrf_hash();
+$role = session('role');
 
 $statusColors = [
     'abierto'     => 'ticket-status--open',
@@ -24,11 +21,12 @@ $priorityColors = [
 ];
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h2 class="fw-bold mb-1" style="font-size:1.25rem">Mis Tickets</h2>
         <p class="text-muted mb-0" style="font-size:13px">
-            <?= count($tickets) ?> ticket<?= count($tickets) !== 1 ? 's' : '' ?> registrado<?= count($tickets) !== 1 ? 's' : '' ?>
+            <span id="ticket-count"><?= count($tickets) ?></span> de <?= count($tickets) ?>
+            ticket<?= count($tickets) !== 1 ? 's' : '' ?>
         </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -57,20 +55,61 @@ $priorityColors = [
 </div>
 
 <?php else: ?>
-<div class="ticket-list">
+
+<!-- ── Buscador + filtros ─────────────────────────────────── -->
+<div class="ticket-toolbar" id="ticket-toolbar">
+    <div class="ticket-toolbar-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="tf-search" autocomplete="off" spellcheck="false"
+               placeholder="Buscar por número o título…">
+        <button type="button" id="tf-search-clear" aria-label="Limpiar" hidden><i class="bi bi-x-lg"></i></button>
+    </div>
+    <select id="tf-status" class="ticket-toolbar-select">
+        <option value="">Todos los estados</option>
+        <?php foreach ($statuses as $k => $v): ?><option value="<?= $k ?>"><?= esc($v) ?></option><?php endforeach; ?>
+    </select>
+    <select id="tf-priority" class="ticket-toolbar-select">
+        <option value="">Todas las prioridades</option>
+        <?php foreach ($priorities as $k => $v): ?><option value="<?= $k ?>"><?= esc($v) ?></option><?php endforeach; ?>
+    </select>
+    <select id="tf-category" class="ticket-toolbar-select">
+        <option value="">Todas las categorías</option>
+        <?php foreach ($categories as $k => $v): ?><option value="<?= $k ?>"><?= esc($v) ?></option><?php endforeach; ?>
+    </select>
+    <button type="button" id="tf-reset" class="ticket-toolbar-reset" hidden>
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Quitar filtros
+    </button>
+
+    <div class="ticket-toolbar-export">
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-download me-1"></i>Exportar
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" data-export="csv"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel (CSV)</a></li>
+            <li><a class="dropdown-item" href="#" data-export="pdf" target="_blank"><i class="bi bi-file-earmark-pdf me-2"></i>PDF (imprimir)</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="ticket-list" id="ticket-list">
     <?php foreach ($tickets as $t): ?>
     <?php
         $statusCls   = $statusColors[$t['status']]   ?? '';
         $priorityCls = $priorityColors[$t['priority']] ?? '';
+        $catLabel    = $categories[$t['category']] ?? $t['category'];
+        $haystack    = mb_strtolower($t['ticket_number'] . ' ' . $t['title'] . ' ' . $catLabel);
     ?>
-    <a href="<?= base_url('tickets/' . $t['id']) ?>" class="ticket-card">
+    <a href="<?= base_url('tickets/' . $t['id']) ?>" class="ticket-card"
+       data-status="<?= esc($t['status'], 'attr') ?>"
+       data-priority="<?= esc($t['priority'], 'attr') ?>"
+       data-category="<?= esc($t['category'], 'attr') ?>"
+       data-text="<?= esc($haystack, 'attr') ?>">
         <div class="ticket-card-left">
             <div class="ticket-number"><?= esc($t['ticket_number']) ?></div>
             <div class="ticket-card-title"><?= esc($t['title']) ?></div>
             <div class="ticket-card-meta">
-                <span class="ticket-category-badge">
-                    <?= esc($categories[$t['category']] ?? $t['category']) ?>
-                </span>
+                <span class="ticket-category-badge"><?= esc($catLabel) ?></span>
                 <span class="ticket-meta-sep">·</span>
                 <i class="bi bi-chat-left-text" style="font-size:11px"></i>
                 <?= (int) $t['reply_count'] ?> respuesta<?= (int)$t['reply_count'] !== 1 ? 's' : '' ?>
@@ -89,6 +128,79 @@ $priorityColors = [
     </a>
     <?php endforeach; ?>
 </div>
+
+<div class="ticket-noresults" id="ticket-noresults" hidden>
+    <i class="bi bi-search"></i>
+    <p>Ningún ticket coincide con la búsqueda o los filtros.</p>
+</div>
+
+<script>
+(function () {
+    const EXPORT_BASE = '<?= base_url('tickets/export') ?>';
+    const list   = document.getElementById('ticket-list');
+    const cards  = Array.from(list.querySelectorAll('.ticket-card'));
+    const search = document.getElementById('tf-search');
+    const clearB = document.getElementById('tf-search-clear');
+    const selS   = document.getElementById('tf-status');
+    const selP   = document.getElementById('tf-priority');
+    const selC   = document.getElementById('tf-category');
+    const resetB = document.getElementById('tf-reset');
+    const countEl = document.getElementById('ticket-count');
+    const noRes  = document.getElementById('ticket-noresults');
+
+    function state() {
+        return {
+            search:   search.value.trim().toLowerCase(),
+            status:   selS.value,
+            priority: selP.value,
+            category: selC.value,
+        };
+    }
+
+    function apply() {
+        const s = state();
+        let visible = 0;
+        cards.forEach(c => {
+            const ok =
+                (!s.search   || c.dataset.text.includes(s.search)) &&
+                (!s.status   || c.dataset.status === s.status) &&
+                (!s.priority || c.dataset.priority === s.priority) &&
+                (!s.category || c.dataset.category === s.category);
+            c.hidden = !ok;
+            if (ok) visible++;
+        });
+        countEl.textContent = visible;
+        noRes.hidden = visible > 0;
+        list.hidden = visible === 0;
+
+        const dirty = s.search || s.status || s.priority || s.category;
+        clearB.hidden = !s.search;
+        resetB.hidden = !dirty;
+
+        // Actualiza los enlaces de exportar con los filtros actuales
+        const qs = new URLSearchParams();
+        if (s.search)   qs.set('search', search.value.trim());
+        if (s.status)   qs.set('status', s.status);
+        if (s.priority) qs.set('priority', s.priority);
+        if (s.category) qs.set('category', s.category);
+        document.querySelectorAll('[data-export]').forEach(a => {
+            const u = new URLSearchParams(qs);
+            u.set('format', a.dataset.export);
+            a.href = EXPORT_BASE + '?' + u.toString();
+        });
+    }
+
+    let t;
+    search.addEventListener('input', () => { clearTimeout(t); t = setTimeout(apply, 120); });
+    [selS, selP, selC].forEach(el => el.addEventListener('change', apply));
+    clearB.addEventListener('click', () => { search.value = ''; apply(); search.focus(); });
+    resetB.addEventListener('click', () => {
+        search.value = ''; selS.value = ''; selP.value = ''; selC.value = ''; apply();
+    });
+
+    apply();
+})();
+</script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>
