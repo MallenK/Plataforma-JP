@@ -1,0 +1,3 @@
+# Los scripts de shell DEBEN ir en LF: un start.sh con CRLF rompe el
+# contenedor de Render ("bad interpreter" + el heredoc EOF no cierra).
+*.sh   text eol=lf
