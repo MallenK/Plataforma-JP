@@ -508,18 +508,30 @@ const CAL = {
     events: [],
 
     async load() {
-        let year = this.year, month = this.month;
+        // Meses a cargar. La vista Semana puede solapar dos meses (p. ej.
+        // 31 ago – 6 sep): hay que pedir los dos o las clases del mes que
+        // no coincide con weekStart no aparecen.
+        const months = [];
+        const add = (y, m) => { const k = y + '-' + m; if (!months.some(x => x.k === k)) months.push({ k, y, m }); };
+
         if (this.view === 'week') {
-            year = this.weekStartYear(); month = this.weekStartMonth();
+            const ws = new Date((this.weekStart || this.getMonday(new Date())) + 'T00:00:00');
+            const we = new Date(ws); we.setDate(we.getDate() + 6);
+            add(ws.getFullYear(), ws.getMonth() + 1);
+            add(we.getFullYear(), we.getMonth() + 1);
         } else if (this.view === 'day' && this.day) {
             const p = this.day.split('-');
-            year = parseInt(p[0]); month = parseInt(p[1]);
+            add(parseInt(p[0]), parseInt(p[1]));
+        } else {
+            add(this.year, this.month);
         }
-        const url = `/clases/api/calendario?year=${year}&month=${month}`;
+
         try {
-            const res = await fetch(url);
-            this.events = await res.json();
-        } catch(e) { this.events = []; }
+            const lists = await Promise.all(months.map(x =>
+                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}`).then(r => r.json())));
+            const seen = new Set();
+            this.events = lists.flat().filter(e => !seen.has(e.id) && seen.add(e.id));
+        } catch (e) { this.events = []; }
         this.render();
     },
 
@@ -746,8 +758,6 @@ const CAL = {
     fmt(d) {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     },
-    weekStartYear()  { return this.weekStart ? parseInt(this.weekStart.split('-')[0]) : this.year; },
-    weekStartMonth() { return this.weekStart ? parseInt(this.weekStart.split('-')[1]) : this.month; },
 };
 
 function handleCellClick(e, date) {
