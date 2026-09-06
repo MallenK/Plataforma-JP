@@ -30,8 +30,13 @@
 | Entorno | URL | Infra | Despliegue | BD | Migraciones |
 |---------|-----|-------|-----------|----|-----|
 | **Local** | `http://localhost:8080` | Docker Compose (`jp_app` + `jp_db` + `jp_phpmyadmin`) | `docker compose up -d --build` | `jp_db` (MySQL 8, contenedor) | `php spark migrate` a mano |
-| **Render** (validación) | `https://plataforma-jp.onrender.com` | Contenedor Docker (`Dockerfile`), plan Free (se duerme) | **Automático al hacer push a `main`** en GitHub | **TiDB Cloud Serverless** (`*.tidbcloud.com:4000`, TLS) | ⚠️ `docker/start.sh` intenta `php spark migrate --all` pero **falla con TiDB** (AUTO_INCREMENT roto en la tabla `migrations`) — aplicar el SQL a mano en el SQL Editor de TiDB (igual que Hostinger) |
-| **Hostinger** (producción) | `https://app.jppreparation.com` | Hosting compartido Apache + PHP 8.3 (hPanel) | **Manual** — subida de ZIP por hPanel | `u912370917_jpapp` (MariaDB de Hostinger) | **Manuales** — SQL en phpMyAdmin |
+| **Render** (PRE-PRODUCCIÓN) | `https://plataforma-jp.onrender.com` | Contenedor Docker (`Dockerfile`), plan Free (se duerme) | **Automático al hacer push a `main`** en GitHub | **2ª BBDD de Hostinger** (MariaDB, Remote MySQL restringido a IPs de Render) — datos de prueba. Host/BBDD/usuario en el panel de env de Render. | `docker/start.sh` corre `php spark migrate --all` (hoy no-op: la BBDD se cargó clonando el esquema local, ver §7-bis). Migración NUEVA → probarla contra pre-prod o aplicarla a mano. |
+| **Hostinger** (producción) | `https://app.jppreparation.com` | Hosting compartido Apache + PHP 8.3 (hPanel) | **Manual** — subida de ZIP por hPanel | `u912370917_jpapp` (MariaDB de Hostinger) — **sin acceso remoto** | **Manuales** — SQL en phpMyAdmin |
+
+> **TiDB Serverless queda RETIRADO** (2026-09-06). Pre-producción ya no usa
+> TiDB: usa una 2ª BBDD en la misma cuenta de Hostinger. Ventajas: mismo motor
+> que producción (MariaDB), sin el caching de AUTO_INCREMENT que rompía
+> `migrate` y provocó el bug #1062 de bonos.
 
 ### Particularidades de Hostinger
 
@@ -323,6 +328,80 @@ Ejecutar en **cada** entorno tras desplegar. Cuenta `superadmin` + cuenta
 | 🟡 6 | Cambio de contraseña cierra sesión en otros dispositivos (`pw_stamp`) | Por diseño | Sesiones antiguas sin `pw_stamp` se adoptan (no se tiran). |
 | 🟡 7 | `encryption.key` inestable entre deploys invalida sesiones/tokens | Vigilar | Fijarla como variable persistente en ambos entornos. |
 | 🟠 8 | `origin/main` (rama) sigue en `v1.1.0`; el `main` local está en `v1.1.2` | Vivo | Falta `git push origin main` (lo hace el humano). El código de v1.1.2 sí está en el remoto vía el tag `v1.1.2`. |
+
+---
+
+## 7-bis. Pre-producción (Render + 2ª BBDD de Hostinger)
+
+**Pipeline:** `PR → merge a main → Render redespliega solo → validar → promover a Hostinger a mano`.
+Pre-prod va **vinculada a `main`** (no hay rama `PPR`): la puerta a producción es
+el deploy manual a Hostinger, no una rama.
+
+### Infra
+
+| | |
+|---|---|
+| App | Servicio Web de Render, rama `main`, auto-deploy. Región **Frankfurt** (cerca del datacenter EU de Hostinger). |
+| BBDD | 2ª base de datos en la cuenta de Hostinger, con su propio usuario (solo esa BBDD). Remote MySQL restringido a las IPs de salida de Render. **Datos, host, usuario y BBDD: en el panel de env de Render** — no se versionan. |
+| Datos | de prueba: `DatabaseSeeder` + `BulkDemoDataSeeder` + `PreprodTicketsSeeder`. **Nunca** datos reales. |
+| Email | `MAIL_FROM_EMAIL=onboarding@resend.dev` (solo llega al dueño de la cuenta Resend) o sin `RESEND_API_KEY` (no envía). |
+| Banner | barra roja "PRE-PRODUCCIÓN" arriba (variable `APP_ENV_LABEL`). |
+
+### Variables de entorno en Render
+
+Se configuran en el panel de Render (Environment). **Nunca en git.**
+
+```
+CI_ENVIRONMENT  = production
+APP_BASE_URL    = https://plataforma-jp.onrender.com/
+APP_ENV_LABEL   = PRE-PRODUCCIÓN
+DB_HOST         = <host MySQL que muestra hPanel>
+DB_PORT         = 3306
+DB_NAME         = <2ª BBDD de Hostinger>
+DB_USER         = <usuario de esa BBDD>
+DB_PASS         = <secreto — solo en Render>
+DB_ENCRYPT      = false          # Hostinger remoto va en claro
+ENCRYPTION_KEY  = <64 hex, distinto de prod>
+SEED_DEMO       = 1              # solo siembra si la tabla users está vacía
+MAIL_FROM_EMAIL = onboarding@resend.dev
+MAIL_FROM_NAME  = JP PRE
+```
+
+### Montaje inicial de la BBDD (una vez)
+
+Las migraciones **no corren limpias desde cero** (TICKET-2026-00010). Se carga
+clonando el esquema local. Exporta primero las credenciales (de hPanel /
+Render) a variables de entorno de tu shell:
+
+```bash
+export PREPROD_DB_HOST=...  PREPROD_DB_NAME=...  PREPROD_DB_USER=...  PREPROD_DB_PASS=...
+
+# 1. clonar esquema local -> pre-prod (corre en jp_db)
+docker cp docs/operaciones/scripts/preprod-import-schema.sh jp_db:/tmp/imp.sh
+docker exec -e PREPROD_DB_HOST -e PREPROD_DB_NAME -e PREPROD_DB_USER -e PREPROD_DB_PASS \
+  jp_db sh /tmp/imp.sh
+
+# 2. sembrar (corre en jp_app)
+for S in DatabaseSeeder BulkDemoDataSeeder PreprodTicketsSeeder; do
+  docker exec -e PREPROD_DB_HOST -e PREPROD_DB_NAME -e PREPROD_DB_USER -e PREPROD_DB_PASS \
+    jp_app sh /var/www/html/docs/operaciones/scripts/preprod-spark.sh db:seed "$S"
+done
+```
+
+Acceso: `sergimallenweb@gmail.com` / `123456` (admin), usuarios demo `Demo1234!`.
+
+### Resetear los datos de pre-producción
+
+```bash
+# repite el "montaje inicial" (el import hace DROP de todo primero)
+```
+
+### Migración nueva en un PR
+
+Al mergear a `main`, `docker/start.sh` intenta `php spark migrate --all` contra
+pre-prod. Si la migración es MariaDB-compatible, se aplica sola. Si falla
+(SQL de MySQL-8-only), el `[WARN]` deja arrancar la app igual → aplicarla a
+mano en phpMyAdmin de Hostinger, **igual que en producción**.
 
 ---
 

@@ -24,6 +24,15 @@
 </head>
 <body>
 
+<?php $envLabel = trim((string) env('APP_ENV_LABEL', '')); ?>
+<?php if ($envLabel !== ''): ?>
+    <div style="background:#b91c1c;color:#fff;text-align:center;
+                font:700 11px/22px system-ui,sans-serif;letter-spacing:.5px;
+                text-transform:uppercase;">
+        <?= esc($envLabel) ?> · datos de prueba
+    </div>
+<?php endif; ?>
+
 <?= $this->renderSection('content') ?>
 
 <!-- jQuery -->

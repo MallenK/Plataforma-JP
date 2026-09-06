@@ -15,6 +15,9 @@ writable/cache/
 writable/session/
 writable/debugbar/
 writable/uploads/
+# Scripts operativos con credenciales locales (los versionados, sin secretos,
+# están en docs/operaciones/scripts/)
+writable/*.sh
 .claude/
 nul
 app/Database/Database/
