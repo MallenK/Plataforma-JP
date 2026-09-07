@@ -16,21 +16,23 @@ cualquiera que vaya a subir cambios a producción o a colaborar en el repo.
 - **App:** backoffice interno de JP Preparation (CodeIgniter 4, PHP 8.2+, MySQL 8).
 - **Repo:** <https://github.com/MallenK/Plataforma-JP>
 - **Producción real:** Hostinger — `https://app.jppreparation.com` (hosting compartido, MariaDB `u912370917_jpapp`).
-- **Entorno de validación:** Render — `https://plataforma-jp.onrender.com` (Docker, vinculado a `main` en GitHub, BD TiDB Cloud Serverless).
-- **Regla de oro del despliegue:** primero Render, se verifica, y **solo si pasa** se sube a Hostinger. ⚠️ `spark migrate` no funciona con TiDB Serverless (Render); las migraciones de producción se aplican a mano en phpMyAdmin de Hostinger con los `.sql` de `docs/deploy/`.
+- **Pre-producción (PPR):** Render — `https://plataforma-jp.onrender.com` (Docker, auto-deploy desde `main`, 2ª BD MariaDB de la cuenta Hostinger). `docker/start.sh` corre `php spark migrate --all` en cada arranque, así que las migraciones se aplican solas aquí.
+- **Regla de oro del despliegue:** primero PPR (Render), se verifica, y **solo si pasa** se sube a Hostinger. Las migraciones de producción se aplican a mano en el phpMyAdmin de Hostinger.
 - Más contexto de negocio y arquitectura: [`../../.claude/CLAUDE.md`](../../.claude/CLAUDE.md).
 - Esquema de base de datos: [`../BBDD_SCHEMA.md`](../BBDD_SCHEMA.md).
 
-## Estado (2026-09-03)
+## Estado
 
-`main` en **v1.1.5**. Repo limpio: solo la rama `main` (local y remoto), modelo
-**trunk-based** con `main` protegido (todo por PR). Tags `v1.1.0` … `v1.1.5`.
+Modelo **trunk-based**: solo la rama `main` (protegida, todo por PR), sin
+`develop` ni `release/*`. Versión = primera entrada de `app/version.json`.
+La rama se borra al mergear el PR.
 
-- **En Hostinger (producción):** v1.1.5 — incluye el fix de zona horaria
-  (`Europe/Madrid`), el fix del solapamiento de clases en el calendario y la
-  **Tanda A** de la auditoría de seguridad (RCE de subida de archivos, adjuntos
-  fuera del webroot, y puntos menores). Ver `docs/tickets/TICKET-006`.
-- **Pendiente:** Tanda B de la auditoría (`logout` solo POST + rename de los
-  nombres de CSRF) — necesita ventana de bajo tráfico. Sin rama todavía.
+- **PPR (Render):** sigue a `main` automáticamente.
+- **Producción (Hostinger):** va por detrás a propósito — se despliega a mano
+  cuando una tanda de cambios está validada en PPR. Consultar `app/version.json`
+  y el panel del sidebar para saber qué versión hay viva.
+- **Pendiente de producción:** auditoría de seguridad Tanda A/B y la
+  reorganización de tickets (F0–F4) están en `main` y PPR pero **no** en
+  Hostinger.
 
-Historial de releases anteriores: [`02-modelo-de-trabajo.md`](02-modelo-de-trabajo.md) §6.
+Historial de releases: [`02-modelo-de-trabajo.md`](02-modelo-de-trabajo.md) §6.
