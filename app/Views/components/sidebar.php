@@ -132,7 +132,7 @@ if ($isAdmin) {
                  listado está oculta temporalmente. -->
             <?php if ($isAdmin): ?>
             <li class="sidebar-nav-item">
-                <a href="<?= base_url('tickets/admin') ?>"
+                <a href="<?= base_url('tickets/gestion') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/tickets', $currentUri) ?>">
                     <i class="bi bi-headset"></i>
                     Soporte

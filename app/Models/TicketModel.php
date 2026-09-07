@@ -13,11 +13,20 @@ class TicketModel extends Model
     protected $useTimestamps    = false;
 
     protected $allowedFields = [
-        'ticket_number', 'user_id', 'category', 'priority', 'scope',
+        'ticket_number', 'user_id', 'category', 'priority', 'reported_urgency', 'scope',
         'title', 'description', 'status', 'assigned_to',
         'origin', 'error_ref', 'context',
         'resolved_at', 'first_response_at', 'closed_at', 'archived_at',
         'created_at', 'updated_at',
+    ];
+
+    /** Plantillas de respuesta rápida para los gestores. */
+    public const REPLY_TEMPLATES = [
+        'Necesitamos más información. ¿Puedes indicarnos los pasos exactos para reproducir el problema y una captura de pantalla si es posible?',
+        'Estamos revisándolo. Te escribiremos en cuanto tengamos novedades.',
+        'Hemos aplicado una solución. ¿Puedes comprobar que ya funciona correctamente por tu parte?',
+        'Damos este ticket por resuelto. Si el problema vuelve a aparecer, puedes reabrirlo desde aquí.',
+        'Esto no es un fallo, es el comportamiento previsto. Te lo explicamos: ',
     ];
 
     public const ORIGINS = ['manual', 'error', 'permiso'];
@@ -69,14 +78,27 @@ class TicketModel extends Model
         return $result === false ? 0 : (int) $result;
     }
 
+    /**
+     * Número de ticket por año, independiente del `id`. El incremento es
+     * atómico (ON DUPLICATE KEY UPDATE sobre una fila) → sin condiciones de
+     * carrera ni números repetidos. Reinicia en enero (TKT-2026-00001).
+     */
     private function generateTicketNumber(): string
     {
-        $year    = date('Y');
-        $last    = $this->db->table('tickets')
-            ->selectMax('id')
-            ->get()->getRowArray();
-        $next    = (int) ($last['id'] ?? 0) + 1;
-        return 'TKT-' . $year . '-' . str_pad($next, 5, '0', STR_PAD_LEFT);
+        $year = (int) date('Y');
+
+        $this->db->query(
+            'INSERT INTO ticket_counters (`year`, `last`) VALUES (?, 1)
+             ON DUPLICATE KEY UPDATE `last` = `last` + 1',
+            [$year]
+        );
+
+        $next = (int) $this->db->table('ticket_counters')
+            ->select('last')
+            ->where('year', $year)
+            ->get()->getRow('last');
+
+        return 'TKT-' . $year . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
     }
 
     // ─────────────────────────────────────────────────────────

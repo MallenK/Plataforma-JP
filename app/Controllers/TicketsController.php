@@ -116,6 +116,14 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
+        // Urgencia indicada por el solicitante (informativa). La prioridad real
+        // la fija el gestor: si quien reporta no es gestor, entra como 'media'.
+        $isManager       = in_array($this->currentRole(), ['admin', 'superadmin'], true);
+        $reportedUrgency = $priority;
+        if (!$isManager) {
+            $priority = 'media';
+        }
+
         // Ámbito: el alumno solo abre tickets de academia; el resto puede elegir.
         $isPlayer = in_array($this->currentRole(), ['player', 'alumno'], true);
         $scopeIn  = $this->request->getPost('scope');
@@ -143,9 +151,10 @@ class TicketsController extends BaseController
             'user_id'     => $userId,
             'title'       => $title,
             'description' => $description,
-            'category'    => $category,
-            'priority'    => $priority,
-            'scope'       => $scope,
+            'category'         => $category,
+            'priority'         => $priority,
+            'reported_urgency' => $reportedUrgency,
+            'scope'            => $scope,
             'origin'      => $origin,
             'error_ref'   => $errorRef,
             'context'     => $context,
@@ -217,6 +226,7 @@ class TicketsController extends BaseController
             'replyAttachments' => $replyAttachments,
             'events'           => $isManager ? $this->eventModel->getForTicket($id) : [],
             'managers'         => $isManager ? $this->assignableManagers() : [],
+            'replyTemplates'   => $isManager ? TicketModel::REPLY_TEMPLATES : [],
             'categories'       => TicketModel::CATEGORIES,
             'priorities'       => TicketModel::PRIORITIES,
             'statuses'         => TicketModel::STATUSES,

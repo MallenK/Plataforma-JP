@@ -29,7 +29,7 @@ $priorityColors = [
         <p class="text-muted mb-0" style="font-size:13px"><?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> en total</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/gestion/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-bar-chart-fill me-1"></i>Dashboard
         </a>
         <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
@@ -52,9 +52,9 @@ $priorityColors = [
                 <i class="bi bi-download me-1"></i>Exportar
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="<?= base_url('tickets/admin/export') ?>?format=csv<?= $expQs ? '&' . $expQs : '' ?>">
+                <li><a class="dropdown-item" href="<?= base_url('tickets/gestion/export') ?>?format=csv<?= $expQs ? '&' . $expQs : '' ?>">
                     <i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel (CSV)</a></li>
-                <li><a class="dropdown-item" target="_blank" href="<?= base_url('tickets/admin/export') ?>?format=pdf<?= $expQs ? '&' . $expQs : '' ?>">
+                <li><a class="dropdown-item" target="_blank" href="<?= base_url('tickets/gestion/export') ?>?format=pdf<?= $expQs ? '&' . $expQs : '' ?>">
                     <i class="bi bi-file-earmark-pdf me-2"></i>PDF (imprimir)</a></li>
             </ul>
         </div>
@@ -62,7 +62,7 @@ $priorityColors = [
 </div>
 
 <!-- Filtros -->
-<form method="GET" action="<?= base_url('tickets/admin') ?>" class="ticket-filters mb-4">
+<form method="GET" action="<?= base_url('tickets/gestion') ?>" class="ticket-filters mb-4">
     <div class="row g-2 align-items-end">
         <div class="col-sm-4 col-lg-3">
             <input type="text" name="search" class="form-control form-control-sm"
@@ -128,7 +128,7 @@ $priorityColors = [
         </div>
         <?php if (array_filter($filters)): ?>
         <div class="col-auto">
-            <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+            <a href="<?= base_url('tickets/gestion') ?>" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-x-lg me-1"></i>Limpiar
             </a>
         </div>
@@ -221,7 +221,7 @@ $priorityColors = [
     <ul class="pagination pagination-sm mb-0">
         <?php for ($p = 1; $p <= $totalPages; $p++): ?>
         <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-            <a class="page-link" href="<?= base_url('tickets/admin') ?>?page=<?= $p ?>
+            <a class="page-link" href="<?= base_url('tickets/gestion') ?>?page=<?= $p ?>
                 <?= $filters['status']   ? '&status='   . urlencode($filters['status'])   : '' ?>
                 <?= $filters['priority'] ? '&priority=' . urlencode($filters['priority']) : '' ?>
                 <?= $filters['category'] ? '&category=' . urlencode($filters['category']) : '' ?>

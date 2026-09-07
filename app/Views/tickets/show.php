@@ -35,7 +35,7 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
-            <a href="<?= base_url($canManage ? 'tickets/admin' : 'dashboard') ?>"
+            <a href="<?= base_url($canManage ? 'tickets/gestion' : 'dashboard') ?>"
                class="btn btn-sm btn-outline-secondary py-0 px-2">
                 <i class="bi bi-arrow-left"></i>
             </a>
@@ -298,6 +298,16 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             <div class="ticket-message-body flex-1">
                 <form id="reply-form" enctype="multipart/form-data">
                     <input type="hidden" name="<?= $csrfName ?>" value="<?= $csrfHash ?>" id="reply-csrf">
+
+                    <?php if (!empty($replyTemplates)): ?>
+                    <select id="reply-template" class="form-select form-select-sm mb-2">
+                        <option value="">Insertar plantilla…</option>
+                        <?php foreach ($replyTemplates as $i => $tpl): ?>
+                        <option value="<?= $i ?>" data-full="<?= esc($tpl, 'attr') ?>"><?= esc(mb_strimwidth($tpl, 0, 70, '…')) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+
                     <textarea name="body" id="reply-body" class="form-control mb-2" rows="4"
                               placeholder="Escribe tu respuesta..." maxlength="5000"></textarea>
 
@@ -353,6 +363,17 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 <dd><span class="ticket-status <?= $statusCls ?>"><?= esc($statuses[$ticket['status']] ?? $ticket['status']) ?></span></dd>
                 <dt>Prioridad</dt>
                 <dd><span class="ticket-priority <?= $priorityCls ?>"><?= esc($priorities[$ticket['priority']] ?? $ticket['priority']) ?></span></dd>
+                <?php if ($canManage && !empty($ticket['reported_urgency'])): ?>
+                <dt>Urgencia indicada</dt>
+                <dd>
+                    <span class="text-muted" style="font-size:12px">
+                        <?= esc($priorities[$ticket['reported_urgency']] ?? $ticket['reported_urgency']) ?>
+                        <?php if ($ticket['reported_urgency'] !== $ticket['priority']): ?>
+                            <i class="bi bi-info-circle" title="El solicitante la marcó así; la prioridad real la fijó el equipo"></i>
+                        <?php endif; ?>
+                    </span>
+                </dd>
+                <?php endif; ?>
                 <dt>Categoría</dt>
                 <dd><?= esc($categories[$ticket['category']] ?? $ticket['category']) ?></dd>
                 <dt>Ámbito</dt>
@@ -564,6 +585,18 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 showToast(data.error || 'No se pudo archivar', true);
             }
         } catch (_) { showToast('Error de conexión al archivar', true); }
+    });
+
+    // ── Plantillas de respuesta ────────────────────────────
+    const tplSel  = document.getElementById('reply-template');
+    const replyTa = document.getElementById('reply-body');
+    tplSel?.addEventListener('change', () => {
+        const opt = tplSel.selectedOptions[0];
+        if (!opt || !opt.dataset.full) return;
+        const txt = opt.dataset.full;
+        replyTa.value = replyTa.value.trim() ? (replyTa.value.replace(/\s+$/, '') + '\n\n' + txt) : txt;
+        replyTa.focus();
+        tplSel.value = '';
     });
 
     // ── Adjunto en respuesta ───────────────────────────────

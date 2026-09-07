@@ -9,10 +9,10 @@ $csrfName = csrf_token();
 $csrfHash = csrf_hash();
 $pf = $prefill ?? null;
 
+$isMgr = in_array(session('role'), ['admin', 'superadmin'], true);
+
 // Los no-gestores no tienen bandeja de tickets: se vuelve al dashboard.
-$backUrl = in_array(session('role'), ['admin', 'superadmin'], true)
-    ? base_url('tickets')
-    : base_url('dashboard');
+$backUrl = $isMgr ? base_url('tickets') : base_url('dashboard');
 
 $pfTitle = '';
 $pfDesc  = '';
@@ -80,7 +80,10 @@ if ($pf) {
                 </select>
             </div>
             <div class="col-sm-6">
-                <label class="form-label fw-semibold">Prioridad <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold">
+                    <?= $isMgr ? 'Prioridad' : '¿Qué urgencia tiene para ti?' ?>
+                    <span class="text-danger">*</span>
+                </label>
                 <select name="priority" class="form-select" required>
                     <?php foreach ($priorities as $key => $label): ?>
                     <option value="<?= $key ?>" <?= $key === 'media' ? 'selected' : '' ?>>
@@ -88,7 +91,11 @@ if ($pf) {
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <div class="form-text">Selecciona "Urgente" solo si bloquea el uso de la plataforma.</div>
+                <div class="form-text">
+                    <?= $isMgr
+                        ? 'Selecciona "Urgente" solo si bloquea el uso de la plataforma.'
+                        : 'Es orientativo: el equipo revisará y asignará la prioridad real.' ?>
+                </div>
             </div>
         </div>
 
