@@ -29,7 +29,7 @@ class AlumnosController extends BaseController
         $players = $this->playerService->getPlayersWithProfile();
 
         return view('alumnos/index', [
-            'title'   => 'Alumnos — JP Preparation',
+            'title'   => 'Alumnos — Tu Plataforma',
             'players' => $players,
         ]);
     }
@@ -49,7 +49,7 @@ class AlumnosController extends BaseController
 
         if (!$profile || $this->request->getGet('edit')) {
             return view('alumnos/create_profile', [
-                'title'   => 'Mi ficha — JP Preparation',
+                'title'   => 'Mi ficha — Tu Plataforma',
                 'profile' => $profile,
             ]);
         }
@@ -65,7 +65,7 @@ class AlumnosController extends BaseController
             : [];
 
         return view('alumnos/profile', [
-            'title'          => 'Mi ficha — JP Preparation',
+            'title'          => 'Mi ficha — Tu Plataforma',
             'profile'        => $profile,
             'annotations'    => $annotationModel->getForPlayer($userId, $types),
             'canInternal'    => $role !== 'player',
@@ -109,7 +109,7 @@ class AlumnosController extends BaseController
     public function create()
     {
         return view('alumnos/create', [
-            'title' => 'Nuevo alumno — JP Preparation',
+            'title' => 'Nuevo alumno — Tu Plataforma',
         ]);
     }
 
@@ -169,7 +169,7 @@ class AlumnosController extends BaseController
         $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
 
         return view('alumnos/show', [
-            'title'       => $alumno['name'] . ' — JP Preparation',
+            'title'       => $alumno['name'] . ' — Tu Plataforma',
             'alumno'      => $alumno,
             'annotations' => $annotationModel->getForPlayer($id, $types),
             'canInternal' => $role !== 'player',
@@ -188,7 +188,7 @@ class AlumnosController extends BaseController
         }
 
         return view('alumnos/edit', [
-            'title'  => 'Editar alumno — JP Preparation',
+            'title'  => 'Editar alumno — Tu Plataforma',
             'alumno' => $alumno,
         ]);
     }

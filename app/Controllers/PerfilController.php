@@ -229,7 +229,7 @@ class PerfilController extends BaseController
         $policy = (new \App\Models\SettingsModel())->getAll();
 
         return view('perfil/change_password', [
-            'title'  => 'Cambiar contraseña — JP Preparation',
+            'title'  => 'Cambiar contraseña — Tu Plataforma',
             'forced' => (bool) session()->get('must_change_password'),
             'policy' => [
                 'minLength'      => max(8, (int)($policy['sec_min_password']   ?? 8)),

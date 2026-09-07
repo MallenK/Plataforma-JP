@@ -54,7 +54,7 @@ class AuthService
 
         if (($user['status'] ?? 'active') !== 'active') {
             $guard->record('login_fail', $email, (int) $user['id'], ['reason' => 'inactive']);
-            return 'Esta cuenta está desactivada. Contacta con el equipo de JP Preparation.';
+            return 'Esta cuenta está desactivada. Contacta con el equipo de Tu Plataforma.';
         }
 
         // Login correcto: regenera sesión y registra el evento
@@ -137,7 +137,7 @@ class AuthService
         $resetLink = base_url('/reset-password?token=' . $rawToken);
         $sent = (new MailService())->send(
             $email,
-            'Recuperación de contraseña — JP Preparation',
+            'Recuperación de contraseña — Tu Plataforma',
             $this->buildResetEmailHtml($user['name'], $resetLink),
             [
                 'sender_id'    => 0,
@@ -160,7 +160,7 @@ class AuthService
         return '
             <div style="font-family:sans-serif;max-width:480px;margin:auto">
                 <h2>Hola, ' . esc($name) . '</h2>
-                <p>Recibimos una solicitud para restablecer tu contraseña en <strong>JP Preparation</strong>.</p>
+                <p>Recibimos una solicitud para restablecer tu contraseña en <strong>Tu Plataforma</strong>.</p>
                 <p>Haz clic en el botón para continuar. El enlace expira en <strong>1 hora</strong>.</p>
                 <a href="' . $link . '"
                    style="display:inline-block;padding:12px 24px;background:#020617;color:#fff;

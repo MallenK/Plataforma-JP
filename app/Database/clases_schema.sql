@@ -1,5 +1,5 @@
 -- ============================================================
--- JP Preparation — Módulo: Clases y Calendario
+-- Tu Plataforma — Módulo: Clases y Calendario
 -- Ejecutar en la base de datos: jp_preparation
 -- ============================================================
 

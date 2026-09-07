@@ -40,7 +40,7 @@ $navTitles = [
 
 // Si el controlador pasó $pageTitle/$pageSubtitle explícitamente, se usan esos
 if (!isset($pageTitle) || !isset($pageSubtitle)) {
-    [$pageTitle, $pageSubtitle] = $navTitles[$uriSegment] ?? ['JP Preparation', ''];
+    [$pageTitle, $pageSubtitle] = $navTitles[$uriSegment] ?? ['Tu Plataforma', ''];
 }
 ?>
 

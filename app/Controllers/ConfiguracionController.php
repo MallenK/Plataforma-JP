@@ -34,7 +34,7 @@ class ConfiguracionController extends BaseController
         $securityEvents = $isAdmin ? (new \App\Models\AuthEventModel())->recentForPanel(30) : [];
 
         return view('configuracion/index', [
-            'title'          => 'Configuración — JP Preparation',
+            'title'          => 'Configuración — Tu Plataforma',
             'settings'       => $settings,
             'locations'      => $locations,
             'staff'          => $staff,

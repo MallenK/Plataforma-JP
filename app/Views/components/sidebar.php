@@ -34,7 +34,7 @@ if ($isAdmin) {
     <a href="<?= base_url('dashboard') ?>" class="sidebar-logo">
         <div class="sidebar-logo-icon">JP</div>
         <div class="sidebar-logo-text">
-            JP Preparation
+            Tu Plataforma
             <span>Plataforma</span>
         </div>
     </a>

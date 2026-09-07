@@ -41,7 +41,7 @@ class BonosController extends BaseController
         };
 
         return view('bonos/index', [
-            'title'        => 'Bonos — JP Preparation',
+            'title'        => 'Bonos — Tu Plataforma',
             'pageTitle'    => 'Bonos',
             'pageSubtitle' => 'Membresías y bonos de entrenamiento',
             'bonos'        => $bonos,
@@ -121,7 +121,7 @@ class BonosController extends BaseController
             : [];
 
         return view('bonos/show', [
-            'title'   => 'Bono — JP Preparation',
+            'title'   => 'Bono — Tu Plataforma',
             'bono'    => $bono,
             'history' => $history,
             'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),

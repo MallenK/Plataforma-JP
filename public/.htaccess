@@ -47,7 +47,7 @@ Options -Indexes
 ServerSignature Off
 # Disable server signature end
 
-# ── Límites de subida de archivos (JP Preparation) ──────────────────
+# ── Límites de subida de archivos (Tu Plataforma) ──────────────────
 # Necesario para aceptar vídeos de hasta 500 MB
 <IfModule mod_php.c>
     php_value upload_max_filesize 512M

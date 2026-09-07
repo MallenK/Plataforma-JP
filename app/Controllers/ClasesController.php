@@ -29,7 +29,7 @@ class ClasesController extends BaseController
         $isAdminRole = in_array($role, ['superadmin', 'admin']);
 
         return view('clases/index', [
-            'title'         => 'Clases — JP Preparation',
+            'title'         => 'Clases — Tu Plataforma',
             'stats'         => $this->clasesService->getStats($userId, $role),
             'isAdmin'       => $this->isAdmin(),
             'canManage'     => $canManage,
@@ -106,7 +106,7 @@ class ClasesController extends BaseController
     public function create()
     {
         return view('clases/create', [
-            'title'           => 'Nueva Clase — JP Preparation',
+            'title'           => 'Nueva Clase — Tu Plataforma',
             'session'         => null,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
@@ -198,7 +198,7 @@ class ClasesController extends BaseController
         }
 
         return view('clases/show', [
-            'title'           => $session['title'] . ' — JP Preparation',
+            'title'           => $session['title'] . ' — Tu Plataforma',
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'canManage'       => $canManage,
@@ -229,7 +229,7 @@ class ClasesController extends BaseController
         }
 
         return view('clases/create', [
-            'title'           => 'Editar Clase — JP Preparation',
+            'title'           => 'Editar Clase — Tu Plataforma',
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
@@ -396,7 +396,7 @@ class ClasesController extends BaseController
         $data = $this->clasesService->getWeekSessions($weekOffset, $search);
 
         return view('clases/pasar_lista_semanal', [
-            'title'    => 'Pasar Lista — JP Preparation',
+            'title'    => 'Pasar Lista — Tu Plataforma',
             'isAdmin'  => $this->isAdmin(),
             'weekData' => $data,
             'search'   => $search,

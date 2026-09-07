@@ -78,7 +78,7 @@ class DocumentacionController extends BaseController
             : [];
 
         return view('documentacion/index', [
-            'title'             => 'Documentación — JP Preparation',
+            'title'             => 'Documentación — Tu Plataforma',
             'folders'           => $folders,
             'activeFolder'      => $activeFolder,
             'files'             => $files,

@@ -32,7 +32,7 @@ class TorneosController extends BaseController
         $myPending = $this->torneosService->getPendingNotificationsForUser($this->currentUserId());
 
         return view('torneos/index', [
-            'title'     => 'Torneos y Campus — JP Preparation',
+            'title'     => 'Torneos y Campus — Tu Plataforma',
             'events'    => $events,
             'myPending' => $myPending,
             'filters'   => $this->request->getGet() ?? [],
@@ -50,7 +50,7 @@ class TorneosController extends BaseController
         if (!in_array($type, ['torneo', 'campus'])) $type = 'torneo';
 
         return view('torneos/create', [
-            'title'   => ($type === 'campus' ? 'Nuevo Campus' : 'Nuevo Torneo') . ' — JP Preparation',
+            'title'   => ($type === 'campus' ? 'Nuevo Campus' : 'Nuevo Torneo') . ' — Tu Plataforma',
             'type'    => $type,
             'event'   => null,
             'isAdmin' => $this->isAdmin(),
@@ -95,7 +95,7 @@ class TorneosController extends BaseController
         $externalParticipants = $this->isAdmin() ? $this->torneosService->getExternalParticipants()    : [];
 
         return view('torneos/show', [
-            'title'                => $event['name'] . ' — JP Preparation',
+            'title'                => $event['name'] . ' — Tu Plataforma',
             'event'                => $event,
             'myMembership'         => $myMembership,
             'selectableUsers'      => $selectableUsers,
@@ -117,7 +117,7 @@ class TorneosController extends BaseController
         }
 
         return view('torneos/create', [
-            'title'   => 'Editar ' . ($event['type'] === 'campus' ? 'Campus' : 'Torneo') . ' — JP Preparation',
+            'title'   => 'Editar ' . ($event['type'] === 'campus' ? 'Campus' : 'Torneo') . ' — Tu Plataforma',
             'type'    => $event['type'],
             'event'   => $event,
             'isAdmin' => $this->isAdmin(),

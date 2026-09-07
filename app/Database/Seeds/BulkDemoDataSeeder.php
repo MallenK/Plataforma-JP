@@ -15,8 +15,8 @@ use App\Services\ClasesService;
  * asignados y clases puntuales + recurrentes, pasadas y futuras) para que
  * el entorno local se parezca al de producción en cantidad de registros.
  *
- * Todos los usuarios creados llevan el dominio @demo.jppreparation.local
- * (distinto de @test.jppreparation.local, que usa DevTestDataSeeder para
+ * Todos los usuarios creados llevan el dominio @demo.tuplataforma.local
+ * (distinto de @test.tuplataforma.local, que usa DevTestDataSeeder para
  * casos de prueba puntuales de tickets concretos). Idempotente: se puede
  * volver a ejecutar sin duplicar nada (se busca por email/nombre/título).
  *
@@ -24,7 +24,7 @@ use App\Services\ClasesService;
  */
 class BulkDemoDataSeeder extends Seeder
 {
-    private const DOMAIN = '@demo.jppreparation.local';
+    private const DOMAIN = '@demo.tuplataforma.local';
 
     private UserModel $userModel;
     private PlayerProfileModel $profileModel;
@@ -63,11 +63,11 @@ class BulkDemoDataSeeder extends Seeder
     private function seedLocations(): array
     {
         $data = [
-            ['name' => 'Campo Municipal Sant Vicenç', 'type' => 'pitch', 'address' => 'Carrer del Doctor Barraquer 24', 'capacity' => 40],
-            ['name' => 'Campo 2 - Tecnificación',       'type' => 'pitch', 'address' => 'Carrer del Doctor Barraquer 24', 'capacity' => 22],
-            ['name' => 'Gimnasio Cobertura',            'type' => 'gym',   'address' => 'Passeig Trav i Sagrera 5',      'capacity' => 15],
-            ['name' => 'Sala de vídeo / análisis',       'type' => 'room',  'address' => 'Passeig Trav i Sagrera 5',      'capacity' => 12],
-            ['name' => 'Oficina JP Preparation',         'type' => 'office','address' => 'Passeig Trav i Sagrera 5',      'capacity' => null],
+            ['name' => 'Campo Municipal',          'type' => 'pitch', 'address' => 'Calle del Deporte 1',  'capacity' => 40],
+            ['name' => 'Campo 2 - Tecnificación',  'type' => 'pitch', 'address' => 'Calle del Deporte 1',  'capacity' => 22],
+            ['name' => 'Gimnasio',                 'type' => 'gym',   'address' => 'Avenida Mayor 25',    'capacity' => 15],
+            ['name' => 'Sala de vídeo / análisis',  'type' => 'room',  'address' => 'Avenida Mayor 25',    'capacity' => 12],
+            ['name' => 'Oficina',                  'type' => 'office','address' => 'Avenida Mayor 25',    'capacity' => null],
         ];
 
         $ids = [];
@@ -193,8 +193,8 @@ class BulkDemoDataSeeder extends Seeder
     ];
 
     private const TEAMS = [
-        'CF Sant Vicenç A', 'CF Sant Vicenç B', 'UE Santboiana', 'CE Sabadell', 'CF Vallirana',
-        'FC Martorell', 'UD Sant Boi', 'CF Pallejà',
+        'CF Águilas A', 'CF Águilas B', 'UD Los Robles', 'CD San Marcos', 'CF Ribera',
+        'FC Montecarmelo', 'UD Valdeluz', 'CF Peñalba',
     ];
 
     private const CATEGORIES = ['prebenjamin', 'benjamin', 'alevin', 'infantil', 'cadete', 'juvenil'];

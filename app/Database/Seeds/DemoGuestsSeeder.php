@@ -70,16 +70,16 @@ class DemoGuestsSeeder extends Seeder
     {
         $settings = new SettingsModel();
         $brand = [
-            'academy_name'     => 'Academia Demo',
-            'academy_email'    => 'hola@academia-demo.example',
+            'academy_name'     => 'Tu Plataforma',
+            'academy_email'    => 'hola@tuplataforma.example',
             'academy_phone'    => '600 000 000',
-            'academy_location' => 'Barcelona',
+            'academy_location' => 'Tu ciudad',
             'academy_website'  => '',
-            'smtp_from_name'   => 'Academia Demo',
+            'smtp_from_name'   => 'Tu Plataforma',
         ];
         foreach ($brand as $k => $v) {
             $settings->setSetting($k, $v);
         }
-        echo "  branding neutro aplicado (academy_name = 'Academia Demo')\n";
+        echo "  branding neutro aplicado (academy_name = 'Tu Plataforma')\n";
     }
 }

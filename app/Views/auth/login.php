@@ -10,7 +10,7 @@
     <div class="login-card">
 
         <h1 class="login-title">Bienvenido</h1>
-        <p class="login-subtitle">Accede a tu plataforma JP Preparation</p>
+        <p class="login-subtitle">Accede a tu plataforma de gestión</p>
 
         <div id="errorBox" class="login-error d-none"></div>
 

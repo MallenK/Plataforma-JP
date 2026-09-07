@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `email_log` (
 -- ─────────────────────────────────────────────────────────────────────
 INSERT IGNORE INTO `academy_settings` (`setting_key`, `setting_value`, `setting_type`) VALUES
 -- General
-('academy_name',       'JP Preparation',   'string'),
+('academy_name',       'Tu Plataforma',   'string'),
 ('academy_email',      '',                 'string'),
 ('academy_phone',      '',                 'string'),
 ('academy_language',   'es',               'string'),
@@ -95,7 +95,7 @@ INSERT IGNORE INTO `academy_settings` (`setting_key`, `setting_value`, `setting_
 ('smtp_encryption',  'tls',          'string'),
 ('smtp_user',        '',             'string'),
 ('smtp_pass',        '',             'string'),
-('smtp_from_name',   'JP Preparation','string'),
+('smtp_from_name',   'Tu Plataforma','string'),
 ('smtp_from_email',  '',             'string'),
 -- Seguridad
 ('sec_min_password',  '8',  'int'),

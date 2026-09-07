@@ -26,7 +26,7 @@ class EntrenadoresController extends BaseController
         $coaches = $this->coachService->getCoaches();
 
         return view('entrenadores/index', [
-            'title'   => 'Entrenadores — JP Preparation',
+            'title'   => 'Entrenadores — Tu Plataforma',
             'coaches' => $coaches,
         ]);
     }
@@ -38,7 +38,7 @@ class EntrenadoresController extends BaseController
     public function create()
     {
         return view('entrenadores/create', [
-            'title' => 'Nuevo entrenador — JP Preparation',
+            'title' => 'Nuevo entrenador — Tu Plataforma',
         ]);
     }
 
@@ -83,7 +83,7 @@ class EntrenadoresController extends BaseController
         $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
 
         return view('entrenadores/show', [
-            'title'          => $coach['name'] . ' — JP Preparation',
+            'title'          => $coach['name'] . ' — Tu Plataforma',
             'coach'          => $coach,
             'personalFolder' => $personalFolder,
             'documents'      => $documents,
@@ -103,7 +103,7 @@ class EntrenadoresController extends BaseController
         }
 
         return view('entrenadores/edit', [
-            'title' => 'Editar entrenador — JP Preparation',
+            'title' => 'Editar entrenador — Tu Plataforma',
             'coach' => $coach,
         ]);
     }

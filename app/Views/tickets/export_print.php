@@ -103,7 +103,7 @@ $activeFilters = array_filter([
     </tbody>
 </table>
 
-<div class="foot">JP Preparation · Plataforma interna</div>
+<div class="foot">Tu Plataforma · Plataforma interna</div>
 
 <?php if (!empty($autoPrint)): ?>
 <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>

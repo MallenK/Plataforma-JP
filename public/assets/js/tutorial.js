@@ -1,5 +1,5 @@
 /**
- * JP Preparation — Tutorial Interactivo
+ * Tu Plataforma — Tutorial Interactivo
  * Motor de guía paso a paso por rol, con spotlight opcional sobre elementos.
  */
 (function () {
@@ -13,7 +13,7 @@
 
         player: [
             {
-                title: '¡Bienvenido a JP Preparation! 👋',
+                title: '¡Bienvenido a Tu Plataforma! 👋',
                 body: 'Esta es tu plataforma personal de entrenamiento. Te mostramos en unos pasos todo lo que puedes hacer aquí.',
                 icon: 'bi-stars',
                 color: '#f59e0b',

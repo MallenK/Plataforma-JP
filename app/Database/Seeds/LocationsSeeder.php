@@ -12,7 +12,7 @@ class LocationsSeeder extends Seeder
             [
                 'name'        => 'Campo 1',
                 'description' => '',
-                'address'     => 'Carrer del Doctor Barraquer 24',
+                'address'     => 'Calle del Deporte 1',
                 'type'        => 'pitch',
                 'capacity'    => null,
                 'phone'       => '',

@@ -5,7 +5,7 @@ namespace App\Services;
 class MailService
 {
     /** Remitente por defecto si no hay MAIL_FROM en el .env. */
-    private const DEFAULT_FROM = 'JP Preparation <noreply@jppreparation.com>';
+    private const DEFAULT_FROM = 'Tu Plataforma <noreply@tuplataforma.example>';
 
     /**
      * Envía un email usando la API de Resend.
@@ -103,7 +103,7 @@ class MailService
     {
         return $this->send(
             $to,
-            'Tu cuenta en JP Preparation está lista',
+            'Tu cuenta en Tu Plataforma está lista',
             $this->buildWelcomeEmailHtml($name, $to, $role, $tempPassword),
             [
                 'sender_id'      => $createdBy,
@@ -125,20 +125,20 @@ class MailService
             <div style="font-family:sans-serif;max-width:480px;margin:auto;color:#0f172a">
                 <h2 style="margin-bottom:4px">Hola, ' . esc($name) . '</h2>
                 <p style="margin-top:0">La contraseña de tu cuenta de
-                   <strong>JP Preparation</strong> se ha cambiado
+                   <strong>Tu Plataforma</strong> se ha cambiado
                    el <strong>' . esc($when) . '</strong>
                    (IP ' . esc($ip) . ').</p>
                 <p><strong>Si has sido tú, no tienes que hacer nada.</strong></p>
                 <p style="color:#b91c1c">Si <u>no</u> has sido tú, tu cuenta puede estar
                    comprometida: entra cuanto antes usando
                    <a href="' . rtrim(base_url(), '/') . '/forgot-password">¿Olvidaste tu contraseña?</a>
-                   y avisa al equipo de JP Preparation.</p>
+                   y avisa al equipo de Tu Plataforma.</p>
                 <p style="color:#888;font-size:12px;margin-top:24px">
                     Este es un aviso automático de seguridad.
                 </p>
             </div>';
 
-        return $this->send($to, 'Tu contraseña de JP Preparation ha cambiado', $body, [
+        return $this->send($to, 'Tu contraseña de Tu Plataforma ha cambiado', $body, [
             'sender_id'      => 0,
             'recipient_type' => 'individual',
         ]);
@@ -185,7 +185,7 @@ class MailService
             <div style="font-family:sans-serif;max-width:480px;margin:auto;color:#0f172a">
                 <h2 style="margin-bottom:4px">Hola, ' . esc($name) . '</h2>
                 <p style="margin-top:0">Se ha creado tu cuenta de <strong>' . esc($roleLabel) . '</strong>
-                   en la plataforma de <strong>JP Preparation</strong>.</p>
+                   en la plataforma de <strong>Tu Plataforma</strong>.</p>
                 ' . $credentialsBlock . '
                 <a href="' . $loginUrl . '"
                    style="display:inline-block;padding:12px 24px;background:#020617;color:#fff;
@@ -193,7 +193,7 @@ class MailService
                     Entrar a la plataforma
                 </a>
                 <p style="color:#888;font-size:12px;margin-top:24px">
-                    Si no esperabas este correo, puedes ignorarlo o avisar al equipo de JP Preparation.
+                    Si no esperabas este correo, puedes ignorarlo o avisar al equipo de Tu Plataforma.
                 </p>
             </div>
         ';

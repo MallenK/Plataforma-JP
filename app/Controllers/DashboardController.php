@@ -34,7 +34,7 @@ class DashboardController extends BaseController
         }
 
         return view('dashboard/index', [
-            'title'             => 'Dashboard — JP Preparation',
+            'title'             => 'Dashboard — Tu Plataforma',
             'showWelcome'       => $showWelcome,
             'playerFullProfile' => $playerFullProfile,
         ]);

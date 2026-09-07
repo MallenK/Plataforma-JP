@@ -9,7 +9,7 @@ class AcademySettingsSeeder extends Seeder
     public function run()
     {
         $data = [
-            ['setting_key' => 'academy_name',        'setting_value' => 'JP Preparation', 'setting_type' => 'string'],
+            ['setting_key' => 'academy_name',        'setting_value' => 'Tu Plataforma', 'setting_type' => 'string'],
             ['setting_key' => 'academy_email',        'setting_value' => '',               'setting_type' => 'string'],
             ['setting_key' => 'academy_phone',        'setting_value' => '',               'setting_type' => 'string'],
             ['setting_key' => 'academy_language',     'setting_value' => 'es',             'setting_type' => 'string'],
@@ -26,7 +26,7 @@ class AcademySettingsSeeder extends Seeder
             ['setting_key' => 'smtp_encryption',      'setting_value' => 'tls',            'setting_type' => 'string'],
             ['setting_key' => 'smtp_user',            'setting_value' => '',               'setting_type' => 'string'],
             ['setting_key' => 'smtp_pass',            'setting_value' => '',               'setting_type' => 'string'],
-            ['setting_key' => 'smtp_from_name',       'setting_value' => 'JP Preparation', 'setting_type' => 'string'],
+            ['setting_key' => 'smtp_from_name',       'setting_value' => 'Tu Plataforma', 'setting_type' => 'string'],
             ['setting_key' => 'smtp_from_email',      'setting_value' => '',               'setting_type' => 'string'],
             ['setting_key' => 'sec_min_password',     'setting_value' => '8',              'setting_type' => 'int'],
             ['setting_key' => 'sec_require_upper',    'setting_value' => '0',              'setting_type' => 'bool'],
