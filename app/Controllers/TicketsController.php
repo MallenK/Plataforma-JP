@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\TicketModel;
 use App\Models\TicketReplyModel;
 use App\Models\TicketAttachmentModel;
+use App\Models\TicketEventModel;
 use App\Models\NotificationModel;
 use App\Models\UserModel;
 
@@ -13,6 +14,7 @@ class TicketsController extends BaseController
     private TicketModel           $ticketModel;
     private TicketReplyModel      $replyModel;
     private TicketAttachmentModel $attachModel;
+    private TicketEventModel      $eventModel;
     private NotificationModel     $notifModel;
     private UserModel             $userModel;
 
@@ -24,8 +26,20 @@ class TicketsController extends BaseController
         $this->ticketModel = new TicketModel();
         $this->replyModel  = new TicketReplyModel();
         $this->attachModel = new TicketAttachmentModel();
+        $this->eventModel  = new TicketEventModel();
         $this->notifModel  = new NotificationModel();
         $this->userModel   = new UserModel();
+    }
+
+    /** Gestores asignables: admin + superadmin activos. */
+    private function assignableManagers(): array
+    {
+        return $this->userModel
+            ->whereIn('role', ['admin', 'superadmin'])
+            ->where('status', 'active')
+            ->orderBy('name', 'ASC')
+            ->select('id, name, role')
+            ->findAll();
     }
 
     // ─────────────────────────────────────────────────────────
@@ -52,10 +66,28 @@ class TicketsController extends BaseController
 
     public function create(): string
     {
+        // Prefill cuando se llega desde una alerta de error / permiso.
+        $originIn = $this->request->getGet('origin');
+        $origin   = in_array($originIn, TicketModel::ORIGINS, true) ? $originIn : 'manual';
+
+        $prefill = null;
+        if ($origin !== 'manual') {
+            $prefill = [
+                'origin'    => $origin,
+                'ref'       => substr(preg_replace('/[^A-Z0-9]/i', '', (string) $this->request->getGet('ref')), 0, 12),
+                'url'       => mb_substr((string) $this->request->getGet('url'), 0, 300),
+                'message'   => mb_substr((string) $this->request->getGet('msg'), 0, 500),
+                'category'  => $origin === 'permiso' ? 'consulta' : 'bug',
+            ];
+        }
+
         return view('tickets/create', [
-            'title'      => 'Nuevo Ticket',
-            'categories' => TicketModel::CATEGORIES,
-            'priorities' => TicketModel::PRIORITIES,
+            'title'          => 'Nuevo Ticket',
+            'categories'     => TicketModel::CATEGORIES,
+            'priorities'     => TicketModel::PRIORITIES,
+            'scopes'         => TicketModel::SCOPES,
+            'canChooseScope' => !in_array($this->currentRole(), ['player', 'alumno'], true),
+            'prefill'        => $prefill,
         ]);
     }
 
@@ -84,17 +116,56 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
+        $isManager = in_array($this->currentRole(), ['admin', 'superadmin'], true);
+        $isPlayer  = in_array($this->currentRole(), ['player', 'alumno'], true);
+
+        // Prioridad / urgencia:
+        //  - gestor        → la prioridad que elige es la real
+        //  - coach / staff → su elección es "urgencia indicada"; prioridad real = media
+        //  - alumno        → no elige nada; prioridad = media, sin urgencia indicada
+        $reportedUrgency = $isPlayer ? null : $priority;
+        if (!$isManager) {
+            $priority = 'media';
+        }
+        $scopeIn  = $this->request->getPost('scope');
+        $scope    = (!$isPlayer && array_key_exists($scopeIn, TicketModel::SCOPES)) ? $scopeIn : 'academia';
+
+        // Contexto de reporte (cuando el ticket nace de una alerta de error/permiso)
+        $originIn  = $this->request->getPost('origin');
+        $origin    = in_array($originIn, TicketModel::ORIGINS, true) ? $originIn : 'manual';
+        $errorRef  = substr(preg_replace('/[^A-Z0-9]/i', '', (string) $this->request->getPost('error_ref')), 0, 12) ?: null;
+
+        $context = null;
+        if ($origin !== 'manual') {
+            $ctxRaw  = json_decode((string) $this->request->getPost('context'), true);
+            $context = json_encode([
+                'url'        => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['url'] ?? ''), 0, 300) : null,
+                'endpoint'   => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['endpoint'] ?? ''), 0, 200) : null,
+                'message'    => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['message'] ?? ''), 0, 500) : null,
+                'user_agent' => mb_substr((string) $this->request->getUserAgent()->getAgentString(), 0, 300),
+                'client_ts'  => is_array($ctxRaw) ? mb_substr((string) ($ctxRaw['client_ts'] ?? ''), 0, 40) : null,
+                'error_ref'  => $errorRef,
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
         $ticketId = $this->ticketModel->createTicket([
             'user_id'     => $userId,
             'title'       => $title,
             'description' => $description,
-            'category'    => $category,
-            'priority'    => $priority,
+            'category'         => $category,
+            'priority'         => $priority,
+            'reported_urgency' => $reportedUrgency,
+            'scope'            => $scope,
+            'origin'      => $origin,
+            'error_ref'   => $errorRef,
+            'context'     => $context,
         ]);
 
         if (!$ticketId) {
             return $this->response->setJSON(['error' => 'Error al crear el ticket.'])->setStatusCode(500);
         }
+
+        $this->eventModel->log($ticketId, $userId, 'created');
 
         // Adjunto opcional
         $file = $this->request->getFile('attachment');
@@ -132,12 +203,14 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // El usuario solo puede ver sus propios tickets; superadmin ve todos
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        // Cada usuario ve sus propios tickets; los gestores (admin/superadmin) ven todos.
+        $isManager = in_array($role, ['admin', 'superadmin'], true);
+        if ((int) $ticket['user_id'] !== (int) $userId && !$isManager) {
             return $this->response->setStatusCode(403);
         }
 
-        $replies     = $this->replyModel->getForTicket($id);
+        // El solicitante no ve las notas internas.
+        $replies     = $this->replyModel->getForTicket($id, $isManager);
         $attachments = $this->attachModel->getForTicket($id);
 
         // Adjuntos por reply
@@ -152,10 +225,15 @@ class TicketsController extends BaseController
             'replies'          => $replies,
             'attachments'      => $attachments,
             'replyAttachments' => $replyAttachments,
+            'events'           => $isManager ? $this->eventModel->getForTicket($id) : [],
+            'managers'         => $isManager ? $this->assignableManagers() : [],
+            'replyTemplates'   => $isManager ? TicketModel::REPLY_TEMPLATES : [],
             'categories'       => TicketModel::CATEGORIES,
             'priorities'       => TicketModel::PRIORITIES,
             'statuses'         => TicketModel::STATUSES,
+            'scopes'           => TicketModel::SCOPES,
             'isSuperAdmin'     => $role === 'superadmin',
+            'isManager'        => $isManager,
         ]);
     }
 
@@ -165,12 +243,7 @@ class TicketsController extends BaseController
 
     public function adminIndex(): string
     {
-        $filters = [
-            'status'   => $this->request->getGet('status')   ?? '',
-            'priority' => $this->request->getGet('priority') ?? '',
-            'category' => $this->request->getGet('category') ?? '',
-            'search'   => $this->request->getGet('search')   ?? '',
-        ];
+        $filters = $this->requestFilters();
 
         $page    = max(1, (int) ($this->request->getGet('page') ?? 1));
         $perPage = 20;
@@ -180,15 +253,18 @@ class TicketsController extends BaseController
         $total   = $this->ticketModel->countAll($filters);
 
         return view('tickets/admin/index', [
-            'title'      => 'Gestión de Tickets',
-            'tickets'    => $tickets,
-            'total'      => $total,
-            'page'       => $page,
-            'perPage'    => $perPage,
-            'filters'    => $filters,
-            'categories' => TicketModel::CATEGORIES,
-            'priorities' => TicketModel::PRIORITIES,
-            'statuses'   => TicketModel::STATUSES,
+            'title'         => 'Gestión de Tickets',
+            'tickets'       => $tickets,
+            'total'         => $total,
+            'page'          => $page,
+            'perPage'       => $perPage,
+            'filters'       => $filters,
+            'managers'      => $this->assignableManagers(),
+            'currentUserId' => (int) $this->currentUserId(),
+            'categories'    => TicketModel::CATEGORIES,
+            'priorities'    => TicketModel::PRIORITIES,
+            'statuses'      => TicketModel::STATUSES,
+            'scopes'        => TicketModel::SCOPES,
         ]);
     }
 
@@ -200,10 +276,13 @@ class TicketsController extends BaseController
     private function requestFilters(): array
     {
         return [
-            'status'   => $this->request->getGet('status')   ?? '',
-            'priority' => $this->request->getGet('priority') ?? '',
-            'category' => $this->request->getGet('category') ?? '',
-            'search'   => $this->request->getGet('search')   ?? '',
+            'status'      => $this->request->getGet('status')      ?? '',
+            'priority'    => $this->request->getGet('priority')    ?? '',
+            'category'    => $this->request->getGet('category')    ?? '',
+            'search'      => $this->request->getGet('search')      ?? '',
+            'assigned_to' => $this->request->getGet('assigned_to') ?? '',
+            'scope'       => $this->request->getGet('scope')       ?? '',
+            'archived'    => $this->request->getGet('archived')    ?? '',
         ];
     }
 
@@ -301,6 +380,7 @@ class TicketsController extends BaseController
             'categories' => TicketModel::CATEGORIES,
             'priorities' => TicketModel::PRIORITIES,
             'statuses'   => TicketModel::STATUSES,
+            'scopes'     => TicketModel::SCOPES,
         ]);
     }
 
@@ -320,7 +400,10 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'La respuesta no puede estar vacía.'])->setStatusCode(422);
         }
 
-        $replyId = $this->replyModel->createReply($id, $this->currentUserId(), $body);
+        $isInternal = (bool) $this->request->getPost('is_internal');
+        $userId     = (int) $this->currentUserId();
+
+        $replyId = $this->replyModel->createReply($id, $userId, $body, $isInternal);
 
         if (!$replyId) {
             return $this->response->setJSON(['error' => 'Error al guardar la respuesta.'])->setStatusCode(500);
@@ -335,20 +418,33 @@ class TicketsController extends BaseController
             }
         }
 
-        // Si el ticket estaba abierto, pasarlo a en progreso automáticamente
-        if ($ticket['status'] === 'abierto') {
-            $this->ticketModel->updateStatus($id, 'en_progreso');
-        }
+        $this->eventModel->log($id, $userId, $isInternal ? 'internal_note' : 'reply');
 
-        // Notificar al creador del ticket
-        $this->notifyTicketOwner($ticket, 'respuesta');
+        if ($isInternal) {
+            // Nota interna: no toca el estado ni avisa al solicitante; avisa a los demás gestores.
+            $this->notifyOtherManagers($ticket, $userId);
+        } else {
+            // Primera respuesta pública de un gestor → métrica de SLA.
+            if (in_array($this->currentRole(), ['admin', 'superadmin'], true)
+                && empty($ticket['first_response_at'])
+                && (int) $ticket['user_id'] !== $userId) {
+                $this->ticketModel->markFirstResponse($id);
+            }
+
+            // Si el ticket estaba abierto, pasarlo a en progreso automáticamente
+            if ($ticket['status'] === 'abierto') {
+                $this->ticketModel->updateStatus($id, 'en_progreso');
+                $this->eventModel->log($id, $userId, 'status_changed', 'abierto', 'en_progreso');
+            }
+            $this->notifyTicketOwner($ticket, 'respuesta');
+        }
 
         $reply = $this->replyModel->getForTicket($id);
         $lastReply = end($reply);
 
         return $this->response->setJSON([
-            'ok'   => true,
-            'csrf' => csrf_hash(),
+            'ok'    => true,
+            'csrf'  => csrf_hash(),
             'reply' => $lastReply,
         ]);
     }
@@ -369,7 +465,19 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Estado no válido.'])->setStatusCode(422);
         }
 
+        if ($status === $ticket['status']) {
+            return $this->response->setJSON([
+                'ok' => true, 'status' => $status,
+                'label' => TicketModel::STATUSES[$status], 'csrf' => csrf_hash(),
+            ]);
+        }
+
         $this->ticketModel->updateStatus($id, $status);
+
+        $reopened = in_array($ticket['status'], ['resuelto', 'cerrado'], true)
+                 && in_array($status, ['abierto', 'en_progreso'], true);
+        $eventType = $reopened ? 'reopened' : ($status === 'cerrado' ? 'closed' : 'status_changed');
+        $this->eventModel->log($id, (int) $this->currentUserId(), $eventType, $ticket['status'], $status);
 
         // Notificar al creador cuando cambia estado
         $this->notifyTicketOwner($ticket, 'estado', $status);
@@ -397,9 +505,10 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
         }
 
-        // Usuario normal solo puede cambiar prioridad si el ticket es suyo y está abierto
-        if ($role !== 'superadmin') {
-            if ($ticket['user_id'] !== $userId) {
+        // Los gestores (admin/superadmin) cambian cualquier prioridad.
+        // El dueño solo la de su ticket y solo si sigue abierto / en progreso.
+        if (!in_array($role, ['admin', 'superadmin'], true)) {
+            if ((int) $ticket['user_id'] !== (int) $userId) {
                 return $this->response->setJSON(['error' => 'Sin permisos.'])->setStatusCode(403);
             }
             if (!in_array($ticket['status'], ['abierto', 'en_progreso'])) {
@@ -412,12 +521,137 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
-        $this->ticketModel->updatePriority($id, $priority);
+        if ($priority !== $ticket['priority']) {
+            $this->ticketModel->updatePriority($id, $priority);
+            $this->eventModel->log($id, $userId, 'priority_changed', $ticket['priority'], $priority);
+        }
 
         return $this->response->setJSON([
             'ok'       => true,
             'priority' => $priority,
             'label'    => TicketModel::PRIORITIES[$priority],
+            'csrf'     => csrf_hash(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GESTOR — asignar / desasignar
+    // ─────────────────────────────────────────────────────────
+
+    public function assign(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $ticket = $this->ticketModel->find($id);
+        if (!$ticket) {
+            return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $raw        = $this->request->getPost('assigned_to');
+        $assigneeId = ($raw === null || $raw === '' || $raw === '0') ? null : (int) $raw;
+
+        if ($assigneeId !== null) {
+            $valid = $this->userModel
+                ->whereIn('role', ['admin', 'superadmin'])
+                ->where('status', 'active')
+                ->where('id', $assigneeId)
+                ->countAllResults() === 1;
+            if (!$valid) {
+                return $this->response->setJSON(['error' => 'El gestor indicado no es válido.'])->setStatusCode(422);
+            }
+        }
+
+        $prev = $ticket['assigned_to'] !== null ? (int) $ticket['assigned_to'] : null;
+        if ($prev === $assigneeId) {
+            return $this->response->setJSON(['ok' => true, 'csrf' => csrf_hash()]);
+        }
+
+        $this->ticketModel->assign($id, $assigneeId);
+
+        $actorId = (int) $this->currentUserId();
+        $nameOf  = static function (?int $uid, array $managers): ?string {
+            foreach ($managers as $m) {
+                if ((int) $m['id'] === $uid) return $m['name'];
+            }
+            return null;
+        };
+        $managers = $this->assignableManagers();
+
+        if ($assigneeId === null) {
+            $this->eventModel->log($id, $actorId, 'unassigned', $nameOf($prev, $managers));
+        } else {
+            $this->eventModel->log($id, $actorId, 'assigned', $nameOf($prev, $managers), $nameOf($assigneeId, $managers));
+
+            if ($assigneeId !== $actorId) {
+                $this->notifModel->createWithRecipients([
+                    'sender_id'  => $actorId,
+                    'type'       => 'individual',
+                    'title'      => 'Ticket asignado: ' . $ticket['ticket_number'],
+                    'body'       => 'Se te ha asignado el ticket: ' . $ticket['title'],
+                    'created_at' => date('Y-m-d H:i:s'),
+                ], [$assigneeId]);
+            }
+        }
+
+        $assigneeName = $assigneeId ? $nameOf($assigneeId, $managers) : null;
+
+        return $this->response->setJSON([
+            'ok'            => true,
+            'assigned_to'   => $assigneeId,
+            'assignee_name' => $assigneeName,
+            'csrf'          => csrf_hash(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GESTOR — cambiar ámbito (academia / plataforma)
+    // ─────────────────────────────────────────────────────────
+
+    public function changeScope(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $ticket = $this->ticketModel->find($id);
+        if (!$ticket) {
+            return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $scope = $this->request->getPost('scope');
+        if (!array_key_exists($scope, TicketModel::SCOPES)) {
+            return $this->response->setJSON(['error' => 'Ámbito no válido.'])->setStatusCode(422);
+        }
+
+        if ($scope !== $ticket['scope']) {
+            $this->ticketModel->setScope($id, $scope);
+            $this->eventModel->log($id, (int) $this->currentUserId(), 'scope_changed', $ticket['scope'], $scope);
+        }
+
+        return $this->response->setJSON([
+            'ok'    => true,
+            'scope' => $scope,
+            'label' => TicketModel::SCOPES[$scope],
+            'csrf'  => csrf_hash(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GESTOR — archivar / desarchivar (nunca se borra)
+    // ─────────────────────────────────────────────────────────
+
+    public function archive(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $ticket = $this->ticketModel->find($id);
+        if (!$ticket) {
+            return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $archived  = (bool) $this->request->getPost('archived');
+        $wasArchived = !empty($ticket['archived_at']);
+
+        if ($archived !== $wasArchived) {
+            $this->ticketModel->archive($id, $archived);
+            $this->eventModel->log($id, (int) $this->currentUserId(), $archived ? 'archived' : 'unarchived');
+        }
+
+        return $this->response->setJSON([
+            'ok'       => true,
+            'archived' => $archived,
             'csrf'     => csrf_hash(),
         ]);
     }
@@ -441,8 +675,8 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(404);
         }
 
-        // Solo el creador o superadmin puede descargar
-        if ($ticket['user_id'] !== $userId && $role !== 'superadmin') {
+        // Solo el creador o un gestor (admin/superadmin) puede descargar
+        if ((int) $ticket['user_id'] !== (int) $userId && !in_array($role, ['admin', 'superadmin'], true)) {
             return $this->response->setStatusCode(403);
         }
 
@@ -512,15 +746,15 @@ class TicketsController extends BaseController
 
     private function notifyAdmins(int $ticketId, string $ticketTitle, int $fromUserId): void
     {
-        $ticket    = $this->ticketModel->find($ticketId);
-        $superadmins = $this->userModel
-            ->where('role', 'superadmin')
+        $ticket   = $this->ticketModel->find($ticketId);
+        $managers = $this->userModel
+            ->whereIn('role', ['admin', 'superadmin'])
             ->where('id !=', $fromUserId)
             ->where('status', 'active')
             ->select('id')
             ->findAll();
 
-        $ids = array_column($superadmins, 'id');
+        $ids = array_column($managers, 'id');
         if (empty($ids)) return;
 
         $this->notifModel->createWithRecipients([
@@ -532,11 +766,34 @@ class TicketsController extends BaseController
         ], $ids);
     }
 
+    /** Aviso de nota interna a los demás gestores (nunca al solicitante). */
+    private function notifyOtherManagers(array $ticket, int $fromUserId): void
+    {
+        $managers = $this->userModel
+            ->whereIn('role', ['admin', 'superadmin'])
+            ->where('status', 'active')
+            ->where('id !=', $fromUserId)
+            ->where('id !=', $ticket['user_id'])
+            ->select('id')
+            ->findAll();
+
+        $ids = array_column($managers, 'id');
+        if (empty($ids)) return;
+
+        $this->notifModel->createWithRecipients([
+            'sender_id'  => $fromUserId,
+            'type'       => 'individual',
+            'title'      => 'Nota interna en ' . $ticket['ticket_number'],
+            'body'       => 'Hay una nota interna nueva en el ticket: ' . $ticket['title'],
+            'created_at' => date('Y-m-d H:i:s'),
+        ], $ids);
+    }
+
     private function notifyTicketOwner(array $ticket, string $event, string $extraInfo = ''): void
     {
         $adminId = $this->currentUserId();
 
-        if ($ticket['user_id'] === $adminId) return;
+        if ((int) $ticket['user_id'] === (int) $adminId) return;
 
         if ($event === 'respuesta') {
             $title = 'Respuesta a tu ticket ' . $ticket['ticket_number'];

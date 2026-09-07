@@ -11,6 +11,10 @@ $byPriority = $stats['by_priority']  ?? [];
 $last30     = $stats['last_30_days'] ?? [];
 $avgHours   = $stats['avg_hours']    ?? 0;
 $total      = $stats['total']        ?? 0;
+$byScope    = $stats['by_scope']     ?? [];
+$avgFirst   = $stats['avg_first_response_hours'] ?? 0;
+$pendFirst  = (int) ($stats['pending_first_response'] ?? 0);
+$stale48    = (int) ($stats['stale_over_48h'] ?? 0);
 
 $open     = (int) ($byStatus['abierto']     ?? 0);
 $progress = (int) ($byStatus['en_progreso'] ?? 0);
@@ -23,7 +27,7 @@ $closed   = (int) ($byStatus['cerrado']     ?? 0);
         <h2 class="fw-bold mb-1" style="font-size:1.25rem">Dashboard de Tickets</h2>
         <p class="text-muted mb-0" style="font-size:13px">Resumen y métricas del sistema de soporte</p>
     </div>
-    <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+    <a href="<?= base_url('tickets/gestion') ?>" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-list-ul me-1"></i>Ver todos los tickets
     </a>
 </div>
@@ -60,7 +64,40 @@ $closed   = (int) ($byStatus['cerrado']     ?? 0);
         <div class="ticket-kpi-label">Tiempo medio resolución</div>
         <i class="bi bi-clock-history ticket-kpi-icon"></i>
     </div>
+    <div class="ticket-kpi ticket-kpi--time">
+        <div class="ticket-kpi-value"><?= $avgFirst ?>h</div>
+        <div class="ticket-kpi-label">Tiempo medio 1ª respuesta</div>
+        <i class="bi bi-reply ticket-kpi-icon"></i>
+    </div>
+    <div class="ticket-kpi <?= $pendFirst > 0 ? 'ticket-kpi--open' : 'ticket-kpi--resolved' ?>">
+        <div class="ticket-kpi-value"><?= $pendFirst ?></div>
+        <div class="ticket-kpi-label">Sin primera respuesta</div>
+        <i class="bi bi-hourglass-split ticket-kpi-icon"></i>
+    </div>
+    <?php if ($stale48 > 0): ?>
+    <div class="ticket-kpi ticket-kpi--open">
+        <div class="ticket-kpi-value"><?= $stale48 ?></div>
+        <div class="ticket-kpi-label">Sin atender +48 h</div>
+        <i class="bi bi-exclamation-triangle-fill ticket-kpi-icon"></i>
+    </div>
+    <?php endif; ?>
 </div>
+
+<?php if (!empty($byScope)): ?>
+<div class="ticket-chart-card mb-4">
+    <div class="ticket-chart-title">Por ámbito</div>
+    <?php foreach (($scopes ?? []) as $key => $label): ?>
+    <?php $count = (int) ($byScope[$key] ?? 0); $pct = $total > 0 ? round(($count / $total) * 100) : 0; ?>
+    <div class="ticket-progress-row">
+        <span class="ticket-progress-label"><?= esc($label) ?></span>
+        <div class="ticket-progress-bar-wrap">
+            <div class="ticket-progress-bar-fill" style="width:<?= $pct ?>%"></div>
+        </div>
+        <span class="ticket-progress-count"><?= $count ?></span>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <div class="row g-4">
 
@@ -137,7 +174,7 @@ $closed   = (int) ($byStatus['cerrado']     ?? 0);
     <?php $count = (int) ($byStatus[$key] ?? 0); ?>
     <?php if ($count > 0): ?>
     <div class="col-auto">
-        <a href="<?= base_url('tickets/admin?status=' . $key) ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/gestion?status=' . $key) ?>" class="btn btn-sm btn-outline-secondary">
             <?= esc($label) ?> <span class="badge bg-secondary ms-1"><?= $count ?></span>
         </a>
     </div>

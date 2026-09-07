@@ -17,6 +17,14 @@
         <?= view('components/navbar') ?>
 
         <div class="page-body">
+            <?php if ($reportUrl = session()->getFlashdata('error_report_url')): ?>
+            <div class="alert-jp error mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error_report_msg') ?? 'Ha ocurrido un error.') ?></span>
+                <a href="<?= esc($reportUrl, 'attr') ?>" class="btn btn-sm btn-light">
+                    <i class="bi bi-flag me-1"></i>Reportar
+                </a>
+            </div>
+            <?php endif; ?>
             <?= $this->renderSection('page_content') ?>
         </div>
 
@@ -28,7 +36,12 @@
 
 <script src="<?= base_url('assets/js/doc-preview.js') ?>"></script>
 
-<?php if (!in_array(session('role'), ['player', 'alumno'])): ?>
+<?php
+/* Modal de reporte — disponible para todos los roles */
+$tkRole     = session('role');
+$tkIsMgr    = in_array($tkRole, ['admin', 'superadmin'], true);
+$tkIsPlayer = in_array($tkRole, ['player', 'alumno'], true);
+?>
 <!-- ── Modal ticket rápido — fuera de cualquier contenedor posicionado ── -->
 <div class="modal fade" id="modalTicketRapido" tabindex="-1" aria-labelledby="modalTicketRapidoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -42,6 +55,9 @@
             <form id="form-ticket-rapido" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" id="ticket-rapido-csrf">
+                    <input type="hidden" name="origin" value="manual">
+                    <input type="hidden" name="error_ref" value="">
+                    <input type="hidden" name="context" value="">
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
@@ -50,7 +66,7 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-sm-6">
+                        <div class="<?= $tkIsPlayer ? 'col-12' : 'col-sm-6' ?>">
                             <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
                             <select name="category" class="form-select" required>
                                 <option value="">Selecciona una categoría</option>
@@ -61,8 +77,13 @@
                                 <option value="otro">Otro</option>
                             </select>
                         </div>
+                        <?php if ($tkIsPlayer): ?>
+                        <input type="hidden" name="priority" value="media">
+                        <?php else: ?>
                         <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Prioridad <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">
+                                <?= $tkIsMgr ? 'Prioridad' : '¿Qué urgencia tiene?' ?> <span class="text-danger">*</span>
+                            </label>
                             <select name="priority" class="form-select" required>
                                 <option value="baja">Baja</option>
                                 <option value="media" selected>Media</option>
@@ -70,6 +91,7 @@
                                 <option value="urgente">Urgente</option>
                             </select>
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="mb-3">
@@ -77,6 +99,16 @@
                         <textarea name="description" class="form-control" rows="5"
                                   placeholder="Describe el problema con detalle: ¿qué ocurrió?, ¿dónde?, ¿qué esperabas que pasara?"
                                   maxlength="5000" required></textarea>
+                    </div>
+
+                    <div id="tk-shot-wrap" class="mb-2" hidden>
+                        <label class="form-label fw-semibold">Captura de pantalla</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="tk-shot-btn">
+                                <i class="bi bi-camera me-1"></i>Capturar pantalla
+                            </button>
+                            <span class="form-text m-0" id="tk-shot-status"></span>
+                        </div>
                     </div>
 
                     <div class="mb-1">
@@ -121,6 +153,17 @@
         errBox.classList.add('d-none');
         btnLbl.classList.remove('d-none');
         btnSpin.classList.add('d-none');
+        const sw = document.getElementById('tk-shot-wrap');
+        if (sw) sw.hidden = true;
+        const ss = document.getElementById('tk-shot-status');
+        if (ss) ss.textContent = '';
+    });
+
+    // Al abrir manualmente (botón del topbar) → asegurar estado "manual".
+    document.getElementById('topbar-ticket-btn')?.addEventListener('click', () => {
+        form.querySelector('[name="origin"]').value = 'manual';
+        form.querySelector('[name="error_ref"]').value = '';
+        form.querySelector('[name="context"]').value = '';
     });
 
     form?.addEventListener('submit', async (e) => {
@@ -161,6 +204,5 @@
     });
 })();
 </script>
-<?php endif; ?>
 
 <?= $this->endSection() ?>

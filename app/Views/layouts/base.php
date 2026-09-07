@@ -34,6 +34,8 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <!-- App JS -->
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+<!-- Reporte de problemas desde alertas de error / permiso -->
+<script src="<?= base_url('assets/js/error-report.js') ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
 <script src="<?= base_url('assets/js/radix-ui.js') ?>"></script>
 

@@ -29,7 +29,7 @@ $priorityColors = [
         <p class="text-muted mb-0" style="font-size:13px"><?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> en total</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="<?= base_url('tickets/admin/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url('tickets/gestion/dashboard') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-bar-chart-fill me-1"></i>Dashboard
         </a>
         <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
@@ -37,10 +37,13 @@ $priorityColors = [
         </a>
         <?php
         $expQs = http_build_query(array_filter([
-            'search'   => $filters['search'],
-            'status'   => $filters['status'],
-            'priority' => $filters['priority'],
-            'category' => $filters['category'],
+            'search'      => $filters['search'],
+            'status'      => $filters['status'],
+            'priority'    => $filters['priority'],
+            'category'    => $filters['category'],
+            'assigned_to' => $filters['assigned_to'] ?? '',
+            'scope'       => $filters['scope'] ?? '',
+            'archived'    => $filters['archived'] ?? '',
         ]));
         ?>
         <div class="dropdown">
@@ -49,9 +52,9 @@ $priorityColors = [
                 <i class="bi bi-download me-1"></i>Exportar
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="<?= base_url('tickets/admin/export') ?>?format=csv<?= $expQs ? '&' . $expQs : '' ?>">
+                <li><a class="dropdown-item" href="<?= base_url('tickets/gestion/export') ?>?format=csv<?= $expQs ? '&' . $expQs : '' ?>">
                     <i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel (CSV)</a></li>
-                <li><a class="dropdown-item" target="_blank" href="<?= base_url('tickets/admin/export') ?>?format=pdf<?= $expQs ? '&' . $expQs : '' ?>">
+                <li><a class="dropdown-item" target="_blank" href="<?= base_url('tickets/gestion/export') ?>?format=pdf<?= $expQs ? '&' . $expQs : '' ?>">
                     <i class="bi bi-file-earmark-pdf me-2"></i>PDF (imprimir)</a></li>
             </ul>
         </div>
@@ -59,7 +62,7 @@ $priorityColors = [
 </div>
 
 <!-- Filtros -->
-<form method="GET" action="<?= base_url('tickets/admin') ?>" class="ticket-filters mb-4">
+<form method="GET" action="<?= base_url('tickets/gestion') ?>" class="ticket-filters mb-4">
     <div class="row g-2 align-items-end">
         <div class="col-sm-4 col-lg-3">
             <input type="text" name="search" class="form-control form-control-sm"
@@ -90,6 +93,34 @@ $priorityColors = [
                 <?php endforeach; ?>
             </select>
         </div>
+        <div class="col-sm-3 col-lg-2">
+            <select name="assigned_to" class="form-select form-select-sm">
+                <option value="">Cualquier asignación</option>
+                <option value="none" <?= ($filters['assigned_to'] ?? '') === 'none' ? 'selected' : '' ?>>Sin asignar</option>
+                <?php if (!empty($currentUserId)): ?>
+                <option value="<?= $currentUserId ?>" <?= (string) ($filters['assigned_to'] ?? '') === (string) $currentUserId ? 'selected' : '' ?>>Asignados a mí</option>
+                <?php endif; ?>
+                <?php foreach (($managers ?? []) as $m): ?>
+                <?php if ((int) $m['id'] === (int) $currentUserId) continue; ?>
+                <option value="<?= (int) $m['id'] ?>" <?= (string) ($filters['assigned_to'] ?? '') === (string) $m['id'] ? 'selected' : '' ?>><?= esc($m['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-2 col-lg-2">
+            <select name="scope" class="form-select form-select-sm">
+                <option value="">Cualquier ámbito</option>
+                <?php foreach (($scopes ?? []) as $key => $label): ?>
+                <option value="<?= $key ?>" <?= ($filters['scope'] ?? '') === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-2 col-lg-2">
+            <select name="archived" class="form-select form-select-sm">
+                <option value="">Activos</option>
+                <option value="only" <?= ($filters['archived'] ?? '') === 'only' ? 'selected' : '' ?>>Solo archivados</option>
+                <option value="all" <?= ($filters['archived'] ?? '') === 'all' ? 'selected' : '' ?>>Todos</option>
+            </select>
+        </div>
         <div class="col-sm-2 col-lg-1">
             <button type="submit" class="btn btn-sm btn-primary w-100">
                 <i class="bi bi-search"></i>
@@ -97,7 +128,7 @@ $priorityColors = [
         </div>
         <?php if (array_filter($filters)): ?>
         <div class="col-auto">
-            <a href="<?= base_url('tickets/admin') ?>" class="btn btn-sm btn-outline-secondary">
+            <a href="<?= base_url('tickets/gestion') ?>" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-x-lg me-1"></i>Limpiar
             </a>
         </div>
@@ -120,6 +151,7 @@ $priorityColors = [
                 <th>Nº Ticket</th>
                 <th>Título</th>
                 <th>Solicitante</th>
+                <th>Asignado</th>
                 <th>Categoría</th>
                 <th>Prioridad</th>
                 <th>Estado</th>
@@ -143,9 +175,22 @@ $priorityColors = [
                 </td>
                 <td><?= esc($t['user_name']) ?></td>
                 <td>
+                    <?php if (!empty($t['assignee_name'])): ?>
+                        <?= esc($t['assignee_name']) ?>
+                    <?php else: ?>
+                        <span class="text-muted small">Sin asignar</span>
+                    <?php endif; ?>
+                </td>
+                <td>
                     <span class="ticket-category-badge">
                         <?= esc($categories[$t['category']] ?? $t['category']) ?>
                     </span>
+                    <span class="ticket-scope-badge ticket-scope--<?= esc($t['scope'] ?? 'academia') ?>">
+                        <?= esc($scopes[$t['scope'] ?? 'academia'] ?? 'Academia') ?>
+                    </span>
+                    <?php if (!empty($t['archived_at'])): ?>
+                    <span class="ticket-scope-badge" style="background:#e5e7eb;color:#6b7280"><i class="bi bi-archive"></i> Archivado</span>
+                    <?php endif; ?>
                 </td>
                 <td>
                     <span class="ticket-priority <?= $priorityCls ?>">
@@ -176,11 +221,14 @@ $priorityColors = [
     <ul class="pagination pagination-sm mb-0">
         <?php for ($p = 1; $p <= $totalPages; $p++): ?>
         <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-            <a class="page-link" href="<?= base_url('tickets/admin') ?>?page=<?= $p ?>
+            <a class="page-link" href="<?= base_url('tickets/gestion') ?>?page=<?= $p ?>
                 <?= $filters['status']   ? '&status='   . urlencode($filters['status'])   : '' ?>
                 <?= $filters['priority'] ? '&priority=' . urlencode($filters['priority']) : '' ?>
                 <?= $filters['category'] ? '&category=' . urlencode($filters['category']) : '' ?>
                 <?= $filters['search']   ? '&search='   . urlencode($filters['search'])   : '' ?>
+                <?= !empty($filters['assigned_to']) ? '&assigned_to=' . urlencode($filters['assigned_to']) : '' ?>
+                <?= !empty($filters['scope'])    ? '&scope='    . urlencode($filters['scope'])    : '' ?>
+                <?= !empty($filters['archived']) ? '&archived=' . urlencode($filters['archived']) : '' ?>
             "><?= $p ?></a>
         </li>
         <?php endfor; ?>

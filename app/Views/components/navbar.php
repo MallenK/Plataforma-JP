@@ -61,13 +61,11 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
 
     <div class="topbar-right">
 
-        <!-- Ticket rápido — todos los roles excepto player/alumno -->
-        <?php if (!in_array($role, ['player', 'alumno'])): ?>
-        <button class="topbar-btn" id="topbar-ticket-btn" title="Reportar problema o sugerencia"
+        <!-- Reportar problema — todos los roles -->
+        <button class="topbar-btn" id="topbar-ticket-btn" title="Reportar un problema o sugerencia"
                 data-bs-toggle="modal" data-bs-target="#modalTicketRapido">
             <i class="bi bi-ticket-perforated"></i>
         </button>
-        <?php endif; ?>
 
         <!-- Mensajes -->
         <a href="<?= base_url('mensajes') ?>" class="topbar-btn topbar-btn-link" title="Mensajes" id="topbar-msg-btn">

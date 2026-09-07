@@ -445,23 +445,17 @@ class MensajesController extends BaseController
 
     private function jsonError(string $msg, int $status = 400, ?string $ref = null): \CodeIgniter\HTTP\ResponseInterface
     {
-        $payload = ['error' => $msg];
-        if ($ref) {
-            $payload['error_ref'] = $ref;
-        }
-        return $this->response->setJSON($payload)->setStatusCode($status);
+        // Alineado con ErrorReportTrait::jsonFail (mismo formato para el frontend).
+        return $this->jsonFail($msg, $status, $ref);
     }
 
     /**
-     * Registra una excepción inesperada con una referencia corta y
-     * legible, para poder correlacionar el log del servidor con el
-     * reporte que el usuario pueda enviar desde la interfaz.
+     * Registra una excepción inesperada con una referencia corta.
+     * Delega en ErrorReportTrait::errorRef → log con prefijo [TICKET-REF …].
      */
     private function logAndRef(\Throwable $e, string $where): string
     {
-        $ref = strtoupper(bin2hex(random_bytes(3)));
-        log_message('critical', "[MensajesController::{$where}] ref={$ref} " . $e->getMessage() . "\n" . $e->getTraceAsString());
-        return $ref;
+        return $this->errorRef($e, 'mensajes.' . $where);
     }
 
     private const ALLOWED_EXTENSIONS = [

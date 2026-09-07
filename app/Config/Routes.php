@@ -641,65 +641,85 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 // ------------------------------------------------------------
 // TICKETS — sistema de soporte y reporte de incidencias
 //
-//  Acceso para todos los roles excepto 'player'.
-//  La gestión (cambio de estado, respuestas) es exclusiva del superadmin.
+//  Reportar (crear / ver los suyos): TODOS los roles, incluido alumno.
+//  Gestión (ver todos, responder, cambiar estado): admin + superadmin.
 //
-//  GET  /tickets                      → lista de tickets del usuario
-//  GET  /tickets/create               → formulario de nuevo ticket
-//  POST /tickets                      → guardar nuevo ticket
-//  GET  /tickets/:id                  → detalle de un ticket
-//  POST /tickets/:id/reply            → responder ticket (superadmin)
-//  POST /tickets/:id/status           → cambiar estado (superadmin)
-//  POST /tickets/:id/priority         → cambiar prioridad (usuario dueño o superadmin)
-//  GET  /tickets/download/:id         → descargar adjunto
-//  GET  /tickets/admin                → panel de gestión (superadmin)
-//  GET  /tickets/admin/dashboard      → dashboard de estadísticas (superadmin)
+//  GET  /tickets                      → bandeja "mis tickets" — SOLO gestores (oculta temporalmente para el resto)
+//  GET  /tickets/create · POST        → nuevo ticket — todos (reportar sigue abierto)
+//  GET  /tickets/:id                  → seguimiento de un ticket propio — todos (desde notificaciones)
+//  POST /tickets/:id/priority         → prioridad (dueño si abierto, o gestor)
+//  GET  /tickets/download/:id         → descargar adjunto (dueño o gestor)
+//  GET  /tickets/gestion[/dashboard|/export] → gestión — admin + superadmin
+//                                        (/tickets/admin* redirige aquí)
+//  POST /tickets/:id/reply · /status  → responder / estado — admin + superadmin
+//  POST /tickets/:id/asignar          → asignar / desasignar — admin + superadmin
+//  POST /tickets/:id/ambito           → academia / plataforma — admin + superadmin
+//  POST /tickets/:id/archivar         → archivar / desarchivar — admin + superadmin
+//                                        (reply acepta is_internal=1 → nota interna)
 // ------------------------------------------------------------
 
+// Bandeja "mis tickets" — oculta temporalmente para los no-gestores.
+// (Reportar y seguir un ticket concreto siguen abiertos a todos los roles.)
 $routes->get('tickets', 'TicketsController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->get('tickets/create', 'TicketsController::create', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->post('tickets', 'TicketsController::store', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 // Exportar (CSV / vista imprimible). Antes de las rutas con :num y de admin.
 $routes->get('tickets/export', 'TicketsController::export', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
-$routes->get('tickets/admin/export', 'TicketsController::adminExport', [
-    'filter' => ['auth', 'role:superadmin'],
+// Bandeja de gestión. `tickets/gestion*` es el nombre actual;
+// `tickets/admin*` se mantiene como redirección temporal.
+$routes->get('tickets/gestion/export', 'TicketsController::adminExport', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('tickets/gestion/dashboard', 'TicketsController::dashboard', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('tickets/gestion', 'TicketsController::adminIndex', [
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-$routes->get('tickets/admin/dashboard', 'TicketsController::dashboard', [
-    'filter' => ['auth', 'role:superadmin'],
-]);
-
-$routes->get('tickets/admin', 'TicketsController::adminIndex', [
-    'filter' => ['auth', 'role:superadmin'],
-]);
+$routes->addRedirect('tickets/admin/export', 'tickets/gestion/export');
+$routes->addRedirect('tickets/admin/dashboard', 'tickets/gestion/dashboard');
+$routes->addRedirect('tickets/admin', 'tickets/gestion');
 
 $routes->get('tickets/download/(:num)', 'TicketsController::download/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->get('tickets/(:num)', 'TicketsController::show/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);
 
 $routes->post('tickets/(:num)/reply', 'TicketsController::reply/$1', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->post('tickets/(:num)/status', 'TicketsController::updateStatus/$1', [
-    'filter' => ['auth', 'role:superadmin'],
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('tickets/(:num)/asignar', 'TicketsController::assign/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('tickets/(:num)/ambito', 'TicketsController::changeScope/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('tickets/(:num)/archivar', 'TicketsController::archive/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->post('tickets/(:num)/priority', 'TicketsController::updatePriority/$1', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff'],
+    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
 ]);

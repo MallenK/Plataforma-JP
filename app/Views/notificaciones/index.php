@@ -383,9 +383,11 @@ $sentNotifications = $sentNotifications ?? [];
                 if (counter) counter.textContent = '0';
                 showToast('Notificación enviada a ' + data.recipients + ' destinatario(s).', 'success');
             } else {
-                errEl.textContent = data.error ?? 'Error al enviar.';
-                errEl.classList.remove('d-none');
                 if (data.csrf) refreshCsrf(data.csrf);
+                if (!(window.handleApiError && window.handleApiError(data, 'notificaciones.send'))) {
+                    errEl.textContent = data.error ?? 'Error al enviar.';
+                    errEl.classList.remove('d-none');
+                }
             }
         } catch (err) {
             errEl.textContent = 'Error de red. Inténtalo de nuevo.';
