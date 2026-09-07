@@ -23,6 +23,27 @@
 - Ramas locales transitorias de la integración: `develop`, `release/2026-09`,
   `feat/login-redesign` y las 6 `feat/*`/`fix/*` (borrar tras validar).
 
+## Incidencia 2026-09-08 — Soporte (tickets) roto en producción
+
+- **Síntoma:** `/tickets/gestion` daba un "404" (pantalla genérica de CI).
+- **Causa 1:** el **código** de tickets F1–F4 sí estaba en Hostinger, pero
+  las migraciones `2026-09-07-000001..000004` **no**. La consulta de la
+  bandeja de gestión pedía `tickets.archived_at` → `Unknown column`.
+- **Causa 2 (enmascaraba la 1):** `App\Libraries\ReportableExceptionHandler::handle()`
+  no declara `: void`, obligatorio en CI 4.7 → el manejador de errores 5xx
+  peta al renderizar y CI cae a su página genérica (que parece un 404).
+  **Bug latente también en el repo — pendiente de arreglar (código + PR).**
+- **Solución aplicada (BD prod, 2026-09-08):**
+  [`docs/deploy/fix_tickets_prod.sql`](../deploy/fix_tickets_prod.sql) en
+  phpMyAdmin con "Continuar en caso de error". Añade columnas de `tickets`
+  y `ticket_replies` + tablas `ticket_events` y `ticket_counters`. **Aditivo,
+  sin pérdida de datos.** Las 3 FOREIGN KEY fallaron con errno 150 (el tipo
+  de `tickets.id`/`users.id` en prod no casa con lo que asumían las
+  migraciones del repo) → **se dejan sin aplicar; la app no las necesita.**
+- **Lección:** producción se construyó a mano / desde exports, su esquema NO
+  es idéntico al que generan las migraciones. Antes de tocar la BD de prod,
+  pedir `SHOW CREATE TABLE` de las tablas implicadas.
+
 ---
 
 ## 0. Mapa de entornos
