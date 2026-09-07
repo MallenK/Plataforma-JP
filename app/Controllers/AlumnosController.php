@@ -228,10 +228,42 @@ class AlumnosController extends BaseController
      */
     public function destroy(int $id)
     {
-        $this->playerService->deleteAlumno($id);
+        if ($block = $this->blockSensitiveTarget($id)) {
+            return $block;
+        }
 
+        $this->playerService->deleteAlumno($id);
         session()->setFlashdata('success', 'Alumno dado de baja correctamente.');
 
-        return redirect()->to('/alumnos');
+        // Desde el listado vuelve al listado; desde la ficha, a la ficha.
+        return redirect()->back();
+    }
+
+    public function reactivate(int $id)
+    {
+        $this->playerService->reactivateAlumno($id);
+        session()->setFlashdata('success', 'Alumno reactivado correctamente.');
+
+        return redirect()->back();
+    }
+
+    /** No se puede dar de baja a un superadmin ni a uno mismo. */
+    private function blockSensitiveTarget(int $id)
+    {
+        $target = (new \App\Models\UserModel())->find($id);
+
+        if (! $target) {
+            session()->setFlashdata('error', 'Usuario no encontrado.');
+            return redirect()->to('/alumnos');
+        }
+        if ((int) $id === (int) $this->currentUserId()) {
+            session()->setFlashdata('error', 'No puedes darte de baja a ti mismo.');
+            return redirect()->back();
+        }
+        if (($target['role'] ?? '') === 'superadmin') {
+            session()->setFlashdata('error', 'No se puede dar de baja a un superadministrador.');
+            return redirect()->back();
+        }
+        return null;
     }
 }

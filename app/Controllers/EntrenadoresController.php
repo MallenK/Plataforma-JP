@@ -129,10 +129,41 @@ class EntrenadoresController extends BaseController
 
     public function destroy(int $id)
     {
-        $this->coachService->deleteCoach($id);
+        if ($block = $this->blockSensitiveTarget($id)) {
+            return $block;
+        }
 
+        $this->coachService->deleteCoach($id);
         session()->setFlashdata('success', 'Entrenador dado de baja correctamente.');
 
-        return redirect()->to('/entrenadores');
+        return redirect()->back();
+    }
+
+    public function reactivate(int $id)
+    {
+        $this->coachService->reactivateCoach($id);
+        session()->setFlashdata('success', 'Entrenador reactivado correctamente.');
+
+        return redirect()->back();
+    }
+
+    /** No se puede dar de baja a un superadmin ni a uno mismo. */
+    private function blockSensitiveTarget(int $id)
+    {
+        $target = (new \App\Models\UserModel())->find($id);
+
+        if (! $target) {
+            session()->setFlashdata('error', 'Usuario no encontrado.');
+            return redirect()->to('/entrenadores');
+        }
+        if ((int) $id === (int) $this->currentUserId()) {
+            session()->setFlashdata('error', 'No puedes darte de baja a ti mismo.');
+            return redirect()->back();
+        }
+        if (($target['role'] ?? '') === 'superadmin') {
+            session()->setFlashdata('error', 'No se puede dar de baja a un superadministrador.');
+            return redirect()->back();
+        }
+        return null;
     }
 }
