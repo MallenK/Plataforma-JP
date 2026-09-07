@@ -17,7 +17,7 @@ jQuery + JS vanilla por página), sin build step de frontend.
 >
 > **Producción real:** Hostinger — `https://app.jppreparation.com`.
 > **Validación:** Render — `https://plataforma-jp.onrender.com`.
-> Versión actual: **v1.1.5** (ver [`app/version.json`](app/version.json)).
+> Versión actual: primera entrada de [`app/version.json`](app/version.json).
 
 ---
 
