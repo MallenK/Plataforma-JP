@@ -259,7 +259,7 @@ Jugadores convocados a una sesión. Registra asistencia y avisos.
 | `session_id` | INT UNSIGNED | NO | — | FK → `class_sessions.id` |
 | `user_id` | INT UNSIGNED | NO | — | FK → `users.id` |
 | `coach_id` | INT UNSIGNED | SÍ | NULL | Entrenador asignado a este jugador |
-| `attendance` | ENUM | NO | pending | `pending`, `confirmed`, `declined`, `present`, `absent` |
+| `attendance` | ENUM | NO | pending | `pending`, `confirmed`, `declined`, `present`, `absent`, `unjustified` |
 | `responded_at` | DATETIME | SÍ | NULL | Cuándo respondió el jugador |
 | `absence_reason` | TEXT | SÍ | NULL | Motivo de ausencia (puesto por admin) |
 | `student_note` | TEXT | SÍ | NULL | Aviso de ausencia enviado por el alumno |

@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `class_session_players` (
   `session_id`   INT UNSIGNED  NOT NULL,
   `user_id`      INT UNSIGNED  NOT NULL,
   `coach_id`     INT UNSIGNED  NULL COMMENT 'Entrenador asignado a este jugador en la sesión',
-  `attendance`   ENUM('pending','confirmed','declined','present','absent') NOT NULL DEFAULT 'pending',
+  `attendance`   ENUM('pending','confirmed','declined','present','absent','unjustified') NOT NULL DEFAULT 'pending',
   `responded_at` DATETIME      NULL,
   `pre_obs`      TEXT          NULL COMMENT 'Observación previa del entrenador para este jugador',
   `post_obs`     TEXT          NULL COMMENT 'Feedback posterior para este jugador',

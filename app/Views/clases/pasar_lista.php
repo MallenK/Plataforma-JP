@@ -12,6 +12,7 @@ $attendanceOpts = [
     'pending'   => 'Pendiente',
     'present'   => 'Presente',
     'absent'    => 'Ausente',
+    'unjustified' => 'No justificado',
     'confirmed' => 'Confirmado',
     'declined'  => 'Declinado',
 ];
@@ -60,6 +61,7 @@ $attendanceOpts = [
         <div id="lista-stats" style="display:flex;gap:12px;font-size:13px;color:var(--text-muted)">
             <span><span id="cnt-present" style="font-weight:700;color:#059669">0</span> presentes</span>
             <span><span id="cnt-absent" style="font-weight:700;color:#dc2626">0</span> ausentes</span>
+            <span><span id="cnt-unjustified" style="font-weight:700;color:#b91c1c">0</span> no justif.</span>
             <span><span id="cnt-pending" style="font-weight:700;color:#d97706">0</span> pendientes</span>
         </div>
         <?php endif; ?>
@@ -99,6 +101,8 @@ $attendanceOpts = [
                 $isAbsent   = ($att === 'absent');
                 $isPresent  = ($att === 'present');
                 $isConfirmed = ($att === 'confirmed');
+                $isUnjustified = ($att === 'unjustified');
+                $canDeduct  = ($isPresent || $isConfirmed || $isUnjustified);
             ?>
             <tr data-uid="<?= $uid ?>" data-attendance="<?= esc($att) ?>">
                 <td>
@@ -148,7 +152,7 @@ $attendanceOpts = [
                         <span style="font-size:11px;color:#059669;font-weight:600">
                             <i class="bi bi-check-circle-fill me-1"></i>Descontado
                         </span>
-                        <?php elseif ($isPresent || $isConfirmed): ?>
+                        <?php elseif ($canDeduct): ?>
                         <button type="button"
                                 class="btn-jp btn-jp-sm btn-deduct"
                                 data-session="<?= $session['id'] ?>"
@@ -157,7 +161,7 @@ $attendanceOpts = [
                             <i class="bi bi-dash-circle-fill me-1"></i>Descontar bono
                         </button>
                         <?php else: ?>
-                        <span style="font-size:11px;color:var(--text-muted)">Marcar presente</span>
+                        <span style="font-size:11px;color:var(--text-muted)">Marcar presente / no justif.</span>
                         <?php endif; ?>
                     </div>
                     <?php else: ?>
@@ -202,7 +206,7 @@ $attendanceOpts = [
     // Actualizar contadores al cargar
     function updateCounts() {
         var rows   = document.querySelectorAll('tr[data-uid]');
-        var cnt    = { present: 0, absent: 0, pending: 0 };
+        var cnt    = { present: 0, absent: 0, unjustified: 0, pending: 0 };
         rows.forEach(function(r) {
             var v = r.querySelector('.att-select').value;
             if (cnt[v] !== undefined) cnt[v]++;
@@ -210,9 +214,11 @@ $attendanceOpts = [
         });
         var elP = document.getElementById('cnt-present');
         var elA = document.getElementById('cnt-absent');
+        var elU = document.getElementById('cnt-unjustified');
         var elN = document.getElementById('cnt-pending');
         if (elP) elP.textContent = cnt.present;
         if (elA) elA.textContent = cnt.absent;
+        if (elU) elU.textContent = cnt.unjustified;
         if (elN) elN.textContent = cnt.pending;
     }
 
@@ -223,6 +229,7 @@ $attendanceOpts = [
             var isAbs   = (this.value === 'absent');
             var isPres  = (this.value === 'present');
             var isConf  = (this.value === 'confirmed');
+            var isUnj   = (this.value === 'unjustified');
             var absCol  = document.querySelector('.absence-col-' + uid);
             var notCol  = document.querySelector('.notes-col-' + uid);
             var row     = document.querySelector('tr[data-uid="' + uid + '"]');
@@ -234,7 +241,7 @@ $attendanceOpts = [
             var cell = document.querySelector('.bono-cell-' + uid);
             if (cell) {
                 var btn = cell.querySelector('.btn-deduct');
-                if (btn) btn.style.display = (isPres || isConf) ? '' : 'none';
+                if (btn) btn.style.display = (isPres || isConf || isUnj) ? '' : 'none';
             }
 
             row.dataset.attendance = this.value;
@@ -251,7 +258,12 @@ $attendanceOpts = [
             var playerId  = this.dataset.player;
             var self      = this;
 
-            if (!confirm('¿Descontar 1 sesión del bono de este jugador?')) return;
+            var attRow = document.querySelector('tr[data-uid="' + playerId + '"] .att-select');
+            var isUnj  = attRow && attRow.value === 'unjustified';
+            var msg    = isUnj
+                ? '¿Descontar 1 sesión del bono por falta NO justificada? Quedará registrada como falta.'
+                : '¿Descontar 1 sesión del bono de este jugador?';
+            if (!confirm(msg)) return;
 
             self.disabled = true;
             self.textContent = 'Descontando…';
@@ -300,7 +312,7 @@ $attendanceOpts = [
         var cell = document.querySelector('.bono-cell-' + uid);
         if (!cell) return;
         var btn  = cell.querySelector('.btn-deduct');
-        if (btn && sel.value !== 'present' && sel.value !== 'confirmed') btn.style.display = 'none';
+        if (btn && sel.value !== 'present' && sel.value !== 'confirmed' && sel.value !== 'unjustified') btn.style.display = 'none';
     });
 
     // Cerrar sesión

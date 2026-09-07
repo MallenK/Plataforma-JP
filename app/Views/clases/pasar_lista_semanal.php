@@ -14,6 +14,7 @@ $attendanceOpts = [
     'pending'  => ['Pendiente',  '#d97706'],
     'present'  => ['Presente',   '#059669'],
     'absent'   => ['Ausente',    '#dc2626'],
+    'unjustified' => ['No justificado', '#b91c1c'],
     'confirmed'=> ['Confirmado', '#2563eb'],
     'declined' => ['Declinado',  '#6b7280'],
 ];
@@ -21,6 +22,7 @@ $attendanceOpts = [
 $statusIcons = [
     'present'  => 'check-circle-fill',
     'absent'   => 'x-circle-fill',
+    'unjustified' => 'person-x-fill',
     'confirmed'=> 'check-circle',
     'declined' => 'dash-circle',
     'pending'  => 'hourglass-split',
