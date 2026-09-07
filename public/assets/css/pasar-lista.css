@@ -143,9 +143,21 @@
 .pl-daypill span { display: block; font-size: 9px; font-weight: 600; }
 .pl-daypill[disabled] { opacity: .4; cursor: default; }
 
-/* ── Día = encabezado sobre el fondo (sin tarjeta) ───────── */
-.pl-day { margin: 28px 0 14px; }
-.pl-day:first-of-type { margin-top: 6px; }
+/* ── Día = bandeja con contraste sobre el fondo ──────────── */
+.pl-day-section {
+    background: #e5eaf1;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius);
+    padding: 4px 14px 14px;
+    margin-bottom: 20px;
+}
+.pl-day-section.is-today {
+    background: #e7eefb;
+    border-color: var(--accent);
+}
+.pl-day-section .pl-session:last-child { margin-bottom: 0; }
+
+.pl-day { margin: 12px 0 14px; }
 .pl-day-title {
     display: flex;
     align-items: baseline;

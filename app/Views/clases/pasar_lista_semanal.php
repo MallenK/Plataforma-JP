@@ -138,7 +138,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
         if (empty($sessions)) continue;
         $dayPending = array_sum(array_map(fn($s) => empty($s['lista_pasada_at']) ? 1 : 0, $sessions));
     ?>
-    <section class="pl-day-section" data-date="<?= $date ?>" data-pending="<?= $dayPending ?>">
+    <section class="pl-day-section <?= $isToday ? 'is-today' : '' ?>" data-date="<?= $date ?>" data-pending="<?= $dayPending ?>">
         <div class="pl-day <?= $isToday ? 'is-today' : '' ?>">
             <div class="pl-day-title">
                 <h3><?= esc($dayLabel) ?> <?= $dateLabel ?></h3>
