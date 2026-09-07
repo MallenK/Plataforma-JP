@@ -222,7 +222,7 @@ $sec  = $section;        // sección activa
         <div id="sec-staff" class="cfg-section <?= $sec !== 'staff' ? 'd-none' : '' ?>">
             <div class="card-jp">
                 <div class="card-jp-header d-flex align-items-center justify-content-between">
-                    <span class="card-jp-title"><i class="bi bi-people-fill me-2" style="color:#2563eb"></i>Gestión de Staff</span>
+                    <span class="card-jp-title"><i class="bi bi-people-fill me-2" style="color:var(--accent-dark)"></i>Gestión de Staff</span>
                     <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="openModal('modalNewStaff')">
                         <i class="bi bi-person-plus-fill me-1"></i>Añadir usuario
                     </button>

@@ -1,6 +1,7 @@
 /* ============================================================
-   Tu Plataforma — Design System
-   Tema: sidebar oscuro + contenido claro
+   Mallen'k — Academy Software · Design System
+   Identidad: amarillo + negro + blanco
+   Tema: sidebar negro + contenido claro, acento amarillo
    ============================================================ */
 
 /* ── Variables ─────────────────────────────────────────── */
@@ -8,43 +9,51 @@
     --sidebar-width:   240px;
     --navbar-h:         64px;
 
+    /* Marca */
+    --brand-yellow:    #FFC300;
+    --brand-yellow-2:  #FFB000;   /* amarillo profundo (hover, degradados) */
+    --brand-ink:       #111111;   /* negro de marca */
+    --on-yellow:       #131313;   /* texto/iconos sobre amarillo */
+
     /* Fondos */
-    --bg-app:          #f1f5f9;
-    --bg-sidebar:      #0f172a;
-    --bg-sidebar-item: #1e293b;
+    --bg-app:          #FAFAF7;
+    --bg-sidebar:      #121212;
+    --bg-sidebar-item: #1F1F1F;
     --bg-card:         #ffffff;
-    --bg-input:        #f8fafc;
+    --bg-input:        #F6F6F2;
 
     /* Texto */
-    --text-h:          #0f172a;
-    --text-body:       #475569;
-    --text-muted:      #94a3b8;
-    --text-sidebar:    #cbd5e1;
+    --text-h:          #141414;
+    --text-body:       #3F3F3D;
+    --text-muted:      #8B8B85;
+    --text-sidebar:    #C7C7C2;
 
-    /* Acentos */
-    --accent:          #3b82f6;
-    --accent-dark:     #1d4ed8;
-    --accent-light:    #eff6ff;
+    /* Acentos (amarillo) */
+    --accent:          #FFC300;
+    --accent-dark:     #B98900;   /* variante oscura legible sobre blanco */
+    --accent-light:    #FFF6DC;   /* fondo suave para activos/badges */
+    --brand:           #FFC300;   /* alias usado por tickets.css */
+    --brand-dark:      #B98900;
 
     /* Estados */
-    --success:         #10b981;
-    --success-light:   #d1fae5;
-    --warning:         #f59e0b;
-    --warning-light:   #fef3c7;
-    --danger:          #ef4444;
-    --danger-light:    #fee2e2;
+    --success:         #1F9D57;
+    --success-light:   #DCF3E4;
+    --warning:         #C98A00;
+    --warning-light:   #FCEFC7;
+    --danger:          #DC3B26;
+    --danger-light:    #FBE1DC;
 
     /* UI */
-    --border:          #e2e8f0;
-    --border-dark:     #cbd5e1;
-    --shadow-sm:       0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-    --shadow-md:       0 4px 16px rgba(0,0,0,.08);
+    --border:          #E8E7E0;
+    --border-dark:     #D2D1C8;
+    --shadow-sm:       0 1px 3px rgba(17,17,17,.07), 0 1px 2px rgba(17,17,17,.04);
+    --shadow-md:       0 6px 22px rgba(17,17,17,.10);
     --radius:          10px;
     --radius-sm:        6px;
 
     /* Aliases de compatibilidad (usados en vistas) */
     --card-bg:         #ffffff;
-    --bg-secondary:    #f1f5f9;
+    --bg-secondary:    #F1F0EA;
 }
 
 /* ── Reset ─────────────────────────────────────────────── */
@@ -85,7 +94,7 @@ body {
     align-items: center;
     gap: 10px;
     padding: 20px 20px 16px;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid #242424;
     text-decoration: none;
 }
 
@@ -106,7 +115,7 @@ body {
 .sidebar-logo-text {
     font-weight: 700;
     font-size: 15px;
-    color: #f1f5f9;
+    color: #F4F4F0;
     letter-spacing: .2px;
 }
 
@@ -159,18 +168,19 @@ body {
 }
 
 .sidebar-nav-link:hover {
-    background: #1e293b;
-    color: #f1f5f9;
+    background: #242424;
+    color: #F4F4F0;
 }
 
 .sidebar-nav-link.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-yellow);
+    font-weight: 700;
 }
 
 .cfg-tab:hover {
     background: var(--accent-light);
-    color: var(--accent);
+    color: var(--accent-dark);
 }
 
 .sidebar-nav-link i {
@@ -184,7 +194,7 @@ body {
 .sidebar-footer {
     margin-top: auto;
     padding: 12px;
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid #242424;
 }
 
 .sidebar-user {
@@ -198,7 +208,7 @@ body {
 }
 
 .sidebar-user:hover {
-    background: #1e293b;
+    background: #242424;
 }
 
 .sidebar-avatar {
@@ -219,7 +229,7 @@ body {
 .sidebar-user-name {
     font-size: 13px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: #F4F4F0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -253,7 +263,7 @@ body {
 }
 
 .sidebar-logout:hover {
-    background: #1e293b;
+    background: #242424;
     color: var(--danger);
 }
 
@@ -266,7 +276,7 @@ body {
     margin-top: 8px;
     padding: 6px 10px;
     border: none;
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid #242424;
     background: transparent;
     color: #475569;
     font-size: 10.5px;
@@ -681,12 +691,14 @@ body {
 
 .btn-jp-primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-yellow);
+    font-weight: 700;
 }
 
 .btn-jp-primary:hover {
-    background: var(--accent-dark);
-    color: #fff;
+    background: var(--brand-yellow-2);
+    color: var(--on-yellow);
+    box-shadow: 0 4px 14px rgba(255,176,0,.35);
 }
 
 .btn-jp-secondary {
@@ -2046,8 +2058,8 @@ input[type="time"] {
     height: 48px;
     margin: 0 auto 16px;
     border-radius: var(--radius-sm);
-    background: var(--accent-light);
-    color: var(--accent);
+    background: var(--brand-ink);
+    color: var(--brand-yellow);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2099,7 +2111,7 @@ input[type="time"] {
        la página de login, así que hace las veces de "body" del patrón
        Aura sin tener que tocar el <body> global (compartido por toda
        la app — un fondo oscuro ahí afectaría al resto de páginas). */
-    background: #060a10;
+    background: #0A0A0A;
 }
 
 .login-aura-layer {
@@ -2112,20 +2124,20 @@ input[type="time"] {
 
 .login-aura-grid {
     background:
-        linear-gradient(rgba(59,130,246,.14) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59,130,246,.14) 1px, transparent 1px);
+        linear-gradient(rgba(255,195,0,.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,195,0,.10) 1px, transparent 1px);
     background-size: 60px 60px;
     mix-blend-mode: normal;
 }
 
 .login-aura-glow-primary {
-    background: radial-gradient(circle at 50% 38%, rgba(59,130,246,.55) 0%, transparent 55%);
+    background: radial-gradient(circle at 50% 38%, rgba(255,195,0,.42) 0%, transparent 55%);
     mix-blend-mode: screen;
     filter: blur(200px);
 }
 
 .login-aura-glow-secondary {
-    background: radial-gradient(circle at 22% 82%, rgba(132,204,22,.35) 0%, transparent 45%);
+    background: radial-gradient(circle at 22% 82%, rgba(255,150,0,.30) 0%, transparent 45%);
     mix-blend-mode: screen;
     filter: blur(150px);
 }
@@ -2142,8 +2154,8 @@ input[type="time"] {
     max-width: 380px;
     padding: 40px 32px 32px;
     border-radius: 36px;
-    background: rgba(15, 26, 43, .52);
-    border: 1px solid rgba(148, 178, 255, .22);
+    background: rgba(20, 20, 20, .58);
+    border: 1px solid rgba(255, 195, 0, .22);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     box-shadow:
@@ -2159,13 +2171,23 @@ input[type="time"] {
 }
 
 .login-title {
-    font-family: 'Oswald', 'JP Body', sans-serif;
-    font-weight: 700;
-    font-size: 30px;
-    letter-spacing: .01em;
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
     text-align: center;
-    color: #f3f6fb;
+    color: #FAFAF7;
     margin: 0 0 6px;
+}
+.login-title::after {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 4px;
+    margin: 10px auto 0;
+    border-radius: 2px;
+    background: var(--brand-yellow);
 }
 
 .login-subtitle {
@@ -2222,8 +2244,8 @@ input[type="time"] {
 .login-input-wrap input::placeholder { color: #9fb0cc; font-weight: 500; }
 .login-input-wrap input:focus {
     border-color: var(--accent);
-    background: rgba(59,130,246,.08);
-    box-shadow: 0 0 0 4px rgba(59,130,246,.16);
+    background: rgba(255,195,0,.08);
+    box-shadow: 0 0 0 4px rgba(255,195,0,.18);
 }
 
 .login-toggle-pw {
@@ -2275,12 +2297,13 @@ input[type="time"] {
     transition: background .15s, border-color .15s;
 }
 .login-remember input:checked ~ .login-check-box {
-    background: linear-gradient(180deg, #4c8bfa, var(--accent-dark));
-    border-color: var(--accent);
+    background: var(--brand-yellow);
+    border-color: var(--brand-yellow);
 }
 .login-check-box svg { opacity: 0; transform: scale(.5); transition: opacity .12s, transform .12s; }
+.login-check-box svg path { stroke: var(--on-yellow); }
 .login-remember input:checked ~ .login-check-box svg { opacity: 1; transform: scale(1); }
-.login-remember input:focus-visible ~ .login-check-box { box-shadow: 0 0 0 3px rgba(59,130,246,.35); }
+.login-remember input:focus-visible ~ .login-check-box { box-shadow: 0 0 0 3px rgba(255,195,0,.35); }
 
 .login-field-row a {
     font-size: 12.5px;
@@ -2295,18 +2318,18 @@ input[type="time"] {
     height: 52px;
     border: none;
     border-radius: 16px;
-    background: linear-gradient(135deg, #5b9dff, var(--accent-dark));
-    color: #fff;
-    font-family: 'Oswald', 'JP Body', sans-serif;
+    background: var(--brand-yellow);
+    color: var(--on-yellow);
+    font-family: 'Montserrat', system-ui, sans-serif;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: .1em;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 8px 16px -6px rgba(4,10,20,.5);
+    box-shadow: 0 10px 24px -8px rgba(255,195,0,.5);
     transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
 }
-.login-btn-submit:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 10px 20px -6px rgba(4,10,20,.55); }
+.login-btn-submit:hover { background: var(--brand-yellow-2); transform: translateY(-1px); box-shadow: 0 14px 28px -8px rgba(255,176,0,.55); }
 .login-btn-submit:active { transform: translateY(0); }
 .login-btn-submit:disabled { opacity: .75; cursor: default; transform: none; }
 
@@ -2330,11 +2353,11 @@ input[type="time"] {
     width: 100%; height: 44px; border-radius: 14px; cursor: pointer;
     background: rgba(255,255,255,.06); color: #fff;
     border: 1px solid rgba(255,255,255,.18);
-    font-family: 'Oswald', 'JP Body', sans-serif;
+    font-family: 'Montserrat', system-ui, sans-serif;
     font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
     transition: background .12s ease, border-color .12s ease, transform .12s ease;
 }
-.login-demo-btn:hover { background: rgba(91,157,255,.16); border-color: rgba(91,157,255,.5); transform: translateY(-1px); }
+.login-demo-btn:hover { background: rgba(255,195,0,.16); border-color: rgba(255,195,0,.55); color: #fff; transform: translateY(-1px); }
 .login-demo-btn:active { transform: translateY(0); }
 
 /* ── Layout de dos columnas (login de la demo) ── */
@@ -2360,15 +2383,15 @@ input[type="time"] {
     min-width: 300px;
     padding: 38px 34px;
     border-radius: 36px;
-    background: rgba(15, 26, 43, .40);
-    border: 1px solid rgba(148, 178, 255, .18);
+    background: rgba(18, 18, 18, .46);
+    border: 1px solid rgba(255, 195, 0, .16);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     color: #cdd7e6;
     animation: loginRise .55s cubic-bezier(.16,1,.3,1) both;
 }
 .login-pitch-title {
-    font-family: 'Oswald', 'JP Body', sans-serif;
+    font-family: 'Montserrat', system-ui, sans-serif;
     font-weight: 700;
     font-size: 23px;
     line-height: 1.25;
@@ -2378,7 +2401,7 @@ input[type="time"] {
 .login-pitch-lead { font-size: 14px; line-height: 1.6; margin: 0 0 18px; color: #aeb9ca; }
 .login-pitch-list { list-style: none; margin: 0 0 18px; padding: 0; display: flex; flex-direction: column; gap: 11px; }
 .login-pitch-list li { display: flex; gap: 10px; font-size: 13px; line-height: 1.5; }
-.login-pitch-list i { color: #5b9dff; font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+.login-pitch-list i { color: var(--brand-yellow); font-size: 15px; margin-top: 1px; flex-shrink: 0; }
 .login-pitch-list strong { color: #e7edf6; }
 .login-pitch-for { font-size: 12.5px; line-height: 1.55; color: #97a3b6; margin: 0 0 22px; }
 .login-pitch-for strong { color: #cdd7e6; }
@@ -2388,7 +2411,7 @@ input[type="time"] {
     padding-top: 18px;
 }
 .login-contact h3 {
-    font-family: 'Oswald', 'JP Body', sans-serif;
+    font-family: 'Montserrat', system-ui, sans-serif;
     font-size: 15px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     color: #f3f6fb; margin: 0 0 4px;
 }
@@ -2411,18 +2434,18 @@ input[type="time"] {
 .login-contact input::placeholder,
 .login-contact textarea::placeholder { color: rgba(205,215,230,.45); }
 .login-contact input:focus,
-.login-contact textarea:focus { outline: none; border-color: rgba(91,157,255,.6); background: rgba(91,157,255,.08); }
+.login-contact textarea:focus { outline: none; border-color: rgba(255,195,0,.6); background: rgba(255,195,0,.08); }
 .login-contact textarea { resize: vertical; min-height: 66px; }
 .login-contact-btn {
     width: 100%; height: 44px; border: none; border-radius: 13px; cursor: pointer;
-    background: linear-gradient(135deg, #5b9dff, var(--accent-dark));
-    color: #fff; font-family: 'Oswald', 'JP Body', sans-serif;
-    font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--brand-yellow);
+    color: var(--on-yellow); font-family: 'Montserrat', system-ui, sans-serif;
+    font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
 }
-.login-contact-btn:hover { filter: brightness(1.06); }
+.login-contact-btn:hover { background: var(--brand-yellow-2); }
 .login-contact-btn:disabled { opacity: .7; cursor: default; }
 .login-contact-msg { font-size: 12.5px; border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; }
-.login-contact-msg.is-ok  { background: rgba(132,204,22,.14); color: #b6e56b; border: 1px solid rgba(132,204,22,.3); }
+.login-contact-msg.is-ok  { background: rgba(31,157,87,.16); color: #7fe0aa; border: 1px solid rgba(31,157,87,.35); }
 .login-contact-msg.is-err { background: rgba(239,68,68,.12);  color: #f6a5a5; border: 1px solid rgba(239,68,68,.3); }
 
 @media (max-width: 880px) {
@@ -2445,4 +2468,143 @@ input[type="time"] {
     .login-pitch { padding: 28px 22px; border-radius: 28px; }
     .login-contact-row { flex-direction: column; gap: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   IDENTIDAD MALLEN'K — ajustes de contraste sobre amarillo
+   El amarillo de marca (#FFC300) exige tinta negra encima: aquí se
+   corrige cada punto donde el design system daba texto blanco, y se
+   unifican los avatares en negro (círculo tinta + iniciales blancas).
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Texto / iconos sobre amarillo → tinta ─────────────────── */
+.mine .chat-bubble,
+.chat-send-btn,
+.ru-tabs [role="tab"].active,
+.compra-tab-badge,
+.sidebar-badge,
+.topbar-badge,
+.conv-unread-badge {
+    color: var(--on-yellow);
+}
+.mine .chat-file-link { color: rgba(19,19,19,.72); }
+.badge-trend.up { background: var(--success-light); color: var(--success); }
+
+/* Badges rojas de contador: mantener rojo (aviso), no amarillo */
+.sidebar-badge, .topbar-badge, .conv-unread-badge { background: var(--danger); color: #fff; }
+.notif-group-badge { background: var(--brand-ink); color: #fff; }
+
+/* ── Avatares: círculo negro, iniciales blancas ────────────── */
+.sidebar-logo-icon,
+.sidebar-avatar,
+.topbar-avatar,
+.profile-avatar-lg,
+.profile-avatar-md,
+.notif-avatar,
+.conv-avatar,
+.chat-header-avatar-img,
+.contact-avatar {
+    background: var(--brand-ink);
+    color: #fff;
+}
+.sidebar-logo-icon { color: var(--brand-yellow); }
+.td-avatar { background: var(--accent-light); color: var(--accent-dark); }
+
+/* ── Iconos de métrica ────────────────────────────────────── */
+.metric-icon.blue { background: var(--accent-light); color: var(--accent-dark); }
+
+/* ── Calendario: chip "+N" solapadas ──────────────────────── */
+.cal-event-more {
+    color: var(--on-yellow);
+    background: var(--accent-light);
+    border-color: var(--accent-dark);
+}
+.cal-picker-head i,
+.cal-picker-row:hover { border-color: var(--accent-dark); }
+
+/* ── Estados "no leído" (antes azul claro) ─────────────────── */
+.notif-dd-item--unread,
+.notif-unread { background: var(--accent-light); }
+.notif-dd-item--unread:hover,
+.notif-unread:hover { background: #FFEFC0; }
+
+/* ── Chat / adjuntos ──────────────────────────────────────── */
+.msg-file-badge { background: var(--accent-light); color: var(--accent-dark); border-color: #F2D98A; }
+.chat-search:focus, .chat-input:focus { border-color: var(--accent-dark); }
+
+/* ── Compras: estado "comprado" (antes azul) ──────────────── */
+.compra-status-comprado { background: var(--accent-light); color: var(--accent-dark); }
+
+/* ── Overlays: negro cálido ───────────────────────────────── */
+.ru-overlay { background: rgba(17,17,17,.55); }
+
+/* ── Foco de teclado global: anillo amarillo de marca ─────── */
+a:focus-visible,
+button:focus-visible,
+.form-control-jp:focus-visible,
+.btn-jp:focus-visible {
+    outline: 2px solid var(--accent-dark);
+    outline-offset: 2px;
+}
+
+/* ── Firma de marca: filo amarillo bajo la topbar ─────────── */
+.topbar { box-shadow: inset 0 -2px 0 var(--brand-yellow); }
+.sidebar-logo { border-bottom-color: #242424; }
+
+/* ── Enlaces / texto de acento sobre blanco → amarillo oscuro
+   legible (#B98900). El amarillo puro queda para fondos/rellenos. */
+.td-name a,
+.notif-dropdown-link,
+.notif-sender,
+.notif-file-link,
+.notif-read-btn,
+.notif-dd-group,
+.theirs .chat-file-link,
+.chat-attach-btn:hover,
+.cal-picker-head i,
+.auth-links a,
+.card-jp-title a,
+a.text-primary,
+.text-primary {
+    color: var(--accent-dark) !important;
+}
+
+/* Inputs: borde de foco en amarillo oscuro (mejor contraste) */
+.form-control-jp:focus,
+.input-search input:focus { border-color: var(--accent-dark); }
+
+/* Bootstrap: reasignar utilidades primary a la marca */
+.btn-primary {
+    background-color: var(--brand-yellow);
+    border-color: var(--brand-yellow);
+    color: var(--on-yellow);
+    font-weight: 700;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--brand-yellow-2);
+    border-color: var(--brand-yellow-2);
+    color: var(--on-yellow);
+}
+.btn-outline-primary {
+    color: var(--accent-dark);
+    border-color: var(--accent-dark);
+}
+.btn-outline-primary:hover {
+    background-color: var(--brand-yellow);
+    border-color: var(--brand-yellow);
+    color: var(--on-yellow);
+}
+.bg-primary { background-color: var(--brand-yellow) !important; color: var(--on-yellow) !important; }
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--accent-dark);
+    box-shadow: 0 0 0 .2rem rgba(255,195,0,.28);
+}
+.form-check-input:checked {
+    background-color: var(--brand-yellow);
+    border-color: var(--brand-yellow);
+}
+.spinner-border.text-primary { color: var(--accent-dark) !important; }
+a { color: var(--accent-dark); }
 

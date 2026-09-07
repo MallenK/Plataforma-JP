@@ -32,10 +32,10 @@ if ($isAdmin) {
 
     <!-- Logo -->
     <a href="<?= base_url('dashboard') ?>" class="sidebar-logo">
-        <div class="sidebar-logo-icon">JP</div>
+        <div class="sidebar-logo-icon">Mk</div>
         <div class="sidebar-logo-text">
-            Tu Plataforma
-            <span>Plataforma</span>
+            Mallen&rsquo;k
+            <span>Academy Software</span>
         </div>
     </a>
 
@@ -188,7 +188,7 @@ if ($isAdmin) {
     <div class="ru-dialog ru-dialog-sm" role="dialog" aria-modal="true" aria-labelledby="modalVersionLogLabel">
         <div class="ru-dialog-header">
             <h3 id="modalVersionLogLabel">
-                <i class="bi bi-clock-history me-2" style="color:var(--accent)"></i>Historial de versiones
+                <i class="bi bi-clock-history me-2" style="color:var(--accent-dark)"></i>Historial de versiones
             </h3>
             <button type="button" data-ru-dialog-close aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
         </div>

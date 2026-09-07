@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-label="Mallen'k — Academy Software">
+  <rect width="120" height="120" rx="26" fill="#FFC300"/>
+  <text x="60" y="60" dy=".345em" text-anchor="middle"
+        font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="58" font-weight="800"
+        letter-spacing="-1" fill="#111111">Mk</text>
+  <rect x="34" y="94" width="52" height="6" rx="3" fill="#111111"/>
+  <text x="150" y="54" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="40" font-weight="900"
+        letter-spacing="-1" fill="#FAFAF7">Mallen&#8217;k</text>
+  <text x="152" y="86" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="15" font-weight="700"
+        letter-spacing="3" fill="#FFC300">ACADEMY SOFTWARE</text>
+</svg>

@@ -104,7 +104,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
                 </ul>
                 <div class="notif-dropdown-footer">
                     <button class="btn btn-sm w-100" id="notif-mark-all-btn"
-                            style="font-size:12px;color:var(--accent)">
+                            style="font-size:12px;color:var(--accent-dark);font-weight:600">
                         Marcar todas como leídas
                     </button>
                 </div>
