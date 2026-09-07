@@ -36,7 +36,12 @@
 
 <script src="<?= base_url('assets/js/doc-preview.js') ?>"></script>
 
-<?php /* Modal de reporte — disponible para todos los roles */ ?>
+<?php
+/* Modal de reporte — disponible para todos los roles */
+$tkRole     = session('role');
+$tkIsMgr    = in_array($tkRole, ['admin', 'superadmin'], true);
+$tkIsPlayer = in_array($tkRole, ['player', 'alumno'], true);
+?>
 <!-- ── Modal ticket rápido — fuera de cualquier contenedor posicionado ── -->
 <div class="modal fade" id="modalTicketRapido" tabindex="-1" aria-labelledby="modalTicketRapidoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -61,7 +66,7 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-sm-6">
+                        <div class="<?= $tkIsPlayer ? 'col-12' : 'col-sm-6' ?>">
                             <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
                             <select name="category" class="form-select" required>
                                 <option value="">Selecciona una categoría</option>
@@ -72,8 +77,13 @@
                                 <option value="otro">Otro</option>
                             </select>
                         </div>
+                        <?php if ($tkIsPlayer): ?>
+                        <input type="hidden" name="priority" value="media">
+                        <?php else: ?>
                         <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Prioridad <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">
+                                <?= $tkIsMgr ? 'Prioridad' : '¿Qué urgencia tiene?' ?> <span class="text-danger">*</span>
+                            </label>
                             <select name="priority" class="form-select" required>
                                 <option value="baja">Baja</option>
                                 <option value="media" selected>Media</option>
@@ -81,6 +91,7 @@
                                 <option value="urgente">Urgente</option>
                             </select>
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="mb-3">

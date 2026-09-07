@@ -9,7 +9,8 @@ $csrfName = csrf_token();
 $csrfHash = csrf_hash();
 $pf = $prefill ?? null;
 
-$isMgr = in_array(session('role'), ['admin', 'superadmin'], true);
+$isMgr    = in_array(session('role'), ['admin', 'superadmin'], true);
+$isPlayer = in_array(session('role'), ['player', 'alumno'], true);
 
 // Los no-gestores no tienen bandeja de tickets: se vuelve al dashboard.
 $backUrl = $isMgr ? base_url('tickets') : base_url('dashboard');
@@ -68,9 +69,9 @@ if ($pf) {
             <div class="form-text">Resume el problema en una frase corta y clara.</div>
         </div>
 
-        <!-- Categoría + Prioridad -->
+        <!-- Categoría (+ Prioridad / urgencia, salvo para alumnos) -->
         <div class="row g-3 mb-3">
-            <div class="col-sm-6">
+            <div class="<?= $isPlayer ? 'col-12' : 'col-sm-6' ?>">
                 <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
                 <select name="category" class="form-select" required>
                     <option value="">Selecciona una categoría</option>
@@ -79,9 +80,12 @@ if ($pf) {
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php if ($isPlayer): ?>
+            <input type="hidden" name="priority" value="media">
+            <?php else: ?>
             <div class="col-sm-6">
                 <label class="form-label fw-semibold">
-                    <?= $isMgr ? 'Prioridad' : '¿Qué urgencia tiene para ti?' ?>
+                    <?= $isMgr ? 'Prioridad' : '¿Qué urgencia tiene?' ?>
                     <span class="text-danger">*</span>
                 </label>
                 <select name="priority" class="form-select" required>
@@ -97,6 +101,7 @@ if ($pf) {
                         : 'Es orientativo: el equipo revisará y asignará la prioridad real.' ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($canChooseScope)): ?>

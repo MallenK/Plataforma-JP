@@ -116,16 +116,17 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
-        // Urgencia indicada por el solicitante (informativa). La prioridad real
-        // la fija el gestor: si quien reporta no es gestor, entra como 'media'.
-        $isManager       = in_array($this->currentRole(), ['admin', 'superadmin'], true);
-        $reportedUrgency = $priority;
+        $isManager = in_array($this->currentRole(), ['admin', 'superadmin'], true);
+        $isPlayer  = in_array($this->currentRole(), ['player', 'alumno'], true);
+
+        // Prioridad / urgencia:
+        //  - gestor        → la prioridad que elige es la real
+        //  - coach / staff → su elección es "urgencia indicada"; prioridad real = media
+        //  - alumno        → no elige nada; prioridad = media, sin urgencia indicada
+        $reportedUrgency = $isPlayer ? null : $priority;
         if (!$isManager) {
             $priority = 'media';
         }
-
-        // Ámbito: el alumno solo abre tickets de academia; el resto puede elegir.
-        $isPlayer = in_array($this->currentRole(), ['player', 'alumno'], true);
         $scopeIn  = $this->request->getPost('scope');
         $scope    = (!$isPlayer && array_key_exists($scopeIn, TicketModel::SCOPES)) ? $scopeIn : 'academia';
 
