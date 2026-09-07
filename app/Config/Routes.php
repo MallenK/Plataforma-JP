@@ -50,6 +50,17 @@ $routes->get('logout',  'AuthController::logoutConfirm');
 
 
 // ------------------------------------------------------------
+// DEMO — solo activo si APP_ENV_LABEL=demo (el controller devuelve 404
+// en cualquier otro entorno). Ver app/Helpers/demo_helper.php.
+//   POST /demo/invitado       → login como invitado (rol en el body)
+//   GET  /demo/reset?token=X   → borra y resiembra (lo llama GitHub Actions)
+// ------------------------------------------------------------
+
+$routes->post('demo/invitado', 'DemoController::guestLogin');
+$routes->get('demo/reset',     'DemoController::reset');
+
+
+// ------------------------------------------------------------
 // DASHBOARD
 // Todos los roles autenticados acceden, el contenido varía por rol.
 // ------------------------------------------------------------

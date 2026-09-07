@@ -52,6 +52,22 @@
             </button>
         </form>
 
+        <?php if (function_exists('demo_mode') && demo_mode()): ?>
+        <div class="login-demo">
+            <div class="login-demo-sep"><span>o entra como invitado</span></div>
+            <p class="login-demo-hint">Entorno de demostración con datos ficticios. Elige un rol para explorar la plataforma:</p>
+            <div class="login-demo-roles">
+                <?php foreach (demo_guest_accounts() as $role => $acc): ?>
+                <form method="post" action="<?= base_url('demo/invitado') ?>">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="role" value="<?= esc($role, 'attr') ?>">
+                    <button type="submit" class="login-demo-btn"><?= esc($acc['label']) ?></button>
+                </form>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div>
 </div>
 

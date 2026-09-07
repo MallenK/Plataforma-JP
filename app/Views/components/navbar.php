@@ -60,8 +60,13 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
     // sea de producción (p. ej. "PPR"). Vacío o "produccion"/"production" → nada.
     $envLabel = strtolower(trim((string) env('APP_ENV_LABEL', '')));
     ?>
-    <?php if ($envLabel !== '' && !in_array($envLabel, ['produccion', 'producción', 'production', 'prod'], true)): ?>
-    <div class="topbar-env-badge" title="Entorno de pruebas — los datos no son reales">PRE-PRODUCCIÓN</div>
+    <?php if ($envLabel !== '' && !in_array($envLabel, ['produccion', 'producción', 'production', 'prod'], true)):
+        $envBadgeText = $envLabel === 'demo' ? 'DEMO' : 'PRE-PRODUCCIÓN';
+        $envBadgeTitle = $envLabel === 'demo'
+            ? 'Entorno de demostración — los datos son ficticios y se reinician cada noche'
+            : 'Entorno de pruebas — los datos no son reales';
+    ?>
+    <div class="topbar-env-badge" title="<?= esc($envBadgeTitle, 'attr') ?>"><?= esc($envBadgeText) ?></div>
     <?php endif; ?>
 
     <div class="topbar-right">

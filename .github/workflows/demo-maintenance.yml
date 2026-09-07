@@ -1,0 +1,48 @@
+name: Demo maintenance
+
+# Mantiene despierto el servicio free de Render (se duerme a los 15 min) y
+# resetea los datos de la demo cada noche.
+#
+# ⚠️ GitHub solo dispara `schedule` desde la rama POR DEFECTO del repo.
+# Si la demo se despliega desde la rama `demo` (no la default), este
+# workflow NO se ejecutará por cron a menos que:
+#   a) el archivo exista también en la rama por defecto, o
+#   b) uses un cron externo (cron-job.org) apuntando a las mismas URLs.
+# Ver .github/workflows/README-demo.md.
+#
+# Requiere configurar en el repo (Settings → Secrets and variables → Actions):
+#   - Variable  DEMO_URL           p. ej. https://mi-demo.onrender.com
+#   - Secret    DEMO_RESET_TOKEN   el mismo valor que la env var del servicio Render
+
+on:
+  schedule:
+    - cron: '*/12 * * * *'   # keep-alive
+    - cron: '0 3 * * *'      # reset nocturno (~05:00 Europe/Madrid)
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Qué hacer al lanzarlo a mano"
+        type: choice
+        default: keepalive
+        options: [keepalive, reset]
+
+jobs:
+  keepalive:
+    if: github.event.schedule == '*/12 * * * *' || github.event.inputs.action == 'keepalive'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /login
+        run: |
+          curl -fsS --retry 2 --max-time 90 "${{ vars.DEMO_URL }}/login" -o /dev/null
+          echo "Demo despierta."
+
+  reset:
+    if: github.event.schedule == '0 3 * * *' || github.event.inputs.action == 'reset'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset de datos de la demo
+        run: |
+          code=$(curl -sS --max-time 300 -o /tmp/out.json -w '%{http_code}' \
+            "${{ vars.DEMO_URL }}/demo/reset?token=${{ secrets.DEMO_RESET_TOKEN }}")
+          echo "HTTP $code"; cat /tmp/out.json; echo
+          test "$code" = "200"

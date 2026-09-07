@@ -58,10 +58,24 @@ class AuthService
         }
 
         // Login correcto: regenera sesión y registra el evento
-        $this->session->regenerate();
         $guard->record('login_success', $email, (int) $user['id']);
+        $this->establishSession($user, $remember);
 
-        $pwStamp = $user['password_changed_at'] ?: ($user['created_at'] ?? date('Y-m-d H:i:s'));
+        return true;
+    }
+
+    /**
+     * Monta la sesión autenticada a partir de una fila de `users` ya
+     * validada. Lo usa attempt() tras verificar la contraseña y el login
+     * de invitado de la demo (App\Controllers\DemoController), que no pide
+     * contraseña pero sí exige que el entorno sea la demo.
+     */
+    public function establishSession(array $user, bool $remember = false): void
+    {
+        $this->session->regenerate();
+
+        $pwStamp = ($user['password_changed_at'] ?? null)
+            ?: ($user['created_at'] ?? date('Y-m-d H:i:s'));
 
         // Guardamos con la clave canónica 'id' — todos los controllers usan session('id')
         $this->session->set([
@@ -80,8 +94,6 @@ class AuthService
             // margen de inactividad mucho más amplio (ver allí).
             'remember_me'          => $remember,
         ]);
-
-        return true;
     }
 
     /**

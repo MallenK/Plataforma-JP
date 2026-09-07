@@ -40,9 +40,16 @@ php spark migrate --all -n 2>&1 || echo "[WARN] Migrations failed, continuing...
 if [ "${SEED_DEMO:-0}" = "1" ]; then
   USERS=$(php spark db:table users --limit-rows 1 2>/dev/null | grep -c '@' || true)
   if [ "${USERS:-0}" = "0" ]; then
-    echo "==> Seeding demo data (BBDD vacía)..."
-    php spark db:seed DatabaseSeeder -n 2>&1 || echo "[WARN] DatabaseSeeder falló"
-    php spark db:seed BulkDemoDataSeeder -n 2>&1 || echo "[WARN] BulkDemoDataSeeder falló"
+    ENV_LABEL=$(echo "${APP_ENV_LABEL:-}" | tr '[:upper:]' '[:lower:]')
+    if [ "$ENV_LABEL" = "demo" ]; then
+      # Entorno DEMO: siembra completa (base + volumen + tickets + invitados + chat).
+      echo "==> Seeding DEMO data (BBDD vacía)..."
+      php spark db:seed DemoSeeder -n 2>&1 || echo "[WARN] DemoSeeder falló"
+    else
+      echo "==> Seeding pre-prod data (BBDD vacía)..."
+      php spark db:seed DatabaseSeeder -n 2>&1 || echo "[WARN] DatabaseSeeder falló"
+      php spark db:seed BulkDemoDataSeeder -n 2>&1 || echo "[WARN] BulkDemoDataSeeder falló"
+    fi
   else
     echo "==> Seed omitido (la BBDD ya tiene usuarios)."
   fi
