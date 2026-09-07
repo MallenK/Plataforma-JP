@@ -82,10 +82,12 @@ class TicketsController extends BaseController
         }
 
         return view('tickets/create', [
-            'title'      => 'Nuevo Ticket',
-            'categories' => TicketModel::CATEGORIES,
-            'priorities' => TicketModel::PRIORITIES,
-            'prefill'    => $prefill,
+            'title'          => 'Nuevo Ticket',
+            'categories'     => TicketModel::CATEGORIES,
+            'priorities'     => TicketModel::PRIORITIES,
+            'scopes'         => TicketModel::SCOPES,
+            'canChooseScope' => !in_array($this->currentRole(), ['player', 'alumno'], true),
+            'prefill'        => $prefill,
         ]);
     }
 
@@ -114,6 +116,11 @@ class TicketsController extends BaseController
             return $this->response->setJSON(['error' => 'Prioridad no válida.'])->setStatusCode(422);
         }
 
+        // Ámbito: el alumno solo abre tickets de academia; el resto puede elegir.
+        $isPlayer = in_array($this->currentRole(), ['player', 'alumno'], true);
+        $scopeIn  = $this->request->getPost('scope');
+        $scope    = (!$isPlayer && array_key_exists($scopeIn, TicketModel::SCOPES)) ? $scopeIn : 'academia';
+
         // Contexto de reporte (cuando el ticket nace de una alerta de error/permiso)
         $originIn  = $this->request->getPost('origin');
         $origin    = in_array($originIn, TicketModel::ORIGINS, true) ? $originIn : 'manual';
@@ -138,6 +145,7 @@ class TicketsController extends BaseController
             'description' => $description,
             'category'    => $category,
             'priority'    => $priority,
+            'scope'       => $scope,
             'origin'      => $origin,
             'error_ref'   => $errorRef,
             'context'     => $context,
@@ -212,6 +220,7 @@ class TicketsController extends BaseController
             'categories'       => TicketModel::CATEGORIES,
             'priorities'       => TicketModel::PRIORITIES,
             'statuses'         => TicketModel::STATUSES,
+            'scopes'           => TicketModel::SCOPES,
             'isSuperAdmin'     => $role === 'superadmin',
             'isManager'        => $isManager,
         ]);
@@ -244,6 +253,7 @@ class TicketsController extends BaseController
             'categories'    => TicketModel::CATEGORIES,
             'priorities'    => TicketModel::PRIORITIES,
             'statuses'      => TicketModel::STATUSES,
+            'scopes'        => TicketModel::SCOPES,
         ]);
     }
 
@@ -260,6 +270,8 @@ class TicketsController extends BaseController
             'category'    => $this->request->getGet('category')    ?? '',
             'search'      => $this->request->getGet('search')      ?? '',
             'assigned_to' => $this->request->getGet('assigned_to') ?? '',
+            'scope'       => $this->request->getGet('scope')       ?? '',
+            'archived'    => $this->request->getGet('archived')    ?? '',
         ];
     }
 
@@ -357,6 +369,7 @@ class TicketsController extends BaseController
             'categories' => TicketModel::CATEGORIES,
             'priorities' => TicketModel::PRIORITIES,
             'statuses'   => TicketModel::STATUSES,
+            'scopes'     => TicketModel::SCOPES,
         ]);
     }
 
@@ -400,6 +413,13 @@ class TicketsController extends BaseController
             // Nota interna: no toca el estado ni avisa al solicitante; avisa a los demás gestores.
             $this->notifyOtherManagers($ticket, $userId);
         } else {
+            // Primera respuesta pública de un gestor → métrica de SLA.
+            if (in_array($this->currentRole(), ['admin', 'superadmin'], true)
+                && empty($ticket['first_response_at'])
+                && (int) $ticket['user_id'] !== $userId) {
+                $this->ticketModel->markFirstResponse($id);
+            }
+
             // Si el ticket estaba abierto, pasarlo a en progreso automáticamente
             if ($ticket['status'] === 'abierto') {
                 $this->ticketModel->updateStatus($id, 'en_progreso');
@@ -567,6 +587,61 @@ class TicketsController extends BaseController
             'assigned_to'   => $assigneeId,
             'assignee_name' => $assigneeName,
             'csrf'          => csrf_hash(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GESTOR — cambiar ámbito (academia / plataforma)
+    // ─────────────────────────────────────────────────────────
+
+    public function changeScope(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $ticket = $this->ticketModel->find($id);
+        if (!$ticket) {
+            return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $scope = $this->request->getPost('scope');
+        if (!array_key_exists($scope, TicketModel::SCOPES)) {
+            return $this->response->setJSON(['error' => 'Ámbito no válido.'])->setStatusCode(422);
+        }
+
+        if ($scope !== $ticket['scope']) {
+            $this->ticketModel->setScope($id, $scope);
+            $this->eventModel->log($id, (int) $this->currentUserId(), 'scope_changed', $ticket['scope'], $scope);
+        }
+
+        return $this->response->setJSON([
+            'ok'    => true,
+            'scope' => $scope,
+            'label' => TicketModel::SCOPES[$scope],
+            'csrf'  => csrf_hash(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GESTOR — archivar / desarchivar (nunca se borra)
+    // ─────────────────────────────────────────────────────────
+
+    public function archive(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $ticket = $this->ticketModel->find($id);
+        if (!$ticket) {
+            return $this->response->setJSON(['error' => 'Ticket no encontrado.'])->setStatusCode(404);
+        }
+
+        $archived  = (bool) $this->request->getPost('archived');
+        $wasArchived = !empty($ticket['archived_at']);
+
+        if ($archived !== $wasArchived) {
+            $this->ticketModel->archive($id, $archived);
+            $this->eventModel->log($id, (int) $this->currentUserId(), $archived ? 'archived' : 'unarchived');
+        }
+
+        return $this->response->setJSON([
+            'ok'       => true,
+            'archived' => $archived,
+            'csrf'     => csrf_hash(),
         ]);
     }
 

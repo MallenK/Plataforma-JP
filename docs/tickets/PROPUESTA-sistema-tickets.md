@@ -196,7 +196,7 @@ tiempo en el detalle del ticket.
 | **0 — ya** | Fix dashboard 500 · buscador + filtros + export (`/tickets` y `/tickets/gestion`) | — | Ninguno. Ramas: `fix/tickets-dashboard-500`, `feat/tickets-search-export`. |
 | **1 — apertura** | Alumnos pueden crear/ver sus tickets · `/tickets/admin` → `/tickets/gestion` accesible a `admin,superadmin` · admin puede responder + cambiar estado · notificar a admins · el solicitante puede cerrar/reabrir el suyo | Ninguna (solo rutas + permisos) | Bajo. |
 | **2 — reparto ✅** | `assigned_to` + asignación/desasignación (dropdown en el detalle + filtro "sin asignar / asignados a mí / por gestor" en la bandeja) · notas internas (`is_internal`, no las ve el solicitante, avisan a los demás gestores) · tabla `ticket_events` + historial en el panel lateral del detalle. Migración `2026-09-07-000002`. | 1 columna en `tickets` + 1 en `ticket_replies` + tabla `ticket_events` (aditivas) | Bajo. Hecho. |
-| **3 — niveles** | `scope` academia/plataforma + escalado · dashboard con SLA (`first_response_at`) · badges de antigüedad | 3 columnas (aditivas) | Medio (lógica de enrutado). |
+| **3 — niveles ✅** | `scope` academia/plataforma: el alumno solo abre de academia, admin/coach/staff eligen; el superadmin gestiona ambos siempre (sin "escalar y soltar" — el gestor reclasifica el ámbito). SLA en el dashboard: tiempo medio 1ª respuesta (`first_response_at`), pendientes de 1ª respuesta, sin atender +48 h. Archivado (`archived_at`) en vez de borrado: fuera de las bandejas, historial intacto, reversible. Migración `2026-09-07-000003`. | 3 columnas en `tickets` (aditivas) | Hecho. |
 | **4 — pulido** | Plantillas de respuesta · `reported_urgency` separada de `priority` · generador de número por año · alias 301 de `/tickets/admin` | 2 columnas + 1 tabla | Bajo. |
 
 Cada fase = su rama + PR + validación en pre-producción antes de Hostinger.
@@ -204,6 +204,12 @@ Cada fase = su rama + PR + validación en pre-producción antes de Hostinger.
 ---
 
 ## 4. Decisiones que necesito de ti
+
+> **Respondidas 2026-09-07** (aplicadas en F3): (1) el superadmin gestiona
+> academia y plataforma siempre; el `scope` solo limita qué puede clasificar
+> el que reporta (alumno → solo academia). (2) los alumnos adjuntan archivos
+> igual que el resto. (3) se mantienen las 5 categorías. (4) solo archivado,
+> nunca borrado.
 
 1. **`scope` academia/plataforma**: ¿lo quieres desde el principio (fase 1) o
    basta con "admin gestiona todo, superadmin es el jefe" y el `scope` viene

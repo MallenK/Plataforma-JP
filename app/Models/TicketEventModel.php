@@ -23,6 +23,7 @@ class TicketEventModel extends Model
     public const TYPES = [
         'created', 'status_changed', 'priority_changed', 'assigned',
         'unassigned', 'reply', 'internal_note', 'reopened', 'closed',
+        'scope_changed', 'archived', 'unarchived',
     ];
 
     public function log(int $ticketId, ?int $actorId, string $type, ?string $from = null, ?string $to = null): void

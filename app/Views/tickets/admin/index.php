@@ -42,6 +42,8 @@ $priorityColors = [
             'priority'    => $filters['priority'],
             'category'    => $filters['category'],
             'assigned_to' => $filters['assigned_to'] ?? '',
+            'scope'       => $filters['scope'] ?? '',
+            'archived'    => $filters['archived'] ?? '',
         ]));
         ?>
         <div class="dropdown">
@@ -102,6 +104,21 @@ $priorityColors = [
                 <?php if ((int) $m['id'] === (int) $currentUserId) continue; ?>
                 <option value="<?= (int) $m['id'] ?>" <?= (string) ($filters['assigned_to'] ?? '') === (string) $m['id'] ? 'selected' : '' ?>><?= esc($m['name']) ?></option>
                 <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-2 col-lg-2">
+            <select name="scope" class="form-select form-select-sm">
+                <option value="">Cualquier ámbito</option>
+                <?php foreach (($scopes ?? []) as $key => $label): ?>
+                <option value="<?= $key ?>" <?= ($filters['scope'] ?? '') === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-2 col-lg-2">
+            <select name="archived" class="form-select form-select-sm">
+                <option value="">Activos</option>
+                <option value="only" <?= ($filters['archived'] ?? '') === 'only' ? 'selected' : '' ?>>Solo archivados</option>
+                <option value="all" <?= ($filters['archived'] ?? '') === 'all' ? 'selected' : '' ?>>Todos</option>
             </select>
         </div>
         <div class="col-sm-2 col-lg-1">
@@ -168,6 +185,12 @@ $priorityColors = [
                     <span class="ticket-category-badge">
                         <?= esc($categories[$t['category']] ?? $t['category']) ?>
                     </span>
+                    <span class="ticket-scope-badge ticket-scope--<?= esc($t['scope'] ?? 'academia') ?>">
+                        <?= esc($scopes[$t['scope'] ?? 'academia'] ?? 'Academia') ?>
+                    </span>
+                    <?php if (!empty($t['archived_at'])): ?>
+                    <span class="ticket-scope-badge" style="background:#e5e7eb;color:#6b7280"><i class="bi bi-archive"></i> Archivado</span>
+                    <?php endif; ?>
                 </td>
                 <td>
                     <span class="ticket-priority <?= $priorityCls ?>">
@@ -204,6 +227,8 @@ $priorityColors = [
                 <?= $filters['category'] ? '&category=' . urlencode($filters['category']) : '' ?>
                 <?= $filters['search']   ? '&search='   . urlencode($filters['search'])   : '' ?>
                 <?= !empty($filters['assigned_to']) ? '&assigned_to=' . urlencode($filters['assigned_to']) : '' ?>
+                <?= !empty($filters['scope'])    ? '&scope='    . urlencode($filters['scope'])    : '' ?>
+                <?= !empty($filters['archived']) ? '&archived=' . urlencode($filters['archived']) : '' ?>
             "><?= $p ?></a>
         </li>
         <?php endfor; ?>

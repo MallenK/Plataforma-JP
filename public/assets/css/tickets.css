@@ -790,3 +790,33 @@
     background: var(--brand, #2563eb);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
 }
+
+/* ── F3 · ámbito (scope) + archivado ─────────────────────── */
+.ticket-scope-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+.ticket-scope--academia   { background: #dbeafe; color: #1e40af; }
+.ticket-scope--plataforma { background: #ede9fe; color: #5b21b6; }
+
+.ticket-scope-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+}
+.ticket-scope-option:has(input:checked) {
+    border-color: var(--brand, #2563eb);
+    background: #eff6ff;
+}

@@ -87,6 +87,27 @@ if ($pf) {
             </div>
         </div>
 
+        <?php if (!empty($canChooseScope)): ?>
+        <!-- Ámbito -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">¿A qué se refiere?</label>
+            <div class="d-flex gap-3 flex-wrap">
+                <?php foreach (($scopes ?? []) as $key => $label): ?>
+                <label class="ticket-scope-option">
+                    <input type="radio" name="scope" value="<?= $key ?>" <?= $key === 'academia' ? 'checked' : '' ?>>
+                    <span><?= esc($label) ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+            <div class="form-text">
+                <b>Academia</b>: entrenamientos, clases, bonos, alumnos.
+                <b>Plataforma</b>: fallos técnicos o mejoras de esta web.
+            </div>
+        </div>
+        <?php else: ?>
+        <input type="hidden" name="scope" value="academia">
+        <?php endif; ?>
+
         <!-- Descripción -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>

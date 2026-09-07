@@ -109,6 +109,25 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 <?php endforeach; ?>
             </ul>
         </div>
+        <!-- Ámbito -->
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-diagram-3 me-1"></i>Ámbito
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <?php foreach (($scopes ?? []) as $key => $label): ?>
+                <li>
+                    <button class="dropdown-item btn-change-scope <?= $key === ($ticket['scope'] ?? 'academia') ? 'active' : '' ?>"
+                            data-scope="<?= $key ?>"><?= esc($label) ?></button>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <!-- Archivar -->
+        <button class="btn btn-sm btn-outline-secondary" id="btn-archive"
+                data-archived="<?= !empty($ticket['archived_at']) ? '1' : '0' ?>">
+            <i class="bi bi-archive me-1"></i><?= !empty($ticket['archived_at']) ? 'Desarchivar' : 'Archivar' ?>
+        </button>
     </div>
     <?php elseif ($isOwner && !$isClosed): ?>
     <!-- El creador puede cambiar prioridad si el ticket no está cerrado -->
@@ -130,6 +149,14 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
     </div>
     <?php endif; ?>
 </div>
+
+<?php if (!empty($ticket['archived_at'])): ?>
+<div class="alert alert-secondary d-flex align-items-center gap-2" style="font-size:13px">
+    <i class="bi bi-archive-fill"></i>
+    Este ticket está <b>archivado</b> (<?= date('d/m/Y', strtotime($ticket['archived_at'])) ?>).
+    No aparece en las bandejas, pero se conserva su historial.
+</div>
+<?php endif; ?>
 
 <div class="ticket-show-layout">
 
@@ -172,6 +199,10 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 <div class="ticket-message-meta mt-2">
                     <span class="ticket-category-badge">
                         <?= esc($categories[$ticket['category']] ?? $ticket['category']) ?>
+                    </span>
+                    <span class="ticket-category-badge ticket-scope-badge ticket-scope--<?= esc($ticket['scope'] ?? 'academia') ?>">
+                        <i class="bi bi-<?= ($ticket['scope'] ?? 'academia') === 'plataforma' ? 'hdd-network' : 'mortarboard' ?>"></i>
+                        <?= esc(($scopes[$ticket['scope'] ?? 'academia'] ?? $ticket['scope']) ?? 'Academia') ?>
                     </span>
                     <?php if (($ticket['origin'] ?? 'manual') !== 'manual'): ?>
                     <span class="ticket-category-badge" style="background:#fef3c7;color:#92400e">
@@ -324,8 +355,21 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 <dd><span class="ticket-priority <?= $priorityCls ?>"><?= esc($priorities[$ticket['priority']] ?? $ticket['priority']) ?></span></dd>
                 <dt>Categoría</dt>
                 <dd><?= esc($categories[$ticket['category']] ?? $ticket['category']) ?></dd>
+                <dt>Ámbito</dt>
+                <dd><?= esc($scopes[$ticket['scope'] ?? 'academia'] ?? 'Academia') ?></dd>
                 <dt>Creado</dt>
                 <dd><?= date('d/m/Y H:i', strtotime($ticket['created_at'])) ?></dd>
+                <?php if ($canManage): ?>
+                <dt>1ª respuesta</dt>
+                <dd>
+                    <?php if (!empty($ticket['first_response_at'])): ?>
+                        <?= date('d/m/Y H:i', strtotime($ticket['first_response_at'])) ?>
+                        <span class="text-muted">(<?= round((strtotime($ticket['first_response_at']) - strtotime($ticket['created_at'])) / 3600, 1) ?> h)</span>
+                    <?php else: ?>
+                        <span class="text-danger">Sin responder</span>
+                    <?php endif; ?>
+                </dd>
+                <?php endif; ?>
                 <?php if ($ticket['resolved_at']): ?>
                 <dt>Resuelto</dt>
                 <dd><?= date('d/m/Y H:i', strtotime($ticket['resolved_at'])) ?></dd>
@@ -379,6 +423,9 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                     'priority_changed'=> fn($e) => 'cambió la prioridad' . ($e['to_value'] ? ' a «' . ($priorities[$e['to_value']] ?? $e['to_value']) . '»' : ''),
                     'assigned'        => fn($e) => 'asignó el ticket' . ($e['to_value'] ? ' a ' . $e['to_value'] : ''),
                     'unassigned'      => fn($e) => 'quitó la asignación',
+                    'scope_changed'   => fn($e) => 'cambió el ámbito' . ($e['to_value'] ? ' a «' . ($scopes[$e['to_value']] ?? $e['to_value']) . '»' : ''),
+                    'archived'        => fn($e) => 'archivó el ticket',
+                    'unarchived'      => fn($e) => 'desarchivó el ticket',
                 ];
                 ?>
                 <?php foreach ($events as $e): ?>
@@ -477,6 +524,46 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
                 }
             } catch (_) { showToast('Error de conexión al asignar', true); }
         });
+    });
+
+    // ── Cambiar ámbito ─────────────────────────────────────
+    document.querySelectorAll('.btn-change-scope').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const fd = new FormData();
+            fd.append(CSRF_NAME, csrfHash);
+            fd.append('scope', btn.dataset.scope);
+            try {
+                const res  = await fetch(BASE + 'tickets/' + TICKET_ID + '/ambito', {
+                    method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd,
+                });
+                const data = await res.json();
+                if (data.csrf) csrfHash = data.csrf;
+                if (data.ok) { showToast('Ámbito: ' + data.label); setTimeout(() => location.reload(), 800); }
+                else if (!(window.handleApiError && window.handleApiError(data, 'tickets.ambito'))) {
+                    showToast(data.error || 'No se pudo cambiar el ámbito', true);
+                }
+            } catch (_) { showToast('Error de conexión al cambiar el ámbito', true); }
+        });
+    });
+
+    // ── Archivar / desarchivar ─────────────────────────────
+    const btnArchive = document.getElementById('btn-archive');
+    btnArchive?.addEventListener('click', async () => {
+        const target = btnArchive.dataset.archived === '1' ? '0' : '1';
+        const fd = new FormData();
+        fd.append(CSRF_NAME, csrfHash);
+        fd.append('archived', target);
+        try {
+            const res  = await fetch(BASE + 'tickets/' + TICKET_ID + '/archivar', {
+                method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd,
+            });
+            const data = await res.json();
+            if (data.csrf) csrfHash = data.csrf;
+            if (data.ok) { showToast(target === '1' ? 'Ticket archivado' : 'Ticket desarchivado'); setTimeout(() => location.reload(), 800); }
+            else if (!(window.handleApiError && window.handleApiError(data, 'tickets.archivar'))) {
+                showToast(data.error || 'No se pudo archivar', true);
+            }
+        } catch (_) { showToast('Error de conexión al archivar', true); }
     });
 
     // ── Adjunto en respuesta ───────────────────────────────
