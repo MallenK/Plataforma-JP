@@ -163,10 +163,13 @@ if ($isAdmin) {
                 <div class="sidebar-user-role"><?= esc($role) ?></div>
             </div>
         </a>
-        <a href="<?= base_url('logout') ?>" class="sidebar-logout">
-            <i class="bi bi-box-arrow-left"></i>
-            Cerrar sesión
-        </a>
+        <form method="post" action="<?= base_url('logout') ?>" class="sidebar-logout-form">
+            <?= csrf_field() ?>
+            <button type="submit" class="sidebar-logout">
+                <i class="bi bi-box-arrow-left"></i>
+                Cerrar sesión
+            </button>
+        </form>
 
         <?php if ($isAdmin && $versionInfo): ?>
         <button type="button" class="sidebar-version" data-ru-dialog-trigger="modalVersionLog"
