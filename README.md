@@ -25,7 +25,7 @@ jQuery + JS vanilla por página), sin build step de frontend.
 
 * PHP 8.2+ (Docker)
 * CodeIgniter 4 (`codeigniter4/framework ^4.7`), MVC + capa de **Services**
-* MySQL 8 (local / Hostinger MariaDB en prod / TiDB Cloud Serverless en Render)
+* MySQL 8 en local; MariaDB de Hostinger en producción y en pre-producción (Render)
 * Docker + Docker Compose (entorno local)
 * Frontend: vistas PHP + jQuery + JS vanilla + Bootstrap Icons (sin bundler)
 * Email transaccional: Resend API vía `MailService`
