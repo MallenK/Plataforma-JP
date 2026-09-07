@@ -9,6 +9,11 @@ $csrfName = csrf_token();
 $csrfHash = csrf_hash();
 $pf = $prefill ?? null;
 
+// Los no-gestores no tienen bandeja de tickets: se vuelve al dashboard.
+$backUrl = in_array(session('role'), ['admin', 'superadmin'], true)
+    ? base_url('tickets')
+    : base_url('dashboard');
+
 $pfTitle = '';
 $pfDesc  = '';
 $pfCat   = '';
@@ -31,7 +36,7 @@ if ($pf) {
         <h2 class="fw-bold mb-1" style="font-size:1.25rem"><?= $pf ? 'Reportar un problema' : 'Nuevo Ticket' ?></h2>
         <p class="text-muted mb-0" style="font-size:13px">Describe el problema o sugerencia con el mayor detalle posible</p>
     </div>
-    <a href="<?= base_url('tickets') ?>" class="btn btn-sm btn-outline-secondary">
+    <a href="<?= $backUrl ?>" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Volver
     </a>
 </div>
@@ -142,7 +147,7 @@ if ($pf) {
         </div>
 
         <div class="d-flex justify-content-end gap-2">
-            <a href="<?= base_url('tickets') ?>" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="<?= $backUrl ?>" class="btn btn-outline-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary" id="btn-submit-ticket">
                 <span class="btn-label"><i class="bi bi-send me-1"></i>Enviar ticket</span>
                 <span class="btn-spinner d-none">

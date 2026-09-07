@@ -644,9 +644,10 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 //  Reportar (crear / ver los suyos): TODOS los roles, incluido alumno.
 //  Gestión (ver todos, responder, cambiar estado): admin + superadmin.
 //
-//  GET  /tickets                      → lista de tickets del usuario — todos
-//  GET  /tickets/create · POST        → nuevo ticket — todos
-//  GET  /tickets/export               → exportar los suyos — todos
+//  GET  /tickets                      → bandeja "mis tickets" — SOLO gestores (oculta temporalmente para el resto)
+//  GET  /tickets/create · POST        → nuevo ticket — todos (reportar sigue abierto)
+//  GET  /tickets/:id                  → seguimiento de un ticket propio — todos (desde notificaciones)
+//  GET  /tickets/export               → exportar — SOLO gestores
 //  GET  /tickets/:id                  → detalle (dueño o gestor)
 //  POST /tickets/:id/priority         → prioridad (dueño si abierto, o gestor)
 //  GET  /tickets/download/:id         → descargar adjunto (dueño o gestor)
@@ -658,8 +659,10 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 //                                        (reply acepta is_internal=1 → nota interna)
 // ------------------------------------------------------------
 
+// Bandeja "mis tickets" — oculta temporalmente para los no-gestores.
+// (Reportar y seguir un ticket concreto siguen abiertos a todos los roles.)
 $routes->get('tickets', 'TicketsController::index', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 $routes->get('tickets/create', 'TicketsController::create', [
@@ -672,7 +675,7 @@ $routes->post('tickets', 'TicketsController::store', [
 
 // Exportar (CSV / vista imprimible). Antes de las rutas con :num y de admin.
 $routes->get('tickets/export', 'TicketsController::export', [
-    'filter' => ['auth', 'role:superadmin,admin,coach,staff,player'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->get('tickets/admin/export', 'TicketsController::adminExport', [
     'filter' => ['auth', 'role:superadmin,admin'],

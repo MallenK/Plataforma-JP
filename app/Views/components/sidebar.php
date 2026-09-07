@@ -126,14 +126,19 @@ if ($isAdmin) {
                 </a>
             </li>
 
-            <!-- Soporte / Tickets — todos los roles -->
+            <!-- Soporte / Tickets — solo gestores (admin/superadmin).
+                 El resto de roles reporta desde el botón de la barra superior y
+                 sigue sus tickets desde las notificaciones; la pantalla de
+                 listado está oculta temporalmente. -->
+            <?php if ($isAdmin): ?>
             <li class="sidebar-nav-item">
-                <a href="<?= base_url('tickets') ?>"
+                <a href="<?= base_url('tickets/admin') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/tickets', $currentUri) ?>">
                     <i class="bi bi-headset"></i>
                     Soporte
                 </a>
             </li>
+            <?php endif; ?>
 
             <!-- Configuración — admin, superadmin -->
             <?php if ($isAdmin): ?>

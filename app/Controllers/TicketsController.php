@@ -195,7 +195,7 @@ class TicketsController extends BaseController
 
         // Cada usuario ve sus propios tickets; los gestores (admin/superadmin) ven todos.
         $isManager = in_array($role, ['admin', 'superadmin'], true);
-        if ($ticket['user_id'] !== $userId && !$isManager) {
+        if ((int) $ticket['user_id'] !== (int) $userId && !$isManager) {
             return $this->response->setStatusCode(403);
         }
 
@@ -497,7 +497,7 @@ class TicketsController extends BaseController
         // Los gestores (admin/superadmin) cambian cualquier prioridad.
         // El dueño solo la de su ticket y solo si sigue abierto / en progreso.
         if (!in_array($role, ['admin', 'superadmin'], true)) {
-            if ($ticket['user_id'] !== $userId) {
+            if ((int) $ticket['user_id'] !== (int) $userId) {
                 return $this->response->setJSON(['error' => 'Sin permisos.'])->setStatusCode(403);
             }
             if (!in_array($ticket['status'], ['abierto', 'en_progreso'])) {
@@ -665,7 +665,7 @@ class TicketsController extends BaseController
         }
 
         // Solo el creador o un gestor (admin/superadmin) puede descargar
-        if ($ticket['user_id'] !== $userId && !in_array($role, ['admin', 'superadmin'], true)) {
+        if ((int) $ticket['user_id'] !== (int) $userId && !in_array($role, ['admin', 'superadmin'], true)) {
             return $this->response->setStatusCode(403);
         }
 
@@ -782,7 +782,7 @@ class TicketsController extends BaseController
     {
         $adminId = $this->currentUserId();
 
-        if ($ticket['user_id'] === $adminId) return;
+        if ((int) $ticket['user_id'] === (int) $adminId) return;
 
         if ($event === 'respuesta') {
             $title = 'Respuesta a tu ticket ' . $ticket['ticket_number'];
