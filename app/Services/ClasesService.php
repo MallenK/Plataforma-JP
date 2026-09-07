@@ -692,8 +692,8 @@ class ClasesService
             return ['success' => false, 'error' => 'Jugador no asignado a esta sesión.'];
         }
 
-        if (!in_array($player['attendance'], ['present', 'confirmed'])) {
-            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes o confirmados.'];
+        if (!in_array($player['attendance'], ['present', 'confirmed', 'unjustified'])) {
+            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes, confirmados o con falta no justificada.'];
         }
 
         if (!empty($player['bono_deducted_at'])) {
@@ -759,7 +759,7 @@ class ClasesService
                 ->orderBy('u.name')
                 ->get()->getResultArray();
 
-            $counts = ['present' => 0, 'absent' => 0, 'pending' => 0, 'other' => 0];
+            $counts = ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0, 'other' => 0];
             $today = date('Y-m-d');
             foreach ($players as &$p) {
                 $activeBono = $this->db->table('player_bonos pb')
@@ -776,10 +776,11 @@ class ClasesService
                 $p['sessions_remaining'] = $activeBono ? (int)$activeBono['sessions_remaining'] : null;
                 $p['bono_name']          = $activeBono ? $activeBono['bono_name'] : null;
 
-                if ($p['attendance'] === 'present')      $counts['present']++;
-                elseif ($p['attendance'] === 'absent')   $counts['absent']++;
-                elseif ($p['attendance'] === 'pending')  $counts['pending']++;
-                else                                     $counts['other']++;
+                if ($p['attendance'] === 'present')          $counts['present']++;
+                elseif ($p['attendance'] === 'absent')       $counts['absent']++;
+                elseif ($p['attendance'] === 'unjustified')  $counts['unjustified']++;
+                elseif ($p['attendance'] === 'pending')      $counts['pending']++;
+                else                                         $counts['other']++;
             }
             unset($p);
 
@@ -860,7 +861,7 @@ class ClasesService
             $s['players'] = $players;
 
             // Contadores
-            $counts = ['present' => 0, 'absent' => 0, 'pending' => 0];
+            $counts = ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0];
             foreach ($players as $p) {
                 if (isset($counts[$p['attendance']])) $counts[$p['attendance']]++;
                 else $counts['pending']++;
@@ -1110,7 +1111,7 @@ class ClasesService
      */
     public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = [], array $absenceNotes = []): bool
     {
-        $valid = ['present', 'absent', 'pending', 'confirmed', 'declined'];
+        $valid = ['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'];
 
         foreach ($attendanceMap as $userId => $status) {
             if (!in_array($status, $valid)) continue;

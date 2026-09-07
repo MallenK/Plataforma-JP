@@ -5,8 +5,8 @@
 <div class="page-header">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <?php if ($isAdminRole ?? false): ?>
-        <a href="/pasar-lista" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
-            <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar Lista
+        <a href="/pasar-lista" class="btn-jp btn-jp-secondary">
+            <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar lista
         </a>
         <?php endif; ?>
         <?php if ($canManage): ?>

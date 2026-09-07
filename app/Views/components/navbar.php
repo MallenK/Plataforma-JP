@@ -28,6 +28,7 @@ $navTitles = [
     'entrenadores' => ['Entrenadores',   'Equipo técnico'],
     'organizador'  => ['Organizador',    'Calendario y planificación'],
     'clases'       => ['Clases',         'Sesiones de entrenamiento'],
+    'pasar-lista'  => ['Pasar lista',    'Asistencia por sesión'],
     'bonos'        => ['Bonos',          'Membresías y bonos'],
     'documentacion'=> ['Documentación',  'Material formativo'],
     'finanzas'     => ['Finanzas',       'Control económico'],

@@ -213,6 +213,11 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                         <i class="bi bi-plus-lg me-1"></i>Nueva clase
                     </button>
                     <?php endif; ?>
+                    <?php if (in_array($role, ['superadmin', 'admin'], true)): ?>
+                    <a href="<?= base_url('pasar-lista') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                        <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar lista
+                    </a>
+                    <?php endif; ?>
                     <a href="<?= base_url('clases') ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
                         <i class="bi bi-arrow-right me-1"></i>Ver todo
                     </a>

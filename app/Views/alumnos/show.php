@@ -607,6 +607,7 @@ $formatTime = static function (?string $hms): string {
                                     <?= match($a) {
                                         'present'   => 'Asistió',
                                         'absent'    => 'Faltó',
+                                        'unjustified' => 'Falta no justificada',
                                         'confirmed' => 'No registrada',
                                         'pending'   => 'Sin respuesta',
                                         'declined'  => 'Rechazada',

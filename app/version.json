@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.3.0",
+        "date": "2026-09-07 18:00:00",
+        "description": "Clases · Pasar lista: nuevo estado de asistencia 'No justificado'. Se usa cuando el alumno no avisa y se da por supuesto que no ha asistido. Al marcarlo, se puede descontar 1 sesión de su bono pulsando 'Descontar bono', que ahora pide una confirmación específica ('¿Descontar 1 sesión del bono por falta NO justificada?'). La falta queda registrada (con la fecha del descuento) y se ve en el resumen de asistencia de la clase, en el contador de 'Pasar lista' y en la ficha del alumno ('Falta no justificada'). El descuento sigue siendo manual: si no se pulsa el botón, no se toca el bono. Rediseño de las dos pantallas de 'Pasar lista' para que encajen con el resto de la plataforma: título y migas de navegación, cada sesión ahora es una tarjeta con separación clara, acento azul unificado (antes morado), contadores con etiqueta, leyenda que explica 'Ausente' vs 'No justificado', botones para marcar en bloque a los pendientes, agrupación del selector (Asistencia / Convocatoria) y aviso al salir con cambios sin guardar."
+    },
+    {
         "version": "1.2.0",
         "date": "2026-09-07 00:00:00",
         "description": "Alumnos y Entrenadores: ahora se puede dar de baja (y volver a reactivar) a un alumno o entrenador directamente desde su ficha, no solo desde el listado. La baja sigue siendo lógica: cambia el estado a inactivo y esa persona deja de poder entrar, pero se conserva todo su historial. No se puede dar de baja a un superadministrador ni a uno mismo. Seguridad: cerrar sesión ahora requiere una acción explícita desde la propia plataforma y no puede provocarse desde una web o un correo externos; se refuerza además la protección interna frente a peticiones falsificadas. Documentos: el botón 'Eliminar' de un archivo dentro de una carpeta volvía a fallar (daba error y no borraba); ya funciona. Mensajes: la hora de los mensajes del chat se mostraba adelantada 1 o 2 horas; ahora aparece la hora correcta."

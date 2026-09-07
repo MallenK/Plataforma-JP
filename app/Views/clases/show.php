@@ -14,6 +14,7 @@ $attendanceMap = [
     'declined'  => ['Declinado',  '#dc2626', 'bi-x-circle-fill'],
     'present'   => ['Presente',   '#059669', 'bi-person-check-fill'],
     'absent'    => ['Ausente',    '#dc2626', 'bi-person-x-fill'],
+    'unjustified' => ['No justificado', '#b91c1c', 'bi-person-x-fill'],
 ];
 
 $locationDisplay  = $session['location_name'] ?? $session['location_custom'] ?? null;
@@ -444,6 +445,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         $confirmed   = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'confirmed'));
         $present     = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'present'));
         $absent      = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'absent'));
+        $unjustified = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'unjustified'));
         $declined    = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'declined'));
         $pending     = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'pending'));
         $withNote    = count(array_filter($session['players'], fn($p) => !empty($p['student_note'])));
@@ -477,6 +479,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         <span style="color:var(--danger)"><i class="bi bi-person-x-fill me-1"></i>Ausentes</span>
                         <strong><?= $absent ?></strong>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($unjustified): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:#b91c1c"><i class="bi bi-person-x-fill me-1"></i>No justificadas</span>
+                        <strong><?= $unjustified ?></strong>
                     </div>
                     <?php endif; ?>
                     <?php if ($declined): ?>
