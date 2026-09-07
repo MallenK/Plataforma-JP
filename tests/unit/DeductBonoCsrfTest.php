@@ -61,7 +61,7 @@ final class DeductBonoCsrfTest extends CIUnitTestCase
 
         // Igual que hacía la vista: token correcto en el cuerpo JSON, pero
         // además una cabecera X-CSRF-TOKEN vacía.
-        $body    = json_encode(['csrf_test_name' => $hash]);
+        $body    = json_encode([$this->config->tokenName => $hash]);
         $request = $this->makeRequest($body, ['X-CSRF-TOKEN' => '']);
 
         $this->expectException(SecurityException::class);
@@ -73,7 +73,7 @@ final class DeductBonoCsrfTest extends CIUnitTestCase
         $security = $this->freshSecurity();
         $hash     = $security->getHash();
 
-        $body    = json_encode(['csrf_test_name' => $hash]);
+        $body    = json_encode([$this->config->tokenName => $hash]);
         $request = $this->makeRequest($body); // sin cabecera X-CSRF-TOKEN
 
         $security->verify($request);

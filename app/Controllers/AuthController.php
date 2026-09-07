@@ -158,6 +158,15 @@ class AuthController extends BaseController
 
 
 
+    /** GET /logout — solo confirma; el cierre real es POST. */
+    public function logoutConfirm()
+    {
+        if (! session()->get('id')) {
+            return redirect()->to('/login');
+        }
+        return view('auth/logout_confirm');
+    }
+
     public function logout()
     {
         $uid   = session()->get('id');

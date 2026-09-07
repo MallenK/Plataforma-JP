@@ -42,7 +42,11 @@ $routes->post('/forgot-password', 'AuthController::forgotPasswordPost');
 $routes->get('/reset-password',  'AuthController::resetPassword');
 $routes->post('/reset-password', 'AuthController::resetPasswordPost');
 
-$routes->get('logout', 'AuthController::logout');
+// Cerrar sesión: solo POST (con CSRF) para que una web externa no pueda
+// forzarlo (p. ej. <img src=".../logout">). El GET solo muestra un botón
+// de confirmación — útil para pestañas abiertas desde antes del despliegue.
+$routes->post('logout', 'AuthController::logout');
+$routes->get('logout',  'AuthController::logoutConfirm');
 
 
 // ------------------------------------------------------------

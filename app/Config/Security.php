@@ -37,7 +37,7 @@ class Security extends BaseConfig
      *
      * Token name for Cross Site Request Forgery protection.
      */
-    public string $tokenName = 'csrf_test_name';
+    public string $tokenName = 'jp_csrf_token';
 
     /**
      * --------------------------------------------------------------------------
@@ -55,7 +55,7 @@ class Security extends BaseConfig
      *
      * Cookie name for Cross Site Request Forgery protection.
      */
-    public string $cookieName = 'csrf_cookie_name';
+    public string $cookieName = 'jp_csrf_cookie';
 
     /**
      * --------------------------------------------------------------------------
