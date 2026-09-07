@@ -8,7 +8,8 @@ use CodeIgniter\Database\Seeder;
  * Siembra COMPLETA del entorno DEMO (2º servicio de Render, BBDD propia).
  *
  * Encadena la siembra base + el volumen de datos falsos + tickets +
- * las cuentas de invitado + conversaciones/notificaciones de ejemplo.
+ * las cuentas de invitado + conversaciones/notificaciones de ejemplo +
+ * el enriquecimiento de las cuentas de invitado (DemoShowcaseSeeder).
  *
  * Lo llaman:
  *   - docker/start.sh en el primer arranque (BBDD vacía) si APP_ENV_LABEL=demo
@@ -25,6 +26,7 @@ class DemoSeeder extends Seeder
         $this->call('PreprodTicketsSeeder');     // backlog de incidencias
         $this->call('DemoGuestsSeeder');         // cuentas de invitado + branding neutro
         $this->call('DemoConversationsSeeder');  // mensajes + notificaciones de ejemplo
+        $this->call('DemoShowcaseSeeder');        // calendario/bonos/anotaciones/docs de los invitados
 
         echo "DemoSeeder: entorno de demostración listo.\n";
     }
