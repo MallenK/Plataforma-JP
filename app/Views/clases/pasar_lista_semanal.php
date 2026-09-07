@@ -159,7 +159,8 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
             $listaPasada = !empty($s['lista_pasada_at']);
             $coachNames  = implode(', ', array_column($s['coaches'] ?? [], 'name'));
             $pc          = $s['player_counts'] ?? ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0];
-            $openInit    = $listaPasada ? '0' : '1';
+            // Colapsadas por defecto: la vista semanal es un listado desplegable.
+            $openInit    = '0';
         ?>
         <article class="pl-session" data-open="<?= $openInit ?>" data-pending="<?= $listaPasada ? '0' : '1' ?>">
             <div class="pl-session-head" onclick="toggleSession(this)" role="button" tabindex="0" aria-expanded="<?= $openInit === '1' ? 'true' : 'false' ?>">
