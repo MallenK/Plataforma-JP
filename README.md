@@ -9,6 +9,7 @@ Desarrollada con **CodeIgniter 4 + Docker**. Server-rendered (vistas PHP +
 jQuery + JS vanilla por página), sin build step de frontend.
 
 > **Documentación operativa** (léela antes de tocar producción o el repo):
+> - [`docs/operaciones/00-COMO-TRABAJAR.md`](docs/operaciones/00-COMO-TRABAJAR.md) — **empieza aquí:** forma de trabajar, ramas, versionado
 > - [`docs/operaciones/`](docs/operaciones/) — protocolo de despliegue, modelo de trabajo, organización de GitHub
 > - [`docs/BBDD_SCHEMA.md`](docs/BBDD_SCHEMA.md) — esquema de base de datos
 > - [`docs/tickets/`](docs/tickets/) — tickets internos
@@ -16,7 +17,7 @@ jQuery + JS vanilla por página), sin build step de frontend.
 >
 > **Producción real:** Hostinger — `https://app.jppreparation.com`.
 > **Validación:** Render — `https://plataforma-jp.onrender.com`.
-> Versión actual: **v1.1.2** (ver [`app/version.json`](app/version.json)).
+> Versión actual: primera entrada de [`app/version.json`](app/version.json).
 
 ---
 
@@ -24,7 +25,7 @@ jQuery + JS vanilla por página), sin build step de frontend.
 
 * PHP 8.2+ (Docker)
 * CodeIgniter 4 (`codeigniter4/framework ^4.7`), MVC + capa de **Services**
-* MySQL 8 (local / Hostinger MariaDB en prod / TiDB Cloud Serverless en Render)
+* MySQL 8 en local; MariaDB de Hostinger en producción y en pre-producción (Render)
 * Docker + Docker Compose (entorno local)
 * Frontend: vistas PHP + jQuery + JS vanilla + Bootstrap Icons (sin bundler)
 * Email transaccional: Resend API vía `MailService`
@@ -207,9 +208,11 @@ Conventional Commits. `feat` → *minor* en `version.json`; `fix` → *patch*.
 
 ## 🌱 Ramas y despliegue
 
-No se trabaja directo en `main`. Rama por ticket (`feat/`, `fix/`, …) →
-integración → `release/X.Y.Z` → `main` (tag `vX.Y.Z`) → deploy.
-Flujo completo en [`docs/operaciones/03-organizacion-github.md`](docs/operaciones/03-organizacion-github.md)
+**`main` no se toca a mano** (está protegido). Trunk-based: rama por cambio
+(`feat/`, `fix/`, `hotfix/`, `chore/`, `docs/`) → **Pull Request a `main`** →
+merge → tag `vX.Y.Z` → deploy. Sin `develop` ni `release/*`.
+Guía en una página: [`docs/operaciones/00-COMO-TRABAJAR.md`](docs/operaciones/00-COMO-TRABAJAR.md).
+Detalle: [`docs/operaciones/03-organizacion-github.md`](docs/operaciones/03-organizacion-github.md)
 y [`docs/operaciones/01-protocolo-despliegue.md`](docs/operaciones/01-protocolo-despliegue.md).
 
 **Cada subida a producción añade una entrada a [`app/version.json`](app/version.json)**
