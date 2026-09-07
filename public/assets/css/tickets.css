@@ -820,3 +820,30 @@
     border-color: var(--brand, #2563eb);
     background: #eff6ff;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   IDENTIDAD MALLEN'K — contraste sobre amarillo
+   ══════════════════════════════════════════════════════════════ */
+
+/* Rellenos amarillos → texto/valor en tinta negra */
+.ticket-role--admin,
+.ticket-bar-fill,
+.ticket-kpi--time .ticket-kpi-value { color: var(--on-yellow, #131313); }
+
+.ticket-status--open,
+.ticket-kpi--open .ticket-kpi-value,
+.ticket-scope--academia { background: var(--accent-light, #FFF6DC); color: var(--accent-dark, #B98900); }
+
+.ticket-role--admin { background: var(--accent-light, #FFF6DC); }
+
+/* Botón / barra de progreso con relleno de marca */
+.ticket-bar-fill:hover { background: var(--brand-dark, #B98900); }
+
+/* Enlaces y bordes de acento sobre blanco → amarillo oscuro legible */
+#tf-search:focus,
+.ticket-scope-option:has(input:checked) { border-color: var(--accent-dark, #B98900); }
+.ticket-scope-option:has(input:checked) { background: var(--accent-light, #FFF6DC); }
+
+/* Texto azul residual de tickets → tinta de marca */
+[class*="ticket-"] .btn-link,
+.ticket-reply-templates button { color: var(--accent-dark, #B98900); }
