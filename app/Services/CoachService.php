@@ -130,6 +130,14 @@ class CoachService
     }
 
     /**
+     * Reactivar: vuelve a poner status a 'active'.
+     */
+    public function reactivateCoach(int $id): bool
+    {
+        return (bool) $this->userModel->update($id, ['status' => 'active']);
+    }
+
+    /**
      * Devuelve solo los KPIs de actividad de un usuario (coach o staff).
      * Útil para insertar en /perfil sin cargar todo el historial.
      *

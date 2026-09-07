@@ -87,6 +87,23 @@ $formatTime = static function (?string $hms): string {
         <a href="<?= base_url('alumnos/' . $alumno['id'] . '/editar') ?>" class="btn-jp btn-jp-primary">
             <i class="bi bi-pencil"></i> Editar
         </a>
+        <?php if (($alumno['status'] ?? 'active') === 'active'): ?>
+        <form method="post" action="<?= base_url('alumnos/' . $alumno['id'] . '/eliminar') ?>"
+              onsubmit="return confirm('¿Dar de baja a <?= esc($alumno['name'], 'js') ?>? Su estado pasa a inactivo y no podrá acceder a la plataforma.')">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-danger">
+                <i class="bi bi-person-x-fill"></i> Dar de baja
+            </button>
+        </form>
+        <?php else: ?>
+        <form method="post" action="<?= base_url('alumnos/' . $alumno['id'] . '/reactivar') ?>"
+              onsubmit="return confirm('¿Reactivar a <?= esc($alumno['name'], 'js') ?>? Volverá a poder acceder a la plataforma.')">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-secondary">
+                <i class="bi bi-person-check-fill"></i> Reactivar
+            </button>
+        </form>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>

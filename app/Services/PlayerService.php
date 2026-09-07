@@ -144,6 +144,14 @@ class PlayerService
     }
 
     /**
+     * Reactivar: vuelve a poner status a 'active'.
+     */
+    public function reactivateAlumno(int $id): bool
+    {
+        return (bool) $this->userModel->update($id, ['status' => 'active']);
+    }
+
+    /**
      * KPIs de actividad de un alumno (clases asistidas + próximas).
      *
      * @return array{classes_count:int, upcoming_count:int, active_bonos:int}

@@ -102,6 +102,9 @@ $routes->post('/alumnos/(:num)/editar', 'AlumnosController::update/$1', [
 $routes->post('/alumnos/(:num)/eliminar', 'AlumnosController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+$routes->post('/alumnos/(:num)/reactivar', 'AlumnosController::reactivate/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 
 // ── Anotaciones de alumno ──────────────────────────────────────────────
 //  POST /alumnos/:id/anotaciones        → crear anotación — todos los roles
@@ -155,6 +158,9 @@ $routes->post('entrenadores/(:num)/editar', 'EntrenadoresController::update/$1',
 ]);
 
 $routes->post('entrenadores/(:num)/eliminar', 'EntrenadoresController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('entrenadores/(:num)/reactivar', 'EntrenadoresController::reactivate/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
