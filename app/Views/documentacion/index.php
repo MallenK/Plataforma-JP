@@ -734,7 +734,7 @@ function openFolderModal(folderId) {
                         <div style="display:flex;gap:4px;justify-content:flex-end">
                             ${previewBtn}
                             <a href="/documentacion/file/${f.id}/download" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar"><i class="bi bi-download"></i></a>
-                            ${isAdmin ? `<button type="button" onclick="deleteFile(${f.id},'${escHtml(f.name_original).replace(/'/g,"\\'")})" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar"><i class="bi bi-trash-fill"></i></button>` : ''}
+                            ${isAdmin ? `<button type="button" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar" data-del-id="${f.id}" data-del-name="${escHtml(f.name_original)}" onclick="deleteFile(this.getAttribute('data-del-id'), this.getAttribute('data-del-name'))"><i class="bi bi-trash-fill"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>`;
