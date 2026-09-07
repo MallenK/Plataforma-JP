@@ -396,10 +396,12 @@ class ClasesController extends BaseController
         $data = $this->clasesService->getWeekSessions($weekOffset, $search);
 
         return view('clases/pasar_lista_semanal', [
-            'title'    => 'Pasar Lista — JP Preparation',
-            'isAdmin'  => $this->isAdmin(),
-            'weekData' => $data,
-            'search'   => $search,
+            'title'        => 'Pasar lista',
+            'pageTitle'    => 'Pasar lista',
+            'pageSubtitle' => 'Asistencia por sesión de la semana',
+            'isAdmin'      => $this->isAdmin(),
+            'weekData'     => $data,
+            'search'       => $search,
         ]);
     }
 
@@ -437,9 +439,11 @@ class ClasesController extends BaseController
         unset($p);
 
         return view('clases/pasar_lista', [
-            'title'         => 'Pasar Lista — ' . $session['title'],
-            'session'       => $session,
-            'isAdmin'       => $this->isAdmin(),
+            'title'          => 'Pasar lista — ' . $session['title'],
+            'pageTitle'      => 'Pasar lista',
+            'pageSubtitle'   => $session['title'],
+            'session'        => $session,
+            'isAdmin'        => $this->isAdmin(),
             'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
         ]);
     }

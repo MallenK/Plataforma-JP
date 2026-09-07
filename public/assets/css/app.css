@@ -45,6 +45,7 @@
     /* Aliases de compatibilidad (usados en vistas) */
     --card-bg:         #ffffff;
     --bg-secondary:    #f1f5f9;
+    --border-color:    #e2e8f0;   /* == --border; muchas vistas usan este nombre */
 }
 
 /* ── Reset ─────────────────────────────────────────────── */

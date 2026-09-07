@@ -1,295 +1,278 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$statusMap = [
-    'scheduled' => ['Programada', '#2563eb', 'bi-calendar-event-fill'],
-    'completed' => ['Completada', '#059669', 'bi-check-circle-fill'],
-    'cancelled' => ['Cancelada',  '#dc2626', 'bi-x-circle-fill'],
-];
-[$statusLabel, $statusColor, $statusIcon] = $statusMap[$session['status']] ?? ['—', '#6b7280', 'bi-dash'];
-
-$attendanceOpts = [
-    'pending'   => 'Pendiente',
-    'present'   => 'Presente',
-    'absent'    => 'Ausente',
-    'unjustified' => 'No justificado',
-    'confirmed' => 'Confirmado',
-    'declined'  => 'Declinado',
-];
+helper('attendance');
+$groups   = attendance_groups();
+$players  = $session['players'] ?? [];
+$isClosed = ($session['status'] === 'completed');
+$listaSaved = !empty($session['lista_pasada_at']);
 ?>
 
 <?= $this->section('page_content') ?>
 
+<link rel="stylesheet" href="<?= base_url('assets/css/pasar-lista.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/pasar-lista.css') ?: time() ?>">
 
-<?php if (session()->getFlashdata('success')): ?>
-<div class="alert-jp alert-jp-success mb-4"><?= session()->getFlashdata('success') ?></div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-<div class="alert-jp alert-jp-danger mb-4"><?= session()->getFlashdata('error') ?></div>
-<?php endif; ?>
+<div class="pl-wrap">
 
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-    <div>
-        <h5 style="margin:0;font-weight:700"><?= esc($session['title']) ?></h5>
-        <span style="font-size:12px;color:var(--text-muted)">
-            <?= date('d/m/Y', strtotime($session['session_date'])) ?>
-            · <?= substr($session['start_time'], 0, 5) ?>–<?= substr($session['end_time'], 0, 5) ?>
-        </span>
-    </div>
-    <?php if ($session['status'] === 'completed'): ?>
-    <span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
-        <i class="bi bi-check-circle-fill me-1"></i>Sesión cerrada
-    </span>
-    <?php elseif (!empty($session['lista_pasada_at'])): ?>
-    <span style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
-        <i class="bi bi-clipboard2-check-fill me-1"></i>Lista guardada · pendiente cerrar
-    </span>
-    <?php else: ?>
-    <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600">
-        <i class="bi bi-hourglass-split me-1"></i>Pendiente
-    </span>
+    <a href="/pasar-lista" class="pl-crumb"><i class="bi bi-arrow-left"></i>Pasar lista</a>
+
+    <?php if (session()->getFlashdata('success')): ?>
+    <div class="alert-jp success mb-3"><i class="bi bi-check-circle-fill me-2"></i><?= esc(session()->getFlashdata('success')) ?></div>
     <?php endif; ?>
-</div>
+    <?php if (session()->getFlashdata('error')): ?>
+    <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc(session()->getFlashdata('error')) ?></div>
+    <?php endif; ?>
 
-<div class="card-jp">
-    <div class="card-jp-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <span style="font-weight:600;font-size:1rem">
-            <i class="bi bi-people-fill me-2" style="color:#7c3aed"></i>
-            Alumnos (<?= count($session['players']) ?>)
-        </span>
-        <?php if (!empty($session['players'])): ?>
-        <div id="lista-stats" style="display:flex;gap:12px;font-size:13px;color:var(--text-muted)">
-            <span><span id="cnt-present" style="font-weight:700;color:#059669">0</span> presentes</span>
-            <span><span id="cnt-absent" style="font-weight:700;color:#dc2626">0</span> ausentes</span>
-            <span><span id="cnt-unjustified" style="font-weight:700;color:#b91c1c">0</span> no justif.</span>
-            <span><span id="cnt-pending" style="font-weight:700;color:#d97706">0</span> pendientes</span>
+    <div class="pl-head">
+        <div>
+            <h2><?= esc($session['title']) ?></h2>
+            <p class="pl-sub">
+                <?= date('d/m/Y', strtotime($session['session_date'])) ?>
+                · <?= substr($session['start_time'], 0, 5) ?>–<?= substr($session['end_time'], 0, 5) ?>
+                · <?= count($players) ?> alumno<?= count($players) !== 1 ? 's' : '' ?>
+            </p>
         </div>
+        <?php if ($isClosed): ?>
+        <span class="pl-tag is-done"><i class="bi bi-lock-fill"></i>Sesión cerrada</span>
+        <?php elseif ($listaSaved): ?>
+        <span class="pl-tag is-done"><i class="bi bi-clipboard2-check-fill"></i>Lista guardada · pendiente de cerrar</span>
+        <?php else: ?>
+        <span class="pl-tag is-pending"><i class="bi bi-hourglass-split"></i>Por pasar</span>
         <?php endif; ?>
     </div>
 
-    <?php if (empty($session['players'])): ?>
-    <div style="padding:32px;text-align:center;color:var(--text-muted)">
+    <?php if (empty($players)): ?>
+    <div class="card-jp" style="padding:32px;text-align:center;color:var(--text-muted)">
         <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px"></i>
         No hay alumnos asignados a esta sesión.
     </div>
     <?php else: ?>
 
-    <form id="form-lista" action="/clases/<?= $session['id'] ?>/lista" method="POST">
-        <?= csrf_field() ?>
-        <input type="hidden" name="absence_reason_hidden" value="">
+    <div class="pl-legend">
+        <span><b>Ausente</b> — falta avisada o justificada.</span>
+        <span><b>No justificado</b> — no se presentó y no avisó. Permite descontar el bono como falta.</span>
+        <span><b>Descontar bono</b> — consume 1 sesión del bono activo del alumno. Queda registrado.</span>
+    </div>
 
-        <div class="table-responsive">
-        <table class="table-jp" style="min-width:700px">
-            <thead>
-                <tr>
-                    <th style="width:28%">Alumno</th>
-                    <th style="width:18%">Asistencia</th>
-                    <th style="width:18%">Razón ausencia</th>
-                    <th style="width:20%">Nota adicional</th>
-                    <th style="width:16%;text-align:center">Bono</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($session['players'] as $p): ?>
-            <?php
-                $uid        = (int)$p['user_id'];
-                $att        = $p['attendance'] ?? 'pending';
-                $reason     = $p['absence_reason'] ?? '';
-                $notes      = $p['absence_notes'] ?? '';
-                $bono       = $p['active_bono'] ?? null;
-                $deducted   = !empty($p['bono_deducted_at']);
-                $isAbsent   = ($att === 'absent');
-                $isPresent  = ($att === 'present');
-                $isConfirmed = ($att === 'confirmed');
-                $isUnjustified = ($att === 'unjustified');
-                $canDeduct  = ($isPresent || $isConfirmed || $isUnjustified);
-            ?>
-            <tr data-uid="<?= $uid ?>" data-attendance="<?= esc($att) ?>">
-                <td>
-                    <div style="font-weight:600;font-size:0.95rem"><?= esc($p['name']) ?></div>
-                    <div style="font-size:12px;color:var(--text-muted)"><?= esc($p['email'] ?? '') ?></div>
-                </td>
-                <td>
-                    <select name="attendance[<?= $uid ?>]"
-                            class="form-select-jp att-select"
-                            data-uid="<?= $uid ?>"
-                            style="width:100%;font-size:13px">
-                        <?php foreach ($attendanceOpts as $val => $label): ?>
-                        <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>>
-                            <?= $label ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td class="absence-col-<?= $uid ?>" style="<?= !$isAbsent ? 'opacity:.35;pointer-events:none' : '' ?>">
-                    <select name="absence_reason[<?= $uid ?>]"
-                            class="form-select-jp"
-                            style="width:100%;font-size:13px">
-                        <option value="">— Seleccionar —</option>
-                        <?php foreach ($absenceReasons as $r): ?>
-                        <option value="<?= esc($r) ?>" <?= $reason === $r ? 'selected' : '' ?>>
-                            <?= esc($r) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td class="notes-col-<?= $uid ?>" style="<?= !$isAbsent ? 'opacity:.35;pointer-events:none' : '' ?>">
-                    <input type="text"
-                           name="absence_notes[<?= $uid ?>]"
-                           class="form-control-jp"
-                           placeholder="Nota opcional…"
-                           value="<?= esc($notes) ?>"
-                           style="width:100%;font-size:13px">
-                </td>
-                <td style="text-align:center">
-                    <?php if ($bono): ?>
-                    <div class="bono-cell-<?= $uid ?>" style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                        <span class="bono-remaining-<?= $uid ?>" style="font-weight:700;font-size:1.1rem;color:<?= ($bono['sessions_remaining'] <= 1) ? '#dc2626' : '#059669' ?>">
-                            <?= (int)$bono['sessions_remaining'] ?>
-                        </span>
-                        <span style="font-size:11px;color:var(--text-muted)"><?= esc($bono['bono_name'] ?? '') ?></span>
-                        <?php if ($deducted): ?>
-                        <span style="font-size:11px;color:#059669;font-weight:600">
-                            <i class="bi bi-check-circle-fill me-1"></i>Descontado
-                        </span>
-                        <?php elseif ($canDeduct): ?>
-                        <button type="button"
-                                class="btn-jp btn-jp-sm btn-deduct"
-                                data-session="<?= $session['id'] ?>"
-                                data-player="<?= $uid ?>"
-                                style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-size:11px;padding:3px 8px;margin-top:2px">
-                            <i class="bi bi-dash-circle-fill me-1"></i>Descontar bono
-                        </button>
-                        <?php else: ?>
-                        <span style="font-size:11px;color:var(--text-muted)">Marcar presente / no justif.</span>
-                        <?php endif; ?>
-                    </div>
-                    <?php else: ?>
-                    <span style="font-size:12px;color:var(--text-muted)">Sin bono</span>
-                    <?php endif; ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        </div>
-
-        <div style="padding:16px 20px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-            <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
-                <i class="bi bi-arrow-left me-1"></i>Volver
-            </a>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button type="submit" class="btn-jp btn-jp-sm">
-                    <i class="bi bi-floppy-fill me-1"></i>Guardar asistencia
-                </button>
-                <?php if ($session['status'] === 'scheduled'): ?>
-                <button type="button" id="btn-cerrar-sesion"
-                        style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7"
-                        class="btn-jp btn-jp-sm">
-                    <i class="bi bi-check2-circle me-1"></i>Cerrar sesión
-                </button>
-                <?php endif; ?>
+    <div class="card-jp">
+        <div class="card-jp-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <span class="card-jp-title"><i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>Asistencia</span>
+            <div class="pl-statline" id="lista-stats">
+                <span><b id="cnt-present" style="color:#059669">0</b> presentes</span>
+                <span><b id="cnt-absent" style="color:#dc2626">0</b> ausentes</span>
+                <span><b id="cnt-unjustified" style="color:#b91c1c">0</b> no justif.</span>
+                <span><b id="cnt-pending" style="color:#d97706">0</b> pendientes</span>
             </div>
         </div>
-    </form>
-    <?php if ($session['status'] === 'scheduled'): ?>
-    <form id="form-cerrar" action="/clases/<?= $session['id'] ?>/cerrar" method="POST" style="display:none">
-        <?= csrf_field() ?>
-    </form>
+
+        <form id="form-lista" action="/clases/<?= $session['id'] ?>/lista" method="POST">
+            <?= csrf_field() ?>
+
+            <?php if (!$isClosed): ?>
+            <div class="pl-bulk">
+                <span>Marcar pendientes:</span>
+                <button type="button" class="btn-jp btn-jp-sm btn-jp-secondary" data-bulk="present">Todos presentes</button>
+                <button type="button" class="btn-jp btn-jp-sm btn-jp-secondary" data-bulk="absent">Todos ausentes</button>
+            </div>
+            <?php endif; ?>
+
+            <div class="pl-scroll">
+            <table class="table-jp" style="min-width:720px">
+                <thead>
+                    <tr>
+                        <th style="width:26%">Alumno</th>
+                        <th style="width:19%">Asistencia</th>
+                        <th style="width:17%">Razón ausencia</th>
+                        <th style="width:20%">Nota adicional</th>
+                        <th style="width:18%;text-align:center">Bono</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($players as $p): ?>
+                <?php
+                    $uid       = (int)$p['user_id'];
+                    $att       = $p['attendance'] ?? 'pending';
+                    $reason    = $p['absence_reason'] ?? '';
+                    $notes     = $p['absence_notes'] ?? '';
+                    $bono      = $p['active_bono'] ?? null;
+                    $deducted  = !empty($p['bono_deducted_at']);
+                    $absLike   = in_array($att, ['absent', 'unjustified'], true);
+                    $canDeduct = in_array($att, ['present', 'confirmed', 'unjustified'], true);
+                    $remaining = $bono ? (int)$bono['sessions_remaining'] : null;
+                ?>
+                <tr data-uid="<?= $uid ?>">
+                    <td>
+                        <div style="font-weight:600"><?= esc($p['name']) ?></div>
+                        <div style="font-size:12px;color:var(--text-muted)"><?= esc($p['email'] ?? '') ?></div>
+                    </td>
+                    <td>
+                        <select name="attendance[<?= $uid ?>]" class="form-select-jp att-select" data-uid="<?= $uid ?>"
+                                data-state="<?= esc($att) ?>" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
+                            <optgroup label="Asistencia">
+                                <?php foreach ($groups['asistencia'] as $val => $label): ?>
+                                <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                            <optgroup label="Convocatoria">
+                                <?php foreach ($groups['convocatoria'] as $val => $label): ?>
+                                <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                        </select>
+                    </td>
+                    <td class="absence-col-<?= $uid ?>" style="<?= !$absLike ? 'opacity:.35;pointer-events:none' : '' ?>">
+                        <select name="absence_reason[<?= $uid ?>]" class="form-select-jp" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
+                            <option value="">— Seleccionar —</option>
+                            <?php foreach (($absenceReasons ?? []) as $r): ?>
+                            <option value="<?= esc($r) ?>" <?= $reason === $r ? 'selected' : '' ?>><?= esc($r) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                    <td class="notes-col-<?= $uid ?>" style="<?= !$absLike ? 'opacity:.35;pointer-events:none' : '' ?>">
+                        <input type="text" name="absence_notes[<?= $uid ?>]" class="form-control-jp"
+                               placeholder="Nota opcional…" value="<?= esc($notes) ?>" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
+                    </td>
+                    <td style="text-align:center">
+                        <?php if ($bono): ?>
+                        <div class="bono-cell-<?= $uid ?>" style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                            <span class="bono-remaining-<?= $uid ?> pl-bono-num <?= $remaining <= 1 ? 'is-low' : 'is-ok' ?>"><?= $remaining ?></span>
+                            <span style="font-size:11px;color:var(--text-muted)"><?= esc($bono['bono_name'] ?? '') ?></span>
+                            <?php if ($deducted): ?>
+                            <span class="pl-bono-done"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>
+                            <?php elseif ($canDeduct && !$isClosed): ?>
+                            <button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct"
+                                    data-session="<?= $session['id'] ?>" data-player="<?= $uid ?>">
+                                <i class="bi bi-dash-circle-fill me-1"></i>Descontar bono
+                            </button>
+                            <?php else: ?>
+                            <span style="font-size:11px;color:var(--text-muted)">Marcar presente / no justif.</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php else: ?>
+                        <span style="font-size:12px;color:var(--text-muted)">Sin bono activo</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+
+            <div class="pl-session-foot" style="justify-content:space-between">
+                <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                    <i class="bi bi-calendar-event me-1"></i>Ver sesión
+                </a>
+                <?php if (!$isClosed): ?>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="submit" class="btn-jp btn-jp-sm btn-jp-primary">
+                        <i class="bi bi-floppy-fill me-1"></i>Guardar asistencia
+                    </button>
+                    <?php if ($session['status'] === 'scheduled'): ?>
+                    <button type="button" id="btn-cerrar-sesion" class="btn-jp btn-jp-sm btn-jp-danger">
+                        <i class="bi bi-lock-fill me-1"></i>Cerrar sesión
+                    </button>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </form>
+
+        <?php if ($session['status'] === 'scheduled'): ?>
+        <form id="form-cerrar" action="/clases/<?= $session['id'] ?>/cerrar" method="POST" hidden><?= csrf_field() ?></form>
+        <?php endif; ?>
+    </div>
     <?php endif; ?>
 
-    <?php endif; ?>
 </div>
 
 <script>
 (function () {
-    // Actualizar contadores al cargar
+    var form = document.getElementById('form-lista');
+    if (!form) return;
+    var dirty = false;
+
     function updateCounts() {
-        var rows   = document.querySelectorAll('tr[data-uid]');
-        var cnt    = { present: 0, absent: 0, unjustified: 0, pending: 0 };
-        rows.forEach(function(r) {
-            var v = r.querySelector('.att-select').value;
-            if (cnt[v] !== undefined) cnt[v]++;
+        var cnt = { present: 0, absent: 0, unjustified: 0, pending: 0 };
+        document.querySelectorAll('.att-select').forEach(function(s) {
+            if (cnt[s.value] !== undefined) cnt[s.value]++;
             else cnt.pending++;
         });
-        var elP = document.getElementById('cnt-present');
-        var elA = document.getElementById('cnt-absent');
-        var elU = document.getElementById('cnt-unjustified');
-        var elN = document.getElementById('cnt-pending');
-        if (elP) elP.textContent = cnt.present;
-        if (elA) elA.textContent = cnt.absent;
-        if (elU) elU.textContent = cnt.unjustified;
-        if (elN) elN.textContent = cnt.pending;
+        [['cnt-present','present'],['cnt-absent','absent'],['cnt-unjustified','unjustified'],['cnt-pending','pending']]
+            .forEach(function(p){ var el = document.getElementById(p[0]); if (el) el.textContent = cnt[p[1]]; });
     }
 
-    // Toggle razón/nota según asistencia
+    function syncRow(sel) {
+        var uid   = sel.dataset.uid;
+        var absLike = (sel.value === 'absent' || sel.value === 'unjustified');
+        var absCol = document.querySelector('.absence-col-' + uid);
+        var notCol = document.querySelector('.notes-col-' + uid);
+        [absCol, notCol].forEach(function(c) {
+            if (!c) return;
+            c.style.opacity = absLike ? '1' : '0.35';
+            c.style.pointerEvents = absLike ? '' : 'none';
+        });
+        var canDeduct = ['present','confirmed','unjustified'].indexOf(sel.value) !== -1;
+        var cell = document.querySelector('.bono-cell-' + uid);
+        if (cell) {
+            var btn = cell.querySelector('.btn-deduct');
+            if (btn) btn.style.display = canDeduct ? '' : 'none';
+        }
+        sel.dataset.state = sel.value;
+    }
+
     document.querySelectorAll('.att-select').forEach(function(sel) {
-        sel.addEventListener('change', function() {
-            var uid     = this.dataset.uid;
-            var isAbs   = (this.value === 'absent');
-            var isPres  = (this.value === 'present');
-            var isConf  = (this.value === 'confirmed');
-            var isUnj   = (this.value === 'unjustified');
-            var absCol  = document.querySelector('.absence-col-' + uid);
-            var notCol  = document.querySelector('.notes-col-' + uid);
-            var row     = document.querySelector('tr[data-uid="' + uid + '"]');
+        syncRow(sel);
+        sel.addEventListener('change', function() { dirty = true; syncRow(sel); updateCounts(); });
+    });
+    updateCounts();
 
-            if (absCol) { absCol.style.opacity = isAbs ? '1' : '0.35'; absCol.style.pointerEvents = isAbs ? '' : 'none'; }
-            if (notCol) { notCol.style.opacity = isAbs ? '1' : '0.35'; notCol.style.pointerEvents = isAbs ? '' : 'none'; }
-
-            // Mostrar/ocultar botón de descontar bono (presente o confirmado)
-            var cell = document.querySelector('.bono-cell-' + uid);
-            if (cell) {
-                var btn = cell.querySelector('.btn-deduct');
-                if (btn) btn.style.display = (isPres || isConf || isUnj) ? '' : 'none';
-            }
-
-            row.dataset.attendance = this.value;
+    // Acciones masivas
+    document.querySelectorAll('[data-bulk]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var target = this.dataset.bulk;
+            document.querySelectorAll('.att-select').forEach(function(sel) {
+                if (sel.value === 'pending') { sel.value = target; syncRow(sel); dirty = true; }
+            });
             updateCounts();
         });
     });
 
-    updateCounts();
+    // Aviso al salir con cambios sin guardar
+    form.addEventListener('submit', function() { dirty = false; });
+    window.addEventListener('beforeunload', function(e) {
+        if (dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
 
-    // Descontar bono vía AJAX
+    // Descontar bono
     document.querySelectorAll('.btn-deduct').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var sessionId = this.dataset.session;
-            var playerId  = this.dataset.player;
-            var self      = this;
-
-            var attRow = document.querySelector('tr[data-uid="' + playerId + '"] .att-select');
-            var isUnj  = attRow && attRow.value === 'unjustified';
-            var msg    = isUnj
+            var sessionId = this.dataset.session, playerId = this.dataset.player, self = this;
+            var sel  = document.querySelector('.att-select[data-uid="' + playerId + '"]');
+            var isUnj = sel && sel.value === 'unjustified';
+            var msg = isUnj
                 ? '¿Descontar 1 sesión del bono por falta NO justificada? Quedará registrada como falta.'
-                : '¿Descontar 1 sesión del bono de este jugador?';
+                : '¿Descontar 1 sesión del bono de este alumno?';
             if (!confirm(msg)) return;
 
             self.disabled = true;
-            self.textContent = 'Descontando…';
+            self.innerHTML = 'Descontando…';
 
             fetch('/clases/' + sessionId + '/jugadores/' + playerId + '/descontar-bono', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '<?= csrf_hash() ?>' },
                 body: JSON.stringify({ <?= json_encode(csrf_token()) ?>: '<?= csrf_hash() ?>' })
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    var rem = data.sessions_remaining;
                     var cell = document.querySelector('.bono-cell-' + playerId);
-                    if (cell) {
-                        var remEl = cell.querySelector('.bono-remaining-' + playerId);
-                        if (remEl) {
-                            remEl.textContent = rem;
-                            remEl.style.color = rem <= 1 ? '#dc2626' : '#059669';
-                        }
-                        self.outerHTML = '<span style="font-size:11px;color:#059669;font-weight:600"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>';
+                    var remEl = cell && cell.querySelector('.bono-remaining-' + playerId);
+                    if (remEl) {
+                        remEl.textContent = data.sessions_remaining;
+                        remEl.classList.toggle('is-low', data.sessions_remaining <= 1);
+                        remEl.classList.toggle('is-ok', data.sessions_remaining > 1);
                     }
+                    self.outerHTML = '<span class="pl-bono-done"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>';
                 } else {
                     if (!(window.handleApiError && window.handleApiError(data, 'clases.descontar-bono'))) {
                         showAlert(data.error || 'Error al descontar el bono.');
@@ -306,20 +289,11 @@ $attendanceOpts = [
         });
     });
 
-    // Al cambiar asistencia a presente, mostrar botón si hay bono
-    document.querySelectorAll('.att-select').forEach(function(sel) {
-        var uid  = sel.dataset.uid;
-        var cell = document.querySelector('.bono-cell-' + uid);
-        if (!cell) return;
-        var btn  = cell.querySelector('.btn-deduct');
-        if (btn && sel.value !== 'present' && sel.value !== 'confirmed' && sel.value !== 'unjustified') btn.style.display = 'none';
-    });
-
-    // Cerrar sesión
     var btnCerrar = document.getElementById('btn-cerrar-sesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', function() {
-            if (!confirm('¿Cerrar esta sesión? Quedará marcada como completada y no podrá editarse.')) return;
+            if (!confirm('¿Cerrar esta sesión? Quedará como completada y ya no podrá editarse la asistencia.')) return;
+            dirty = false;
             document.getElementById('form-cerrar').submit();
         });
     }
