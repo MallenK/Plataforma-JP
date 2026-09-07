@@ -2,10 +2,21 @@
 set -e
 
 echo "==> Generating .env from environment variables..."
+
+# baseURL: usa APP_BASE_URL si está; si no, la URL pública que Render
+# inyecta automáticamente (RENDER_EXTERNAL_URL). Sin ninguna de las dos,
+# CI4 4.7 aborta ("baseURL '/' is not a valid URL").
+BASE_URL="${APP_BASE_URL:-${RENDER_EXTERNAL_URL:-}}"
+case "$BASE_URL" in
+  */) : ;;                       # ya acaba en /
+  "") echo "[WARN] Sin APP_BASE_URL ni RENDER_EXTERNAL_URL — la app no arrancará bien." ;;
+  *)  BASE_URL="$BASE_URL/" ;;   # añade la barra final
+esac
+
 cat > /var/www/html/.env << EOF
 CI_ENVIRONMENT = ${CI_ENVIRONMENT:-production}
 
-app.baseURL = ${APP_BASE_URL:-''}
+app.baseURL = ${BASE_URL}
 
 database.default.hostname = ${DB_HOST:-localhost}
 database.default.database = ${DB_NAME:-}
