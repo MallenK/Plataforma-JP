@@ -57,7 +57,9 @@ $routes->get('logout',  'AuthController::logoutConfirm');
 // ------------------------------------------------------------
 
 $routes->post('demo/invitado', 'DemoController::guestLogin');
+$routes->post('demo/contacto', 'DemoController::contact');
 $routes->get('demo/reset',     'DemoController::reset');
+$routes->get('demo/leads',     'DemoController::leads');
 
 
 // ------------------------------------------------------------

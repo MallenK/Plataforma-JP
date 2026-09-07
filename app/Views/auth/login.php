@@ -1,11 +1,14 @@
 <?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
+<?php $isDemo = function_exists('demo_mode') && demo_mode(); ?>
 
-<div class="login-stage">
+<div class="login-stage<?= $isDemo ? ' login-stage--demo' : '' ?>">
     <div class="login-aura-layer login-aura-grid" aria-hidden="true"></div>
     <div class="login-aura-layer login-aura-glow-primary" aria-hidden="true"></div>
     <div class="login-aura-layer login-aura-glow-secondary" aria-hidden="true"></div>
+
+    <div class="login-split">
 
     <div class="login-card">
 
@@ -52,7 +55,7 @@
             </button>
         </form>
 
-        <?php if (function_exists('demo_mode') && demo_mode()): ?>
+        <?php if ($isDemo): ?>
         <div class="login-demo">
             <div class="login-demo-sep"><span>o entra como invitado</span></div>
             <p class="login-demo-hint">Entorno de demostración con datos ficticios. Elige un rol para explorar la plataforma:</p>
@@ -67,6 +70,53 @@
             </div>
         </div>
         <?php endif; ?>
+
+    </div>
+
+    <?php if ($isDemo): ?>
+    <aside class="login-pitch">
+        <h2 class="login-pitch-title">La plataforma de gestión para tu academia deportiva</h2>
+        <p class="login-pitch-lead">
+            Un único panel para llevar el día a día de una academia de tecnificación
+            o club: sin hojas de cálculo sueltas ni grupos de WhatsApp descontrolados.
+        </p>
+
+        <ul class="login-pitch-list">
+            <li><i class="bi bi-people"></i><span><strong>Alumnos y entrenadores</strong> — fichas, seguimiento, posiciones, categorías y equipos.</span></li>
+            <li><i class="bi bi-calendar3"></i><span><strong>Calendario de clases</strong> — sesiones individuales y recurrentes, asignación de coaches y control de asistencia.</span></li>
+            <li><i class="bi bi-ticket-perforated"></i><span><strong>Bonos y membresías</strong> — se descuentan solos al pasar lista.</span></li>
+            <li><i class="bi bi-folder2-open"></i><span><strong>Documentación y mensajería</strong> — material formativo con permisos y chat interno entre roles.</span></li>
+            <li><i class="bi bi-bell"></i><span><strong>Notificaciones y soporte</strong> — avisos individuales o grupales y sistema de incidencias.</span></li>
+        </ul>
+
+        <p class="login-pitch-for">
+            <strong>Pensada para:</strong> academias de tecnificación, escuelas de fútbol,
+            clubes de base y entrenadores personales que gestionan varios grupos.
+        </p>
+
+        <div class="login-contact">
+            <h3>¿Te interesa para tu academia?</h3>
+            <p>Déjame tus datos y te escribo.</p>
+
+            <div id="contactMsg" class="login-contact-msg d-none"></div>
+
+            <form id="contactForm" method="post" action="<?= base_url('demo/contacto') ?>" novalidate>
+                <?= csrf_field() ?>
+                <input type="text" name="website" tabindex="-1" autocomplete="off" class="login-contact-hp" aria-hidden="true">
+                <div class="login-contact-row">
+                    <input type="text"  name="name"    placeholder="Nombre" required maxlength="150">
+                    <input type="email" name="email"   placeholder="Email" required maxlength="191">
+                </div>
+                <input type="text" name="company" placeholder="Academia / club (opcional)" maxlength="150">
+                <textarea name="message" placeholder="Cuéntame qué necesitas" required rows="3" maxlength="4000"></textarea>
+                <button type="submit" class="login-contact-btn">
+                    <span class="btn-label">Enviar</span>
+                    <span class="btn-spinner d-none">Enviando…</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+    <?php endif; ?>
 
     </div>
 </div>
@@ -85,6 +135,50 @@
 <script src="<?= base_url('assets/js/auth.js') ?>"></script>
 <?php if (service('request')->getGet('expired')): ?>
 <script>window.showAuthError('Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.');</script>
+<?php endif; ?>
+
+<?php if ($isDemo): ?>
+<script>
+(function () {
+    var form = document.getElementById('contactForm');
+    if (!form) return;
+    var box  = document.getElementById('contactMsg');
+    var btn  = form.querySelector('.login-contact-btn');
+
+    function show(text, ok) {
+        box.textContent = text;
+        box.className = 'login-contact-msg ' + (ok ? 'is-ok' : 'is-err');
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.querySelector('.btn-label').classList.add('d-none');
+        btn.querySelector('.btn-spinner').classList.remove('d-none');
+
+        var fd = new FormData(form);
+        fd.set(CSRF.name, CSRF.hash);
+
+        fetch(form.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.csrf) { CSRF.hash = data.csrf; }
+                if (data.status === 'ok') {
+                    form.reset();
+                    show('¡Gracias! Te escribiré pronto.', true);
+                } else {
+                    show(data.error || 'No se ha podido enviar. Inténtalo de nuevo.', false);
+                }
+            })
+            .catch(function () { show('No se ha podido enviar. Inténtalo de nuevo.', false); })
+            .finally(function () {
+                btn.disabled = false;
+                btn.querySelector('.btn-label').classList.remove('d-none');
+                btn.querySelector('.btn-spinner').classList.add('d-none');
+            });
+    });
+})();
+</script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>

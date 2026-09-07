@@ -14,8 +14,11 @@ namespace App\Services;
  */
 class DemoResetService
 {
-    /** Tablas que NO se vacían (estructura / control de framework). */
-    private const KEEP = ['migrations'];
+    /**
+     * Tablas que NO se vacían: control del framework y los leads del
+     * formulario de contacto (deben sobrevivir al reset nocturno).
+     */
+    private const KEEP = ['migrations', 'demo_leads'];
 
     /**
      * @return array<string,int>  recuento de filas por tabla tras resembrar

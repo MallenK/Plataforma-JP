@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Services\AuthService;
 use App\Services\DemoResetService;
+use App\Services\MailService;
 use App\Models\UserModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -67,6 +68,111 @@ class DemoController extends BaseController
             'at'      => date('c'),
             'summary' => $summary,
         ]);
+    }
+
+    /**
+     * POST /demo/contacto — formulario de contacto del login de la demo.
+     * Guarda el lead en `demo_leads` (sobrevive al reset) y, si hay email
+     * configurado, avisa a DEMO_CONTACT_TO. Responde JSON.
+     */
+    public function contact()
+    {
+        $this->assertDemo();
+
+        $name    = trim((string) $this->request->getPost('name'));
+        $email   = trim((string) $this->request->getPost('email'));
+        $company = trim((string) $this->request->getPost('company'));
+        $message = trim((string) $this->request->getPost('message'));
+
+        // Honeypot anti-bot: campo oculto que un humano no rellena.
+        if (trim((string) $this->request->getPost('website')) !== '') {
+            return $this->response->setJSON(['status' => 'ok', 'csrf' => csrf_hash()]);
+        }
+
+        if ($name === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($message) < 5) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'error'  => 'Revisa el nombre, el email y el mensaje (mínimo 5 caracteres).',
+                'csrf'   => csrf_hash(),
+            ])->setStatusCode(422);
+        }
+
+        $db      = \Config\Database::connect();
+        $hasTable = $db->tableExists('demo_leads');
+        $leadId   = null;
+
+        if ($hasTable) {
+            $db->table('demo_leads')->insert([
+                'name'       => mb_substr($name, 0, 150),
+                'email'      => mb_substr($email, 0, 191),
+                'company'    => $company !== '' ? mb_substr($company, 0, 150) : null,
+                'message'    => mb_substr($message, 0, 4000),
+                'meta'       => json_encode([
+                    'ip' => $this->request->getIPAddress(),
+                    'ua' => mb_substr((string) $this->request->getUserAgent(), 0, 255),
+                ]),
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $leadId = (int) $db->insertID();
+        }
+
+        // Aviso por email (best-effort; si la demo no tiene RESEND_API_KEY
+        // no pasa nada, el lead ya está guardado en la tabla).
+        $to = (string) (env('DEMO_CONTACT_TO') ?: 'sergimallenweb@gmail.com');
+        $sent = (new MailService())->send(
+            $to,
+            'Nuevo contacto desde la demo — ' . $name,
+            '<div style="font-family:sans-serif">'
+                . '<p><strong>Nombre:</strong> ' . esc($name) . '</p>'
+                . '<p><strong>Email:</strong> ' . esc($email) . '</p>'
+                . ($company !== '' ? '<p><strong>Academia/empresa:</strong> ' . esc($company) . '</p>' : '')
+                . '<p><strong>Mensaje:</strong></p><p>' . nl2br(esc($message)) . '</p>'
+                . '</div>',
+            ['sender_id' => 0, 'recipient_type' => 'individual']
+        );
+
+        if ($sent && $leadId && $hasTable) {
+            $db->table('demo_leads')->where('id', $leadId)->update(['emailed' => 1]);
+        }
+        if (! $hasTable) {
+            log_message('warning', 'DemoController::contact — falta la tabla demo_leads. Lead solo en log: '
+                . $name . ' <' . $email . '> ' . $message);
+        }
+
+        return $this->response->setJSON(['status' => 'ok', 'csrf' => csrf_hash()]);
+    }
+
+    /**
+     * GET /demo/leads?token=XXX — lista los contactos recibidos.
+     * Protegida con el mismo token que /demo/reset.
+     */
+    public function leads()
+    {
+        $this->assertDemo();
+
+        $expected = (string) env('DEMO_RESET_TOKEN', '');
+        if ($expected === '' || ! hash_equals($expected, (string) $this->request->getGet('token'))) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $db = \Config\Database::connect();
+        $rows = $db->tableExists('demo_leads')
+            ? $db->table('demo_leads')->orderBy('created_at', 'DESC')->limit(500)->get()->getResultArray()
+            : [];
+
+        $html = '<!doctype html><meta charset="utf-8"><title>Leads demo</title>'
+            . '<style>body{font:14px system-ui;margin:24px;color:#111}table{border-collapse:collapse;width:100%}'
+            . 'th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;vertical-align:top}th{background:#f3f4f6}</style>'
+            . '<h1>Contactos de la demo (' . count($rows) . ')</h1><table>'
+            . '<tr><th>Fecha</th><th>Nombre</th><th>Email</th><th>Academia</th><th>Mensaje</th><th>Email enviado</th></tr>';
+        foreach ($rows as $r) {
+            $html .= '<tr><td>' . esc($r['created_at']) . '</td><td>' . esc($r['name']) . '</td>'
+                . '<td>' . esc($r['email']) . '</td><td>' . esc($r['company'] ?? '') . '</td>'
+                . '<td>' . nl2br(esc($r['message'] ?? '')) . '</td><td>' . ((int) $r['emailed'] ? 'sí' : 'no') . '</td></tr>';
+        }
+        $html .= '</table>';
+
+        return $this->response->setBody($html);
     }
 
     private function assertDemo(): void
