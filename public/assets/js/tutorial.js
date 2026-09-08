@@ -390,14 +390,50 @@
     let steps       = [];
     let role        = '';
     let overlay, card, spotlightEl;
+    let vertWords   = null; // vocabulario del vertical de demo activo (o null = fútbol)
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  VOCABULARIO POR VERTICAL (demo)
+    // ─────────────────────────────────────────────────────────────────────────
+    // El contenido del tutorial nació pensado para academias de fútbol. Para
+    // que la demo se pueda "vestir" de otros negocios (refuerzo, idiomas,
+    // clases particulares) sin duplicar los 10 pasos por vertical, se hace
+    // una sustitución de las palabras clave que cambian de negocio a negocio.
+    // Los detalles deportivos específicos (categoría, liga, posición...) no
+    // se tocan: son un ejemplo de lo que puede guardar una ficha, no rompen
+    // el mensaje en ningún vertical.
+    const WORD_REPLACEMENTS = [
+        // [regex de origen (fútbol), clave del vocabulario del vertical]
+        [/Alumnos/g,       'alumno_plural'],
+        [/alumnos/g,       'alumno_plural_lc'],
+        [/Alumno\b/g,      'alumno'],
+        [/alumno\b/g,      'alumno_lc'],
+        [/Entrenadores/g,  'entrenador_plural'],
+        [/entrenadores/g,  'entrenador_plural_lc'],
+        [/Entrenador\b/g,  'entrenador'],
+        [/entrenador\b/g,  'entrenador_lc'],
+        [/jugadores/g,     'alumno_plural_lc'],
+        [/jugador/g,       'alumno_lc'],
+    ];
+
+    function replaceVertical(text) {
+        if (!vertWords || typeof text !== 'string') return text;
+        let out = text;
+        for (const [re, key] of WORD_REPLACEMENTS) {
+            const val = vertWords[key];
+            if (val) out = out.replace(re, val);
+        }
+        return out;
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     //  INIT
     // ─────────────────────────────────────────────────────────────────────────
 
-    function init(userRole, autoShow) {
-        role  = userRole;
-        steps = STEPS[role] || STEPS.player;
+    function init(userRole, autoShow, verticalWords) {
+        role      = userRole;
+        steps     = STEPS[role] || STEPS.player;
+        vertWords = verticalWords || null;
 
         buildOverlay();
         attachTrigger();
@@ -687,8 +723,8 @@
 
         // Textos
         label.textContent = 'Paso ' + (currentStep + 1) + ' de ' + steps.length;
-        title.textContent = step.title;
-        body.innerHTML    = step.body;
+        title.textContent = replaceVertical(step.title);
+        body.innerHTML    = replaceVertical(step.body);
 
         // Botones nav
         prevBtn.disabled = (currentStep === 0);
