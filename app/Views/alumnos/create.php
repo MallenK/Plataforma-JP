@@ -109,7 +109,7 @@ $pageSubtitle = 'Crear cuenta y ficha del alumno';
                             <div class="form-group">
                                 <label class="form-label">Peso (kg)</label>
                                 <input type="number" name="weight" class="form-control-jp"
-                                    placeholder="Ej: 80" min="30" max="200"
+                                    placeholder="Ej: 80" min="10" max="200"
                                     value="<?= esc(old('weight')) ?>">
                             </div>
                         </div>
