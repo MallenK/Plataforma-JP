@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = 'Editar ' . mb_strtolower(demo_label('entrenador'));
+$pageTitle    = 'Editar entrenador';
 $pageSubtitle = esc($coach['name'] ?? '');
 ?>
 

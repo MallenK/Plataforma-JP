@@ -2,8 +2,8 @@
 
 <?php
 helper('avatar');
-$pageTitle    = esc($coach['name'] ?? demo_label('entrenador'));
-$pageSubtitle = 'Perfil de ' . mb_strtolower(demo_label('entrenador'));
+$pageTitle    = esc($coach['name'] ?? 'Entrenador');
+$pageSubtitle = 'Perfil del entrenador';
 
 $name        = $coach['name']   ?? '?';
 $userAvatar  = $coach['avatar'] ?? null;

@@ -2,8 +2,8 @@
 
 <?php
 helper('avatar');
-$pageTitle    = esc($alumno['name'] ?? demo_label('alumno'));
-$pageSubtitle = 'Perfil completo de ' . mb_strtolower(demo_label('alumno'));
+$pageTitle    = esc($alumno['name'] ?? 'Alumno');
+$pageSubtitle = 'Perfil completo del alumno';
 
 $name        = $alumno['name']   ?? '?';
 $userAvatar  = $alumno['avatar'] ?? null;

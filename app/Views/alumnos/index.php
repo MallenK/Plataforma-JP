@@ -1,8 +1,8 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = demo_label('alumno_plural');
-$pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' registrados';
+$pageTitle    = 'Alumnos';
+$pageSubtitle = 'Gestión de alumnos registrados';
 ?>
 
 <?= $this->section('page_content') ?>
@@ -11,7 +11,7 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
 <div class="alert-jp success" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
     <i class="bi bi-check-circle-fill" style="font-size:18px;margin-top:2px;flex-shrink:0"></i>
     <div>
-        <strong><?= esc(demo_label('alumno')) ?> "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
+        <strong>Alumno "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
         <span style="font-size:13px">
             Contraseña inicial:
             <code style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px">
@@ -35,7 +35,7 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
     <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
     <div class="d-flex gap-2">
         <a href="<?= base_url('alumnos/nuevo') ?>" class="btn-jp btn-jp-primary">
-            <i class="bi bi-person-plus-fill"></i> Nuevo <?= esc(mb_strtolower(demo_label('alumno'))) ?>
+            <i class="bi bi-person-plus-fill"></i> Nuevo alumno
         </a>
     </div>
     <?php endif; ?>
@@ -68,10 +68,10 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
     <div class="card-jp-header">
         <span class="card-jp-title">
             <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>
-            <?= esc(demo_label('alumno_plural')) ?> registrados
+            Alumnos registrados
         </span>
         <span style="font-size:12px;color:var(--text-muted)" id="total-count">
-            <?= count($players ?? []) ?> <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?>
+            <?= count($players ?? []) ?> alumnos
         </span>
     </div>
 
@@ -80,7 +80,7 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
         <table class="table-jp" id="alumnos-table">
             <thead>
                 <tr>
-                    <th><?= esc(demo_label('alumno')) ?></th>
+                    <th>Alumno</th>
                     <th>Email</th>
                     <th>Estado</th>
                     <th>Ficha</th>
@@ -151,11 +151,11 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
     <?php else: ?>
     <div class="empty-state">
         <i class="bi bi-people"></i>
-        <h3>Sin <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?> registrados</h3>
-        <p>Todavía no hay <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?> en el sistema.</p>
+        <h3>Sin alumnos registrados</h3>
+        <p>Todavía no hay alumnos en el sistema.</p>
         <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
         <a href="<?= base_url('alumnos/nuevo') ?>" class="btn-jp btn-jp-primary">
-            <i class="bi bi-person-plus-fill"></i> Añadir primer <?= esc(mb_strtolower(demo_label('alumno'))) ?>
+            <i class="bi bi-person-plus-fill"></i> Añadir primer alumno
         </a>
         <?php endif; ?>
     </div>
@@ -182,7 +182,6 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
 <script>
 // Filtro live de la tabla
 (function () {
-    const alumnoPluralLc = <?= json_encode(mb_strtolower(demo_label('alumno_plural'))) ?>;
     const searchInput   = document.getElementById('search-input');
     const filterStatus  = document.getElementById('filter-status');
     const filterProfile = document.getElementById('filter-profile');
@@ -210,7 +209,7 @@ $pageSubtitle = 'Gestión de ' . mb_strtolower(demo_label('alumno_plural')) . ' 
             if (show) visible++;
         });
 
-        totalCount.textContent = visible + ' ' + alumnoPluralLc;
+        totalCount.textContent = visible + ' alumnos';
     }
 
     searchInput.addEventListener('input', applyFilters);

@@ -285,7 +285,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>
-                    <?= esc(demo_label('alumno_plural')) ?> (<?= count($session['players']) ?>)
+                    Jugadores (<?= count($session['players']) ?>)
                 </span>
             </div>
 
@@ -295,8 +295,8 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 <table class="table-jp">
                     <thead>
                         <tr>
-                            <th><?= esc(demo_label('alumno')) ?></th>
-                            <th>Aviso <?= esc(mb_strtolower(demo_label('alumno'))) ?></th>
+                            <th>Jugador</th>
+                            <th>Aviso alumno</th>
                             <th>Asistencia</th>
                             <th>Obs.</th>
                         </tr>
@@ -487,7 +487,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <?php endif; ?>
                     <?php if ($withNote): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="color:#d97706"><i class="bi bi-exclamation-triangle-fill me-1"></i>Con aviso <?= esc(mb_strtolower(demo_label('alumno'))) ?></span>
+                        <span style="color:#d97706"><i class="bi bi-exclamation-triangle-fill me-1"></i>Con aviso alumno</span>
                         <strong><?= $withNote ?></strong>
                     </div>
                     <?php endif; ?>
@@ -514,20 +514,20 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
                     <i class="bi bi-person-plus-fill me-2" style="color:var(--accent)"></i>
-                    Añadir <?= esc(mb_strtolower(demo_label('alumno'))) ?>
+                    Añadir alumno
                     <span style="font-size:11px;color:var(--text-muted);margin-left:6px">(<?= $playerCount ?>/<?= $maxPlayers ?> · <?= $fmtLabel ?>)</span>
                 </span>
             </div>
             <div class="card-jp-body">
                 <?php if ($playerCount >= $maxPlayers): ?>
                 <p style="font-size:13px;color:var(--text-muted);margin:0;text-align:center">
-                    <i class="bi bi-lock-fill me-1"></i>Sesión completa — máximo <?= $maxPlayers ?> <?= esc(mb_strtolower($maxPlayers > 1 ? demo_label('alumno_plural') : demo_label('alumno'))) ?> (<?= $fmtLabel ?>).
+                    <i class="bi bi-lock-fill me-1"></i>Sesión completa — máximo <?= $maxPlayers ?> alumno<?= $maxPlayers > 1 ? 's' : '' ?> (<?= $fmtLabel ?>).
                 </p>
                 <?php else: ?>
                 <form action="/clases/<?= $session['id'] ?>/jugadores/add" method="POST">
                     <?= csrf_field() ?>
                     <select name="user_id" class="form-control-jp mb-2" required>
-                        <option value="">Seleccionar <?= esc(mb_strtolower(demo_label('alumno'))) ?>…</option>
+                        <option value="">Seleccionar jugador…</option>
                         <?php foreach ($playerOptions as $p): ?>
                             <?php $isAssigned = false;
                             foreach ($session['players'] as $sp) {
@@ -539,7 +539,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <?php endforeach; ?>
                     </select>
                     <select name="coach_id" class="form-control-jp mb-2">
-                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin ' . mb_strtolower(demo_label('entrenador')) . ' asignado' ?></option>
+                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin entrenador asignado' ?></option>
                         <?php
                         $responsiblePool = $isStaffSession ? $staffOptions : $coachOptions;
                         foreach ($responsiblePool as $c): ?>
@@ -547,7 +547,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
-                        <i class="bi bi-plus-lg me-1"></i>Añadir <?= esc(mb_strtolower(demo_label('alumno'))) ?>
+                        <i class="bi bi-plus-lg me-1"></i>Añadir alumno
                     </button>
                 </form>
                 <?php endif; ?>
@@ -607,7 +607,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
                         <label class="form-label"><i class="bi bi-arrow-right-circle me-1" style="color:#7c3aed"></i>Antes (planificación)</label>
-                        <textarea id="obsPreInput" class="form-control-jp" rows="4" placeholder="Objetivos para <?= esc(mb_strtolower('este ' . demo_label('alumno'))) ?>…"></textarea>
+                        <textarea id="obsPreInput" class="form-control-jp" rows="4" placeholder="Objetivos para este jugador…"></textarea>
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Después (feedback)</label>

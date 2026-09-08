@@ -54,15 +54,12 @@ $routes->get('logout',  'AuthController::logoutConfirm');
 // en cualquier otro entorno). Ver app/Helpers/demo_helper.php.
 //   POST /demo/invitado       → login como invitado (rol en el body)
 //   GET  /demo/reset?token=X   → borra y resiembra (lo llama GitHub Actions)
-//   POST /demo/vertical        → cambia el vocabulario visible (fútbol,
-//                                 refuerzo, idiomas, clases particulares)
 // ------------------------------------------------------------
 
 $routes->post('demo/invitado', 'DemoController::guestLogin');
 $routes->post('demo/contacto', 'DemoController::contact');
 $routes->get('demo/reset',     'DemoController::reset');
 $routes->get('demo/leads',     'DemoController::leads');
-$routes->post('demo/vertical', 'DemoController::setVertical');
 
 
 // ------------------------------------------------------------

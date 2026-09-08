@@ -226,7 +226,7 @@ $defaultDay = $defaultDay ?? $today;
             <div class="fb-search-wrap">
                 <i class="bi bi-search"></i>
                 <input type="text" name="buscar" value="<?= esc($search) ?>"
-                       placeholder="Buscar <?= esc(mb_strtolower(demo_label('alumno'))) ?> o <?= esc(mb_strtolower(demo_label('entrenador'))) ?>…" class="fb-search-inp">
+                       placeholder="Buscar alumno o entrenador…" class="fb-search-inp">
             </div>
             <button type="submit" class="btn-jp btn-jp-sm">Buscar</button>
             <?php if ($search): ?>

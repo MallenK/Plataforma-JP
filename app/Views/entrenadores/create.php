@@ -1,8 +1,8 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = 'Nuevo ' . mb_strtolower(demo_label('entrenador'));
-$pageSubtitle = 'Añadir miembro al equipo';
+$pageTitle    = 'Nuevo entrenador';
+$pageSubtitle = 'Añadir miembro al equipo técnico';
 ?>
 
 <?= $this->section('page_content') ?>

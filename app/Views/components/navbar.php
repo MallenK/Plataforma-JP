@@ -8,8 +8,8 @@ $avatar = session('avatar');
 $roleLabel = match($role) {
     'superadmin' => 'Super Admin',
     'admin'      => 'Administrador',
-    'coach'      => demo_label('entrenador'),
-    'alumno', 'player' => demo_label('alumno'),
+    'coach'      => 'Entrenador',
+    'alumno'     => 'Alumno',
     'staff'      => 'Staff',
     default      => ucfirst($role),
 };
@@ -23,11 +23,11 @@ $uriSegment = service('uri')->getSegment(1) ?: 'dashboard';
 
 $navTitles = [
     'dashboard'    => ['Dashboard',      strtoupper($roleLabel) . ' · PANEL DE CONTROL'],
-    'alumnos'      => [demo_label('alumno_plural'),     'Gestión de ' . mb_strtolower(demo_label('alumno_plural'))],
-    'alumno'       => [demo_label('mi_ficha'),          'Perfil de ' . mb_strtolower(demo_label('alumno'))],
-    'entrenadores' => [demo_label('entrenador_plural'), 'Equipo técnico'],
+    'alumnos'      => ['Alumnos',        'Gestión de alumnos'],
+    'alumno'       => ['Mi ficha',       'Perfil de alumno'],
+    'entrenadores' => ['Entrenadores',   'Equipo técnico'],
     'organizador'  => ['Organizador',    'Calendario y planificación'],
-    'clases'       => [demo_label('clase_plural'),      demo_label('clase_subtitle')],
+    'clases'       => ['Clases',         'Sesiones de entrenamiento'],
     'bonos'        => ['Bonos',          'Membresías y bonos'],
     'documentacion'=> ['Documentación',  'Material formativo'],
     'finanzas'     => ['Finanzas',       'Control económico'],

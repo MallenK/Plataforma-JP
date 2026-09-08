@@ -1,8 +1,8 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = 'Nuevo ' . mb_strtolower(demo_label('alumno'));
-$pageSubtitle = 'Crear cuenta y ficha de ' . mb_strtolower(demo_label('alumno'));
+$pageTitle    = 'Nuevo alumno';
+$pageSubtitle = 'Crear cuenta y ficha del alumno';
 ?>
 
 <?= $this->section('page_content') ?>

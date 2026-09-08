@@ -1,8 +1,8 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = demo_label('entrenador_plural');
-$pageSubtitle = 'Gestión del equipo';
+$pageTitle    = 'Entrenadores';
+$pageSubtitle = 'Gestión del equipo técnico';
 ?>
 
 <?= $this->section('page_content') ?>
@@ -11,7 +11,7 @@ $pageSubtitle = 'Gestión del equipo';
 <div class="alert-jp success" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
     <i class="bi bi-check-circle-fill" style="font-size:18px;margin-top:2px;flex-shrink:0"></i>
     <div>
-        <strong><?= esc(demo_label('entrenador')) ?> "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
+        <strong>Entrenador "<?= esc(session()->getFlashdata('created_name')) ?>" creado correctamente.</strong><br>
         <span style="font-size:13px">
             Contraseña inicial:
             <code style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px">
@@ -34,7 +34,7 @@ $pageSubtitle = 'Gestión del equipo';
 <div class="page-header">
     <div class="d-flex gap-2">
         <a href="<?= base_url('entrenadores/nuevo') ?>" class="btn-jp btn-jp-primary">
-            <i class="bi bi-person-plus-fill"></i> Nuevo <?= esc(mb_strtolower(demo_label('entrenador'))) ?>
+            <i class="bi bi-person-plus-fill"></i> Nuevo entrenador
         </a>
     </div>
 </div>
@@ -56,10 +56,10 @@ $pageSubtitle = 'Gestión del equipo';
     <div class="card-jp-header">
         <span class="card-jp-title">
             <i class="bi bi-person-workspace me-2" style="color:var(--success)"></i>
-            Equipo
+            Equipo técnico
         </span>
         <span style="font-size:12px;color:var(--text-muted)" id="total-count">
-            <?= count($coaches ?? []) ?> <?= esc(mb_strtolower(demo_label('entrenador_plural'))) ?>
+            <?= count($coaches ?? []) ?> entrenador(es)
         </span>
     </div>
 
@@ -68,10 +68,10 @@ $pageSubtitle = 'Gestión del equipo';
         <table class="table-jp" id="coaches-table">
             <thead>
                 <tr>
-                    <th><?= esc(demo_label('entrenador')) ?></th>
+                    <th>Entrenador</th>
                     <th>Email</th>
                     <th style="text-align:center">Sesiones</th>
-                    <th style="text-align:center"><?= esc(demo_label('alumno_plural')) ?></th>
+                    <th style="text-align:center">Alumnos</th>
                     <th>Estado</th>
                     <th style="text-align:right">Acciones</th>
                 </tr>
@@ -87,7 +87,7 @@ $pageSubtitle = 'Gestión del equipo';
                             <div class="td-avatar" style="background:var(--success)"><?= strtoupper(substr($c['name'], 0, 1)) ?></div>
                             <div>
                                 <div class="td-name"><?= esc($c['name']) ?></div>
-                                <div class="td-sub"><?= esc(demo_label('entrenador')) ?></div>
+                                <div class="td-sub">Entrenador</div>
                             </div>
                         </div>
                     </td>
@@ -132,10 +132,10 @@ $pageSubtitle = 'Gestión del equipo';
     <?php else: ?>
     <div class="empty-state">
         <i class="bi bi-person-workspace"></i>
-        <h3>Sin <?= esc(mb_strtolower(demo_label('entrenador_plural'))) ?> registrados</h3>
-        <p>Añade el primer miembro del equipo para empezar.</p>
+        <h3>Sin entrenadores registrados</h3>
+        <p>Añade el primer miembro del equipo técnico para empezar.</p>
         <a href="<?= base_url('entrenadores/nuevo') ?>" class="btn-jp btn-jp-primary">
-            <i class="bi bi-person-plus-fill"></i> Añadir <?= esc(mb_strtolower(demo_label('entrenador'))) ?>
+            <i class="bi bi-person-plus-fill"></i> Añadir entrenador
         </a>
     </div>
     <?php endif; ?>
@@ -160,7 +160,6 @@ $pageSubtitle = 'Gestión del equipo';
 <?= $this->section('scripts') ?>
 <script>
 (function () {
-    const entrenadorPluralLc = <?= json_encode(mb_strtolower(demo_label('entrenador_plural'))) ?>;
     const searchInput = document.getElementById('search-input');
     const rows        = document.querySelectorAll('#coaches-table tbody tr');
     const totalCount  = document.getElementById('total-count');
@@ -177,7 +176,7 @@ $pageSubtitle = 'Gestión del equipo';
             if (show) visible++;
         });
 
-        totalCount.textContent = visible + ' ' + entrenadorPluralLc;
+        totalCount.textContent = visible + ' entrenador(es)';
     }
 
     searchInput.addEventListener('input', applyFilters);
