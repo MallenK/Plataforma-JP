@@ -11,7 +11,7 @@
         <?php endif; ?>
         <?php if ($canManage): ?>
         <a href="/clases/nueva" class="btn-jp btn-jp-primary">
-            <i class="bi bi-plus-lg me-1"></i>Nueva clase (avanzada)
+            <i class="bi bi-plus-lg me-1"></i>Nueva <?= esc(mb_strtolower(demo_label('clase'))) ?> (avanzada)
         </a>
         <?php endif; ?>
     </div>
@@ -33,7 +33,7 @@
                 <div class="metric-icon blue"><i class="bi bi-calendar-week"></i></div>
             </div>
             <div class="metric-value"><?= $stats['this_week'] ?></div>
-            <div class="metric-footer"><span class="metric-footer-label">clases programadas</span></div>
+            <div class="metric-footer"><span class="metric-footer-label"><?= esc(mb_strtolower(demo_label('clase_plural'))) ?> programadas</span></div>
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -49,11 +49,11 @@
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Jugadores activos</span>
+                <span class="metric-label"><?= esc(demo_label('alumno_plural')) ?> activos</span>
                 <div class="metric-icon orange"><i class="bi bi-people-fill"></i></div>
             </div>
             <div class="metric-value"><?= $stats['active_players'] ?></div>
-            <div class="metric-footer"><span class="metric-footer-label">en clases este mes</span></div>
+            <div class="metric-footer"><span class="metric-footer-label">en <?= esc(mb_strtolower(demo_label('clase_plural'))) ?> este mes</span></div>
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -113,7 +113,7 @@
         <div class="cal-search" id="cal-search">
             <i class="bi bi-search cal-search-icon"></i>
             <input type="text" id="cal-search-input" autocomplete="off" spellcheck="false"
-                   placeholder="Buscar una clase por nombre, entrenador o jugador…">
+                   placeholder="Buscar por nombre, <?= esc(mb_strtolower(demo_label('entrenador'))) ?> o <?= esc(mb_strtolower(demo_label('alumno'))) ?>…">
             <button type="button" id="cal-search-clear" aria-label="Limpiar búsqueda" hidden>
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -792,6 +792,8 @@ const ClaseSearch = (function () {
     const esc = CalOverlap.esc;
     const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const COLOR = { scheduled:'#3b82f6', completed:'#10b981', cancelled:'#94a3b8' };
+    const ALUMNO_LC = <?= json_encode(mb_strtolower(demo_label('alumno'))) ?>;
+    const ALUMNO_PLURAL_LC = <?= json_encode(mb_strtolower(demo_label('alumno_plural'))) ?>;
     let timer = null, lastQ = '', ctrl = null;
 
     function fmtDate(d) {
@@ -810,7 +812,7 @@ const ClaseSearch = (function () {
         panel.innerHTML = rows.map(function (r) {
             const sub = [fmtDate(r.date) + (r.start ? ' · ' + esc(r.start) : '')];
             if (r.coaches) sub.push(esc(r.coaches));
-            if (r.players) sub.push(r.players + (r.players === 1 ? ' jugador' : ' jugadores'));
+            if (r.players) sub.push(r.players + ' ' + (r.players === 1 ? ALUMNO_LC : ALUMNO_PLURAL_LC));
             return '<a class="cal-search-row" href="/clases/' + encodeURIComponent(r.id) + '">' +
                 '<span class="csr-dot" style="background:' + (COLOR[r.status] || '#3b82f6') + '"></span>' +
                 '<span class="csr-main">' +

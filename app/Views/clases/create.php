@@ -116,7 +116,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                        style="accent-color:var(--accent)">
                                 <div>
                                     <div style="font-weight:700;color:var(--text-h)">Individual</div>
-                                    <div style="font-size:12px;color:var(--text-muted)">1 alumno</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">1 <?= esc(mb_strtolower(demo_label('alumno'))) ?></div>
                                 </div>
                             </label>
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1">
@@ -125,7 +125,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                        style="accent-color:var(--accent)">
                                 <div>
                                     <div style="font-weight:700;color:var(--text-h)">Pareja</div>
-                                    <div style="font-size:12px;color:var(--text-muted)">2 alumnos</div>
+                                    <div style="font-size:12px;color:var(--text-muted)">2 <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?></div>
                                 </div>
                             </label>
                         </div>
@@ -342,7 +342,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 <div class="card-jp-header">
                     <span class="card-jp-title" style="font-size:13px" id="responsible-card-title">
                         <i class="bi bi-person-workspace me-2" id="responsible-card-icon" style="color:#059669"></i>
-                        <span id="responsible-card-label"><?= $currentSessionType === 'staff' ? 'Staff responsable' : 'Entrenadores' ?></span>
+                        <span id="responsible-card-label"><?= $currentSessionType === 'staff' ? 'Staff responsable' : esc(demo_label('entrenador_plural')) ?></span>
                     </span>
                 </div>
                 <div class="card-jp-body">
@@ -350,7 +350,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     <select id="coachSelect" class="form-control-jp mb-2"
                             onchange="addCoach(this)"
                             style="<?= $currentSessionType === 'staff' ? 'display:none' : '' ?>">
-                        <option value="">Añadir entrenador…</option>
+                        <option value="">Añadir <?= esc(mb_strtolower(demo_label('entrenador'))) ?>…</option>
                         <?php foreach ($coachOptions as $c): ?>
                             <option value="<?= $c['id'] ?>" data-name="<?= esc($c['name']) ?>">
                                 <?= esc($c['name']) ?>
@@ -383,16 +383,16 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-            <!-- Jugadores -->
+            <!-- Alumnos -->
             <div class="card-jp">
                 <div class="card-jp-header">
                     <span class="card-jp-title" style="font-size:13px">
-                        <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>Jugadores
+                        <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i><?= esc(demo_label('alumno_plural')) ?>
                     </span>
                 </div>
                 <div class="card-jp-body">
                     <select id="playerSelect" class="form-control-jp mb-2" onchange="addPlayer(this)">
-                        <option value="">Añadir jugador…</option>
+                        <option value="">Añadir <?= esc(mb_strtolower(demo_label('alumno'))) ?>…</option>
                         <?php foreach ($playerOptions as $p): ?>
                             <option value="<?= $p['id'] ?>" data-name="<?= esc($p['name']) ?>">
                                 <?= esc($p['name']) ?>
@@ -421,7 +421,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['players'] ?? []) ? '' : ';display:none' ?>">Sin jugadores asignados</div>
+                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['players'] ?? []) ? '' : ';display:none' ?>">Sin <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?> asignados</div>
                 </div>
             </div>
 

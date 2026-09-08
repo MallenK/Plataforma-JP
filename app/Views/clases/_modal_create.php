@@ -46,14 +46,14 @@ $btnId   = $btnId   ?? 'cm-submit';
                             <input type="radio" name="cm-class-format" value="individual" checked style="accent-color:var(--accent)">
                             <div>
                                 <div style="font-weight:700;font-size:13px">Individual</div>
-                                <div style="font-size:11px;color:var(--text-muted)">1 alumno</div>
+                                <div style="font-size:11px;color:var(--text-muted)">1 <?= esc(mb_strtolower(demo_label('alumno'))) ?></div>
                             </div>
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;flex:1">
                             <input type="radio" name="cm-class-format" value="pareja" style="accent-color:var(--accent)">
                             <div>
                                 <div style="font-weight:700;font-size:13px">Pareja</div>
-                                <div style="font-size:11px;color:var(--text-muted)">2 alumnos</div>
+                                <div style="font-size:11px;color:var(--text-muted)">2 <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?></div>
                             </div>
                         </label>
                     </div>
@@ -134,17 +134,17 @@ $btnId   = $btnId   ?? 'cm-submit';
 
                 <!-- Entrenadores -->
                 <div class="col-12 col-md-6">
-                    <label class="form-label">Entrenadores</label>
+                    <label class="form-label"><?= esc(demo_label('entrenador_plural')) ?></label>
                     <select id="cm-coach-sel" class="form-control-jp">
-                        <option value="">Añadir entrenador…</option>
+                        <option value="">Añadir <?= esc(mb_strtolower(demo_label('entrenador'))) ?>…</option>
                     </select>
                     <div id="cm-coach-list" class="cm-tags mt-2"></div>
                 </div>
-                <!-- Jugadores -->
+                <!-- Alumnos -->
                 <div class="col-12 col-md-6">
-                    <label class="form-label">Jugadores</label>
+                    <label class="form-label"><?= esc(demo_label('alumno_plural')) ?></label>
                     <select id="cm-player-sel" class="form-control-jp">
-                        <option value="">Añadir jugador…</option>
+                        <option value="">Añadir <?= esc(mb_strtolower(demo_label('alumno'))) ?>…</option>
                     </select>
                     <div id="cm-player-list" class="cm-tags mt-2"></div>
                 </div>

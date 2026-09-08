@@ -80,7 +80,7 @@ $attendanceOpts = [
         <table class="table-jp" style="min-width:700px">
             <thead>
                 <tr>
-                    <th style="width:28%">Alumno</th>
+                    <th style="width:28%"><?= esc(demo_label('alumno')) ?></th>
                     <th style="width:18%">Asistencia</th>
                     <th style="width:18%">Razón ausencia</th>
                     <th style="width:20%">Nota adicional</th>
@@ -251,7 +251,7 @@ $attendanceOpts = [
             var playerId  = this.dataset.player;
             var self      = this;
 
-            if (!confirm('¿Descontar 1 sesión del bono de este jugador?')) return;
+            if (!confirm('¿Descontar 1 sesión del bono de <?= esc(mb_strtolower('este ' . demo_label('alumno')), 'js') ?>?')) return;
 
             self.disabled = true;
             self.textContent = 'Descontando…';

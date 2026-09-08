@@ -2382,19 +2382,17 @@ input[type="time"] {
     align-items: center;
     justify-content: center;
 }
-.login-stage--demo { align-items: flex-start; padding-top: 6vh; padding-bottom: 6vh; }
+.login-stage--demo { align-items: flex-start; padding-top: 6vh; padding-bottom: 8vh; }
 .login-stage--demo .login-split {
-    align-items: stretch;
+    flex-direction: column;
+    align-items: center;
     gap: 28px;
     width: 100%;
-    max-width: 940px;
-    flex-wrap: wrap;
+    max-width: 640px;
 }
-.login-stage--demo .login-card { max-width: 380px; flex: 0 0 380px; }
 
 .login-pitch {
-    flex: 1 1 380px;
-    min-width: 300px;
+    width: 100%;
     padding: 38px 34px;
     border-radius: 36px;
     background: rgba(18, 18, 18, .46);
@@ -2494,9 +2492,7 @@ input[type="time"] {
 
 @media (max-width: 880px) {
     .login-stage--demo { align-items: center; }
-    .login-stage--demo .login-split { flex-direction: column; align-items: center; max-width: 420px; }
-    .login-stage--demo .login-card { flex-basis: auto; }
-    .login-pitch { flex-basis: auto; width: 100%; }
+    .login-stage--demo .login-split { max-width: 420px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
