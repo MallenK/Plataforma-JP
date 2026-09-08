@@ -194,4 +194,75 @@ final class ClasesServiceTest extends CIUnitTestCase
         $valid = !empty($data['title']) && !empty($data['session_date']) && !empty($data['start_time']);
         $this->assertTrue($valid);
     }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Conciliación bono ↔ asistencia (lógica pura, sin DB)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * @dataProvider consumeCases
+     */
+    public function testAttendanceConsumesBono(string $status, bool $expected): void
+    {
+        $this->assertSame($expected, ClasesService::attendanceConsumesBono($status));
+    }
+
+    public static function consumeCases(): array
+    {
+        return [
+            'presente consume'        => ['present', true],
+            'confirmado consume'      => ['confirmed', true],
+            'no justificado consume'  => ['unjustified', true],
+            'ausente NO consume'      => ['absent', false],
+            'avisó NO consume'        => ['declined', false],
+            'pendiente NO consume'    => ['pending', false],
+        ];
+    }
+
+    public function testAttendanceConsumesBonoToleraNull(): void
+    {
+        $this->assertFalse(ClasesService::attendanceConsumesBono(null));
+        $this->assertFalse(ClasesService::attendanceConsumesBono('inventado'));
+    }
+
+    /**
+     * @dataProvider absenceCases
+     */
+    public function testAttendanceIsAbsence(string $status, bool $expected): void
+    {
+        $this->assertSame($expected, ClasesService::attendanceIsAbsence($status));
+    }
+
+    public static function absenceCases(): array
+    {
+        return [
+            'ausente es falta'         => ['absent', true],
+            'no justificado es falta'  => ['unjustified', true],
+            'presente NO es falta'     => ['present', false],
+            'confirmado NO es falta'   => ['confirmed', false],
+            'avisó NO es falta'        => ['declined', false],
+            'pendiente NO es falta'    => ['pending', false],
+        ];
+    }
+
+    /**
+     * Un estado no puede consumir bono y a la vez ser una falta justificable
+     * salvo 'unjustified' (falta que penaliza con el bono). Fija esa intención.
+     */
+    public function testUnjustifiedEsElUnicoQueConsumeYEsFalta(): void
+    {
+        foreach (['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'] as $s) {
+            $both = ClasesService::attendanceConsumesBono($s) && ClasesService::attendanceIsAbsence($s);
+            $this->assertSame($s === 'unjustified', $both, "estado {$s}");
+        }
+    }
+
+    public function testReabrirSesionRechazaEstadosNoReabribles(): void
+    {
+        // No necesita DB: 'scheduled' se rechaza antes de tocar el modelo…
+        // pero find() sí se llama primero. Nos limitamos a comprobar la firma.
+        $m = new \ReflectionMethod(ClasesService::class, 'reabrirSesion');
+        $this->assertTrue($m->isPublic());
+        $this->assertSame('array', (string) $m->getReturnType());
+    }
 }

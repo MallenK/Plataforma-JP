@@ -278,9 +278,22 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
+        $refunded = $this->clasesService->countDeductedBonos($id);
         $this->clasesService->deleteSession($id);
-        session()->setFlashdata('success', 'Sesión eliminada.');
+
+        $msg = 'Sesión eliminada.';
+        if ($refunded > 0) {
+            $msg .= " Se {$this->plural($refunded, 'ha devuelto', 'han devuelto')} {$refunded} "
+                  . $this->plural($refunded, 'bono ya descontado', 'bonos ya descontados') . '.';
+        }
+        session()->setFlashdata('success', $msg);
         return redirect()->to('/clases');
+    }
+
+    /** Ayudante mínimo de plural para los mensajes flash. */
+    protected function plural(int $n, string $one, string $many): string
+    {
+        return $n === 1 ? $one : $many;
     }
 
     public function cerrarSesion(int $id)
@@ -300,6 +313,38 @@ class ClasesController extends BaseController
         return redirect()->to('/clases/' . $id . '/lista');
     }
 
+    /**
+     * Reabre una sesión cerrada (o reactiva una cancelada): vuelve a 'scheduled'.
+     * Cerrar/cancelar deja así de ser irreversible.
+     */
+    public function reabrirSesion(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para reabrir esta sesión.');
+            return redirect()->to('/clases');
+        }
+
+        $result = $this->clasesService->reabrirSesion($id);
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se pudo reabrir la sesión.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        if (($result['from'] ?? '') === 'cancelled') {
+            session()->setFlashdata('success', 'Sesión reactivada: vuelve a estar programada.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        session()->setFlashdata('success', 'Sesión reabierta: ya puedes editar la asistencia de nuevo.');
+        return redirect()->to('/clases/' . $id . '/lista');
+    }
+
     public function cancel(int $id)
     {
         $session = $this->clasesService->getSession($id);
@@ -312,8 +357,16 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
+        $refunded = $this->clasesService->countDeductedBonos($id);
         $this->clasesService->cancelSession($id);
-        session()->setFlashdata('success', 'Sesión cancelada.');
+
+        $msg = 'Sesión cancelada.';
+        if ($refunded > 0) {
+            $msg .= " Se {$this->plural($refunded, 'ha devuelto', 'han devuelto')} {$refunded} "
+                  . $this->plural($refunded, 'bono ya descontado', 'bonos ya descontados')
+                  . ' (la clase no se imparte).';
+        }
+        session()->setFlashdata('success', $msg);
         return redirect()->to('/clases/' . $id);
     }
 
@@ -460,7 +513,7 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $this->clasesService->guardarLista(
+        $res = $this->clasesService->guardarLista(
             $id,
             $this->currentUserId(),
             $this->request->getPost('attendance') ?? [],
@@ -468,14 +521,64 @@ class ClasesController extends BaseController
             $this->request->getPost('absence_notes') ?? []
         );
 
-        session()->setFlashdata('success', 'Asistencia guardada.');
+        $devueltos = (int) ($res['bonos_devueltos'] ?? 0);
+        $cierre    = '';
+
+        // "Guardar y cerrar": un solo gesto para no dejar la sesión a medias.
+        $cerrar = (string) $this->request->getPost('cerrar') === '1';
+        if ($cerrar && ($session['status'] ?? '') === 'scheduled') {
+            $this->clasesService->cerrarSesion($id, $this->currentUserId());
+            $cierre = ' y sesión cerrada (puedes reabrirla si necesitas corregir algo)';
+        }
+
+        $msg = 'Asistencia guardada' . $cierre . '.';
+        if ($devueltos > 0) {
+            $msg .= " Se {$this->plural($devueltos, 'ha devuelto', 'han devuelto')} {$devueltos} "
+                  . $this->plural($devueltos, 'bono', 'bonos')
+                  . " al cambiar la asistencia de {$this->plural($devueltos, 'un alumno', 'varios alumnos')}.";
+        }
+        session()->setFlashdata('success', $msg);
+
         return redirect()->to('/clases/' . $id . '/lista');
     }
 
     public function deductBono(int $id, int $playerId)
     {
-        $result = $this->clasesService->deductBonoForPlayer($id, $playerId);
-        return $this->response->setJSON($result);
+        if ($resp = $this->guardBonoAction($id)) {
+            return $resp;
+        }
+        return $this->response->setJSON(
+            $this->clasesService->deductBonoForPlayer($id, $playerId)
+        );
+    }
+
+    /** Devolver (revertir) el bono descontado a un alumno de una sesión. */
+    public function refundBono(int $id, int $playerId)
+    {
+        if ($resp = $this->guardBonoAction($id)) {
+            return $resp;
+        }
+        return $this->response->setJSON(
+            $this->clasesService->refundBonoForPlayer($id, $playerId)
+        );
+    }
+
+    /**
+     * Guarda común de las acciones AJAX de bono: la sesión existe y el usuario
+     * puede gestionarla. Devuelve una respuesta JSON de error o null si todo OK.
+     */
+    private function guardBonoAction(int $sessionId)
+    {
+        $session = $this->clasesService->getSession($sessionId);
+        if (!$session) {
+            return $this->response->setStatusCode(404)
+                ->setJSON(['success' => false, 'error' => 'Sesión no encontrada.']);
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            return $this->response->setStatusCode(403)
+                ->setJSON(['success' => false, 'error' => 'No tienes permiso para gestionar esta sesión.']);
+        }
+        return null;
     }
 
     // ────────────────────────────────────────────────────────────────

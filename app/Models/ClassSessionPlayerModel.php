@@ -17,6 +17,6 @@ class ClassSessionPlayerModel extends Model
         'pre_obs', 'post_obs',
         'absence_reason', 'absence_notes',
         'student_note', 'student_noted_at',
-        'bono_deducted_at',
+        'bono_deducted_at', 'bono_deducted_from_id',
     ];
 }

@@ -51,14 +51,31 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                 Semana <?= esc($weekLabel) ?><?= $weekOffset === 0 ? ' · esta semana' : '' ?>
             </p>
         </div>
-        <?php if ($pendingLista > 0): ?>
-        <span class="pl-tag is-pending">
-            <i class="bi bi-hourglass-split"></i>
-            <?= $pendingLista ?> sesión<?= $pendingLista !== 1 ? 'es' : '' ?> por pasar
-        </span>
-        <?php elseif ($totalSessions > 0): ?>
-        <span class="pl-tag is-done"><i class="bi bi-check-circle-fill"></i>Semana al día</span>
-        <?php endif; ?>
+        <div class="pl-head-aside">
+            <?php if ($pendingLista > 0): ?>
+            <span class="pl-tag is-pending">
+                <i class="bi bi-hourglass-split"></i>
+                <?= $pendingLista ?> sesión<?= $pendingLista !== 1 ? 'es' : '' ?> por pasar
+            </span>
+            <?php elseif ($totalSessions > 0): ?>
+            <span class="pl-tag is-done"><i class="bi bi-check-circle-fill"></i>Semana al día</span>
+            <?php endif; ?>
+
+            <details class="pl-help">
+                <summary>
+                    <i class="bi bi-question-circle"></i>Estados
+                    <i class="bi bi-chevron-down pl-help-chev"></i>
+                </summary>
+                <div class="pl-help-body">
+                    <p>Despliega una sesión para ver el detalle, o entra en ella para registrar la asistencia.</p>
+                    <ul>
+                        <li><b>Por pasar</b> — aún sin registrar.</li>
+                        <li><b>Lista pasada · sin cerrar</b> — asistencia guardada, falta cerrar la sesión.</li>
+                        <li><b>Cerrada</b> — finalizada (se puede reabrir).</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
     </div>
 
     <?php if ($flash = session()->getFlashdata('success')): ?>
@@ -174,10 +191,16 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                     </span>
                 </div>
 
-                <?php if ($listaPasada): ?>
+                <?php if (($s['status'] ?? '') === 'completed'): ?>
                 <span class="pl-tag is-done">
-                    <i class="bi bi-check-circle-fill"></i>Lista pasada
+                    <i class="bi bi-lock-fill"></i>Cerrada
+                    <?php if (!empty($s['lista_pasada_at'])): ?>
                     <span style="font-weight:500">· <?= date('d/m H:i', strtotime($s['lista_pasada_at'])) ?><?= !empty($s['lista_pasada_by_name']) ? ' · ' . esc($s['lista_pasada_by_name']) : '' ?></span>
+                    <?php endif; ?>
+                </span>
+                <?php elseif ($listaPasada): ?>
+                <span class="pl-tag is-done" style="background:#fef9c3;color:#854d0e">
+                    <i class="bi bi-clipboard2-check-fill"></i>Lista pasada · sin cerrar
                 </span>
                 <?php else: ?>
                 <span class="pl-tag is-pending"><i class="bi bi-hourglass-split"></i>Por pasar</span>
@@ -239,6 +262,18 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
 </div>
 
 <script>
+// Ayuda desplegable: cerrar al pulsar fuera o con Escape.
+(function () {
+    var help = document.querySelector('details.pl-help');
+    if (!help) return;
+    document.addEventListener('click', function(e) {
+        if (help.open && !help.contains(e.target)) help.open = false;
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && help.open) help.open = false;
+    });
+})();
+
 (function () {
     var DEFAULT_DAY = '<?= $defaultDay ?>';
 
