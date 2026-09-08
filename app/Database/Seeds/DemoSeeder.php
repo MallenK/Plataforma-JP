@@ -22,8 +22,9 @@ class DemoSeeder extends Seeder
     public function run()
     {
         $this->call('DatabaseSeeder');          // academy_settings, sedes base, usuarios base
-        $this->call('BulkDemoDataSeeder');       // sedes, coaches, staff, alumnos, bonos, clases
-        $this->call('PreprodTicketsSeeder');     // backlog de incidencias
+        $this->call('BulkDemoDataSeeder');       // 2 admins, 10 coaches, 4 staff, 50 alumnos, bonos, clases
+        $this->call('BulkDemoExtrasSeeder');     // métricas, anotaciones, notificaciones, docs, tickets de academia
+        $this->call('PreprodTicketsSeeder');     // backlog de incidencias (técnicas del proyecto)
         $this->call('DemoGuestsSeeder');         // cuentas de invitado + branding neutro
         $this->call('DemoConversationsSeeder');  // mensajes + notificaciones de ejemplo
         $this->call('DemoShowcaseSeeder');        // calendario/bonos/anotaciones/docs de los invitados
