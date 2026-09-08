@@ -19,33 +19,22 @@ if (!in_array($tutorialRole, $validRoles)) {
     $tutorialRole = 'player';
 }
 
-// Vocabulario del vertical activo (solo tiene efecto en demo_mode(); ver
-// app/Helpers/vertical_helper.php). El contenido del tutorial se escribió
-// pensando en fútbol, así que aquí solo pasamos las palabras que cambian de
-// negocio a negocio (alumno/entrenador, singular/plural/minúscula) para que
-// tutorial.js las sustituya al vuelo — el resto del guion no se toca.
-$tutorialVertWords = null;
-if (demo_mode()) {
-    $tutorialVertWords = [
-        'alumno_plural'        => demo_label('alumno_plural'),
-        'alumno_plural_lc'     => mb_strtolower(demo_label('alumno_plural')),
-        'alumno'                => demo_label('alumno'),
-        'alumno_lc'             => mb_strtolower(demo_label('alumno')),
-        'entrenador_plural'    => demo_label('entrenador_plural'),
-        'entrenador_plural_lc' => mb_strtolower(demo_label('entrenador_plural')),
-        'entrenador'            => demo_label('entrenador'),
-        'entrenador_lc'         => mb_strtolower(demo_label('entrenador')),
-    ];
-}
+// Vertical activo (solo tiene efecto en demo_mode(); ver
+// app/Helpers/vertical_helper.php). Fuera de la demo, demo_current_vertical()
+// siempre devuelve 'futbol' — el guion original de JP Preparation — así que
+// este partial se comporta igual que antes en producción real.
+// Cada vertical tiene su propio guion completo en tutorial.js
+// (STEPS_BY_VERTICAL), no una simple sustitución de palabras.
+$tutorialVertical = demo_current_vertical();
 ?>
 
 <script src="<?= base_url('assets/js/tutorial.js') ?>"></script>
 <script>
 (function () {
-    const role  = <?= json_encode($tutorialRole) ?>;
-    const words = <?= json_encode($tutorialVertWords) ?>;
-    const key   = 'jp_tutorial_seen_' + role;
-    const seen  = localStorage.getItem(key) === '1';
-    JPTutorial.init(role, !seen, words);
+    const role     = <?= json_encode($tutorialRole) ?>;
+    const vertical = <?= json_encode($tutorialVertical) ?>;
+    const key      = 'jp_tutorial_seen_' + role;
+    const seen     = localStorage.getItem(key) === '1';
+    JPTutorial.init(role, !seen, vertical);
 })();
 </script>
