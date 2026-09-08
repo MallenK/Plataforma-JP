@@ -59,7 +59,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('alumnos') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/alumnos', $currentUri) ?>">
                     <i class="bi bi-people-fill"></i>
-                    Alumnos
+                    <?= esc(demo_label('alumno_plural')) ?>
                 </a>
             </li>
             <?php endif; ?>
@@ -70,7 +70,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('alumno') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/alumno', $currentUri) ?>">
                     <i class="bi bi-person-badge-fill"></i>
-                    Mi ficha
+                    <?= esc(demo_label('mi_ficha')) ?>
                 </a>
             </li>
             <?php endif; ?>
@@ -80,7 +80,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('clases') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/clases', $currentUri) ?>">
                     <i class="bi bi-collection-play-fill"></i>
-                    Clases
+                    <?= esc(demo_label('clase_plural')) ?>
                 </a>
             </li>
 
@@ -90,7 +90,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('entrenadores') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/entrenadores', $currentUri) ?>">
                     <i class="bi bi-person-workspace"></i>
-                    Entrenadores
+                    <?= esc(demo_label('entrenador_plural')) ?>
                 </a>
             </li>
             <?php endif; ?>
@@ -153,6 +153,26 @@ if ($isAdmin) {
 
         </ul>
     </div>
+
+    <?php if (demo_mode()): ?>
+    <!-- Selector de vertical — cambia el vocabulario visible en vivo,
+         útil para adaptar la demo al negocio del prospecto en llamada. -->
+    <div class="sidebar-section sidebar-vertical-switcher">
+        <div class="sidebar-section-label">Tipo de negocio (demo)</div>
+        <form method="post" action="<?= base_url('demo/vertical') ?>" id="verticalForm">
+            <?= csrf_field() ?>
+            <input type="hidden" name="redirect" value="<?= esc($currentUri, 'attr') ?>">
+            <select name="vertical" class="sidebar-vertical-select" onchange="document.getElementById('verticalForm').submit()">
+                <?php $currentVertical = demo_current_vertical(); ?>
+                <?php foreach (demo_verticals() as $key => $v): ?>
+                <option value="<?= esc($key, 'attr') ?>" <?= $key === $currentVertical ? 'selected' : '' ?>>
+                    <?= esc($v['label']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+    </div>
+    <?php endif; ?>
 
     <!-- Footer: usuario + cerrar sesión -->
     <div class="sidebar-footer">

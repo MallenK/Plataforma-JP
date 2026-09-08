@@ -43,6 +43,7 @@ class BulkDemoDataSeeder extends Seeder
 
         $locationIds = $this->seedLocations();
         $bonoTypeIds = $this->seedBonoTypes();
+        $adminIds    = $this->seedAdmins();
         $coachIds    = $this->seedCoaches();
         $staffIds    = $this->seedStaff();
         $playerIds   = $this->seedPlayers();
@@ -53,7 +54,8 @@ class BulkDemoDataSeeder extends Seeder
 
         echo "BulkDemoDataSeeder: listo.\n";
         echo "  sedes: " . count($locationIds) . " | tipos de bono: " . count($bonoTypeIds) . "\n";
-        echo "  entrenadores: " . count($coachIds) . " | staff: " . count($staffIds) . " | alumnos: " . count($playerIds) . "\n";
+        echo "  admins: " . count($adminIds) . " | entrenadores: " . count($coachIds)
+            . " | staff: " . count($staffIds) . " | alumnos: " . count($playerIds) . "\n";
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -133,14 +135,23 @@ class BulkDemoDataSeeder extends Seeder
     //  Entrenadores / staff
     // ────────────────────────────────────────────────────────────────
 
+    private const ADMIN_NAMES = [
+        'Roser Comes', 'Xavier Prats',
+    ];
+
     private const COACH_NAMES = [
         'Marc Puig', 'Laura Ferrer', 'David Soler', 'Anna Vidal', 'Jordi Roca',
-        'Núria Camps', 'Alex Riera', 'Cristina Bosch',
+        'Núria Camps', 'Alex Riera', 'Cristina Bosch', 'Pol Miralles', 'Elena Sanz',
     ];
 
     private const STAFF_NAMES = [
-        'Montse Pla', 'Ferran Coll', 'Silvia Torres',
+        'Montse Pla', 'Ferran Coll', 'Silvia Torres', 'Guillem Fàbregas',
     ];
+
+    private function seedAdmins(): array
+    {
+        return $this->seedStaffUsers(self::ADMIN_NAMES, 'admin', 'admin');
+    }
 
     private function seedCoaches(): array
     {
@@ -201,7 +212,7 @@ class BulkDemoDataSeeder extends Seeder
 
     private const LEAGUES = ['1a Territorial', '2a Territorial', 'Preferent', 'Divisió d\'Honor'];
 
-    private function seedPlayers(int $count = 60): array
+    private function seedPlayers(int $count = 50): array
     {
         $ids       = [];
         $positions = array_keys(PlayerProfileModel::POSITIONS);

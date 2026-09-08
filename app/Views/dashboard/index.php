@@ -104,7 +104,7 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Alumnos activos</span>
+                <span class="metric-label"><?= esc(demo_label('alumno_plural')) ?> activos</span>
                 <div class="metric-icon blue"><i class="bi bi-people-fill"></i></div>
             </div>
             <div class="metric-value" id="alumnos-count">—</div>
@@ -120,7 +120,7 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Entrenadores</span>
+                <span class="metric-label"><?= esc(demo_label('entrenador_plural')) ?></span>
                 <div class="metric-icon green"><i class="bi bi-person-workspace"></i></div>
             </div>
             <div class="metric-value" id="entrenadores-count">—</div>
@@ -181,9 +181,9 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                     <?php if ($role === 'player'): ?>
                         Accede a tu <a href="<?= base_url('alumno') ?>">ficha</a> o consulta la <a href="<?= base_url('documentacion') ?>">documentación</a>.
                     <?php elseif ($role === 'coach'): ?>
-                        Gestiona tus alumnos desde <a href="<?= base_url('alumnos') ?>">Alumnos</a> o revisa las <a href="<?= base_url('clases') ?>">Clases</a>.
+                        Gestiona tus <?= esc(mb_strtolower(demo_label('alumno_plural'))) ?> desde <a href="<?= base_url('alumnos') ?>"><?= esc(demo_label('alumno_plural')) ?></a> o revisa las <a href="<?= base_url('clases') ?>"><?= esc(demo_label('clase_plural')) ?></a>.
                     <?php else: ?>
-                        Consulta la <a href="<?= base_url('documentacion') ?>">documentación</a> o revisa las <a href="<?= base_url('clases') ?>">clases</a>.
+                        Consulta la <a href="<?= base_url('documentacion') ?>">documentación</a> o revisa las <a href="<?= base_url('clases') ?>"><?= esc(mb_strtolower(demo_label('clase_plural'))) ?></a>.
                     <?php endif; ?>
                 </p>
             </div>
