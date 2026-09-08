@@ -114,7 +114,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                             <div class="form-group">
                                 <label class="form-label">Peso (kg)</label>
                                 <input type="number" name="weight" class="form-control-jp"
-                                    min="30" max="200"
+                                    min="10" max="200"
                                     value="<?= esc($alumno['weight'] ?? '') ?>">
                             </div>
                         </div>
