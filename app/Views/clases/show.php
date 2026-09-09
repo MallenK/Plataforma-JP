@@ -56,36 +56,44 @@ $statusHint   = [
         <a href="/clases/<?= $session['id'] ?>/editar" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-pencil-fill me-1"></i>Editar
         </a>
-        <form action="/clases/<?= $session['id'] ?>/cancelar" method="POST" style="margin:0">
+        <form action="/clases/<?= $session['id'] ?>/cancelar" method="POST" style="margin:0"
+              data-ru-confirm="¿Cancelar esta sesión?"
+              data-ru-confirm-desc="Los alumnos dejarán de verla como activa. Podrás reactivarla más adelante."
+              data-ru-confirm-label="Cancelar sesión" data-ru-confirm-danger>
             <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm"
-                    onclick="return confirm('¿Cancelar esta sesión?')">
+            <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">
                 <i class="bi bi-x-circle-fill me-1"></i>Cancelar sesión
             </button>
         </form>
         <?php endif; ?>
         <?php if ($session['status'] === 'completed'): ?>
-        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0">
+        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0"
+              data-ru-confirm="¿Reabrir esta sesión?"
+              data-ru-confirm-desc="Volverá a estar programada y podrás editar la asistencia de nuevo. No se pierde nada de lo registrado."
+              data-ru-confirm-label="Reabrir">
             <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm"
-                    onclick="return confirm('¿Reabrir esta sesión? Volverá a estar programada y podrás editar la asistencia de nuevo.')">
+            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
                 <i class="bi bi-unlock-fill me-1"></i>Reabrir sesión
             </button>
         </form>
         <?php elseif ($session['status'] === 'cancelled'): ?>
-        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0">
+        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0"
+              data-ru-confirm="¿Reactivar esta sesión cancelada?"
+              data-ru-confirm-desc="Volverá a estar programada."
+              data-ru-confirm-label="Reactivar">
             <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm"
-                    onclick="return confirm('¿Reactivar esta sesión cancelada? Volverá a estar programada.')">
+            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
                 <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar sesión
             </button>
         </form>
         <?php endif; ?>
         <?php if ($isAdminRole): ?>
-        <form action="/clases/<?= $session['id'] ?>/eliminar" method="POST" style="margin:0">
+        <form action="/clases/<?= $session['id'] ?>/eliminar" method="POST" style="margin:0"
+              data-ru-confirm="¿Eliminar esta sesión permanentemente?"
+              data-ru-confirm-desc="No se puede deshacer: se borra la sesión con toda su asistencia y observaciones."
+              data-ru-confirm-label="Eliminar" data-ru-confirm-danger>
             <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm"
-                    onclick="return confirm('¿Eliminar esta sesión permanentemente?')">
+            <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">
                 <i class="bi bi-trash3-fill me-1"></i>Eliminar
             </button>
         </form>
@@ -424,7 +432,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         <?php
         $avatarBg    = $isStaffSession ? '#ede9fe' : '#d1fae5';
         $avatarColor = $isStaffSession ? '#7c3aed' : '#059669';
-        $removeLabel = $isStaffSession ? '¿Eliminar staff responsable?' : '¿Eliminar entrenador?';
+        $removeLabel = $isStaffSession ? '¿Quitar al staff responsable?' : '¿Quitar a este entrenador?';
         ?>
         <div class="card-jp mb-3">
             <div class="card-jp-header">
@@ -452,10 +460,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         </div>
                     </div>
                     <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
-                    <form action="/clases/<?= $session['id'] ?>/coaches/<?= $c['user_id'] ?>/remove" method="POST" style="margin:0">
+                    <form action="/clases/<?= $session['id'] ?>/coaches/<?= $c['user_id'] ?>/remove" method="POST" style="margin:0"
+                          data-ru-confirm="<?= esc($removeLabel, 'attr') ?>"
+                          data-ru-confirm-desc="Se quitará de esta sesión. Puedes volver a añadirlo cuando quieras."
+                          data-ru-confirm-label="Quitar" data-ru-confirm-danger>
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn-jp btn-jp-danger btn-jp-icon btn-jp-sm"
-                                onclick="return confirm('<?= esc($removeLabel, 'js') ?>')" title="Eliminar">
+                        <button type="submit" class="btn-jp btn-jp-danger btn-jp-icon btn-jp-sm" title="Quitar">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </form>

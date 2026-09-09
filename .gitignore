@@ -26,3 +26,7 @@ build/
 
 # scripts locales con credenciales
 writable/*.sh
+
+# JS de tests (jsdom) — se instala con: npm --prefix tests/js install
+node_modules/
+tests/js/package-lock.json
