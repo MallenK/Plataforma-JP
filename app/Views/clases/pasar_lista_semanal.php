@@ -3,6 +3,10 @@
 <?php
 helper('attendance');
 
+// Una sesión está "por pasar" si aún no tiene lista y no está cerrada.
+$plSessionPending = fn(array $s): bool =>
+    empty($s['lista_pasada_at']) && ($s['status'] ?? '') !== 'completed';
+
 $weekData   = $weekData ?? [];
 $byDay      = $weekData['by_day'] ?? [];
 $weekStart  = $weekData['week_start'] ?? date('Y-m-d');
@@ -18,7 +22,7 @@ $pendingLista  = 0;
 foreach ($byDay as $sessions) {
     foreach ($sessions as $s) {
         $totalSessions++;
-        if (empty($s['lista_pasada_at'])) $pendingLista++;
+        if ($plSessionPending($s)) $pendingLista++;
     }
 }
 
@@ -153,7 +157,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
         $dateLabel = date('d/m', strtotime($date));
         $dayIdx++;
         if (empty($sessions)) continue;
-        $dayPending = array_sum(array_map(fn($s) => empty($s['lista_pasada_at']) ? 1 : 0, $sessions));
+        $dayPending = array_sum(array_map(fn($s) => $plSessionPending($s) ? 1 : 0, $sessions));
     ?>
     <section class="pl-day-section <?= $isToday ? 'is-today' : '' ?>" data-date="<?= $date ?>" data-pending="<?= $dayPending ?>">
         <div class="pl-day <?= $isToday ? 'is-today' : '' ?>">
@@ -174,12 +178,13 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
         <?php foreach ($sessions as $s): ?>
         <?php
             $listaPasada = !empty($s['lista_pasada_at']);
+            $sessionDone = !$plSessionPending($s);   // lista pasada o sesión cerrada
             $coachNames  = implode(', ', array_column($s['coaches'] ?? [], 'name'));
             $pc          = $s['player_counts'] ?? ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0];
             // Colapsadas por defecto: la vista semanal es un listado desplegable.
             $openInit    = '0';
         ?>
-        <article class="pl-session" data-open="<?= $openInit ?>" data-pending="<?= $listaPasada ? '0' : '1' ?>">
+        <article class="pl-session" data-open="<?= $openInit ?>" data-pending="<?= $sessionDone ? '0' : '1' ?>">
             <div class="pl-session-head" onclick="toggleSession(this)" role="button" tabindex="0" aria-expanded="<?= $openInit === '1' ? 'true' : 'false' ?>">
                 <div class="pl-session-title">
                     <strong><?= esc($s['title']) ?></strong>
@@ -242,7 +247,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                 </div>
                 <div class="pl-session-foot">
                     <a href="/clases/<?= $s['id'] ?>/lista" class="btn-jp btn-jp-sm btn-jp-primary">
-                        <i class="bi bi-clipboard2-check-fill me-1"></i><?= $listaPasada ? 'Revisar asistencia' : 'Pasar lista' ?>
+                        <i class="bi bi-clipboard2-check-fill me-1"></i><?= $sessionDone ? 'Revisar asistencia' : 'Pasar lista' ?>
                     </a>
                 </div>
                 <?php endif; ?>

@@ -265,4 +265,57 @@ final class ClasesServiceTest extends CIUnitTestCase
         $this->assertTrue($m->isPublic());
         $this->assertSame('array', (string) $m->getReturnType());
     }
+
+    // ────────────────────────────────────────────────────────────────
+    //  resolveDeductAttendance — decidir la asistencia al "Descontar bono"
+    //  sin haber pulsado "Guardar". Tabla de decisión pura, sin DB.
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * @dataProvider deductAttendanceCases
+     */
+    public function testResolveDeductAttendance(?string $stored, ?string $want, string $state, bool $consumes, bool $persist): void
+    {
+        $r = ClasesService::resolveDeductAttendance($stored, $want);
+        $this->assertSame($state, $r['state'], 'state');
+        $this->assertSame($consumes, $r['consumes'], 'consumes');
+        $this->assertSame($persist, $r['persist'], 'persist');
+    }
+
+    public static function deductAttendanceCases(): array
+    {
+        return [
+            // want válido y consumidor sobre pendiente → se usa y se persiste
+            'pending + want=present'      => ['pending', 'present', 'present', true, true],
+            'pending + want=confirmed'    => ['pending', 'confirmed', 'confirmed', true, true],
+            'pending + want=unjustified'  => ['pending', 'unjustified', 'unjustified', true, true],
+            // want no consumidor → no se puede descontar, no se persiste
+            'pending + want=absent'       => ['pending', 'absent', 'absent', false, true],
+            'present + want=pending'      => ['present', 'pending', 'pending', false, true],
+            // want inválido → se ignora, vale lo guardado
+            'present + want=basura'       => ['present', 'basura', 'present', true, false],
+            'pending + want=basura'       => ['pending', 'basura', 'pending', false, false],
+            // sin want → vale lo guardado, no se persiste
+            'present + sin want'          => ['present', null, 'present', true, false],
+            'pending + sin want'          => ['pending', null, 'pending', false, false],
+            'absent + sin want'           => ['absent', null, 'absent', false, false],
+            // want igual a lo guardado → no se persiste (no-op)
+            'present + want=present'      => ['present', 'present', 'present', true, false],
+            // desde absent a present (limpiar razón lo decide deductBonoForPlayer)
+            'absent + want=present'       => ['absent', 'present', 'present', true, true],
+            // stored vacío/nulo → cae a pending
+            'stored null + sin want'      => [null, null, 'pending', false, false],
+            'stored vacío + want=present' => ['', 'present', 'present', true, true],
+        ];
+    }
+
+    public function testDeductBonoForPlayerTieneTercerParametroOpcional(): void
+    {
+        $m = new \ReflectionMethod(ClasesService::class, 'deductBonoForPlayer');
+        $params = $m->getParameters();
+        $this->assertCount(3, $params);
+        $this->assertSame('wantAttendance', $params[2]->getName());
+        $this->assertTrue($params[2]->isOptional());
+        $this->assertTrue($params[2]->allowsNull());
+    }
 }
