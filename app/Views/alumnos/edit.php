@@ -63,6 +63,18 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                         </div>
 
                         <div class="col-12">
+                            <label style="display:flex;align-items:flex-start;gap:11px;padding:13px 15px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin:0">
+                                <input type="checkbox" name="image_rights_signed" value="1"
+                                       <?= !empty($alumno['image_rights_signed']) ? 'checked' : '' ?>
+                                       style="width:18px;height:18px;flex-shrink:0;margin-top:1px;cursor:pointer;accent-color:var(--accent)">
+                                <span>
+                                    <span style="font-weight:600;color:var(--text-h);display:block">Derechos de imagen firmados</span>
+                                    <span style="font-size:12px;color:var(--text-muted)">Marca esta casilla cuando el alumno (o su tutor legal) haya firmado la cesión de derechos de imagen.</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="col-12">
                             <div class="alert-jp" style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--text-muted)">
                                 <i class="bi bi-key-fill me-2" style="color:var(--text-muted)"></i>
                                 Para cambiar la contraseña, el alumno puede usar la opción "Recuperar contraseña" desde el login.

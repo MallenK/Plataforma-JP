@@ -136,6 +136,25 @@ class PlayerService
     }
 
     /**
+     * Marca / desmarca la firma de derechos de imagen de un alumno.
+     * Crea la fila de player_profiles si no existía.
+     */
+    public function setImageRights(int $playerId, bool $signed): bool
+    {
+        $val      = $signed ? 1 : 0;
+        $existing = $this->profileModel->where('player_id', $playerId)->first();
+
+        if ($existing) {
+            return (bool) $this->profileModel->update($existing['id'], ['image_rights_signed' => $val]);
+        }
+
+        return (bool) $this->profileModel->insert([
+            'player_id'           => $playerId,
+            'image_rights_signed' => $val,
+        ]);
+    }
+
+    /**
      * Baja lógica: cambia status a 'inactive'.
      */
     public function deleteAlumno(int $id): bool
@@ -206,7 +225,8 @@ class PlayerService
             ->select('users.*, player_profiles.id as profile_id, player_profiles.birth_date,
                       player_profiles.height, player_profiles.weight, player_profiles.position,
                       player_profiles.level, player_profiles.category, player_profiles.team,
-                      player_profiles.league, player_profiles.medical_notes')
+                      player_profiles.league, player_profiles.medical_notes,
+                      player_profiles.image_rights_signed')
             ->join('player_profiles', 'player_profiles.player_id = users.id', 'left')
             ->where('users.id', $id)
             ->where('users.role', 'player')
