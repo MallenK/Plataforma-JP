@@ -52,7 +52,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                     <ul>
                         <li><b>Ausente</b> — falta avisada o justificada.</li>
                         <li><b>No justificado</b> — no se presentó y no avisó. Permite descontar el bono como falta.</li>
-                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible cuando el alumno está <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b>. Consume 1 sesión del bono activo y queda registrado.</li>
+                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible con el alumno <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b> (no hace falta guardar antes: al descontar se registra también esa asistencia). Consume 1 sesión del bono activo y queda registrado.</li>
                         <li><b>Devolver bono</b> — deshace un descuento. También se devuelve solo si cambias la asistencia a Ausente, Avisó o Pendiente.</li>
                     </ul>
                 </div>
@@ -343,8 +343,9 @@ $listaSaved = !empty($session['lista_pasada_at']);
             '<span class="pl-deduct-hint" style="font-size:11px;color:var(--text-muted);' + (can ? 'display:none' : '') + '">Marcar presente / no justif.</span>';
     }
 
-    function bonoRequest(url, btn, labelBusy, labelIdle, onOk) {
-        var body = {}; body[CSRF_NAME] = '<?= csrf_hash() ?>';
+    function bonoRequest(url, btn, labelBusy, labelIdle, onOk, extraBody) {
+        var body = extraBody ? Object.assign({}, extraBody) : {};
+        body[CSRF_NAME] = '<?= csrf_hash() ?>';
         btn.disabled = true;
         var prev = btn.innerHTML;
         btn.innerHTML = labelBusy;
@@ -382,10 +383,12 @@ $listaSaved = !empty($session['lista_pasada_at']);
                 ? '¿Descontar 1 sesión del bono por falta NO justificada? Quedará registrada como falta.'
                 : '¿Descontar 1 sesión del bono de este alumno?';
             if (!confirm(msg)) return;
+            // Enviamos la asistencia elegida: descontar bono también la registra
+            // (no hace falta "Guardar" antes).
             bonoRequest('/clases/' + sid + '/jugadores/' + pid + '/descontar-bono', dBtn, 'Descontando…', null, function(data) {
                 setRemaining(pid, data.sessions_remaining);
                 renderDeducted(pid, sid);
-            });
+            }, { attendance: sel ? sel.value : '' });
         } else if (rBtn) {
             var sid2 = rBtn.dataset.session, pid2 = rBtn.dataset.player;
             if (!confirm('¿Devolver 1 sesión al bono de este alumno? Se deshace el descuento de esta sesión.')) return;

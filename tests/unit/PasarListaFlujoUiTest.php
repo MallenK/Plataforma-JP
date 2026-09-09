@@ -126,6 +126,15 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
         $this->assertStringContainsString('se le devolverá el bono', $v);
     }
 
+    public function testDescontarBonoEnviaLaAsistenciaElegida(): void
+    {
+        $v = $this->lista();
+        // El fetch de descontar-bono adjunta { attendance: sel.value } para
+        // que funcione sin haber pulsado "Guardar".
+        $this->assertStringContainsString('{ attendance: sel ? sel.value :', $v);
+        $this->assertStringContainsString('bonoRequest(url, btn, labelBusy, labelIdle, onOk, extraBody)', $v);
+    }
+
     // ── Regresión CSRF (ver DeductBonoCsrfTest) ────────────────────
 
     public function testFetchDeBonoNuncaManaUnaCabeceraCsrfVacia(): void

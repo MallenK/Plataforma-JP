@@ -547,8 +547,13 @@ class ClasesController extends BaseController
         if ($resp = $this->guardBonoAction($id)) {
             return $resp;
         }
+        // La asistencia elegida en el selector (aún sin guardar) viaja en el
+        // cuerpo: descontar bono también la registra.
+        $want = $this->request->getJsonVar('attendance')
+            ?? $this->request->getPost('attendance');
+
         return $this->response->setJSON(
-            $this->clasesService->deductBonoForPlayer($id, $playerId)
+            $this->clasesService->deductBonoForPlayer($id, $playerId, $want ? (string) $want : null)
         );
     }
 

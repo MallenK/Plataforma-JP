@@ -730,12 +730,18 @@ class ClasesService
     }
 
     /**
-     * Admin descuenta manualmente 1 sesión del bono activo de un jugador.
-     * Solo válido si el jugador está presente / confirmado / no justificado y
-     * el bono aún no fue descontado en esta sesión. Guarda de qué bono se
-     * descontó (`bono_deducted_from_id`) para poder devolverlo con exactitud.
+     * Admin descuenta 1 sesión del bono activo de un jugador.
+     *
+     * Descontar un bono significa "el alumno ha usado una sesión de su bono",
+     * así que la acción también REGISTRA la asistencia elegida ($wantAttendance,
+     * el valor del selector de la fila) si aún no estaba guardada — de ese modo
+     * no hace falta pulsar "Guardar" antes de descontar. La asistencia efectiva
+     * debe ser un estado que consuma bono (presente / confirmado / no justif.).
+     *
+     * Guarda de qué bono se descontó (`bono_deducted_from_id`) para devolverlo
+     * con exactitud.
      */
-    public function deductBonoForPlayer(int $sessionId, int $playerId): array
+    public function deductBonoForPlayer(int $sessionId, int $playerId, ?string $wantAttendance = null): array
     {
         $player = $this->playerModel
             ->where('session_id', $sessionId)
@@ -746,8 +752,14 @@ class ClasesService
             return ['success' => false, 'error' => 'Jugador no asignado a esta sesión.'];
         }
 
-        if (!self::attendanceConsumesBono($player['attendance'])) {
-            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes, confirmados o con falta no justificada.'];
+        $validStates = ['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'];
+        $newState    = ($wantAttendance !== null && in_array($wantAttendance, $validStates, true))
+            ? $wantAttendance
+            : null;
+        $effective   = $newState ?? $player['attendance'];
+
+        if (!self::attendanceConsumesBono($effective)) {
+            return ['success' => false, 'error' => 'Solo se puede descontar bono si el alumno está marcado como Presente, Confirmado o No justificado.'];
         }
 
         if (!empty($player['bono_deducted_at'])) {
@@ -764,10 +776,19 @@ class ClasesService
             return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
         }
 
-        $this->playerModel->update($player['id'], [
+        $update = [
             'bono_deducted_at'      => date('Y-m-d H:i:s'),
             'bono_deducted_from_id' => (int)$bono['id'],
-        ]);
+        ];
+        // Registrar la asistencia elegida si cambia respecto a lo guardado.
+        if ($newState !== null && $newState !== $player['attendance']) {
+            $update['attendance'] = $newState;
+            if (!self::attendanceIsAbsence($newState)) {
+                $update['absence_reason'] = null;
+                $update['absence_notes']  = null;
+            }
+        }
+        $this->playerModel->update($player['id'], $update);
         $this->db->transComplete();
 
         $remaining = (int)$bono['sessions_remaining'];
