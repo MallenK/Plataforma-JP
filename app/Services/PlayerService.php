@@ -136,25 +136,6 @@ class PlayerService
     }
 
     /**
-     * Marca / desmarca la firma de derechos de imagen de un alumno.
-     * Crea la fila de player_profiles si no existía.
-     */
-    public function setImageRights(int $playerId, bool $signed): bool
-    {
-        $val      = $signed ? 1 : 0;
-        $existing = $this->profileModel->where('player_id', $playerId)->first();
-
-        if ($existing) {
-            return (bool) $this->profileModel->update($existing['id'], ['image_rights_signed' => $val]);
-        }
-
-        return (bool) $this->profileModel->insert([
-            'player_id'           => $playerId,
-            'image_rights_signed' => $val,
-        ]);
-    }
-
-    /**
      * Baja lógica: cambia status a 'inactive'.
      */
     public function deleteAlumno(int $id): bool

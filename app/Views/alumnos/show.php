@@ -203,27 +203,14 @@ $formatTime = static function (?string $hms): string {
 
                     <div id="derechos-imagen" class="d-flex justify-content-between align-items-center">
                         <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Derechos de imagen</span>
-                        <?php if ($isAdminUser): ?>
-                        <form method="post" action="<?= base_url('alumnos/' . $alumno['id'] . '/derechos-imagen') ?>"
-                              style="margin:0;display:inline-flex;align-items:center;gap:7px">
-                            <?= csrf_field() ?>
-                            <span style="font-size:13px;font-weight:600;color:<?= $imgSigned ? 'var(--success)' : 'var(--text-muted)' ?>">
-                                <?= $imgSigned ? 'Firmados' : 'Pendientes' ?>
-                            </span>
-                            <input type="checkbox" name="image_rights_signed" value="1" <?= $imgSigned ? 'checked' : '' ?>
-                                   onchange="this.form.submit()"
-                                   title="<?= $imgSigned ? 'Firmados — desmarca para revertir' : 'Marcar como firmados' ?>"
-                                   style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
-                        </form>
-                        <?php else: ?>
-                        <span style="display:inline-flex;align-items:center;gap:7px">
+                        <span style="display:inline-flex;align-items:center;gap:7px"
+                              title="<?= $isAdminUser ? 'Solo se puede cambiar desde la pantalla de edición del alumno' : 'Solo un administrador puede cambiarlo, desde la pantalla de edición' ?>">
                             <span style="font-size:13px;font-weight:600;color:<?= $imgSigned ? 'var(--success)' : 'var(--text-muted)' ?>">
                                 <?= $imgSigned ? 'Firmados' : 'Pendientes' ?>
                             </span>
                             <input type="checkbox" disabled <?= $imgSigned ? 'checked' : '' ?>
                                    style="width:16px;height:16px;accent-color:var(--accent)">
                         </span>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>

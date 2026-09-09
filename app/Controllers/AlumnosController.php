@@ -225,27 +225,6 @@ class AlumnosController extends BaseController
     }
 
     /**
-     * Toggle rápido de "derechos de imagen firmados" desde la ficha del
-     * alumno. Solo admin / superadmin (ver Routes.php).
-     */
-    public function updateImageRights(int $id)
-    {
-        $target = (new \App\Models\UserModel())->find($id);
-        if (!$target || ($target['role'] ?? '') !== 'player') {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
-
-        $signed = (bool) $this->request->getPost('image_rights_signed');
-        $this->playerService->setImageRights($id, $signed);
-
-        session()->setFlashdata('success', $signed
-            ? 'Derechos de imagen marcados como firmados.'
-            : 'Derechos de imagen marcados como NO firmados.');
-
-        return redirect()->to('/alumnos/' . $id . '#derechos-imagen');
-    }
-
-    /**
      * Baja lógica: cambia status a 'inactive'.
      */
     public function destroy(int $id)

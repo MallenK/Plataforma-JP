@@ -99,10 +99,6 @@ $routes->post('/alumnos/(:num)/editar', 'AlumnosController::update/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-$routes->post('/alumnos/(:num)/derechos-imagen', 'AlumnosController::updateImageRights/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-
 $routes->post('/alumnos/(:num)/eliminar', 'AlumnosController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
