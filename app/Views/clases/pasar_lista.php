@@ -247,6 +247,16 @@ $listaSaved = !empty($session['lista_pasada_at']);
     var CONSUMES_BONO = <?= json_encode(\App\Services\ClasesService::BONO_CONSUMING_ATTENDANCE) ?>;
     function canDeductFor(v) { return CONSUMES_BONO.indexOf(v) !== -1; }
 
+    // Diálogo de confirmación de la plataforma (radix-ui.js). Última red de
+    // seguridad al diálogo nativo solo si el componente no estuviera cargado.
+    function askConfirm(opts) {
+        if (window.RadixUI && typeof RadixUI.confirm === 'function') {
+            return RadixUI.confirm(opts);
+        }
+        var txt = (opts.title || '') + (opts.description ? '\n\n' + opts.description : '');
+        return Promise.resolve(window.confirm(txt));
+    }
+
     // Hay cambios sin guardar si algún selector difiere de su valor guardado.
     function recomputeDirty() {
         dirty = false;
@@ -392,31 +402,42 @@ $listaSaved = !empty($session['lista_pasada_at']);
         if (dBtn) {
             var sid = dBtn.dataset.session, pid = dBtn.dataset.player;
             var sel = document.querySelector('.att-select[data-uid="' + pid + '"]');
-            var msg = (sel && sel.value === 'unjustified')
-                ? '¿Descontar 1 sesión del bono por falta NO justificada? Quedará registrada como falta.'
-                : '¿Descontar 1 sesión del bono de este alumno?';
-            if (!confirm(msg)) return;
-            // Enviamos la asistencia elegida: descontar bono también la registra
-            // (no hace falta "Guardar" antes).
-            bonoRequest('/clases/' + sid + '/jugadores/' + pid + '/descontar-bono', dBtn, 'Descontando…', null, function(data) {
-                setRemaining(pid, data.sessions_remaining);
-                renderDeducted(pid, sid);
-                // La asistencia de esta fila ha quedado guardada por el descuento.
-                if (sel) { sel.dataset.saved = sel.value; recomputeDirty(); }
-            }, { attendance: sel ? sel.value : '' });
+            var isUnj = sel && sel.value === 'unjustified';
+            askConfirm({
+                title: isUnj ? '¿Descontar bono por falta no justificada?' : '¿Descontar 1 sesión del bono?',
+                description: isUnj
+                    ? 'Se consume 1 sesión del bono activo del alumno y la falta queda registrada. Podrás devolverla si te equivocas.'
+                    : 'Se consume 1 sesión del bono activo del alumno. Podrás devolverla si te equivocas.',
+                confirmLabel: 'Descontar'
+            }).then(function(ok) {
+                if (!ok) return;
+                // Enviamos la asistencia elegida: descontar bono también la
+                // registra (no hace falta "Guardar" antes).
+                bonoRequest('/clases/' + sid + '/jugadores/' + pid + '/descontar-bono', dBtn, 'Descontando…', null, function(data) {
+                    setRemaining(pid, data.sessions_remaining);
+                    renderDeducted(pid, sid);
+                    if (sel) { sel.dataset.saved = sel.value; recomputeDirty(); }
+                }, { attendance: sel ? sel.value : '' });
+            });
         } else if (rBtn) {
             var sid2 = rBtn.dataset.session, pid2 = rBtn.dataset.player;
-            if (!confirm('¿Devolver 1 sesión al bono de este alumno? Se deshace el descuento de esta sesión.')) return;
-            bonoRequest('/clases/' + sid2 + '/jugadores/' + pid2 + '/devolver-bono', rBtn, 'Devolviendo…', null, function(data) {
-                setRemaining(pid2, data.sessions_remaining);
-                renderDeductable(pid2, sid2);
-                if (window.showAlert) showAlert('Bono devuelto.', 'success');
+            askConfirm({
+                title: '¿Devolver el bono?',
+                description: 'Se añade 1 sesión de vuelta al bono del alumno y se deshace el descuento de esta clase.',
+                confirmLabel: 'Devolver bono'
+            }).then(function(ok) {
+                if (!ok) return;
+                bonoRequest('/clases/' + sid2 + '/jugadores/' + pid2 + '/devolver-bono', rBtn, 'Devolviendo…', null, function(data) {
+                    setRemaining(pid2, data.sessions_remaining);
+                    renderDeductable(pid2, sid2);
+                    if (window.showAlert) showAlert('Bono devuelto.', 'success');
+                });
             });
         }
     });
 
-    // "Guardar y cerrar": avisa (sin bloquear) si algo se queda a medias.
-    // Cerrar ya no es irreversible (existe "Reabrir sesión").
+    // "Guardar y cerrar": avisa si algo se queda a medias. Cerrar ya no es
+    // irreversible (existe "Reabrir sesión"), por eso avisa sin obligar.
     var btnGuardarCerrar = document.getElementById('btn-guardar-cerrar');
     if (btnGuardarCerrar) {
         btnGuardarCerrar.addEventListener('click', function(e) {
@@ -432,13 +453,21 @@ $listaSaved = !empty($session['lista_pasada_at']);
             var avisos = [];
             if (pending > 0) avisos.push(pending + (pending > 1 ? ' alumnos sin marcar' : ' alumno sin marcar'));
             if (sinBono > 0) avisos.push(sinBono + (sinBono > 1 ? ' presentes con bono sin descontar' : ' presente con bono sin descontar'));
+            if (!avisos.length) return;   // nada que avisar → deja enviar el formulario
 
-            if (avisos.length && !confirm(
-                'Vas a cerrar la sesión con ' + avisos.join(' y ') + '.\n\n'
-                + 'Podrás reabrirla para corregir. ¿Cerrar igualmente?'
-            )) {
-                e.preventDefault();
-            }
+            e.preventDefault();
+            askConfirm({
+                title: 'Cerrar la sesión',
+                description: 'Vas a cerrar con ' + avisos.join(' y ') + '. Podrás reabrirla para corregir.',
+                confirmLabel: 'Cerrar sesión'
+            }).then(function(ok) {
+                if (!ok) return;
+                var h = form.querySelector('input[type="hidden"][name="cerrar"]');
+                if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = 'cerrar'; form.appendChild(h); }
+                h.value = '1';
+                dirty = false;
+                form.submit();
+            });
         });
     }
 })();

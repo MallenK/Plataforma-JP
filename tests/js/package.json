@@ -1,0 +1,11 @@
+{
+  "name": "jp-tests-js",
+  "private": true,
+  "description": "Solo para tests: jsdom para probar el JS de la plataforma (radix-ui.js, diálogos de confirmación). La app NO tiene build step; esto vive aislado aquí.",
+  "scripts": {
+    "test": "node radix-confirm.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^29.0.0"
+  }
+}
