@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.5.1",
+        "date": "2026-09-10 12:00:00",
+        "description": "Alumnos: el campo 'Peso (kg)' rechazaba valores bajos y no dejaba crear (ni editar) alumnos que pesan menos de 30 kg, algo habitual en las categorías más pequeñas. Ahora el rango admitido va de 10 a 300 kg, tanto en el alta y la edición de alumnos como en la ficha propia del alumno."
+    },
+    {
         "version": "1.5.0",
         "date": "2026-09-10 00:00:00",
         "description": "Alumnos: nuevo dato 'Derechos de imagen'. Indica si el alumno (o su tutor legal) ha firmado la cesión de derechos de imagen. Aparece en la ficha del alumno, en la tarjeta de datos personales, junto a la categoría, el equipo y la liga, con el texto 'Firmados' o 'Pendientes' y una casilla. La casilla en la ficha es solo de consulta; se cambia desde la pantalla de edición del alumno, marcando o desmarcando 'Derechos de imagen firmados'. Solo administradores y superadministradores pueden editar la pantalla de edición; los entrenadores lo ven pero no pueden modificarlo."
