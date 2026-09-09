@@ -63,7 +63,7 @@ $pageSubtitle = esc($alumno['name'] ?? '');
                         </div>
 
                         <div class="col-12">
-                            <label style="display:flex;align-items:flex-start;gap:11px;padding:13px 15px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin:0">
+                            <label style="display:inline-flex;align-items:flex-start;gap:11px;padding:13px 15px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin:0;max-width:480px">
                                 <input type="checkbox" name="image_rights_signed" value="1"
                                        <?= !empty($alumno['image_rights_signed']) ? 'checked' : '' ?>
                                        style="width:18px;height:18px;flex-shrink:0;margin-top:1px;cursor:pointer;accent-color:var(--accent)">

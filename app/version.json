@@ -2,7 +2,7 @@
     {
         "version": "1.5.0",
         "date": "2026-09-10 00:00:00",
-        "description": "Alumnos: nuevo dato 'Derechos de imagen firmados'. Indica si el alumno (o su tutor legal) ha firmado la cesión de derechos de imagen. Se ve arriba del todo en la ficha del alumno, con un acento verde si está firmado y ámbar si está pendiente, y una etiqueta 'Firmado' / 'Sin firmar'. Solo los administradores pueden cambiarlo: desde la propia ficha marcando o desmarcando la casilla, o desde la pantalla de edición del alumno. Los entrenadores lo ven, pero no pueden modificarlo."
+        "description": "Alumnos: nuevo dato 'Derechos de imagen'. Indica si el alumno (o su tutor legal) ha firmado la cesión de derechos de imagen. Aparece en la ficha del alumno, en la tarjeta de datos personales, junto a la categoría, el equipo y la liga, con el texto 'Firmados' o 'Pendientes' y una casilla. La casilla en la ficha es solo de consulta; se cambia desde la pantalla de edición del alumno, marcando o desmarcando 'Derechos de imagen firmados'. Solo administradores y superadministradores pueden editar la pantalla de edición; los entrenadores lo ven pero no pueden modificarlo."
     },
     {
         "version": "1.4.0",

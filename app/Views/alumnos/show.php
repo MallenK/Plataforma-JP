@@ -109,45 +109,6 @@ $formatTime = static function (?string $hms): string {
     <?php endif; ?>
 </div>
 
-<!-- ── Derechos de imagen — dato destacado, arriba del todo ───────── -->
-<div id="derechos-imagen" class="card-jp mb-3"
-     style="border-left:4px solid <?= $imgSigned ? 'var(--success)' : 'var(--warning,#f59e0b)' ?>">
-    <div class="card-jp-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <?php if ($isAdminUser): ?>
-        <form method="post" action="<?= base_url('alumnos/' . $alumno['id'] . '/derechos-imagen') ?>" style="margin:0;flex:1;min-width:240px">
-            <?= csrf_field() ?>
-            <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;margin:0">
-                <input type="checkbox" name="image_rights_signed" value="1"
-                       <?= $imgSigned ? 'checked' : '' ?>
-                       onchange="this.form.submit()"
-                       style="width:22px;height:22px;flex-shrink:0;margin-top:1px;cursor:pointer;accent-color:var(--accent)">
-                <span>
-                    <span style="font-weight:700;color:var(--text-h);display:block;font-size:14px">Derechos de imagen firmados</span>
-                    <span style="font-size:12px;color:var(--text-muted)">
-                        <?= $imgSigned
-                            ? 'El alumno (o su tutor legal) ha firmado la cesión de derechos de imagen.'
-                            : 'Pendiente de firma — márcalo cuando se reciba el consentimiento.' ?>
-                    </span>
-                </span>
-            </label>
-        </form>
-        <?php else: ?>
-        <label style="display:flex;align-items:flex-start;gap:12px;margin:0;flex:1;min-width:240px">
-            <input type="checkbox" disabled <?= $imgSigned ? 'checked' : '' ?>
-                   style="width:22px;height:22px;flex-shrink:0;margin-top:1px;accent-color:var(--accent)">
-            <span>
-                <span style="font-weight:700;color:var(--text-h);display:block;font-size:14px">Derechos de imagen <?= $imgSigned ? 'firmados' : 'sin firmar' ?></span>
-                <span style="font-size:12px;color:var(--text-muted)">Solo un administrador puede modificar este dato.</span>
-            </span>
-        </label>
-        <?php endif; ?>
-        <span class="badge-status <?= $imgSigned ? 'active' : 'inactive' ?>">
-            <i class="bi bi-<?= $imgSigned ? 'check-circle-fill' : 'exclamation-triangle-fill' ?> me-1"></i>
-            <?= $imgSigned ? 'Firmado' : 'Sin firmar' ?>
-        </span>
-    </div>
-</div>
-
 <div class="row g-3">
 
     <!-- ── Columna izquierda: identidad ─────────────────── -->
@@ -239,6 +200,18 @@ $formatTime = static function (?string $hms): string {
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($alumno['league']) ?></span>
                     </div>
                     <?php endif; ?>
+
+                    <div id="derechos-imagen" class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Derechos de imagen</span>
+                        <span style="display:inline-flex;align-items:center;gap:7px"
+                              title="<?= $isAdminUser ? 'Solo se puede cambiar desde la pantalla de edición del alumno' : 'Solo un administrador puede cambiarlo, desde la pantalla de edición' ?>">
+                            <span style="font-size:13px;font-weight:600;color:<?= $imgSigned ? 'var(--success)' : 'var(--text-muted)' ?>">
+                                <?= $imgSigned ? 'Firmados' : 'Pendientes' ?>
+                            </span>
+                            <input type="checkbox" disabled <?= $imgSigned ? 'checked' : '' ?>
+                                   style="width:16px;height:16px;accent-color:var(--accent)">
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
