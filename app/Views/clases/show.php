@@ -27,6 +27,16 @@ $responsibleEmpty = $isStaffSession ? 'Sin staff responsable asignado' : 'Sin en
 // impartido: sesión completada, lista pasada, o al menos un alumno
 // marcado como presente. (ver ClasesService::isFeedbackUnlocked)
 $feedbackUnlocked = \App\Services\ClasesService::isFeedbackUnlocked($session);
+
+// Estado de la asistencia (para etiquetas coherentes en toda la pantalla).
+$listaDone    = !empty($session['lista_pasada_at']) || $session['status'] === 'completed';
+$listaLabel   = $listaDone ? 'Revisar asistencia' : 'Pasar lista';
+$bonoDeducted = count(array_filter($session['players'] ?? [], fn($p) => !empty($p['bono_deducted_at'])));
+$statusHint   = [
+    'scheduled' => 'Programada: aún se puede editar y pasar lista.',
+    'completed' => 'Cerrada: la asistencia está bloqueada. Puedes reabrirla si necesitas corregir.',
+    'cancelled' => 'Cancelada: la clase no se imparte. Puedes reactivarla.',
+][$session['status']] ?? '';
 ?>
 
 <?= $this->section('page_content') ?>
@@ -39,13 +49,9 @@ $feedbackUnlocked = \App\Services\ClasesService::isFeedbackUnlocked($session);
 
     <?php if ($canManage): ?>
     <div class="d-flex gap-2 flex-wrap">
-        <?php if (in_array(session('role'), ['admin', 'superadmin'])): ?>
-        <a href="/clases/<?= $session['id'] ?>/lista"
-           class="btn-jp btn-jp-sm"
-           style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
-            <i class="bi bi-clipboard2-check-fill me-1"></i>Pasar Lista
+        <a href="/clases/<?= $session['id'] ?>/lista" class="btn-jp btn-jp-primary btn-jp-sm">
+            <i class="bi bi-clipboard2-check-fill me-1"></i><?= $listaLabel ?>
         </a>
-        <?php endif; ?>
         <?php if (in_array($session['status'], ['scheduled'])): ?>
         <a href="/clases/<?= $session['id'] ?>/editar" class="btn-jp btn-jp-secondary btn-jp-sm">
             <i class="bi bi-pencil-fill me-1"></i>Editar
@@ -55,6 +61,23 @@ $feedbackUnlocked = \App\Services\ClasesService::isFeedbackUnlocked($session);
             <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm"
                     onclick="return confirm('¿Cancelar esta sesión?')">
                 <i class="bi bi-x-circle-fill me-1"></i>Cancelar sesión
+            </button>
+        </form>
+        <?php endif; ?>
+        <?php if ($session['status'] === 'completed'): ?>
+        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm"
+                    onclick="return confirm('¿Reabrir esta sesión? Volverá a estar programada y podrás editar la asistencia de nuevo.')">
+                <i class="bi bi-unlock-fill me-1"></i>Reabrir sesión
+            </button>
+        </form>
+        <?php elseif ($session['status'] === 'cancelled'): ?>
+        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm"
+                    onclick="return confirm('¿Reactivar esta sesión cancelada? Volverá a estar programada.')">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar sesión
             </button>
         </form>
         <?php endif; ?>
@@ -169,6 +192,11 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <span class="badge-status" style="background:<?= $statusColor ?>22;color:<?= $statusColor ?>;border:1px solid <?= $statusColor ?>44">
                             <i class="bi <?= $statusIcon ?> me-1"></i><?= $statusLabel ?>
                         </span>
+                        <?php if ($canManage && $statusHint): ?>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+                            <i class="bi bi-info-circle me-1"></i><?= $statusHint ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <div class="col-6 col-md-4">
                         <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;margin-bottom:4px">Fecha</div>
@@ -347,8 +375,8 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 </table>
             </div>
             <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:right">
-                <a href="/clases/<?= $session['id'] ?>/lista" class="btn-jp btn-jp-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd">
-                    <i class="bi bi-clipboard2-check-fill me-1"></i>Gestionar asistencia
+                <a href="/clases/<?= $session['id'] ?>/lista" class="btn-jp btn-jp-primary btn-jp-sm">
+                    <i class="bi bi-clipboard2-check-fill me-1"></i><?= $listaLabel ?>
                 </a>
             </div>
 
@@ -503,6 +531,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         <span style="color:#d97706"><i class="bi bi-clock-fill me-1"></i>Sin registrar</span>
                         <strong><?= $pending ?></strong>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($bonoDeducted): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
+                        <span style="color:var(--text-muted)"><i class="bi bi-ticket-perforated-fill me-1"></i>Bono descontado</span>
+                        <strong style="color:var(--text-h)"><?= $bonoDeducted ?></strong>
                     </div>
                     <?php endif; ?>
                 </div>

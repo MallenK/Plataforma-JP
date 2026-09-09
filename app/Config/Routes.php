@@ -266,7 +266,13 @@ $routes->post('clases/(:num)/lista', 'ClasesController::guardarLista/$1', [
 $routes->post('clases/(:num)/cerrar', 'ClasesController::cerrarSesion/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
+$routes->post('clases/(:num)/reabrir', 'ClasesController::reabrirSesion/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 $routes->post('clases/(:num)/jugadores/(:num)/descontar-bono', 'ClasesController::deductBono/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/jugadores/(:num)/devolver-bono', 'ClasesController::refundBono/$1/$2', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
