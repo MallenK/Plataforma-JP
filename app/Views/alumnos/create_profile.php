@@ -66,7 +66,7 @@ $isEditing = !empty($profile);
                             <div class="form-group">
                                 <label class="form-label">Peso (kg)</label>
                                 <input type="number" name="weight" class="form-control-jp"
-                                    placeholder="Ej: 80" step="0.1" min="30" max="200"
+                                    placeholder="Ej: 80" step="0.1" min="10" max="300"
                                     value="<?= esc($profile['weight'] ?? '') ?>">
                             </div>
                         </div>
