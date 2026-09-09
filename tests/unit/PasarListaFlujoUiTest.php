@@ -126,6 +126,94 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
         $this->assertStringContainsString('se le devolverá el bono', $v);
     }
 
+    public function testDescontarBonoEnviaLaAsistenciaElegida(): void
+    {
+        $v = $this->lista();
+        // El fetch de descontar-bono adjunta { attendance: sel.value } para
+        // que funcione sin haber pulsado "Guardar".
+        $this->assertStringContainsString('{ attendance: sel ? sel.value :', $v);
+        $this->assertStringContainsString('bonoRequest(url, btn, labelBusy, labelIdle, onOk, extraBody)', $v);
+        $this->assertStringContainsString("headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN'", $v);
+    }
+
+    public function testControladorDeductBonoLeeLaAsistenciaDelCuerpo(): void
+    {
+        $c = file_get_contents(APPPATH . 'Controllers/ClasesController.php');
+        $this->assertStringContainsString("getJsonVar('attendance')", $c);
+        $this->assertStringContainsString('deductBonoForPlayer($id, $playerId, $want', $c);
+    }
+
+    public function testSeguimientoDeCambiosSinGuardarPorSelector(): void
+    {
+        $v = $this->lista();
+        // El selector guarda su valor persistido en data-saved y el "dirty" se
+        // recalcula comparando (evita el aviso falso tras descontar).
+        $this->assertStringContainsString('data-saved="<?= esc($att) ?>"', $v);
+        $this->assertStringContainsString('function recomputeDirty()', $v);
+        $this->assertStringContainsString('if (s.value !== s.dataset.saved) dirty = true', $v);
+        // Tras un descuento correcto la fila queda "guardada".
+        $this->assertStringContainsString('sel.dataset.saved = sel.value; recomputeDirty();', $v);
+        // Ya no se hace 'dirty = true' a pelo en el change del selector.
+        $this->assertStringNotContainsString("sel.addEventListener('change', function() { dirty = true;", $v);
+    }
+
+    // ── Hallazgos del code review ─────────────────────────────────
+
+    public function testGuardarListaBloqueaSesionesNoProgramadas(): void
+    {
+        $c = file_get_contents(APPPATH . 'Controllers/ClasesController.php');
+        // Invariante "cerrada = bloqueada": guardarLista y las acciones de bono
+        // exigen que la sesión esté programada.
+        $this->assertSame(2, substr_count($c, "\$session['status'] ?? '') !== 'scheduled'"),
+            'guardarLista y guardBonoAction deben comprobar status===scheduled');
+        $this->assertStringContainsString('Pulsa "Reabrir sesión" para editar la asistencia', $c);
+        $this->assertStringContainsString('Reábrela para gestionar los bonos.', $c);
+    }
+
+    public function testJsUsaLaListaDeEstadosDelServicioSinDuplicar(): void
+    {
+        $v = $this->lista();
+        $this->assertStringContainsString(
+            'var CONSUMES_BONO = <?= json_encode(\App\Services\ClasesService::BONO_CONSUMING_ATTENDANCE) ?>',
+            $v
+        );
+        $this->assertStringContainsString('function canDeductFor(v)', $v);
+        // Ya no hay ninguna lista de estados a mano en el JS.
+        $this->assertStringNotContainsString("['present','confirmed','unjustified']", $v);
+    }
+
+    public function testVistaSemanalCuentaCerradaComoHecha(): void
+    {
+        $v = $this->semanal();
+        $this->assertStringContainsString('$plSessionPending', $v);
+        // los 3 sitios que contaban "por pasar" usan el helper, no lista_pasada_at a pelo
+        $this->assertStringNotContainsString("empty(\$s['lista_pasada_at']) ? 1 : 0", $v);
+        $this->assertStringNotContainsString('data-pending="<?= $listaPasada ? \'0\' : \'1\' ?>"', $v);
+    }
+
+    public function testGuardadoDeAsistenciaEsAtomico(): void
+    {
+        $s = file_get_contents(APPPATH . 'Services/ClasesService.php');
+
+        // updateAttendance: el bucle va dentro de una transacción manual.
+        $upd = substr($s, strpos($s, 'public function updateAttendance'), 2000);
+        $this->assertStringContainsString('$this->db->transBegin();', $upd);
+        $this->assertStringContainsString('$this->db->transCommit();', $upd);
+        $this->assertStringContainsString('$this->db->transRollback();', $upd);
+
+        // deductBonoForPlayer: reclamo atómico condicional contra la carrera.
+        $ded = substr($s, strpos($s, 'public function deductBonoForPlayer'), 2600);
+        $this->assertStringContainsString("->where('bono_deducted_at', null)", $ded);
+        $this->assertStringContainsString('$this->db->affectedRows() < 1', $ded);
+        $this->assertStringContainsString('$this->db->transRollback();', $ded);
+
+        // doRefund ya no abre transacción propia (la pone el llamador).
+        $ref = substr($s, strpos($s, 'private function doRefund'), 2600);
+        $this->assertStringNotContainsString('transStart', $ref);
+        $this->assertStringNotContainsString('transComplete', $ref);
+        $this->assertStringContainsString('bono_id', $ref);
+    }
+
     // ── Regresión CSRF (ver DeductBonoCsrfTest) ────────────────────
 
     public function testFetchDeBonoNuncaManaUnaCabeceraCsrfVacia(): void

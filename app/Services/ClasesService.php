@@ -729,13 +729,42 @@ class ClasesService
         return in_array($status, self::ABSENCE_ATTENDANCE, true);
     }
 
+    /** Todos los valores válidos de `class_session_players.attendance`. */
+    public const ATTENDANCE_VALUES = ['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'];
+
     /**
-     * Admin descuenta manualmente 1 sesión del bono activo de un jugador.
-     * Solo válido si el jugador está presente / confirmado / no justificado y
-     * el bono aún no fue descontado en esta sesión. Guarda de qué bono se
-     * descontó (`bono_deducted_from_id`) para poder devolverlo con exactitud.
+     * Resuelve el estado de asistencia efectivo para un "Descontar bono":
+     * se usa el estado enviado desde el selector ($want) si es un valor válido;
+     * si no, el que ya estaba guardado. Devuelve además si ese estado consume
+     * bono y si hay que persistir un cambio.
+     *
+     * @return array{state:string, consumes:bool, persist:bool}
      */
-    public function deductBonoForPlayer(int $sessionId, int $playerId): array
+    public static function resolveDeductAttendance(?string $stored, ?string $want): array
+    {
+        $wanted = ($want !== null && in_array($want, self::ATTENDANCE_VALUES, true)) ? $want : null;
+        $state  = $wanted ?? ($stored ?: 'pending');
+
+        return [
+            'state'    => $state,
+            'consumes' => self::attendanceConsumesBono($state),
+            'persist'  => $wanted !== null && $wanted !== $stored,
+        ];
+    }
+
+    /**
+     * Admin descuenta 1 sesión del bono activo de un jugador.
+     *
+     * Descontar un bono significa "el alumno ha usado una sesión de su bono",
+     * así que la acción también REGISTRA la asistencia elegida ($wantAttendance,
+     * el valor del selector de la fila) si aún no estaba guardada — de ese modo
+     * no hace falta pulsar "Guardar" antes de descontar. La asistencia efectiva
+     * debe ser un estado que consuma bono (presente / confirmado / no justif.).
+     *
+     * Guarda de qué bono se descontó (`bono_deducted_from_id`) para devolverlo
+     * con exactitud.
+     */
+    public function deductBonoForPlayer(int $sessionId, int $playerId, ?string $wantAttendance = null): array
     {
         $player = $this->playerModel
             ->where('session_id', $sessionId)
@@ -746,8 +775,10 @@ class ClasesService
             return ['success' => false, 'error' => 'Jugador no asignado a esta sesión.'];
         }
 
-        if (!self::attendanceConsumesBono($player['attendance'])) {
-            return ['success' => false, 'error' => 'Solo se puede descontar bono a jugadores marcados como presentes, confirmados o con falta no justificada.'];
+        $att = self::resolveDeductAttendance($player['attendance'] ?? null, $wantAttendance);
+
+        if (!$att['consumes']) {
+            return ['success' => false, 'error' => 'Solo se puede descontar bono si el alumno está marcado como Presente, Confirmado o No justificado.'];
         }
 
         if (!empty($player['bono_deducted_at'])) {
@@ -756,23 +787,55 @@ class ClasesService
 
         $bonoModel = new PlayerBonoModel();
 
-        $this->db->transStart();
-        $bono = $bonoModel->deductSessionDetailed($playerId);
+        $this->db->transBegin();
+        try {
+            $bono = $bonoModel->deductSessionDetailed($playerId);
 
-        if ($bono === null) {
-            $this->db->transComplete();
-            return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+            if ($bono === null) {
+                $this->db->transRollback();
+                return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+            }
+
+            $update = [
+                'bono_deducted_at'      => date('Y-m-d H:i:s'),
+                'bono_deducted_from_id' => (int)$bono['id'],
+            ];
+            // Descontar un bono = el alumno usó una sesión: registra la asistencia
+            // elegida en el selector si aún no estaba guardada.
+            if ($att['persist']) {
+                $update['attendance'] = $att['state'];
+                if (!self::attendanceIsAbsence($att['state'])) {
+                    $update['absence_reason'] = null;
+                    $update['absence_notes']  = null;
+                }
+            }
+
+            // Reclamo atómico: solo lo consigue quien encuentra bono_deducted_at
+            // NULL. Evita el doble descuento si dos peticiones concurren.
+            $this->db->table('class_session_players')
+                ->where('id', $player['id'])
+                ->where('bono_deducted_at', null)
+                ->update($update);
+
+            if ($this->db->affectedRows() < 1) {
+                $this->db->transRollback();
+                return ['success' => false, 'error' => 'El bono de este jugador ya fue descontado para esta sesión.'];
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
         }
-
-        $this->playerModel->update($player['id'], [
-            'bono_deducted_at'      => date('Y-m-d H:i:s'),
-            'bono_deducted_from_id' => (int)$bono['id'],
-        ]);
-        $this->db->transComplete();
 
         $remaining = (int)$bono['sessions_remaining'];
         if ($remaining === 1 || $remaining === 0) {
-            $this->emitBonoLowSessionsNotification($playerId, $bono);
+            // El aviso de bono bajo no debe tumbar el descuento si algo falla.
+            try {
+                $this->emitBonoLowSessionsNotification($playerId, $bono);
+            } catch (\Throwable $e) {
+                log_message('error', 'emitBonoLowSessionsNotification falló tras descontar bono: ' . $e->getMessage());
+            }
         }
 
         $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
@@ -790,34 +853,46 @@ class ClasesService
      * Devuelve al bono la sesión que esta fila había consumido.
      * Idempotente vía `bono_deducted_at`: si no hay descuento, no hace nada.
      *
+     * Prefiere el bono de origen (`bono_deducted_from_id`); si ese ya no sirve
+     * (caducado, borrado, o al máximo de sesiones) acredita el bono activo del
+     * alumno para no dejarle sin la sesión.
+     *
+     * NO abre transacción propia: el llamador la envuelve cuando hace falta
+     * atomicidad con otras escrituras.
+     *
      * @param array $player  fila de class_session_players (tal cual la BD)
-     * @return bool  true si se revirtió un descuento
+     * @return array{refunded:bool, bono_id:?int}  bono_id = bono realmente acreditado
      */
-    private function doRefund(array $player): bool
+    private function doRefund(array $player): array
     {
         if (empty($player['bono_deducted_at'])) {
-            return false;
+            return ['refunded' => false, 'bono_id' => null];
         }
 
         $bonoModel = new PlayerBonoModel();
-
-        $this->db->transStart();
+        $today     = date('Y-m-d');
 
         $bonoId = (int)($player['bono_deducted_from_id'] ?? 0);
-        $bono   = $bonoId ? $bonoModel->find($bonoId) : null;
+        $origin = $bonoId ? $bonoModel->find($bonoId) : null;
 
-        // Filas antiguas sin trazabilidad (o bono borrado): al bono activo actual.
-        if (!$bono) {
-            $bono = $bonoModel->getActiveBono((int)$player['user_id']);
-        }
+        // El bono de origen sirve si no ha caducado y aún admite otra sesión.
+        $originUsable = $origin
+            && (int)$origin['sessions_remaining'] < (int)($origin['sessions_total'] ?? 0)
+            && (empty($origin['expires_at']) || $origin['expires_at'] >= $today);
 
-        if ($bono) {
-            $newRemaining = (int)$bono['sessions_remaining'] + 1;
-            $cap = (int)($bono['sessions_total'] ?? 0);
+        $target = $originUsable
+            ? $origin
+            : ($bonoModel->getActiveBono((int)$player['user_id']) ?: $origin);
+
+        $creditedId = null;
+        if ($target) {
+            $newRemaining = (int)$target['sessions_remaining'] + 1;
+            $cap = (int)($target['sessions_total'] ?? 0);
             if ($cap > 0 && $newRemaining > $cap) {
                 $newRemaining = $cap;
             }
-            $bonoModel->update($bono['id'], ['sessions_remaining' => $newRemaining]);
+            $bonoModel->update($target['id'], ['sessions_remaining' => $newRemaining]);
+            $creditedId = (int)$target['id'];
         } else {
             log_message('warning', "doRefund: no se pudo devolver el bono del jugador {$player['user_id']} (fila csp {$player['id']}): sin bono destino.");
         }
@@ -827,8 +902,7 @@ class ClasesService
             'bono_deducted_from_id' => null,
         ]);
 
-        $this->db->transComplete();
-        return true;
+        return ['refunded' => true, 'bono_id' => $creditedId];
     }
 
     /**
@@ -851,24 +925,44 @@ class ClasesService
             return ['success' => false, 'error' => 'Este alumno no tiene ningún bono descontado en esta sesión.'];
         }
 
-        $this->doRefund($player);
+        $this->db->transBegin();
+        try {
+            $credited = $this->doRefund($player)['bono_id'];
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
 
-        $active = $this->db->table('player_bonos pb')
-            ->select('pb.sessions_remaining, bt.name AS bono_name')
-            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
-            ->where('pb.player_id', $playerId)
-            ->where('pb.sessions_remaining >', 0)
-            ->groupStart()
-                ->where('pb.expires_at IS NULL')
-                ->orWhere('pb.expires_at >=', date('Y-m-d'))
-            ->groupEnd()
-            ->orderBy('pb.created_at', 'ASC')
-            ->get()->getRowArray();
+        // Reportar sobre el bono realmente acreditado (así el contador de la
+        // pantalla refleja el cambio exacto). Si no se pudo acreditar ninguno,
+        // caemos al bono activo del alumno.
+        $bono = $credited
+            ? $this->db->table('player_bonos pb')
+                ->select('pb.sessions_remaining, bt.name AS bono_name')
+                ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+                ->where('pb.id', $credited)
+                ->get()->getRowArray()
+            : null;
+
+        if (!$bono) {
+            $bono = $this->db->table('player_bonos pb')
+                ->select('pb.sessions_remaining, bt.name AS bono_name')
+                ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+                ->where('pb.player_id', $playerId)
+                ->where('pb.sessions_remaining >', 0)
+                ->groupStart()
+                    ->where('pb.expires_at IS NULL')
+                    ->orWhere('pb.expires_at >=', date('Y-m-d'))
+                ->groupEnd()
+                ->orderBy('pb.created_at', 'ASC')
+                ->get()->getRowArray();
+        }
 
         return [
             'success'            => true,
-            'sessions_remaining' => $active ? (int)$active['sessions_remaining'] : 0,
-            'bono_name'          => $active['bono_name'] ?? null,
+            'sessions_remaining' => $bono ? (int)$bono['sessions_remaining'] : 0,
+            'bono_name'          => $bono['bono_name'] ?? null,
         ];
     }
 
@@ -894,11 +988,22 @@ class ClasesService
             ->where('bono_deducted_at IS NOT NULL', null, false)
             ->findAll();
 
+        if (empty($rows)) {
+            return 0;
+        }
+
         $n = 0;
-        foreach ($rows as $row) {
-            if ($this->doRefund($row)) {
-                $n++;
+        $this->db->transBegin();
+        try {
+            foreach ($rows as $row) {
+                if ($this->doRefund($row)['refunded']) {
+                    $n++;
+                }
             }
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
         }
         return $n;
     }
@@ -1189,14 +1294,21 @@ class ClasesService
             ->where('session_id', $sessionId)
             ->where('user_id', $userId)
             ->first();
-        if ($row) {
-            $this->doRefund($row);
-        }
 
-        $this->db->table('class_session_players')
-            ->where('session_id', $sessionId)
-            ->where('user_id', $userId)
-            ->delete();
+        $this->db->transBegin();
+        try {
+            if ($row) {
+                $this->doRefund($row);
+            }
+            $this->db->table('class_session_players')
+                ->where('session_id', $sessionId)
+                ->where('user_id', $userId)
+                ->delete();
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
         return true;
     }
 
@@ -1309,36 +1421,44 @@ class ClasesService
      */
     public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = [], array $absenceNotes = []): int
     {
-        $valid    = ['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'];
         $refunded = 0;
 
-        foreach ($attendanceMap as $userId => $status) {
-            if (!in_array($status, $valid)) continue;
+        // Todo el guardado de la lista es atómico: si falla a media lista, no
+        // deja unos alumnos con la asistencia nueva y otros con la vieja.
+        $this->db->transBegin();
+        try {
+            foreach ($attendanceMap as $userId => $status) {
+                if (!in_array($status, self::ATTENDANCE_VALUES, true)) continue;
 
-            $player = $this->playerModel
-                ->where('session_id', $sessionId)
-                ->where('user_id', (int)$userId)
-                ->first();
+                $player = $this->playerModel
+                    ->where('session_id', $sessionId)
+                    ->where('user_id', (int)$userId)
+                    ->first();
 
-            if (!$player) continue;
+                if (!$player) continue;
 
-            $update = ['attendance' => $status];
-            if (self::attendanceIsAbsence($status)) {
-                // absent y unjustified admiten razón/nota (la vista deja
-                // editarlas en ambos; antes solo se guardaban para 'absent').
-                $update['absence_reason'] = ($absenceReasons[$userId] ?? '') ?: null;
-                $update['absence_notes']  = ($absenceNotes[$userId] ?? '') ?: null;
-            } else {
-                $update['absence_reason'] = null;
-                $update['absence_notes']  = null;
+                $update = ['attendance' => $status];
+                if (self::attendanceIsAbsence($status)) {
+                    // absent y unjustified admiten razón/nota (la vista deja
+                    // editarlas en ambos; antes solo se guardaban para 'absent').
+                    $update['absence_reason'] = ($absenceReasons[$userId] ?? '') ?: null;
+                    $update['absence_notes']  = ($absenceNotes[$userId] ?? '') ?: null;
+                } else {
+                    $update['absence_reason'] = null;
+                    $update['absence_notes']  = null;
+                }
+                $this->playerModel->update($player['id'], $update);
+
+                if (!empty($player['bono_deducted_at'])
+                    && !self::attendanceConsumesBono($status)
+                    && $this->doRefund($player)['refunded']) {
+                    $refunded++;
+                }
             }
-            $this->playerModel->update($player['id'], $update);
-
-            if (!empty($player['bono_deducted_at'])
-                && !self::attendanceConsumesBono($status)
-                && $this->doRefund($player)) {
-                $refunded++;
-            }
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
         }
 
         return $refunded;

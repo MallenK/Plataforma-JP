@@ -513,6 +513,15 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
+        // Solo se pasa lista sobre sesiones programadas. Una cerrada hay que
+        // reabrirla primero (invariante "cerrada = bloqueada").
+        if (($session['status'] ?? '') !== 'scheduled') {
+            session()->setFlashdata('error', ($session['status'] ?? '') === 'completed'
+                ? 'La sesión está cerrada. Pulsa "Reabrir sesión" para editar la asistencia.'
+                : 'Esta sesión no admite cambios de asistencia en su estado actual.');
+            return redirect()->to('/clases/' . $id . '/lista');
+        }
+
         $res = $this->clasesService->guardarLista(
             $id,
             $this->currentUserId(),
@@ -547,8 +556,13 @@ class ClasesController extends BaseController
         if ($resp = $this->guardBonoAction($id)) {
             return $resp;
         }
+        // La asistencia elegida en el selector (aún sin guardar) viaja en el
+        // cuerpo: descontar bono también la registra.
+        $want = $this->request->getJsonVar('attendance')
+            ?? $this->request->getPost('attendance');
+
         return $this->response->setJSON(
-            $this->clasesService->deductBonoForPlayer($id, $playerId)
+            $this->clasesService->deductBonoForPlayer($id, $playerId, $want ? (string) $want : null)
         );
     }
 
@@ -577,6 +591,10 @@ class ClasesController extends BaseController
         if (!$this->isAssignedOrAdmin($session)) {
             return $this->response->setStatusCode(403)
                 ->setJSON(['success' => false, 'error' => 'No tienes permiso para gestionar esta sesión.']);
+        }
+        if (($session['status'] ?? '') !== 'scheduled') {
+            return $this->response->setStatusCode(409)
+                ->setJSON(['success' => false, 'error' => 'La sesión no está programada. Reábrela para gestionar los bonos.']);
         }
         return null;
     }

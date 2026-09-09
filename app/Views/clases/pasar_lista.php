@@ -52,7 +52,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                     <ul>
                         <li><b>Ausente</b> — falta avisada o justificada.</li>
                         <li><b>No justificado</b> — no se presentó y no avisó. Permite descontar el bono como falta.</li>
-                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible cuando el alumno está <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b>. Consume 1 sesión del bono activo y queda registrado.</li>
+                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible con el alumno <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b> (no hace falta guardar antes: al descontar se registra también esa asistencia). Consume 1 sesión del bono activo y queda registrado.</li>
                         <li><b>Devolver bono</b> — deshace un descuento. También se devuelve solo si cambias la asistencia a Ausente, Avisó o Pendiente.</li>
                     </ul>
                 </div>
@@ -129,7 +129,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                     </td>
                     <td>
                         <select name="attendance[<?= $uid ?>]" class="form-select-jp att-select" data-uid="<?= $uid ?>"
-                                data-state="<?= esc($att) ?>" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
+                                data-state="<?= esc($att) ?>" data-saved="<?= esc($att) ?>" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
                             <optgroup label="Asistencia">
                                 <?php foreach ($groups['asistencia'] as $val => $label): ?>
                                 <option value="<?= $val ?>" <?= $att === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
@@ -242,6 +242,19 @@ $listaSaved = !empty($session['lista_pasada_at']);
     if (!form) return;
     var dirty = false;
 
+    // Estados que permiten descontar bono — misma lista que el servidor
+    // (ClasesService::BONO_CONSUMING_ATTENDANCE), sin duplicar a mano.
+    var CONSUMES_BONO = <?= json_encode(\App\Services\ClasesService::BONO_CONSUMING_ATTENDANCE) ?>;
+    function canDeductFor(v) { return CONSUMES_BONO.indexOf(v) !== -1; }
+
+    // Hay cambios sin guardar si algún selector difiere de su valor guardado.
+    function recomputeDirty() {
+        dirty = false;
+        document.querySelectorAll('.att-select').forEach(function(s) {
+            if (s.value !== s.dataset.saved) dirty = true;
+        });
+    }
+
     function updateCounts() {
         var cnt = { present: 0, absent: 0, unjustified: 0, pending: 0 };
         document.querySelectorAll('.att-select').forEach(function(s) {
@@ -262,7 +275,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
             c.style.opacity = absLike ? '1' : '0.35';
             c.style.pointerEvents = absLike ? '' : 'none';
         });
-        var canDeduct = ['present','confirmed','unjustified'].indexOf(sel.value) !== -1;
+        var canDeduct = canDeductFor(sel.value);
         var act = document.querySelector('.pl-bono-action[data-uid="' + uid + '"]');
         if (act) {
             var dBtn = act.querySelector('.pl-deduct');
@@ -277,7 +290,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
 
     document.querySelectorAll('.att-select').forEach(function(sel) {
         syncRow(sel);
-        sel.addEventListener('change', function() { dirty = true; syncRow(sel); updateCounts(); });
+        sel.addEventListener('change', function() { recomputeDirty(); syncRow(sel); updateCounts(); });
     });
     updateCounts();
 
@@ -287,9 +300,9 @@ $listaSaved = !empty($session['lista_pasada_at']);
             var target = this.dataset.bulk;
             var changed = false;
             document.querySelectorAll('.att-select').forEach(function(sel) {
-                if (sel.value !== target) { sel.value = target; syncRow(sel); dirty = true; changed = true; }
+                if (sel.value !== target) { sel.value = target; syncRow(sel); changed = true; }
             });
-            if (changed) updateCounts();
+            if (changed) { recomputeDirty(); updateCounts(); }
         });
     });
 
@@ -324,7 +337,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
         var act = document.querySelector('.pl-bono-action[data-uid="' + uid + '"]');
         if (!act) return;
         var sel = document.querySelector('.att-select[data-uid="' + uid + '"]');
-        var can = sel && ['present','confirmed','unjustified'].indexOf(sel.value) !== -1;
+        var can = sel && canDeductFor(sel.value);
         act.innerHTML =
             '<span class="pl-bono-done" title="Bono descontado ahora"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>' +
             '<button type="button" class="btn-jp btn-jp-sm pl-refund" data-session="' + sessionId + '" data-player="' + uid + '">' +
@@ -336,15 +349,16 @@ $listaSaved = !empty($session['lista_pasada_at']);
         var act = document.querySelector('.pl-bono-action[data-uid="' + uid + '"]');
         if (!act) return;
         var sel = document.querySelector('.att-select[data-uid="' + uid + '"]');
-        var can = sel && ['present','confirmed','unjustified'].indexOf(sel.value) !== -1;
+        var can = sel && canDeductFor(sel.value);
         act.innerHTML =
             '<button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct" data-session="' + sessionId + '" data-player="' + uid + '"' +
             ' style="' + (can ? '' : 'display:none') + '"><i class="bi bi-dash-circle-fill me-1"></i>Descontar bono</button>' +
             '<span class="pl-deduct-hint" style="font-size:11px;color:var(--text-muted);' + (can ? 'display:none' : '') + '">Marcar presente / no justif.</span>';
     }
 
-    function bonoRequest(url, btn, labelBusy, labelIdle, onOk) {
-        var body = {}; body[CSRF_NAME] = '<?= csrf_hash() ?>';
+    function bonoRequest(url, btn, labelBusy, labelIdle, onOk, extraBody) {
+        var body = extraBody ? Object.assign({}, extraBody) : {};
+        body[CSRF_NAME] = '<?= csrf_hash() ?>';
         btn.disabled = true;
         var prev = btn.innerHTML;
         btn.innerHTML = labelBusy;
@@ -382,10 +396,14 @@ $listaSaved = !empty($session['lista_pasada_at']);
                 ? '¿Descontar 1 sesión del bono por falta NO justificada? Quedará registrada como falta.'
                 : '¿Descontar 1 sesión del bono de este alumno?';
             if (!confirm(msg)) return;
+            // Enviamos la asistencia elegida: descontar bono también la registra
+            // (no hace falta "Guardar" antes).
             bonoRequest('/clases/' + sid + '/jugadores/' + pid + '/descontar-bono', dBtn, 'Descontando…', null, function(data) {
                 setRemaining(pid, data.sessions_remaining);
                 renderDeducted(pid, sid);
-            });
+                // La asistencia de esta fila ha quedado guardada por el descuento.
+                if (sel) { sel.dataset.saved = sel.value; recomputeDirty(); }
+            }, { attendance: sel ? sel.value : '' });
         } else if (rBtn) {
             var sid2 = rBtn.dataset.session, pid2 = rBtn.dataset.player;
             if (!confirm('¿Devolver 1 sesión al bono de este alumno? Se deshace el descuento de esta sesión.')) return;
