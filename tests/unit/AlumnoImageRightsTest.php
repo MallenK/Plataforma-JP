@@ -63,22 +63,27 @@ final class AlumnoImageRightsTest extends CIUnitTestCase
 
     // ── Ficha del alumno ─────────────────────────────────────────
 
-    public function testShowPintaElBloqueArribaYSegunRol(): void
+    public function testShowPintaLaFilaDentroDeLaTarjetaDeIdentidadYSegunRol(): void
     {
         $v = $this->file('Views/alumnos/show.php');
 
-        // el bloque va ANTES de la rejilla principal de contenido
-        $posBloque = strpos($v, 'id="derechos-imagen"');
-        $posRow    = strpos($v, '<div class="row g-3">');
-        $this->assertNotFalse($posBloque);
-        $this->assertLessThan($posRow, $posBloque, 'el bloque de derechos de imagen debe ir arriba del todo');
+        // La fila va DENTRO de la tarjeta de identidad (misma lista que ID /
+        // Miembro desde / Categoría…), no en un banner destacado aparte.
+        $posFila = strpos($v, 'id="derechos-imagen"');
+        $posRow  = strpos($v, '<div class="row g-3">');
+        $this->assertNotFalse($posFila);
+        $this->assertGreaterThan($posRow, $posFila, 'la fila va dentro del contenido, no en un banner arriba');
+        // usa el mismo patrón de fila que el resto de datos de la tarjeta
+        $slice = substr($v, $posFila, 400);
+        $this->assertStringContainsString('d-flex justify-content-between align-items-center', $slice);
+        $this->assertStringContainsString('text-transform:uppercase', $slice);
 
         // admin → formulario que se envía al cambiar el checkbox
         $this->assertStringContainsString("action=\"<?= base_url('alumnos/' . \$alumno['id'] . '/derechos-imagen') ?>\"", $v);
         $this->assertStringContainsString('onchange="this.form.submit()"', $v);
         // no-admin → checkbox deshabilitado
         $this->assertMatchesRegularExpression('/else:.+<input type="checkbox" disabled/s', $v);
-        // acento de color según el estado
-        $this->assertStringContainsString("\$imgSigned ? 'var(--success)' : 'var(--warning", $v);
+        // ya no hay banner con acento de color a todo el ancho
+        $this->assertStringNotContainsString('dato destacado, arriba del todo', $v);
     }
 }
