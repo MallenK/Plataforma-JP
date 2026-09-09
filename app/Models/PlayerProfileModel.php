@@ -18,6 +18,7 @@ class PlayerProfileModel extends Model
         'team',
         'league',
         'medical_notes',
+        'image_rights_signed',
     ];
 
     /**

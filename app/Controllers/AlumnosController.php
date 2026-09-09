@@ -205,15 +205,16 @@ class AlumnosController extends BaseController
         ];
 
         $profileData = [
-            'birth_date'    => $this->request->getPost('birth_date') ?: null,
-            'height'        => $this->request->getPost('height') ?: null,
-            'weight'        => $this->request->getPost('weight') ?: null,
-            'position'      => \App\Models\PlayerProfileModel::encodePositions((array) $this->request->getPost('position')),
-            'level'         => $this->request->getPost('level') ?: null,
-            'category'      => $this->request->getPost('category') ?: null,
-            'team'          => $this->request->getPost('team') ?: null,
-            'league'        => $this->request->getPost('league') ?: null,
-            'medical_notes' => $this->request->getPost('medical_notes') ?: null,
+            'birth_date'          => $this->request->getPost('birth_date') ?: null,
+            'height'              => $this->request->getPost('height') ?: null,
+            'weight'              => $this->request->getPost('weight') ?: null,
+            'position'            => \App\Models\PlayerProfileModel::encodePositions((array) $this->request->getPost('position')),
+            'level'               => $this->request->getPost('level') ?: null,
+            'category'            => $this->request->getPost('category') ?: null,
+            'team'                => $this->request->getPost('team') ?: null,
+            'league'              => $this->request->getPost('league') ?: null,
+            'medical_notes'       => $this->request->getPost('medical_notes') ?: null,
+            'image_rights_signed' => $this->request->getPost('image_rights_signed') ? 1 : 0,
         ];
 
         $this->playerService->updateAlumno($id, $userData, $profileData);
@@ -221,6 +222,27 @@ class AlumnosController extends BaseController
         session()->setFlashdata('success', 'Alumno actualizado correctamente.');
 
         return redirect()->to('/alumnos/' . $id);
+    }
+
+    /**
+     * Toggle rápido de "derechos de imagen firmados" desde la ficha del
+     * alumno. Solo admin / superadmin (ver Routes.php).
+     */
+    public function updateImageRights(int $id)
+    {
+        $target = (new \App\Models\UserModel())->find($id);
+        if (!$target || ($target['role'] ?? '') !== 'player') {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $signed = (bool) $this->request->getPost('image_rights_signed');
+        $this->playerService->setImageRights($id, $signed);
+
+        session()->setFlashdata('success', $signed
+            ? 'Derechos de imagen marcados como firmados.'
+            : 'Derechos de imagen marcados como NO firmados.');
+
+        return redirect()->to('/alumnos/' . $id . '#derechos-imagen');
     }
 
     /**
