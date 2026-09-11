@@ -568,6 +568,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 
 <script>
 const isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
+const CURRENT_USER_ID = <?= (int) session('id') ?>;
 const CSRF_NAME  = '<?= csrf_token() ?>';
 const CSRF_HASH  = '<?= csrf_hash() ?>';
 
@@ -718,6 +719,12 @@ function openFolderModal(folderId) {
                     : '';
                 const size = fmtBytes(parseInt(f.size_bytes) || 0);
                 const date = f.created_at ? new Date(f.created_at).toLocaleDateString('es-ES') : '—';
+                // Igual que en Observaciones: el autor de la subida puede eliminar
+                // su propio archivo (salvo en carpetas públicas), y admin/superadmin
+                // pueden eliminar cualquiera. El backend (DocumentService::deleteFile)
+                // ya aplicaba esta regla; aquí solo se refleja en el botón.
+                const canDelete = isAdmin
+                    || (folder.type !== 'public' && parseInt(f.uploader_id) === CURRENT_USER_ID);
                 return `<tr>
                     <td>
                         <div style="display:flex;align-items:center;gap:8px">
@@ -734,7 +741,7 @@ function openFolderModal(folderId) {
                         <div style="display:flex;gap:4px;justify-content:flex-end">
                             ${previewBtn}
                             <a href="/documentacion/file/${f.id}/download" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon" title="Descargar"><i class="bi bi-download"></i></a>
-                            ${isAdmin ? `<button type="button" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar" data-del-id="${f.id}" data-del-name="${escHtml(f.name_original)}" onclick="deleteFile(this.getAttribute('data-del-id'), this.getAttribute('data-del-name'))"><i class="bi bi-trash-fill"></i></button>` : ''}
+                            ${canDelete ? `<button type="button" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar" data-del-id="${f.id}" data-del-name="${escHtml(f.name_original)}" onclick="deleteFile(this.getAttribute('data-del-id'), this.getAttribute('data-del-name'))"><i class="bi bi-trash-fill"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>`;

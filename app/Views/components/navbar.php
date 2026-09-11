@@ -124,6 +124,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
     const CSRF_NAME = '<?= csrf_token() ?>';
     let   csrfHash  = '<?= csrf_hash() ?>';
     let   isOpen    = false;
+    const IS_ADMIN  = <?= in_array($role, ['admin', 'superadmin'], true) ? 'true' : 'false' ?>;
 
     const btn      = document.getElementById('topbar-notif-btn');
     const dropdown = document.getElementById('notif-dropdown');
@@ -276,6 +277,26 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
                 }
             }
         } catch (_) {}
+
+        // Tickets pendientes (solo admin/superadmin) — badge del botón "Soporte"
+        if (IS_ADMIN) {
+            try {
+                const res  = await fetch(BASE + 'tickets/gestion/pending-count', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                const ticketsBadge = document.getElementById('sidebar-tickets-badge');
+                if (ticketsBadge) {
+                    const count = parseInt(data.count ?? 0);
+                    if (count > 0) {
+                        ticketsBadge.textContent = count > 99 ? '99+' : count;
+                        ticketsBadge.classList.remove('d-none');
+                    } else {
+                        ticketsBadge.classList.add('d-none');
+                    }
+                }
+            } catch (_) {}
+        }
     }
 
     // Carga inicial y polling

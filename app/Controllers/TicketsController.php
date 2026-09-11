@@ -385,6 +385,17 @@ class TicketsController extends BaseController
     }
 
     // ─────────────────────────────────────────────────────────
+    // ADMIN — nº de tickets pendientes (badge del sidebar)
+    // ─────────────────────────────────────────────────────────
+
+    public function pendingCount()
+    {
+        return $this->response->setJSON([
+            'count' => $this->ticketModel->countOpen(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // ADMIN — responder ticket
     // ─────────────────────────────────────────────────────────
 
