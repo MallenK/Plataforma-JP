@@ -627,7 +627,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                       class="d-flex gap-2 align-items-center flex-wrap">
                     <?= csrf_field() ?>
                     <input type="hidden" name="folder_id" value="<?= (int)$personalFolder['id'] ?>">
-                    <input type="hidden" name="redirect_to" value="/perfil/<?= (int)($user['id'] ?? 0) ?>">
+                    <input type="hidden" name="redirect_to" value="<?= $isSelf ? '/perfil' : '/perfil/' . (int)($user['id'] ?? 0) ?>">
                     <input type="file" name="archivo" class="form-control-jp" style="flex:1;min-width:200px"
                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
                     <input type="text" name="description" class="form-control-jp" placeholder="Descripción (opcional)" style="flex:1;min-width:160px">
