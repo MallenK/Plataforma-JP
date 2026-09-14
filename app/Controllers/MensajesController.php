@@ -461,25 +461,41 @@ class MensajesController extends BaseController
     private const ALLOWED_EXTENSIONS = [
         'jpg', 'jpeg', 'png', 'webp', 'gif',
         'pdf', 'doc', 'docx', 'xls', 'xlsx',
-        'txt', 'mp4',
+        'txt', 'mp4', 'mov',
     ];
+
+    // Los vídeos de móvil (iPhone en HEVC/.mov sobre todo) pesan mucho más que
+    // una foto o un PDF — el límite plano de 5 MB los rechazaba casi siempre.
+    // Mismos formatos que ya acepta DocumentService (mp4/mov, video/quicktime).
+    private const VIDEO_EXTENSIONS = ['mp4', 'mov'];
 
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file, string $subfolder): array
     {
-        $maxSize = 5 * 1024 * 1024; // 5 MB
+        $maxSizeDefault = 5 * 1024 * 1024;   // 5 MB (imágenes/documentos)
+        $maxSizeVideo    = 80 * 1024 * 1024;  // 80 MB (vídeo de chat)
         $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif',
                     'application/pdf', 'application/msword',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'application/vnd.ms-excel',
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'text/plain', 'video/mp4'];
+                    'text/plain', 'video/mp4', 'video/quicktime'];
+
+        $clientExt = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
+        $isVideo   = in_array($clientExt, self::VIDEO_EXTENSIONS, true);
+        $maxSize   = $isVideo ? $maxSizeVideo : $maxSizeDefault;
 
         if ($file->getSize() > $maxSize) {
-            return ['error' => 'El archivo supera el límite de 5 MB.'];
+            $limitMb = (int) ($maxSize / (1024 * 1024));
+            return ['error' => "El archivo supera el límite de {$limitMb} MB."];
         }
 
-        $mime = $file->getMimeType();
-        if (!in_array($mime, $allowed)) {
+        try {
+            $mime = $file->getMimeType();
+        } catch (\Throwable $e) {
+            log_message('error', 'MensajesController::handleFileUpload getMimeType failed: ' . $e->getMessage());
+            return ['error' => 'No se pudo procesar el archivo. Inténtalo de nuevo.'];
+        }
+        if (!in_array($mime, $allowed, true)) {
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 

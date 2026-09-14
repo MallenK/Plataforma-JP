@@ -124,7 +124,7 @@ $roleLabels = [
                     <label class="chat-attach-btn" title="Adjuntar archivo">
                         <i class="bi bi-paperclip"></i>
                         <input type="file" id="msg-file" name="attachment" class="d-none"
-                               accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.mp4">
+                               accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.mp4,.mov">
                     </label>
                     <textarea class="chat-input" id="msg-body" name="body"
                               rows="1" placeholder="Escribe un mensaje…"
