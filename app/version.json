@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.7.0",
+        "date": "2026-09-15 00:00:00",
+        "description": "Clases y Dashboard: un administrador que también tiene clases asignadas como entrenador puede alternar el calendario entre 'Todas' (vista de gestión completa) y 'Mis clases' (solo sus propias sesiones), con un selector junto a la navegación del calendario. Solo aparece si ese admin tiene alguna clase asignada; para el resto de usuarios no cambia nada."
+    },
+    {
         "version": "1.6.1",
         "date": "2026-09-14 00:00:00",
         "description": "Mensajes: los vídeos de móvil (sobre todo iPhone, formato .mov) ya se pueden adjuntar en el chat — antes casi ninguno pasaba el filtro de tipo de archivo. El límite de tamaño para vídeo sube a 80 MB. Perfil: subir un documento o vídeo propio desde la ficha de perfil ya no muestra un error de permisos justo después de subirlo correctamente. Al intentar subir un archivo demasiado grande para el servidor aparece un aviso claro en vez de un error confuso."

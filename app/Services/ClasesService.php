@@ -316,9 +316,28 @@ class ClasesService
     //  Leer
     // ────────────────────────────────────────────────────────────────
 
-    public function getSessionsForCalendar(int $year, int $month, int $userId, string $role): array
+    /**
+     * Decide si el calendario debe filtrarse por "solo mis sesiones"
+     * (join por class_session_coaches). Coach/staff lo aplican siempre;
+     * admin/superadmin solo cuando piden explícitamente "Mis clases"
+     * ($onlyMine) — toggle documentado en
+     * docs/clases/PROPUESTA-calendario-dual-admin-coach.md.
+     */
+    public static function shouldFilterCalendarByOwnSessions(string $role, bool $onlyMine): bool
     {
-        $isPlayer = in_array($role, ['alumno', 'player']);
+        return in_array($role, ['coach', 'staff'], true)
+            || ($onlyMine && in_array($role, ['admin', 'superadmin'], true));
+    }
+
+    /**
+     * @param bool $onlyMine Fuerza el filtro "solo mis sesiones" también
+     *                       para admin/superadmin (ver
+     *                       shouldFilterCalendarByOwnSessions()).
+     */
+    public function getSessionsForCalendar(int $year, int $month, int $userId, string $role, bool $onlyMine = false): array
+    {
+        $isPlayer    = in_array($role, ['alumno', 'player']);
+        $isCoachView = self::shouldFilterCalendarByOwnSessions($role, $onlyMine);
 
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end   = date('Y-m-t', strtotime($start));
@@ -334,8 +353,9 @@ class ClasesService
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
-        } elseif (in_array($role, ['coach', 'staff'])) {
-            // Coach y staff solo ven las sesiones donde están asignados como responsable
+        } elseif ($isCoachView) {
+            // Coach/staff siempre, y admin/superadmin cuando piden "Mis clases":
+            // solo las sesiones donde están asignados como responsable.
             $sessions = $this->db->table('class_sessions cs')
                 ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
                 ->join('class_session_coaches csc', 'csc.session_id = cs.id')
@@ -1235,6 +1255,16 @@ class ClasesService
             ->where('user_id', $userId)
             ->delete();
         return true;
+    }
+
+    /**
+     * ¿Este usuario aparece como responsable en alguna sesión (pasada o
+     * futura)? Decide si un admin/superadmin ve el toggle "Todas" / "Mis
+     * clases": si nunca ha sido responsable de nada, no hay nada que aislar.
+     */
+    public function hasOwnAssignedSessions(int $userId): bool
+    {
+        return $this->coachModel->where('user_id', $userId)->countAllResults() > 0;
     }
 
     public function getCoachesForSession(int $sessionId): array

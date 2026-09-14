@@ -33,10 +33,14 @@ class DashboardController extends BaseController
             $playerFullProfile = $this->playerService->getFullProfile($userId);
         }
 
+        $isAdminRole     = in_array($role, ['superadmin', 'admin']);
+        $showScopeToggle = $isAdminRole && (new \App\Services\ClasesService())->hasOwnAssignedSessions($userId);
+
         return view('dashboard/index', [
             'title'             => 'Dashboard — JP Preparation',
             'showWelcome'       => $showWelcome,
             'playerFullProfile' => $playerFullProfile,
+            'showScopeToggle'   => $showScopeToggle,
         ]);
     }
 
