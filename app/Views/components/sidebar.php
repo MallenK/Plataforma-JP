@@ -154,26 +154,6 @@ if ($isAdmin) {
         </ul>
     </div>
 
-    <?php if (demo_mode()): ?>
-    <!-- Selector de vertical — cambia el vocabulario visible en vivo,
-         útil para adaptar la demo al negocio del prospecto en llamada. -->
-    <div class="sidebar-section sidebar-vertical-switcher">
-        <div class="sidebar-section-label">Tipo de negocio (demo)</div>
-        <form method="post" action="<?= base_url('demo/vertical') ?>" id="verticalForm">
-            <?= csrf_field() ?>
-            <input type="hidden" name="redirect" value="<?= esc($currentUri, 'attr') ?>">
-            <select name="vertical" class="sidebar-vertical-select" onchange="document.getElementById('verticalForm').submit()">
-                <?php $currentVertical = demo_current_vertical(); ?>
-                <?php foreach (demo_verticals() as $key => $v): ?>
-                <option value="<?= esc($key, 'attr') ?>" <?= $key === $currentVertical ? 'selected' : '' ?>>
-                    <?= esc($v['label']) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-    </div>
-    <?php endif; ?>
-
     <!-- Footer: usuario + cerrar sesión -->
     <div class="sidebar-footer">
         <a href="<?= base_url('perfil') ?>" class="sidebar-user">

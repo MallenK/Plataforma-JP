@@ -150,20 +150,6 @@ body {
     margin: 0;
 }
 
-.sidebar-vertical-switcher { padding-bottom: 10px; }
-.sidebar-vertical-select {
-    width: 100%;
-    font-size: 12.5px;
-    font-family: inherit;
-    padding: 7px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text-body, #334155);
-    cursor: pointer;
-}
-.sidebar-vertical-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-
 .sidebar-nav-item {
     margin-bottom: 2px;
 }
