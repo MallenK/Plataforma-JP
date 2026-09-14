@@ -667,6 +667,8 @@ $routes->post('avatar/delete/(:num)', 'AvatarController::delete/$1', [
 //  GET  /tickets/download/:id         → descargar adjunto (dueño o gestor)
 //  GET  /tickets/gestion[/dashboard|/export] → gestión — admin + superadmin
 //                                        (/tickets/admin* redirige aquí)
+//  GET  /tickets/gestion/pending-count → JSON {count} tickets pendientes — admin + superadmin
+//                                        (badge del botón "Soporte" del sidebar)
 //  POST /tickets/:id/reply · /status  → responder / estado — admin + superadmin
 //  POST /tickets/:id/asignar          → asignar / desasignar — admin + superadmin
 //  POST /tickets/:id/ambito           → academia / plataforma — admin + superadmin
@@ -698,6 +700,9 @@ $routes->get('tickets/gestion/export', 'TicketsController::adminExport', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->get('tickets/gestion/dashboard', 'TicketsController::dashboard', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('tickets/gestion/pending-count', 'TicketsController::pendingCount', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->get('tickets/gestion', 'TicketsController::adminIndex', [

@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.6.0",
+        "date": "2026-09-11 00:00:00",
+        "description": "Documentación: al subir vídeos (o cualquier archivo) a una carpeta propia, ya se puede eliminar un archivo duplicado o subido por error, igual que ya se podía con las observaciones (antes solo admin/superadmin veían el botón de papelera). Soporte: el botón 'Soporte' del menú lateral (solo admin/superadmin) muestra ahora una alerta con el número de tickets pendientes de gestionar, para no tener que entrar a comprobarlo. Gestión de tickets: nuevo interruptor 'Ocultar los tickets que he reportado yo', para no ver mezclados en el listado los tickets que uno mismo reporta como usuario de la plataforma; es solo una preferencia del navegador de cada gestor, no afecta a lo que ven los demás."
+    },
+    {
         "version": "1.5.1",
         "date": "2026-09-10 12:00:00",
         "description": "Alumnos: el campo 'Peso (kg)' rechazaba valores bajos y no dejaba crear (ni editar) alumnos que pesan menos de 30 kg, algo habitual en las categorías más pequeñas. Ahora el rango admitido va de 10 a 300 kg, tanto en el alta y la edición de alumnos como en la ficha propia del alumno."

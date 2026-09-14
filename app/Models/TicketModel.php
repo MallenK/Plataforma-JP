@@ -190,6 +190,18 @@ class TicketModel extends Model
         return (int) $builder->countAllResults();
     }
 
+    /**
+     * Nº de tickets pendientes de gestión (abiertos/en progreso, no archivados),
+     * usado para la campanita de alerta del botón "Soporte" del sidebar.
+     */
+    public function countOpen(): int
+    {
+        return (int) $this->db->table('tickets')
+            ->whereIn('status', ['abierto', 'en_progreso'])
+            ->where('archived_at IS NULL', null, false)
+            ->countAllResults();
+    }
+
     // ─────────────────────────────────────────────────────────
     // DETALLE
     // ─────────────────────────────────────────────────────────

@@ -136,6 +136,7 @@ if ($isAdmin) {
                    class="sidebar-nav-link <?= sidebarActive('/tickets', $currentUri) ?>">
                     <i class="bi bi-headset"></i>
                     Soporte
+                    <span class="sidebar-badge d-none" id="sidebar-tickets-badge">0</span>
                 </a>
             </li>
             <?php endif; ?>

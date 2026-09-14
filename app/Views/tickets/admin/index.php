@@ -136,6 +136,20 @@ $priorityColors = [
     </div>
 </form>
 
+<?php /*
+    Filtro "Ocultar mis tickets": puramente visual (localStorage, sin tocar
+    backend ni $total). Oculta en el navegador de ESTE usuario las filas de
+    tickets que él mismo reportó, para no verlos mezclados con los que le
+    reportan; el resto de gestores sigue viendo todos los tickets igual.
+*/ ?>
+<div class="d-flex align-items-center gap-2 mb-3" style="font-size:13px">
+    <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="ticket-hide-own-toggle">
+        <label class="form-check-label" for="ticket-hide-own-toggle">Ocultar los tickets que he reportado yo</label>
+    </div>
+    <span class="text-muted" id="ticket-hide-own-count"></span>
+</div>
+
 <?php if (empty($tickets)): ?>
 <div class="ticket-empty">
     <i class="bi bi-inbox ticket-empty-icon"></i>
@@ -165,8 +179,9 @@ $priorityColors = [
             <?php
                 $statusCls   = $statusColors[$t['status']]    ?? '';
                 $priorityCls = $priorityColors[$t['priority']] ?? '';
+                $isOwnTicket = !empty($currentUserId) && (int) $t['user_id'] === (int) $currentUserId;
             ?>
-            <tr class="ticket-admin-row">
+            <tr class="ticket-admin-row" data-own-ticket="<?= $isOwnTicket ? '1' : '0' ?>">
                 <td class="ticket-number-cell">
                     <span class="ticket-number"><?= esc($t['ticket_number']) ?></span>
                 </td>
@@ -236,5 +251,34 @@ $priorityColors = [
 </nav>
 <?php endif; ?>
 <?php endif; ?>
+
+<script>
+(function () {
+    const KEY = 'jp_tickets_hide_own';
+    const toggle = document.getElementById('ticket-hide-own-toggle');
+    const countEl = document.getElementById('ticket-hide-own-count');
+    const rows = document.querySelectorAll('.ticket-admin-row[data-own-ticket="1"]');
+
+    if (!toggle) return;
+
+    function applyState(hide) {
+        rows.forEach(r => { r.style.display = hide ? 'none' : ''; });
+        countEl.textContent = rows.length
+            ? (hide ? `(${rows.length} ocultado${rows.length === 1 ? '' : 's'})` : `(${rows.length} tuyo${rows.length === 1 ? '' : 's'} en esta página)`)
+            : '';
+    }
+
+    let hidden = false;
+    try { hidden = localStorage.getItem(KEY) === '1'; } catch (_) {}
+
+    toggle.checked = hidden;
+    applyState(hidden);
+
+    toggle.addEventListener('change', function () {
+        applyState(this.checked);
+        try { localStorage.setItem(KEY, this.checked ? '1' : '0'); } catch (_) {}
+    });
+})();
+</script>
 
 <?= $this->endSection() ?>
