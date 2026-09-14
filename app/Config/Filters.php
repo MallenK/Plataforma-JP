@@ -42,6 +42,11 @@ class Filters extends BaseFilters
 
         // Cabeceras de seguridad en toda respuesta (sustituye a 'secureheaders').
         'securityheaders' => \App\Filters\SecurityHeadersFilter::class,
+
+        // Detecta un POST que supera post_max_size ANTES de que llegue a csrf
+        // (con post_max_size superado, PHP ya vació $_POST/$_FILES y csrf
+        // fallaría con un error que no tiene nada que ver con el archivo).
+        'postsizeguard' => \App\Filters\PostSizeGuardFilter::class,
     ];
 
     /**
@@ -81,6 +86,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
+            'postsizeguard',
             'csrf',
             'invalidchars',
         ],
