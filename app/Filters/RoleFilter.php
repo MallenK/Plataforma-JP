@@ -39,6 +39,21 @@ class RoleFilter implements FilterInterface
         // Roles permitidos vienen como array desde la definición de la ruta
         // Ej: 'role:admin,superadmin' → $arguments = ['admin', 'superadmin']
         if (!in_array($userRole, $arguments, strict: true)) {
+            // Nivel 'error' (no 'warning'/'notice'): en producción el threshold
+            // del logger es 4, así que niveles por debajo se descartan y esto
+            // quedaría invisible en writable/logs/ — justo lo que impidió
+            // diagnosticar un 403 real reportado por un usuario (ver ticket
+            // "al subir un video ocurre esto", 2026-09-13: no había ni rastro
+            // en el log porque este filtro no registraba nada).
+            log_message('error', sprintf(
+                'RoleFilter: acceso denegado · %s %s · user=%s rol=%s · roles permitidos=%s',
+                $request->getMethod(),
+                (string) $request->getUri(),
+                session('id') ?? '?',
+                $userRole ?? '?',
+                implode(',', $arguments)
+            ));
+
             return service('response')
                 ->setStatusCode(403)
                 ->setBody(view('errors/error_403', [
