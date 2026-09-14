@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.6.1",
+        "date": "2026-09-14 00:00:00",
+        "description": "Mensajes: los vídeos de móvil (sobre todo iPhone, formato .mov) ya se pueden adjuntar en el chat — antes casi ninguno pasaba el filtro de tipo de archivo. El límite de tamaño para vídeo sube a 80 MB. Perfil: subir un documento o vídeo propio desde la ficha de perfil ya no muestra un error de permisos justo después de subirlo correctamente. Al intentar subir un archivo demasiado grande para el servidor aparece un aviso claro en vez de un error confuso."
+    },
+    {
         "version": "1.6.0",
         "date": "2026-09-11 00:00:00",
         "description": "Documentación: al subir vídeos (o cualquier archivo) a una carpeta propia, ya se puede eliminar un archivo duplicado o subido por error, igual que ya se podía con las observaciones (antes solo admin/superadmin veían el botón de papelera). Soporte: el botón 'Soporte' del menú lateral (solo admin/superadmin) muestra ahora una alerta con el número de tickets pendientes de gestionar, para no tener que entrar a comprobarlo. Gestión de tickets: nuevo interruptor 'Ocultar los tickets que he reportado yo', para no ver mezclados en el listado los tickets que uno mismo reporta como usuario de la plataforma; es solo una preferencia del navegador de cada gestor, no afecta a lo que ven los demás."
