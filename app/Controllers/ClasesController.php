@@ -27,15 +27,17 @@ class ClasesController extends BaseController
         $role      = session('role');
         $canManage = in_array($role, ['superadmin', 'admin', 'staff', 'coach']);
         $isAdminRole = in_array($role, ['superadmin', 'admin']);
+        $showScopeToggle = $isAdminRole && $this->clasesService->hasOwnAssignedSessions($userId);
 
         return view('clases/index', [
-            'title'         => 'Clases — JP Preparation',
-            'stats'         => $this->clasesService->getStats($userId, $role),
-            'isAdmin'       => $this->isAdmin(),
-            'canManage'     => $canManage,
-            'isAdminRole'   => $isAdminRole,
-            'currentUserId' => $userId,
-            'role'          => $role,
+            'title'           => 'Clases — JP Preparation',
+            'stats'           => $this->clasesService->getStats($userId, $role),
+            'isAdmin'         => $this->isAdmin(),
+            'canManage'       => $canManage,
+            'isAdminRole'     => $isAdminRole,
+            'showScopeToggle' => $showScopeToggle,
+            'currentUserId'   => $userId,
+            'role'            => $role,
         ]);
     }
 
@@ -45,13 +47,15 @@ class ClasesController extends BaseController
 
     public function calendario()
     {
-        $year  = (int)($this->request->getGet('year')  ?: date('Y'));
-        $month = (int)($this->request->getGet('month') ?: date('n'));
+        $year     = (int)($this->request->getGet('year')  ?: date('Y'));
+        $month    = (int)($this->request->getGet('month') ?: date('n'));
+        $onlyMine = $this->request->getGet('scope') === 'mine';
 
         $sessions = $this->clasesService->getSessionsForCalendar(
             $year, $month,
             $this->currentUserId(),
-            session('role')
+            session('role'),
+            $onlyMine
         );
 
         return $this->response->setJSON($sessions);

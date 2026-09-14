@@ -102,6 +102,12 @@
                 <span class="calendar-nav-label" id="cal-label">Cargando…</span>
                 <button onclick="CAL.next()" title="Siguiente"><i class="bi bi-chevron-right"></i></button>
             </div>
+            <?php if ($showScopeToggle ?? false): ?>
+            <div class="calendar-view-tabs" id="cal-scope-tabs" title="Tú también tienes clases asignadas: elige qué calendario ver">
+                <button type="button" class="calendar-view-tab" data-scope="all" onclick="CAL.setScope('all', this)">Todas</button>
+                <button type="button" class="calendar-view-tab" data-scope="mine" onclick="CAL.setScope('mine', this)">Mis clases</button>
+            </div>
+            <?php endif; ?>
             <?php if ($canManage): ?>
             <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open()">
                 <i class="bi bi-plus-lg me-1"></i>Añadir sesión
@@ -506,6 +512,18 @@ const CAL = {
     weekStart: null,
     day: null,
     events: [],
+    // Ámbito "Todas" / "Mis clases" (solo admin/superadmin con clases
+    // propias asignadas ven el selector — es preferencia de este navegador,
+    // no cambia lo que ven los demás).
+    scope: (function () { try { return localStorage.getItem('jp_cal_scope') || 'all'; } catch (e) { return 'all'; } })(),
+
+    setScope(s, btn) {
+        this.scope = s;
+        try { localStorage.setItem('jp_cal_scope', s); } catch (e) {}
+        document.querySelectorAll('#cal-scope-tabs .calendar-view-tab').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        this.load();
+    },
 
     async load() {
         // Meses a cargar. La vista Semana puede solapar dos meses (p. ej.
@@ -528,7 +546,7 @@ const CAL = {
 
         try {
             const lists = await Promise.all(months.map(x =>
-                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}`).then(r => r.json())));
+                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}&scope=${this.scope}`).then(r => r.json())));
             const seen = new Set();
             this.events = lists.flat().filter(e => !seen.has(e.id) && seen.add(e.id));
         } catch (e) { this.events = []; }
@@ -864,6 +882,9 @@ const ClaseSearch = (function () {
 
 // Inicializar
 CalOverlap.useEvents(() => CAL.events);
+document.querySelectorAll('#cal-scope-tabs .calendar-view-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.scope === CAL.scope);
+});
 CAL.load();
 
 <?php if ($canManage): ?>

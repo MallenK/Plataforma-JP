@@ -231,6 +231,12 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                         <span class="calendar-nav-label" id="db-cal-label">Cargando…</span>
                         <button onclick="DBCAL.next()"><i class="bi bi-chevron-right"></i></button>
                     </div>
+                    <?php if ($showScopeToggle ?? false): ?>
+                    <div class="calendar-view-tabs" id="db-cal-scope-tabs" title="Tú también tienes clases asignadas: elige qué calendario ver">
+                        <button type="button" class="calendar-view-tab" data-scope="all" onclick="DBCAL.setScope('all', this)">Todas</button>
+                        <button type="button" class="calendar-view-tab" data-scope="mine" onclick="DBCAL.setScope('mine', this)">Mis clases</button>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div id="db-cal-grid"></div>
             </div>
@@ -766,6 +772,17 @@ const DBCAL = {
     weekStart: null,
     day: null,
     events: [],
+    // Misma preferencia de ámbito que en /clases (localStorage compartido):
+    // es la misma persona mirando el mismo calendario.
+    scope: (function () { try { return localStorage.getItem('jp_cal_scope') || 'all'; } catch (e) { return 'all'; } })(),
+
+    setScope(s, btn) {
+        this.scope = s;
+        try { localStorage.setItem('jp_cal_scope', s); } catch (e) {}
+        document.querySelectorAll('#db-cal-scope-tabs .calendar-view-tab').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        this.load();
+    },
 
     async load() {
         // Meses a cargar. La vista Semana puede solapar dos meses (p. ej.
@@ -788,7 +805,7 @@ const DBCAL = {
 
         try {
             const lists = await Promise.all(months.map(x =>
-                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}`).then(r => r.json())));
+                fetch(`/clases/api/calendario?year=${x.y}&month=${x.m}&scope=${this.scope}`).then(r => r.json())));
             const seen = new Set();
             this.events = lists.flat().filter(e => !seen.has(e.id) && seen.add(e.id));
         } catch (e) { this.events = []; }
@@ -901,7 +918,7 @@ const DBCAL = {
         const el = document.getElementById('db-proximas-clases');
         if (!el) return;
         try {
-            const res  = await fetch(`/clases/api/calendario?year=${this.year}&month=${this.month}`);
+            const res  = await fetch(`/clases/api/calendario?year=${this.year}&month=${this.month}&scope=${this.scope}`);
             const data = await res.json();
             const today = this.fmt(new Date());
             const upcoming = data.filter(e => e.date >= today).slice(0, 4);
@@ -982,6 +999,9 @@ function dbHandleSlot(e, date, hour) {
 
 // Inicializar
 CalOverlap.useEvents(() => DBCAL.events);
+document.querySelectorAll('#db-cal-scope-tabs .calendar-view-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.scope === DBCAL.scope);
+});
 DBCAL.load();
 </script>
 <?php if ($dbCanManage): ?>
