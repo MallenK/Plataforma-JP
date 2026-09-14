@@ -478,7 +478,7 @@ class MensajesController extends BaseController
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'application/vnd.ms-excel',
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'text/plain', 'video/mp4', 'video/quicktime'];
+                    'text/plain'];
 
         $clientExt = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
         $isVideo   = in_array($clientExt, self::VIDEO_EXTENSIONS, true);
@@ -495,7 +495,19 @@ class MensajesController extends BaseController
             log_message('error', 'MensajesController::handleFileUpload getMimeType failed: ' . $e->getMessage());
             return ['error' => 'No se pudo procesar el archivo. Inténtalo de nuevo.'];
         }
-        if (!in_array($mime, $allowed, true)) {
+
+        // Para vídeo aceptamos cualquier subtipo "video/*": según la marca del
+        // contenedor y la herramienta que lo generó, finfo puede sniffar un
+        // .mp4/.mov perfectamente válido como algo distinto a "video/mp4" o
+        // "video/quicktime" exactos (visto en PPR con vídeos reales — no es
+        // solo un problema de .mov). La lista blanca de EXTENSIÓN de abajo
+        // sigue siendo el control de seguridad real: nombre final aleatorio,
+        // fuera del webroot, ejecución de PHP desactivada en ese directorio.
+        $mimeOk = in_array($mime, $allowed, true)
+            || ($isVideo && is_string($mime) && str_starts_with($mime, 'video/'));
+
+        if (!$mimeOk) {
+            log_message('warning', "MensajesController::handleFileUpload mime rechazado — ext={$clientExt} mime=" . var_export($mime, true));
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
