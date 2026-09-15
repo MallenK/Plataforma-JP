@@ -505,7 +505,7 @@
 
             #jp-tutorial-title {
                 text-align: center; font-size: 20px; font-weight: 700;
-                color: var(--text-heading, #f1f5f9);
+                color: var(--text-h, #0f172a);
                 margin: 0 0 12px; line-height: 1.3;
             }
 

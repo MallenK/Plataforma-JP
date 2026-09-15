@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.7.1",
+        "date": "2026-09-15 00:15:00",
+        "description": "Tutorial guiado: el título de cada paso (p. ej. 'Super Administrador') se veía casi invisible, en gris muy claro sobre fondo blanco. Ahora se muestra en el mismo color oscuro que el resto de títulos de la plataforma."
+    },
+    {
         "version": "1.7.0",
         "date": "2026-09-15 00:00:00",
         "description": "Clases y Dashboard: un administrador que también tiene clases asignadas como entrenador puede alternar el calendario entre 'Todas' (vista de gestión completa) y 'Mis clases' (solo sus propias sesiones), con un selector junto a la navegación del calendario. Solo aparece si ese admin tiene alguna clase asignada; para el resto de usuarios no cambia nada."
