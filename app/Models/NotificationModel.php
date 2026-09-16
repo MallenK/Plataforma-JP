@@ -12,10 +12,17 @@ class NotificationModel extends Model
     protected $useAutoIncrement = true;
     protected $useTimestamps    = false;
 
+    // source_type/source_id = a dónde lleva la notificación al pulsarla
+    // (campanita y /notificaciones). Sin ellos en allowedFields CodeIgniter
+    // los descartaba en silencio y nunca se guardaban (TICKET-010).
     protected $allowedFields = [
         'sender_id', 'type', 'title', 'body',
         'file_path', 'file_name', 'file_size', 'created_at',
+        'source_type', 'source_id',
     ];
+
+    public const SOURCE_TICKET       = 'ticket';
+    public const SOURCE_CONVERSATION = 'conversation';
 
     /**
      * Inserta una notificación y sus destinatarios en una sola operación.
@@ -24,6 +31,11 @@ class NotificationModel extends Model
     public function createWithRecipients(array $data, array $recipientIds): int
     {
         $data['created_at'] = date('Y-m-d H:i:s');
+
+        if (isset($data['source_type'])) {
+            $data = self::prepareSource($data, $this->db->fieldExists('source_type', $this->table));
+        }
+
         $result = $this->insert($data, true);
 
         // `false` significa error de insert; 0 puede ocurrir en TiDB con AUTO_INCREMENT roto.
@@ -45,6 +57,49 @@ class NotificationModel extends Model
         }
 
         return $notifId;
+    }
+
+    /**
+     * Enlace al origen de una notificación (mismo destino que la campanita
+     * en components/navbar.php), o null si no tiene.
+     *
+     * @return array{path: string, label: string, icon: string}|null
+     */
+    public static function sourceLink(array $notification): ?array
+    {
+        $id = (int) ($notification['source_id'] ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+
+        return match ($notification['source_type'] ?? null) {
+            self::SOURCE_TICKET       => ['path' => 'tickets/' . $id, 'label' => 'Ver ticket', 'icon' => 'bi-life-preserver'],
+            self::SOURCE_CONVERSATION => ['path' => 'mensajes?conv=' . $id, 'label' => 'Ir a la conversación', 'icon' => 'bi-chat-dots'],
+            default                   => null,
+        };
+    }
+
+    /**
+     * Normaliza el origen de la notificación. Si la BD aún no tiene las
+     * columnas (entorno sin la migración 2026-09-16-000001), se quita el
+     * origen: la notificación se envía igual, solo que sin enlace, en vez de
+     * fallar el INSERT y perder el aviso.
+     */
+    public static function prepareSource(array $data, bool $columnsExist): array
+    {
+        $valid = in_array($data['source_type'] ?? null, [self::SOURCE_TICKET, self::SOURCE_CONVERSATION], true)
+            && (int) ($data['source_id'] ?? 0) > 0;
+
+        if (!$columnsExist || !$valid) {
+            if ($valid) {
+                log_message('warning', '[NotificationModel] notifications sin columnas source_type/source_id: se guarda sin enlace. Ejecutar la migración 2026-09-16-000001.');
+            }
+            unset($data['source_type'], $data['source_id']);
+            return $data;
+        }
+
+        $data['source_id'] = (int) $data['source_id'];
+        return $data;
     }
 
     /**

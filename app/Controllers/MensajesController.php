@@ -203,7 +203,7 @@ class MensajesController extends BaseController
                 'title'       => 'Nuevo mensaje de ' . $me['name'],
                 'body'        => $preview,
                 'created_at'  => $now,
-                'source_type' => 'conversation',
+                'source_type' => NotificationModel::SOURCE_CONVERSATION,
                 'source_id'   => $convId,
             ], [$otherId]);
         } catch (\Throwable $e) {
@@ -428,7 +428,7 @@ class MensajesController extends BaseController
                         'title'       => 'Nuevo ticket: ' . $ticket['ticket_number'],
                         'body'        => $ticket['title'],
                         'created_at'  => date('Y-m-d H:i:s'),
-                        'source_type' => 'ticket',
+                        'source_type' => NotificationModel::SOURCE_TICKET,
                         'source_id'   => $ticketId,
                     ], $ids);
                 }

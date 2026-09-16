@@ -145,12 +145,13 @@ un chat sea más lento** cuanto más largo es.
   `GROUP BY` sobre **toda** la tabla `messages` y se llama cada 10 s; con
   volumen convendría guardar `last_message_id` en `conversations`.
 
-## Hallazgo aparte (no corregido aquí)
+## Hallazgo aparte → TICKET-010
 
-`NotificationModel::$allowedFields` no incluye `source_type` / `source_id`,
-así que las notificaciones de «Nuevo mensaje» (y las de tickets creados desde
-Mensajes) se guardan con esos campos a `NULL` y el enlace de la notificación
-no puede abrir la conversación. Merece su propio ticket.
+`NotificationModel::$allowedFields` no incluía `source_type` / `source_id`,
+así que las notificaciones se guardaban sin origen y no abrían la
+conversación ni el ticket. Resuelto en
+[TICKET-010](TICKET-010-notificaciones-sin-enlace-a-ticket.md), en la misma
+rama.
 
 ## Verificación
 

@@ -216,6 +216,10 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
 
         await fetch(BASE + 'notificaciones/' + id + '/read', {
             method: 'POST',
+            // keepalive: al pulsar una notificación con origen se navega
+            // justo después y, sin esto, el navegador puede cancelar la
+            // petición y la notificación quedaba sin marcar como leída.
+            keepalive: true,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded'
