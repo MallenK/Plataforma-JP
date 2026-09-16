@@ -28,16 +28,21 @@ class ClasesController extends BaseController
         $canManage = in_array($role, ['superadmin', 'admin', 'staff', 'coach']);
         $isAdminRole = in_array($role, ['superadmin', 'admin']);
         $showScopeToggle = $isAdminRole && $this->clasesService->hasOwnAssignedSessions($userId);
+        // Selector "Ver calendario de…" (TICKET-011): quién puede figurar
+        // como responsable, para el desplegable. Solo hace falta calcularlo
+        // para admin/superadmin.
+        $responsableOptions = $isAdminRole ? $this->clasesService->getResponsableFilterOptions() : ['coaches' => [], 'staff' => []];
 
         return view('clases/index', [
-            'title'           => 'Clases — JP Preparation',
-            'stats'           => $this->clasesService->getStats($userId, $role),
-            'isAdmin'         => $this->isAdmin(),
-            'canManage'       => $canManage,
-            'isAdminRole'     => $isAdminRole,
-            'showScopeToggle' => $showScopeToggle,
-            'currentUserId'   => $userId,
-            'role'            => $role,
+            'title'               => 'Clases — JP Preparation',
+            'stats'               => $this->clasesService->getStats($userId, $role),
+            'isAdmin'             => $this->isAdmin(),
+            'canManage'           => $canManage,
+            'isAdminRole'         => $isAdminRole,
+            'showScopeToggle'     => $showScopeToggle,
+            'responsableOptions'  => $responsableOptions,
+            'currentUserId'       => $userId,
+            'role'                => $role,
         ]);
     }
 
@@ -47,15 +52,16 @@ class ClasesController extends BaseController
 
     public function calendario()
     {
-        $year     = (int)($this->request->getGet('year')  ?: date('Y'));
-        $month    = (int)($this->request->getGet('month') ?: date('n'));
-        $onlyMine = $this->request->getGet('scope') === 'mine';
+        $year  = (int)($this->request->getGet('year')  ?: date('Y'));
+        $month = (int)($this->request->getGet('month') ?: date('n'));
+        $parsed = ClasesService::parseScopeParam($this->request->getGet('scope'));
 
         $sessions = $this->clasesService->getSessionsForCalendar(
             $year, $month,
             $this->currentUserId(),
             session('role'),
-            $onlyMine
+            $parsed['onlyMine'],
+            $parsed['responsableFilter']
         );
 
         return $this->response->setJSON($sessions);
@@ -202,17 +208,20 @@ class ClasesController extends BaseController
         }
 
         return view('clases/show', [
-            'title'           => $session['title'] . ' — JP Preparation',
-            'session'         => $session,
-            'isAdmin'         => $this->isAdmin(),
-            'canManage'       => $canManage,
-            'isAdminRole'     => $isAdminRole,
-            'coachOptions'    => $canManage ? $this->clasesService->getCoachOptions()    : [],
-            'staffOptions'    => $canManage ? $this->clasesService->getStaffOptions()    : [],
-            'playerOptions'   => $isAdminRole ? $this->clasesService->getPlayerOptions() : [],
-            'locationOptions' => $canManage ? $this->clasesService->getLocationOptions() : [],
-            'currentUserId'   => $userId,
-            'myPlayer'        => $myPlayer,
+            'title'              => $session['title'] . ' — JP Preparation',
+            'session'            => $session,
+            'isAdmin'            => $this->isAdmin(),
+            'canManage'          => $canManage,
+            'isAdminRole'        => $isAdminRole,
+            'coachOptions'       => $canManage ? $this->clasesService->getCoachOptions()    : [],
+            'staffOptions'       => $canManage ? $this->clasesService->getStaffOptions()    : [],
+            'playerOptions'      => $isAdminRole ? $this->clasesService->getPlayerOptions() : [],
+            'locationOptions'    => $canManage ? $this->clasesService->getLocationOptions() : [],
+            'currentUserId'      => $userId,
+            'myPlayer'           => $myPlayer,
+            // "Cambiar responsable" (TICKET-011): nº de sesiones futuras de
+            // la misma serie, para ofrecer el alcance "esta y las siguientes".
+            'seriesFutureCount'  => $canManage ? $this->clasesService->countFutureSeriesSessions($id) : 0,
         ]);
     }
 
@@ -623,6 +632,40 @@ class ClasesController extends BaseController
     {
         $this->clasesService->removeCoach($id, $coachId);
         session()->setFlashdata('success', 'Entrenador eliminado.');
+        return redirect()->to('/clases/' . $id);
+    }
+
+    /**
+     * Cambia el responsable de una sesión (y, si se pide, de las siguientes
+     * de la misma clase recurrente). TICKET-011.
+     */
+    public function changeResponsible(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para cambiar el responsable de esta sesión.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $raw       = $this->request->getPost('user_id');
+        $newUserId = ($raw === '' || $raw === null) ? null : (int) $raw;
+        $scope     = $this->request->getPost('scope') === 'series' ? 'series' : 'single';
+
+        $result = $this->clasesService->changeResponsible($id, $newUserId, $scope, (int) $this->currentUserId());
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se pudo cambiar el responsable.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $count = $result['sessions_changed'];
+        $msg   = $count > 1
+            ? "Responsable actualizado en {$count} sesiones."
+            : 'Responsable actualizado.';
+        session()->setFlashdata('success', $msg);
         return redirect()->to('/clases/' . $id);
     }
 

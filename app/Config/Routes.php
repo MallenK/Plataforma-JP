@@ -242,6 +242,11 @@ $routes->post('clases/(:num)/coaches/add', 'ClasesController::addCoach/$1', [
 $routes->post('clases/(:num)/coaches/(:num)/remove', 'ClasesController::removeCoach/$1/$2', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
+// Cambiar el responsable de una sesión (y opcionalmente de la serie
+// recurrente completa) — TICKET-011.
+$routes->post('clases/(:num)/responsable', 'ClasesController::changeResponsible/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
+]);
 
 // ── Jugadores ──────────────────────────────────────────────
 $routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [

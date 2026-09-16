@@ -209,7 +209,7 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                         <button class="calendar-view-tab" onclick="DBCAL.switchView('day', this)">Día</button>
                     </div>
                     <?php if ($dbCanManage): ?>
-                    <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open()">
+                    <button class="btn-jp btn-jp-primary btn-jp-sm" onclick="ClaseModal.open({ coachId: DBCAL.scopeResponsableId() })">
                         <i class="bi bi-plus-lg me-1"></i>Nueva clase
                     </button>
                     <?php endif; ?>
@@ -231,11 +231,30 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                         <span class="calendar-nav-label" id="db-cal-label">Cargando…</span>
                         <button onclick="DBCAL.next()"><i class="bi bi-chevron-right"></i></button>
                     </div>
-                    <?php if ($showScopeToggle ?? false): ?>
-                    <div class="calendar-view-tabs" id="db-cal-scope-tabs" title="Tú también tienes clases asignadas: elige qué calendario ver">
-                        <button type="button" class="calendar-view-tab" data-scope="all" onclick="DBCAL.setScope('all', this)">Todas</button>
-                        <button type="button" class="calendar-view-tab" data-scope="mine" onclick="DBCAL.setScope('mine', this)">Mis clases</button>
-                    </div>
+                    <?php if ($isAdmin ?? false): ?>
+                    <!-- "Ver calendario de…" (TICKET-011), igual que en /clases. -->
+                    <select id="db-cal-scope-select" class="cal-scope-select" onchange="DBCAL.setScope(this.value)"
+                            title="Ver el calendario de todos, el tuyo o el de un entrenador/staff concreto">
+                        <option value="all">Todas las clases</option>
+                        <?php if ($showScopeToggle ?? false): ?>
+                        <option value="mine">Mis clases</option>
+                        <?php endif; ?>
+                        <?php if (!empty($responsableOptions['coaches'])): ?>
+                        <optgroup label="Entrenadores">
+                            <?php foreach ($responsableOptions['coaches'] as $c): ?>
+                            <option value="coach:<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+                        <?php if (!empty($responsableOptions['staff'])): ?>
+                        <optgroup label="Staff">
+                            <?php foreach ($responsableOptions['staff'] as $s): ?>
+                            <option value="staff:<?= $s['id'] ?>"><?= esc($s['name']) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+                        <option value="none">Sin responsable asignado</option>
+                    </select>
                     <?php endif; ?>
                 </div>
                 <div id="db-cal-grid"></div>
@@ -548,6 +567,13 @@ window.CalOverlap = (function () {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
     }
+    // Nombre abreviado para las tarjetas del calendario (poco sitio):
+    // "Marc Puig Soler" → "Marc P." (TICKET-011).
+    function shortName(name) {
+        var parts = String(name || '').trim().split(/\s+/);
+        if (parts.length <= 1) return parts[0] || '';
+        return parts[0] + ' ' + parts[1].charAt(0).toUpperCase() + '.';
+    }
     function toMin(t) {
         var p = String(t || '0').split(':');
         return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
@@ -653,13 +679,16 @@ window.CalOverlap = (function () {
                 var hgt = Math.max(((e - s) / 60) * slotH, 20);
                 var leftPct = p.col * w;
 
+                var respFull  = ev.responsable_name ? ' &middot; ' + esc(ev.responsable_name) : '';
+                var respShort = ev.responsable_name ? ' &middot; ' + esc(shortName(ev.responsable_name)) : '';
+
                 out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
                         'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
-                    'title="' + esc(ev.title) + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
+                    'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    esc(ev.start) + ' ' + esc(ev.title) +
+                    esc(ev.start) + ' ' + esc(ev.title) + respShort +
                     '</a>';
             });
         });
@@ -690,7 +719,9 @@ window.CalOverlap = (function () {
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
                 '<span class="cal-picker-time">' + esc(ev.start) +
                     (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
-                '<span class="cal-picker-title">' + esc(ev.title) + '</span>' +
+                '<span class="cal-picker-title">' + esc(ev.title) +
+                    (ev.responsable_name ? ' <small style="opacity:.65">&middot; ' + esc(ev.responsable_name) + '</small>' : '') +
+                '</span>' +
                 '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
                 '</a>';
         }).join('') || '<div class="cal-picker-empty">No hay clases.</div>';
@@ -752,7 +783,7 @@ window.CalOverlap = (function () {
     }
 
     return {
-        esc: esc, toMin: toMin, useEvents: useEvents,
+        esc: esc, toMin: toMin, shortName: shortName, useEvents: useEvents,
         packColumns: packColumns, clusterPack: clusterPack,
         dayLayerHtml: dayLayerHtml, slotHtml: slotHtml,
         openPopup: openPopup, openPopupRange: openPopupRange, closePopup: closePopup
@@ -776,12 +807,15 @@ const DBCAL = {
     // es la misma persona mirando el mismo calendario.
     scope: (function () { try { return localStorage.getItem('jp_cal_scope') || 'all'; } catch (e) { return 'all'; } })(),
 
-    setScope(s, btn) {
+    setScope(s) {
         this.scope = s;
         try { localStorage.setItem('jp_cal_scope', s); } catch (e) {}
-        document.querySelectorAll('#db-cal-scope-tabs .calendar-view-tab').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
         this.load();
+    },
+
+    scopeResponsableId() {
+        const m = /^(?:coach|staff):(\d+)$/.exec(this.scope);
+        return m ? parseInt(m[1]) : null;
     },
 
     async load() {
@@ -864,7 +898,9 @@ const DBCAL = {
             html += `<div class="cal-day-num">${day}</div>`;
             evts.slice(0,2).forEach(ev => {
                 const t = CalOverlap.esc(ev.title);
-                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" title="${t} ${ev.start}–${ev.end||''}" onclick="event.stopPropagation()">${ev.start} ${t}</a>`;
+                const respFull  = ev.responsable_name ? ' · ' + CalOverlap.esc(ev.responsable_name) : '';
+                const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
+                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" title="${t}${respFull} ${ev.start}–${ev.end||''}" onclick="event.stopPropagation()">${ev.start} ${t}${respShort}</a>`;
             });
             if (evts.length>2) html += `<button type="button" class="cal-more" onclick="event.stopPropagation();CalOverlap.openPopup('${ds}', null)">+${evts.length-2}</button>`;
             html += '</div>';
@@ -990,18 +1026,17 @@ const DBCAL = {
 
 function dbHandleClick(e, date) {
     if (e.target.closest('a')) return;
-    if (dbCanManage) ClaseModal.open({ date });
+    if (dbCanManage) ClaseModal.open({ date, coachId: DBCAL.scopeResponsableId() });
 }
 function dbHandleSlot(e, date, hour) {
     if (e.target.closest('a')) return;
-    if (dbCanManage) ClaseModal.open({ date, time: String(hour).padStart(2,'0') + ':00' });
+    if (dbCanManage) ClaseModal.open({ date, time: String(hour).padStart(2,'0') + ':00', coachId: DBCAL.scopeResponsableId() });
 }
 
 // Inicializar
 CalOverlap.useEvents(() => DBCAL.events);
-document.querySelectorAll('#db-cal-scope-tabs .calendar-view-tab').forEach(b => {
-    b.classList.toggle('active', b.dataset.scope === DBCAL.scope);
-});
+const dbCalScopeSelect = document.getElementById('db-cal-scope-select');
+if (dbCalScopeSelect) dbCalScopeSelect.value = DBCAL.scope;
 DBCAL.load();
 </script>
 <?php if ($dbCanManage): ?>

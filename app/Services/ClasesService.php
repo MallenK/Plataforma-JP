@@ -330,23 +330,97 @@ class ClasesService
     }
 
     /**
+     * Traduce el único parámetro `?scope=` del calendario (Clases y
+     * Dashboard) a los dos argumentos que espera getSessionsForCalendar().
+     * Un solo parámetro en la URL/localStorage es más simple de mantener
+     * sincronizado que dos independientes; la vista sigue usando la clave
+     * `jp_cal_scope` de antes (TICKET-011 amplía su vocabulario):
+     *
+     *   'all'            → todo (comportamiento de siempre)
+     *   'mine'           → toggle "Mis clases" (admin/superadmin, v1.7.0)
+     *   'none'           → "Sin responsable asignado"
+     *   'coach:<id>' / 'staff:<id>' → "Ver calendario de <persona>"
+     *
+     * Se aplica igual para cualquier rol; es getSessionsForCalendar() quien
+     * ignora $responsableFilter si el rol no es admin/superadmin.
+     *
+     * @return array{onlyMine: bool, responsableFilter: ?string}
+     */
+    public static function parseScopeParam(?string $scope): array
+    {
+        $scope = (string) $scope;
+
+        if ($scope === 'mine') {
+            return ['onlyMine' => true, 'responsableFilter' => null];
+        }
+        if ($scope === 'none') {
+            return ['onlyMine' => false, 'responsableFilter' => 'none'];
+        }
+        if (preg_match('/^(?:coach|staff):(\d+)$/', $scope, $m)) {
+            return ['onlyMine' => false, 'responsableFilter' => $m[1]];
+        }
+        return ['onlyMine' => false, 'responsableFilter' => null];
+    }
+
+    /**
      * @param bool $onlyMine Fuerza el filtro "solo mis sesiones" también
      *                       para admin/superadmin (ver
      *                       shouldFilterCalendarByOwnSessions()).
+     * @param string|null $responsableFilter Solo admin/superadmin (TICKET-011):
+     *                       'none' = sesiones sin responsable asignado;
+     *                       un ID numérico (string) = solo las de esa persona.
+     *                       Independiente de $onlyMine (si ambos llegan,
+     *                       gana $responsableFilter). Ignorado para el resto
+     *                       de roles: un coach/staff/alumno nunca puede ver
+     *                       el calendario de otra persona por esta vía.
      */
-    public function getSessionsForCalendar(int $year, int $month, int $userId, string $role, bool $onlyMine = false): array
-    {
+    public function getSessionsForCalendar(
+        int $year,
+        int $month,
+        int $userId,
+        string $role,
+        bool $onlyMine = false,
+        ?string $responsableFilter = null
+    ): array {
         $isPlayer    = in_array($role, ['alumno', 'player']);
+        $isAdminRole = in_array($role, ['admin', 'superadmin'], true);
         $isCoachView = self::shouldFilterCalendarByOwnSessions($role, $onlyMine);
+        $responsableFilter = $isAdminRole ? $responsableFilter : null;
 
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end   = date('Y-m-t', strtotime($start));
 
+        $select = 'cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_type';
+
         if ($isPlayer) {
             $sessions = $this->db->table('class_sessions cs')
-                ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
+                ->select($select)
                 ->join('class_session_players csp', 'csp.session_id = cs.id')
                 ->where('csp.user_id', $userId)
+                ->where('cs.session_date >=', $start)
+                ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
+                ->orderBy('cs.session_date', 'ASC')
+                ->orderBy('cs.start_time', 'ASC')
+                ->get()->getResultArray();
+        } elseif ($responsableFilter === 'none') {
+            // Filtro "Sin responsable asignado" (solo admin/superadmin).
+            $sessions = $this->db->table('class_sessions cs')
+                ->select($select)
+                ->where('cs.session_date >=', $start)
+                ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
+                ->where('NOT EXISTS (SELECT 1 FROM class_session_coaches csc WHERE csc.session_id = cs.id)', null, false)
+                ->orderBy('cs.session_date', 'ASC')
+                ->orderBy('cs.start_time', 'ASC')
+                ->get()->getResultArray();
+        } elseif ($responsableFilter !== null && ctype_digit($responsableFilter)) {
+            // Filtro "Ver calendario de <entrenador/staff>" (solo admin/superadmin):
+            // misma consulta que "Mis clases" pero para un ID elegido, no el propio.
+            $sessions = $this->db->table('class_sessions cs')
+                ->select($select)
+                ->join('class_session_coaches csc', 'csc.session_id = cs.id')
+                ->where('csc.user_id', (int) $responsableFilter)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
                 ->where('cs.status !=', 'cancelled')
@@ -357,7 +431,7 @@ class ClasesService
             // Coach/staff siempre, y admin/superadmin cuando piden "Mis clases":
             // solo las sesiones donde están asignados como responsable.
             $sessions = $this->db->table('class_sessions cs')
-                ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status')
+                ->select($select)
                 ->join('class_session_coaches csc', 'csc.session_id = cs.id')
                 ->where('csc.user_id', $userId)
                 ->where('cs.session_date >=', $start)
@@ -370,15 +444,73 @@ class ClasesService
             $sessions = $this->sessionModel->getForMonth($year, $month);
         }
 
-        return array_map(fn($s) => [
-            'id'     => (int)$s['id'],
-            'title'  => $s['title'],
-            'date'   => $s['session_date'],
-            'start'  => substr($s['start_time'], 0, 5),
-            'end'    => substr($s['end_time'], 0, 5),
-            'status' => $s['status'],
-            'color'  => $this->statusColor($s['status']),
-        ], $sessions);
+        return $this->attachResponsable($sessions);
+    }
+
+    /**
+     * Añade el responsable (id + nombre) de cada sesión con una única
+     * consulta extra (máx. 1 responsable por sesión — ver syncCoaches()) y
+     * da forma final al evento para el calendario.
+     */
+    private function attachResponsable(array $sessions): array
+    {
+        $ids = array_map(fn($s) => (int) $s['id'], $sessions);
+
+        $coachMap = [];
+        if (!empty($ids)) {
+            $rows = $this->db->table('class_session_coaches csc')
+                ->select('csc.session_id, csc.user_id, u.name')
+                ->join('users u', 'u.id = csc.user_id')
+                ->whereIn('csc.session_id', $ids)
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $coachMap[(int) $r['session_id']] = ['id' => (int) $r['user_id'], 'name' => $r['name']];
+            }
+        }
+
+        return array_map(function ($s) use ($coachMap) {
+            $sid = (int) $s['id'];
+            $c   = $coachMap[$sid] ?? null;
+            return [
+                'id'               => $sid,
+                'title'            => $s['title'],
+                'date'             => $s['session_date'],
+                'start'            => substr($s['start_time'], 0, 5),
+                'end'              => substr($s['end_time'], 0, 5),
+                'status'           => $s['status'],
+                'color'            => $this->statusColor($s['status']),
+                'session_type'     => $s['session_type'] ?? 'coach',
+                'responsable_id'   => $c['id'] ?? null,
+                'responsable_name' => $c['name'] ?? null,
+            ];
+        }, $sessions);
+    }
+
+    /**
+     * Opciones para el selector "Ver calendario de…" (admin/superadmin):
+     * solo entrenadores/staff que tienen (o han tenido) alguna sesión
+     * asignada, para no llenar el desplegable de gente que nunca ha dado
+     * una clase.
+     *
+     * @return array{coaches: array<int,array{id:int,name:string}>, staff: array<int,array{id:int,name:string}>}
+     */
+    public function getResponsableFilterOptions(): array
+    {
+        $rows = $this->db->table('users u')
+            ->select('u.id, u.name, u.role')
+            ->distinct()
+            ->join('class_session_coaches csc', 'csc.user_id = u.id')
+            ->whereIn('u.role', ['coach', 'staff'])
+            ->where('u.status', 'active')
+            ->orderBy('u.name', 'ASC')
+            ->get()->getResultArray();
+
+        $result = ['coaches' => [], 'staff' => []];
+        foreach ($rows as $r) {
+            $bucket = $r['role'] === 'staff' ? 'staff' : 'coaches';
+            $result[$bucket][] = ['id' => (int) $r['id'], 'name' => $r['name']];
+        }
+        return $result;
     }
 
     /**
@@ -1275,6 +1407,177 @@ class ClasesService
             ->where('csc.session_id', $sessionId)
             ->orderBy('u.name')
             ->get()->getResultArray();
+    }
+
+    /**
+     * Nº de sesiones programadas (incluida esta) de la misma clase
+     * recurrente a partir de la fecha de esta sesión — para la UI "esta y
+     * las siguientes (N sesiones)" al cambiar de responsable (TICKET-011).
+     * 0 si la sesión no pertenece a una clase recurrente.
+     */
+    public function countFutureSeriesSessions(int $sessionId): int
+    {
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session || empty($session['class_id'])) {
+            return 0;
+        }
+
+        return (int) $this->db->table('class_sessions')
+            ->where('class_id', $session['class_id'])
+            ->where('session_date >=', $session['session_date'])
+            ->where('status', 'scheduled')
+            ->countAllResults();
+    }
+
+    /**
+     * Cambia el responsable (entrenador o staff) de una sesión y, si se
+     * pide, de las siguientes sesiones programadas de la misma clase
+     * recurrente (TICKET-011 — "controlar el calendario de los
+     * entrenadores").
+     *
+     * - Solo sesiones `scheduled`: una cerrada o cancelada no se toca
+     *   (misma invariante que el cierre ágil de sesiones, v1.4.0).
+     * - El nuevo responsable (si se indica) debe existir, estar activo y
+     *   tener un rol válido para el `session_type` de la sesión.
+     * - Arrastra a los alumnos cuyo `coach_id` era el responsable anterior
+     *   (o no tenían ninguno) al nuevo, para no dejar referencias colgando
+     *   a alguien que ya no da la clase. Un alumno con un responsable
+     *   distinto asignado a propósito (caso raro, ver TICKET-011 §1) no se
+     *   toca.
+     * - Avisa por notificación al responsable anterior (si cambia) y al
+     *   nuevo, con un solo aviso resumido si afecta a varias sesiones.
+     *
+     * @param string $scope 'single' = solo esta sesión; 'series' = esta y
+     *                       las siguientes sesiones programadas de la misma
+     *                       clase recurrente (si no pertenece a una, se
+     *                       comporta igual que 'single').
+     */
+    public function changeResponsible(int $sessionId, ?int $newUserId, string $scope, int $actorId): array
+    {
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
+        }
+        if ($session['status'] !== 'scheduled') {
+            return ['success' => false, 'error' => 'No se puede cambiar el responsable de una sesión cerrada o cancelada.'];
+        }
+
+        $sessionType  = $session['session_type'] ?? 'coach';
+        $allowedRoles = $sessionType === 'staff' ? self::RESPONSABLE_STAFF_ROLES : self::RESPONSABLE_TECNICO_ROLES;
+
+        if ($newUserId !== null) {
+            $newUser = (new UserModel())->find($newUserId);
+            if (!$newUser || $newUser['status'] !== 'active' || !in_array($newUser['role'], $allowedRoles, true)) {
+                return ['success' => false, 'error' => 'La persona seleccionada no puede ser responsable de esta sesión.'];
+            }
+        }
+
+        // Sesiones afectadas: solo esta, o esta y las siguientes programadas
+        // de la misma clase recurrente.
+        $targetIds = [$sessionId];
+        if ($scope === 'series' && !empty($session['class_id'])) {
+            $rows = $this->db->table('class_sessions')
+                ->select('id')
+                ->where('class_id', $session['class_id'])
+                ->where('session_date >=', $session['session_date'])
+                ->where('status', 'scheduled')
+                ->get()->getResultArray();
+            $targetIds = array_map('intval', array_column($rows, 'id')) ?: [$sessionId];
+        }
+
+        $previousCoachIds = [];
+
+        $this->db->transStart();
+        foreach ($targetIds as $sid) {
+            $current = $this->getCoachesForSession($sid);
+            $oldId   = isset($current[0]) ? (int) $current[0]['user_id'] : null;
+
+            if ($oldId !== null && $oldId !== $newUserId) {
+                $previousCoachIds[] = $oldId;
+            }
+
+            $this->syncCoaches($sid, $newUserId !== null ? [$newUserId] : []);
+
+            // Los alumnos que tenían al responsable anterior (o ninguno) pasan
+            // al nuevo; uno con otro responsable asignado a propósito no se toca.
+            $builder = $this->db->table('class_session_players')->where('session_id', $sid);
+            if ($oldId !== null) {
+                $builder->groupStart()->where('coach_id', $oldId)->orWhere('coach_id', null)->groupEnd();
+            } else {
+                $builder->whereNull('coach_id');
+            }
+            $builder->update(['coach_id' => $newUserId, 'updated_at' => date('Y-m-d H:i:s')]);
+        }
+        $this->db->transComplete();
+
+        if (!$this->db->transStatus()) {
+            return ['success' => false, 'error' => 'No se pudo guardar el cambio de responsable.'];
+        }
+
+        $this->notifyResponsibleChange(
+            $session,
+            array_values(array_unique($previousCoachIds)),
+            $newUserId,
+            count($targetIds),
+            $actorId
+        );
+
+        return [
+            'success'          => true,
+            'sessions_changed' => count($targetIds),
+            'session_ids'      => $targetIds,
+        ];
+    }
+
+    /**
+     * Aviso de cambio de responsable: al anterior (si tenía y cambia) y al
+     * nuevo (si se asigna), sin duplicar si el propio actor es uno de ellos.
+     * Un solo aviso resumido cuando afecta a varias sesiones de una serie.
+     */
+    private function notifyResponsibleChange(array $session, array $previousCoachIds, ?int $newUserId, int $sessionsChanged, int $actorId): void
+    {
+        if (empty($previousCoachIds) && $newUserId === null) {
+            return;
+        }
+
+        $title = $sessionsChanged > 1
+            ? sprintf('📅 Cambio de responsable: %d sesiones de "%s"', $sessionsChanged, $session['title'])
+            : sprintf('📅 Cambio de responsable: %s', $session['title']);
+        $dateLabel  = date('d/m/Y', strtotime($session['session_date']));
+        $notifModel = new NotificationModel();
+
+        foreach ($previousCoachIds as $oldId) {
+            if ($oldId === $actorId) {
+                continue;
+            }
+            $body = $sessionsChanged > 1
+                ? "Ya no eres responsable de {$sessionsChanged} sesiones de \"{$session['title']}\" (desde el {$dateLabel})."
+                : "Ya no eres responsable de la clase \"{$session['title']}\" del {$dateLabel}.";
+            $notifModel->createWithRecipients([
+                'sender_id'   => $actorId,
+                'type'        => 'individual',
+                'title'       => $title,
+                'body'        => $body,
+                'created_at'  => date('Y-m-d H:i:s'),
+                'source_type' => NotificationModel::SOURCE_CLASS,
+                'source_id'   => (int) $session['id'],
+            ], [$oldId]);
+        }
+
+        if ($newUserId !== null && $newUserId !== $actorId) {
+            $body = $sessionsChanged > 1
+                ? "Se te han asignado {$sessionsChanged} sesiones de \"{$session['title']}\" (desde el {$dateLabel})."
+                : "Se te ha asignado como responsable de la clase \"{$session['title']}\" del {$dateLabel}.";
+            $notifModel->createWithRecipients([
+                'sender_id'   => $actorId,
+                'type'        => 'individual',
+                'title'       => $title,
+                'body'        => $body,
+                'created_at'  => date('Y-m-d H:i:s'),
+                'source_type' => NotificationModel::SOURCE_CLASS,
+                'source_id'   => (int) $session['id'],
+            ], [$newUserId]);
+        }
     }
 
     // ────────────────────────────────────────────────────────────────

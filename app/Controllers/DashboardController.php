@@ -33,14 +33,18 @@ class DashboardController extends BaseController
             $playerFullProfile = $this->playerService->getFullProfile($userId);
         }
 
+        $clasesService   = new \App\Services\ClasesService();
         $isAdminRole     = in_array($role, ['superadmin', 'admin']);
-        $showScopeToggle = $isAdminRole && (new \App\Services\ClasesService())->hasOwnAssignedSessions($userId);
+        $showScopeToggle = $isAdminRole && $clasesService->hasOwnAssignedSessions($userId);
+        // Selector "Ver calendario de…" (TICKET-011), igual que en /clases.
+        $responsableOptions = $isAdminRole ? $clasesService->getResponsableFilterOptions() : ['coaches' => [], 'staff' => []];
 
         return view('dashboard/index', [
-            'title'             => 'Dashboard — JP Preparation',
-            'showWelcome'       => $showWelcome,
-            'playerFullProfile' => $playerFullProfile,
-            'showScopeToggle'   => $showScopeToggle,
+            'title'              => 'Dashboard — JP Preparation',
+            'showWelcome'        => $showWelcome,
+            'playerFullProfile'  => $playerFullProfile,
+            'showScopeToggle'    => $showScopeToggle,
+            'responsableOptions' => $responsableOptions,
         ]);
     }
 

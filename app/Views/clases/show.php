@@ -22,6 +22,9 @@ $isStaffSession   = ($session['session_type'] ?? 'coach') === 'staff';
 $responsibleLabel = $isStaffSession ? 'Staff responsable' : 'Entrenadores';
 $responsibleIcon  = $isStaffSession ? '#7c3aed'           : '#059669';
 $responsibleEmpty = $isStaffSession ? 'Sin staff responsable asignado' : 'Sin entrenadores asignados';
+// Máx. 1 responsable por sesión (ver ClasesService::syncCoaches) — el
+// modal "Cambiar responsable" (TICKET-011) trabaja con un único valor.
+$assignedCoachId = $session['coaches'][0]['user_id'] ?? null;
 
 // El feedback ("Después") se puede escribir cuando la clase ya se ha
 // impartido: sesión completada, lista pasada, o al menos un alumno
@@ -441,8 +444,8 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <?= $responsibleLabel ?> (<?= count($session['coaches']) ?>)
                 </span>
                 <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
-                <button class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalAddCoach')">
-                    <i class="bi bi-plus-lg"></i>
+                <button class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalChangeResponsible')">
+                    <i class="bi bi-arrow-repeat me-1"></i>Cambiar
                 </button>
                 <?php endif; ?>
             </div>
@@ -611,34 +614,48 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 
 </div>
 
-<!-- ── Modal: añadir entrenador/staff ────────────────────────── -->
+<!-- ── Modal: cambiar responsable (entrenador/staff) — TICKET-011 ── -->
 <?php if ($canManage): ?>
 <?php $modalPool = $isStaffSession ? $staffOptions : $coachOptions; ?>
-<div id="modalAddCoach" class="cs-modal-overlay d-none">
+<div id="modalChangeResponsible" class="cs-modal-overlay d-none">
     <div class="cs-modal">
         <div class="cs-modal-header">
-            <span><?= $isStaffSession ? 'Añadir staff responsable' : 'Añadir entrenador' ?></span>
-            <button onclick="closeModal('modalAddCoach')"><i class="bi bi-x-lg"></i></button>
+            <span><?= $isStaffSession ? 'Cambiar staff responsable' : 'Cambiar entrenador' ?></span>
+            <button onclick="closeModal('modalChangeResponsible')"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="cs-modal-body">
-            <form action="/clases/<?= $session['id'] ?>/coaches/add" method="POST">
+            <form action="/clases/<?= $session['id'] ?>/responsable" method="POST">
                 <?= csrf_field() ?>
                 <label class="form-label"><?= $isStaffSession ? 'Staff' : 'Entrenador' ?></label>
-                <select name="user_id" class="form-control-jp mb-3" required>
-                    <option value="">Seleccionar…</option>
-                    <?php foreach ($modalPool as $c):
-                        $isAssigned = false;
-                        foreach ($session['coaches'] as $sc) {
-                            if ((int)$sc['user_id'] === (int)$c['id']) { $isAssigned = true; break; }
-                        } ?>
-                        <?php if (!$isAssigned): ?>
-                        <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
-                        <?php endif; ?>
+                <select name="user_id" class="form-control-jp mb-3">
+                    <option value="">Sin responsable asignado</option>
+                    <?php foreach ($modalPool as $c): ?>
+                    <option value="<?= $c['id'] ?>" <?= ((int) $assignedCoachId === (int) $c['id']) ? 'selected' : '' ?>>
+                        <?= esc($c['name']) ?>
+                    </option>
                     <?php endforeach; ?>
                 </select>
+
+                <?php if ($seriesFutureCount > 1): ?>
+                <!-- Clase recurrente: preguntar el alcance (como Google Calendar),
+                     nunca aplicar a la serie entera sin que se elija a propósito. -->
+                <div class="mb-3" style="display:flex;flex-direction:column;gap:8px">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                        <input type="radio" name="scope" value="single" checked>
+                        Solo esta sesión
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                        <input type="radio" name="scope" value="series">
+                        Esta y las siguientes (<?= $seriesFutureCount ?> sesiones de la serie)
+                    </label>
+                </div>
+                <?php else: ?>
+                <input type="hidden" name="scope" value="single">
+                <?php endif; ?>
+
                 <div class="d-flex gap-2 justify-content-end">
-                    <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalAddCoach')">Cancelar</button>
-                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Añadir</button>
+                    <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalChangeResponsible')">Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Guardar</button>
                 </div>
             </form>
         </div>
