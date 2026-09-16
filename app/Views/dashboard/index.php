@@ -679,6 +679,7 @@ window.CalOverlap = (function () {
                 var hgt = Math.max(((e - s) / 60) * slotH, 20);
                 var leftPct = p.col * w;
 
+                var mainLabel = ev.player_label || ev.title;
                 var respFull  = ev.responsable_name ? ' &middot; ' + esc(ev.responsable_name) : '';
                 var respShort = ev.responsable_name ? ' &middot; ' + esc(shortName(ev.responsable_name)) : '';
 
@@ -688,7 +689,7 @@ window.CalOverlap = (function () {
                         'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
                     'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    esc(ev.start) + ' ' + esc(ev.title) + respShort +
+                    esc(ev.start) + ' ' + esc(mainLabel) + respShort +
                     '</a>';
             });
         });
@@ -719,7 +720,7 @@ window.CalOverlap = (function () {
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
                 '<span class="cal-picker-time">' + esc(ev.start) +
                     (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
-                '<span class="cal-picker-title">' + esc(ev.title) +
+                '<span class="cal-picker-title">' + esc(ev.player_label || ev.title) +
                     (ev.responsable_name ? ' <small style="opacity:.65">&middot; ' + esc(ev.responsable_name) + '</small>' : '') +
                 '</span>' +
                 '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
@@ -897,10 +898,12 @@ const DBCAL = {
             html += `<div class="cal-cell${isT?' today':''}${dbCanManage?' cal-can-create':''}" onclick="dbHandleClick(event,'${ds}')">`;
             html += `<div class="cal-day-num">${day}</div>`;
             evts.slice(0,2).forEach(ev => {
-                const t = CalOverlap.esc(ev.title);
+                const mainLabel = ev.player_label || ev.title;
+                const t = CalOverlap.esc(mainLabel);
                 const respFull  = ev.responsable_name ? ' · ' + CalOverlap.esc(ev.responsable_name) : '';
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
-                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" title="${t}${respFull} ${ev.start}–${ev.end||''}" onclick="event.stopPropagation()">${ev.start} ${t}${respShort}</a>`;
+                const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + (ev.end||'');
+                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" title="${tooltip}" onclick="event.stopPropagation()">${ev.start} ${t}${respShort}</a>`;
             });
             if (evts.length>2) html += `<button type="button" class="cal-more" onclick="event.stopPropagation();CalOverlap.openPopup('${ds}', null)">+${evts.length-2}</button>`;
             html += '</div>';

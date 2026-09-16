@@ -50,9 +50,31 @@ final class ClasesResponsableTest extends CIUnitTestCase
         }
     }
 
-    // ── attachResponsable() / buildPage-style helpers: vía reflexión ──
-    // (privado; se prueba a través de getSessionsForCalendar en la
-    // verificación manual con BD real, documentada en el ticket)
+    // ── playerLabel(): "quién viene" en la tarjeta del calendario ────
+
+    public function testSinAlumnosDevuelveNullParaQueElCallerUseElTitulo(): void
+    {
+        $this->assertNull(ClasesService::playerLabel([]));
+    }
+
+    public function testUnAlumnoDevuelveSuNombre(): void
+    {
+        $this->assertSame('Marc Puig', ClasesService::playerLabel(['Marc Puig']));
+    }
+
+    public function testParejaDevuelveLosDosNombres(): void
+    {
+        $this->assertSame('Ana López, Marc Puig', ClasesService::playerLabel(['Ana López', 'Marc Puig']));
+    }
+
+    public function testClaseDeGrupoDevuelveElPrimeroMasCuantosMas(): void
+    {
+        $this->assertSame('Ana López +3', ClasesService::playerLabel(['Ana López', 'Bruno', 'Clàudia', 'Diego']));
+    }
+
+    // ── attachResponsable() (privado): consultas y estructura del evento
+    // probadas contra BD real (verificación manual documentada en el
+    // ticket), aquí solo se fija que el evento las incluye.
 
     // ── Cableado: rutas, controller, notificaciones ──────────────────
 
@@ -86,15 +108,25 @@ final class ClasesResponsableTest extends CIUnitTestCase
         $src = file_get_contents(APPPATH . 'Services/ClasesService.php');
         $this->assertStringContainsString("'responsable_id'   => \$c['id'] ?? null,", $src);
         $this->assertStringContainsString("'responsable_name' => \$c['name'] ?? null,", $src);
+        $this->assertStringContainsString("'player_label'     => \$playerLabel,", $src);
     }
 
-    public function testLaVistaDeClasesMuestraElSelectorYElNombreDelResponsable(): void
+    public function testLaVistaDeClasesMuestraElSelectorYLaTarjetaConAlumnoYResponsable(): void
     {
         $html = file_get_contents(APPPATH . 'Views/clases/index.php');
         $this->assertStringContainsString('id="cal-scope-select"', $html);
         $this->assertStringContainsString('ev.responsable_name', $html);
+        // La tarjeta muestra el alumno (fallback al título si no hay
+        // ninguno) — no el título siempre, como pidió el usuario.
+        $this->assertStringContainsString('ev.player_label || ev.title', $html);
         // El selector se recuerda igual que el toggle que sustituye (v1.7.0).
         $this->assertStringContainsString("localStorage.getItem('jp_cal_scope')", $html);
+    }
+
+    public function testLaVistaDelDashboardTambienMuestraAlumnoEnLaTarjeta(): void
+    {
+        $html = file_get_contents(APPPATH . 'Views/dashboard/index.php');
+        $this->assertStringContainsString('ev.player_label || ev.title', $html);
     }
 
     public function testLaFichaDeClaseTieneElModalDeCambiarResponsable(): void

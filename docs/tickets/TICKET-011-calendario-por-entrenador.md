@@ -71,6 +71,19 @@
 - Mes: nombre abreviado tras el título (`CalOverlap.shortName()`, "Marc P.").
   Semana/Día: igual, en la misma línea de la tarjeta. Pop-up «Ver todas»:
   nombre completo bajo el título. Tooltip: nombre completo en los tres casos.
+- **Ajuste tras el primer pase** (captura del usuario, mismo día): en la
+  tarjeta del calendario el **título de la clase pesaba más que quién viene**
+  — muchas clases recurrentes comparten nombre genérico
+  ("Tecnificación Grupo I") y no dice nada útil de un vistazo. Se cambió la
+  tarjeta a **hora + alumno + entrenador**, sin el título (que queda en el
+  tooltip, por si hace falta el contexto de la serie):
+  - `attachResponsable()` añade también `player_label`: 0 alumnos → `null`
+    (se usa el título como respaldo); 1 o 2 (pareja) → sus nombres; una clase
+    de grupo → el primero + cuántos más ("Enzo Vila García +3"). Cálculo
+    puro extraído a `ClasesService::playerLabel()` (testeado sin BD).
+  - Las cuatro plantillas de tarjeta (mes y `dayLayerHtml`/`showPicker` de
+    `CalOverlap`, duplicadas en `clases/index.php` y `dashboard/index.php`)
+    usan `ev.player_label || ev.title`.
 
 ### 2.3 Cambiar el responsable
 
@@ -146,11 +159,12 @@ solo salieron al probar contra la BD real en Docker:
 
 ## 5. Verificación
 
-- `tests/unit/ClasesResponsableTest.php` (10 tests): `parseScopeParam()`
-  (las 5 formas + valores inválidos ignorados), ruta con el filtro de rol
-  correcto, `NotificationModel::SOURCE_CLASS` + su enlace, y que el
-  código/las vistas llevan el responsable y el modal de cambio.
-- Suite completa: **314 tests OK** (1 omitido) en Docker.
+- `tests/unit/ClasesResponsableTest.php` (15 tests): `parseScopeParam()`
+  (las 5 formas + valores inválidos ignorados), `playerLabel()` (0/1/pareja/
+  grupo), ruta con el filtro de rol correcto, `NotificationModel::SOURCE_CLASS`
+  + su enlace, y que el código/las vistas llevan el responsable, el alumno y
+  el modal de cambio.
+- Suite completa: **319 tests OK** (1 omitido) en Docker.
 - Verificación end-to-end en Chromium (Playwright) + comprobaciones directas
   contra MySQL, con datos de `BulkDemoDataSeeder` (22 entrenadores, 354
   sesiones): filtro por entrenador (`coach:28` → solo sus sesiones),
@@ -161,7 +175,8 @@ solo salieron al probar contra la BD real en Docker:
   no; el entrenador que pierde la clase deja de verla en su calendario y el
   que la recibe la ve; ambos reciben notificación con enlace a la clase;
   admin es un rol válido como responsable (no se rechaza); un coach no puede
-  llamar al endpoint (403).
+  llamar al endpoint (403); las tarjetas del calendario muestran el alumno
+  (con "+N" en clases de grupo) en vez del título, con captura de pantalla.
 
 ## 6. Notas de despliegue
 

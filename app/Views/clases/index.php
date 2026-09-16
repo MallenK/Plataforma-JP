@@ -420,8 +420,9 @@ window.CalOverlap = (function () {
                 var hgt = Math.max(((e - s) / 60) * slotH, 20);
                 var leftPct = p.col * w;
 
-                // Nombre del responsable (TICKET-011): abreviado en la tarjeta
-                // ("Marc P."), completo en el tooltip.
+                // En la tarjeta solo hora + alumno + entrenador (TICKET-011);
+                // el título completo queda en el tooltip.
+                var mainLabel = ev.player_label || ev.title;
                 var respFull  = ev.responsable_name ? ' &middot; ' + esc(ev.responsable_name) : '';
                 var respShort = ev.responsable_name ? ' &middot; ' + esc(shortName(ev.responsable_name)) : '';
 
@@ -431,7 +432,7 @@ window.CalOverlap = (function () {
                         'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
                     'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    esc(ev.start) + ' ' + esc(ev.title) + respShort +
+                    esc(ev.start) + ' ' + esc(mainLabel) + respShort +
                     '</a>';
             });
         });
@@ -462,7 +463,7 @@ window.CalOverlap = (function () {
                 '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
                 '<span class="cal-picker-time">' + esc(ev.start) +
                     (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
-                '<span class="cal-picker-title">' + esc(ev.title) +
+                '<span class="cal-picker-title">' + esc(ev.player_label || ev.title) +
                     (ev.responsable_name ? ' <small style="opacity:.65">&middot; ' + esc(ev.responsable_name) + '</small>' : '') +
                 '</span>' +
                 '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
@@ -676,12 +677,17 @@ const CAL = {
 
             const shown = dayEvts.slice(0, 3);
             shown.forEach(ev => {
-                const t = CalOverlap.esc(ev.title);
+                // En el chip solo hora + alumno + entrenador (el título de la
+                // clase, si hace falta, queda en el tooltip: varias clases
+                // recurrentes comparten nombre genérico y no dice quién viene).
+                const mainLabel = ev.player_label || ev.title;
+                const t = CalOverlap.esc(mainLabel);
                 const respFull  = ev.responsable_name ? ' · ' + CalOverlap.esc(ev.responsable_name) : '';
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
+                const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + ev.end;
                 html += `<a href="/clases/${ev.id}" class="cal-chip"
                             style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
-                            title="${t}${respFull} ${ev.start}–${ev.end}">
+                            title="${tooltip}">
                             ${ev.start} ${t}${respShort}
                          </a>`;
             });

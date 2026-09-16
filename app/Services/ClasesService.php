@@ -363,6 +363,29 @@ class ClasesService
     }
 
     /**
+     * Texto de "quién viene" para una tarjeta del calendario: el nombre del
+     * alumno (o el título de la clase si no hay ninguno, ver
+     * attachResponsable()) importa más que el título — varias clases
+     * recurrentes comparten nombre genérico ("Tecnificación Grupo I") y no
+     * dice quién asiste.
+     *
+     * 0 alumnos → null (el caller usa el título); 1 o 2 (pareja) → sus
+     * nombres; más (clase de grupo) → el primero + cuántos más.
+     *
+     * @param string[] $names Nombres ya ordenados (ver attachResponsable()).
+     */
+    public static function playerLabel(array $names): ?string
+    {
+        $count = count($names);
+
+        return match (true) {
+            $count === 0 => null,
+            $count <= 2  => implode(', ', $names),
+            default      => $names[0] . ' +' . ($count - 1),
+        };
+    }
+
+    /**
      * @param bool $onlyMine Fuerza el filtro "solo mis sesiones" también
      *                       para admin/superadmin (ver
      *                       shouldFilterCalendarByOwnSessions()).
@@ -468,9 +491,28 @@ class ClasesService
             }
         }
 
-        return array_map(function ($s) use ($coachMap) {
-            $sid = (int) $s['id'];
-            $c   = $coachMap[$sid] ?? null;
+        // Alumno(s) de la sesión: en el calendario interesa más "quién viene"
+        // que el título de la clase (varias clases recurrentes comparten
+        // nombre genérico, p. ej. "Tecnificación Grupo I"). 1 alumno → su
+        // nombre; 2 (pareja) → los dos; más → el primero + "+N".
+        $playerNamesMap = [];
+        if (!empty($ids)) {
+            $rows = $this->db->table('class_session_players csp')
+                ->select('csp.session_id, u.name')
+                ->join('users u', 'u.id = csp.user_id')
+                ->whereIn('csp.session_id', $ids)
+                ->orderBy('u.name', 'ASC')
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $playerNamesMap[(int) $r['session_id']][] = $r['name'];
+            }
+        }
+
+        return array_map(function ($s) use ($coachMap, $playerNamesMap) {
+            $sid   = (int) $s['id'];
+            $c     = $coachMap[$sid] ?? null;
+            $playerLabel = self::playerLabel($playerNamesMap[$sid] ?? []);
+
             return [
                 'id'               => $sid,
                 'title'            => $s['title'],
@@ -482,6 +524,7 @@ class ClasesService
                 'session_type'     => $s['session_type'] ?? 'coach',
                 'responsable_id'   => $c['id'] ?? null,
                 'responsable_name' => $c['name'] ?? null,
+                'player_label'     => $playerLabel,
             ];
         }, $sessions);
     }
