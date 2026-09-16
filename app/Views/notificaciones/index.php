@@ -103,6 +103,13 @@ $sentNotifications = $sentNotifications ?? [];
                         <?php endif; ?>
                     </a>
                     <?php endif; ?>
+
+                    <?php if ($source = \App\Models\NotificationModel::sourceLink($n)): ?>
+                    <a href="<?= base_url($source['path']) ?>"
+                       class="notif-file-link notif-source-link" data-id="<?= $n['id'] ?>">
+                        <i class="bi <?= $source['icon'] ?> me-1"></i><?= esc($source['label']) ?>
+                    </a>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($isUnread): ?>
@@ -415,6 +422,24 @@ $sentNotifications = $sentNotifications ?? [];
             item.classList.remove('notif-unread');
             this.remove();
             updateBellCount(-1);
+        });
+    });
+
+    // ── Ir al origen (ticket / conversación): se marca como leída ─
+    // keepalive: la petición sobrevive a la navegación que viene detrás.
+    document.querySelectorAll('.notif-source-link').forEach(link => {
+        link.addEventListener('click', function () {
+            const item = this.closest('.notif-item');
+            if (!item || !item.classList.contains('notif-unread')) return;
+            fetch(BASE + 'notificaciones/' + this.dataset.id + '/read', {
+                method: 'POST',
+                keepalive: true,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: '<?= $csrfName ?>=' + encodeURIComponent(csrf().value)
+            });
         });
     });
 

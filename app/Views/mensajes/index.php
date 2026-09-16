@@ -212,6 +212,16 @@ $roleLabels = [
     let   pollTimer     = null;
     let   pollConvTimer = null;
 
+    // ── Carga progresiva del historial (TICKET-009) ─────────
+    // Al abrir solo llega el bloque más reciente; los anteriores se piden
+    // por bloques cuando el scroll se acerca al principio.
+    const HISTORY_PRELOAD_PX = 400;  // pedir el bloque antes de tocar el techo
+    const STICK_BOTTOM_PX    = 150;  // "estoy abajo": los nuevos bajan el scroll
+    let   oldestMsgId    = 0;
+    let   hasMoreHistory = false;
+    let   loadingHistory = false;
+    let   convSeq        = 0;        // invalida respuestas de una conversación anterior
+
     // ── Manejo centralizado de errores + reporte de problemas ────
     // fetchJSON distingue tres casos:
     //  - Sesión caducada (401 + session_expired): el AuthFilter ya lo
@@ -416,7 +426,9 @@ $roleLabels = [
 
     // ── Abrir conversación ───────────────────────────────────
     async function openConversation(convId, otherId) {
+        const seq = ++convSeq;
         stopPolling();
+        resetHistoryState();
         showChatLoading();
 
         if (!otherId || otherId <= 0) {
@@ -435,6 +447,7 @@ $roleLabels = [
             });
 
             if (data.csrf) refreshCsrf(data.csrf);
+            if (seq !== convSeq) return; // mientras cargaba se abrió otra conversación
 
             const cid = parseInt(data.conversation_id);
             if (!cid || isNaN(cid)) {
@@ -457,6 +470,7 @@ $roleLabels = [
 
             // Mensajes
             lastMsgId = 0;
+            hasMoreHistory = !!data.has_more;
             renderMessages(data.messages, true);
 
             // Limpiar badge de la conversación
@@ -475,8 +489,12 @@ $roleLabels = [
             scrollToBottom();
             document.getElementById('msg-body').focus();
             startPolling();
+            // Si el primer bloque no llena la pantalla no habría scroll con
+            // el que pedir más: se completa ya.
+            loadHistoryIfNearTop();
 
         } catch (err) {
+            if (seq !== convSeq) return;
             handleFetchError(err, 'Abrir conversación', showChatError);
         }
     }
@@ -565,19 +583,24 @@ $roleLabels = [
     let pollMsgFailCount = 0;
     async function pollMessages() {
         if (!activeConvId) return;
+        const seq = convSeq;
         try {
-            const data = await fetchJSON(BASE + 'mensajes/' + activeConvId + '/poll?since=' + lastMsgId, {
+            const data = await fetchJSON(BASE + 'mensajes/' + activeConvId + '/poll?since=' + lastMsgId
+                + '&read_from=' + oldestUnreadMineId(), {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
+            if (seq !== convSeq) return;
             pollMsgFailCount = 0;
             if (data.messages && data.messages.length > 0) {
+                // Si está leyendo mensajes antiguos no se le baja de golpe.
+                const stick = isNearBottom();
                 data.messages.forEach(msg => {
                     if (parseInt(msg.sender_id) !== MY_ID) {
                         appendMessage(msg);
                     }
                     if (parseInt(msg.id) > lastMsgId) lastMsgId = parseInt(msg.id);
                 });
-                scrollToBottom();
+                if (stick) scrollToBottom();
                 clearConvBadge(activeConvId);
             }
             // Actualizar indicadores de lectura para mensajes que ya leyó el otro
@@ -644,12 +667,133 @@ $roleLabels = [
             return;
         }
 
-        msgs.forEach(msg => appendMessage(msg, false));
-        if (msgs.length > 0) lastMsgId = Math.max(...msgs.map(m => parseInt(m.id)));
+        if (reset) {
+            const top = document.createElement('div');
+            top.className = 'chat-history-top';
+            top.id = 'chat-history-top';
+            top.setAttribute('aria-live', 'polite');
+            inner.appendChild(top);
+            renderHistoryTop();
+        }
+
+        // Un solo fragmento = un solo reflow, aunque el bloque sea grande.
+        const frag = document.createDocumentFragment();
+        msgs.forEach(msg => frag.appendChild(buildMessageEl(msg)));
+        inner.appendChild(frag);
+
+        const ids = msgs.map(m => parseInt(m.id));
+        lastMsgId = Math.max(lastMsgId, ...ids);
+        if (reset) oldestMsgId = Math.min(...ids);
+    }
+
+    // ── Carga progresiva: mensajes anteriores ───────────────
+    function resetHistoryState() {
+        oldestMsgId    = 0;
+        hasMoreHistory = false;
+        loadingHistory = false;
+    }
+
+    function renderHistoryTop(state) {
+        const top = document.getElementById('chat-history-top');
+        if (!top) return;
+        if (state === 'loading') {
+            top.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando mensajes anteriores…';
+        } else if (state === 'error') {
+            top.innerHTML = '<button type="button" class="chat-history-btn" data-history-load>No se pudieron cargar. Reintentar</button>';
+        } else if (hasMoreHistory) {
+            // Respaldo para teclado o si el scroll no llega a dispararlo.
+            top.innerHTML = '<button type="button" class="chat-history-btn" data-history-load>Cargar mensajes anteriores</button>';
+        } else {
+            top.textContent = 'Inicio de la conversación';
+        }
+    }
+
+    function loadHistoryIfNearTop() {
+        const el = document.getElementById('chat-messages');
+        if (el && hasMoreHistory && el.scrollTop < HISTORY_PRELOAD_PX) loadOlderMessages();
+    }
+
+    async function loadOlderMessages() {
+        if (!activeConvId || !hasMoreHistory || loadingHistory || !oldestMsgId) return;
+        const seq    = convSeq;
+        const convId = activeConvId;
+        loadingHistory = true;
+        renderHistoryTop('loading');
+
+        try {
+            const data = await fetchJSON(BASE + 'mensajes/' + convId + '/historial?before=' + oldestMsgId, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (seq !== convSeq) return; // se cambió de conversación mientras cargaba
+
+            prependMessages(data.messages || []);
+            hasMoreHistory = !!data.has_more;
+            loadingHistory = false;
+            renderHistoryTop();
+            // Bloque de mensajes cortos que no llega a alejar del techo → otro.
+            loadHistoryIfNearTop();
+        } catch (err) {
+            if (seq !== convSeq) return;
+            loadingHistory = false;
+            renderHistoryTop('error');
+            handleFetchError(err, 'Cargar mensajes anteriores', null);
+        }
+    }
+
+    function prependMessages(msgs) {
+        if (!msgs.length) return;
+        const el  = document.getElementById('chat-messages');
+        const top = document.getElementById('chat-history-top');
+
+        // Se conserva lo que el usuario está viendo: lo que se añade arriba
+        // se compensa en scrollTop (overflow-anchor está desactivado en CSS).
+        const prevHeight = el.scrollHeight;
+        const prevTop    = el.scrollTop;
+
+        const frag = document.createDocumentFragment();
+        msgs.forEach(msg => frag.appendChild(buildMessageEl(msg)));
+        top.after(frag);
+
+        el.scrollTop = prevTop + (el.scrollHeight - prevHeight);
+        oldestMsgId  = Math.min(oldestMsgId, ...msgs.map(m => parseInt(m.id)));
+    }
+
+    document.getElementById('chat-messages')?.addEventListener('scroll', function () {
+        if (this.scrollTop < HISTORY_PRELOAD_PX) loadOlderMessages();
+    }, { passive: true });
+
+    document.getElementById('chat-messages-inner')?.addEventListener('click', function (e) {
+        if (e.target.closest('[data-history-load]')) loadOlderMessages();
+    });
+
+    // Mis mensajes que aún se pintan como "enviado": el sondeo solo pregunta
+    // por esos (0 = ninguno) en vez de por todo el historial.
+    function oldestUnreadMineId() {
+        let min = 0;
+        document.querySelectorAll('#chat-messages-inner .msg-read-indicator:not(.msg-read-done)').forEach(el => {
+            const id = parseInt(el.dataset.msgId);
+            if (id && (!min || id < min)) min = id;
+        });
+        return min;
+    }
+
+    function isNearBottom() {
+        const el = document.getElementById('chat-messages');
+        return !el || el.scrollHeight - el.scrollTop - el.clientHeight < STICK_BOTTOM_PX;
     }
 
     function appendMessage(msg, scroll = false) {
-        const inner  = document.getElementById('chat-messages-inner');
+        const inner = document.getElementById('chat-messages-inner');
+
+        // Quitar el mensaje de "sin mensajes" si existe
+        const noMsgs = inner.querySelector('.chat-no-msgs');
+        if (noMsgs) noMsgs.remove();
+
+        inner.appendChild(buildMessageEl(msg));
+        if (scroll) scrollToBottom();
+    }
+
+    function buildMessageEl(msg) {
         const isMine = parseInt(msg.sender_id) === MY_ID;
         const el     = document.createElement('div');
         el.className = 'chat-msg-wrap ' + (isMine ? 'mine' : 'theirs');
@@ -669,7 +813,8 @@ $roleLabels = [
 
             if (isImage) {
                 content += '<div class="chat-bubble chat-bubble-file">'
-                    + '<a href="' + url + '" target="_blank"><img src="' + url + '" class="chat-img-preview" alt="' + escHtml(msg.file_name) + '"></a>'
+                    // lazy: la imagen solo se descarga al acercarse a la vista
+                    + '<a href="' + url + '" target="_blank"><img src="' + url + '" class="chat-img-preview" width="200" height="200" loading="lazy" decoding="async" alt="' + escHtml(msg.file_name) + '"></a>'
                     + '</div>';
             } else {
                 content += '<div class="chat-bubble chat-bubble-file">'
@@ -684,7 +829,7 @@ $roleLabels = [
         let readIndicator = '';
         if (isMine) {
             const isRead = msg.read_at != null && msg.read_at !== '';
-            readIndicator = '<span class="msg-read-indicator" data-msg-id="' + msg.id + '" title="' + (isRead ? 'Leído' : 'Enviado') + '">'
+            readIndicator = '<span class="msg-read-indicator' + (isRead ? ' msg-read-done' : '') + '" data-msg-id="' + msg.id + '" title="' + (isRead ? 'Leído' : 'Enviado') + '">'
                 + (isRead
                     ? '<i class="bi bi-check2-all" style="color:#7c3aed"></i>'
                     : '<i class="bi bi-check2" style="color:var(--text-muted)"></i>')
@@ -694,12 +839,7 @@ $roleLabels = [
             + '<div class="chat-msg-time">' + time + readIndicator + '</div>'
             + '</div>';
 
-        // Quitar el mensaje de "sin mensajes" si existe
-        const noMsgs = inner.querySelector('.chat-no-msgs');
-        if (noMsgs) noMsgs.remove();
-
-        inner.appendChild(el);
-        if (scroll) scrollToBottom();
+        return el;
     }
 
     function updateConvList(conversations) {

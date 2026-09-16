@@ -595,9 +595,11 @@ class TicketsController extends BaseController
                 $this->notifModel->createWithRecipients([
                     'sender_id'  => $actorId,
                     'type'       => 'individual',
-                    'title'      => 'Ticket asignado: ' . $ticket['ticket_number'],
-                    'body'       => 'Se te ha asignado el ticket: ' . $ticket['title'],
-                    'created_at' => date('Y-m-d H:i:s'),
+                    'title'       => 'Ticket asignado: ' . $ticket['ticket_number'],
+                    'body'        => 'Se te ha asignado el ticket: ' . $ticket['title'],
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'source_type' => NotificationModel::SOURCE_TICKET,
+                    'source_id'   => $id,
                 ], [$assigneeId]);
             }
         }
@@ -771,9 +773,11 @@ class TicketsController extends BaseController
         $this->notifModel->createWithRecipients([
             'sender_id'  => $fromUserId,
             'type'       => 'individual',
-            'title'      => 'Nuevo ticket: ' . $ticket['ticket_number'],
-            'body'       => $ticketTitle,
-            'created_at' => date('Y-m-d H:i:s'),
+            'title'       => 'Nuevo ticket: ' . $ticket['ticket_number'],
+            'body'        => $ticketTitle,
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => NotificationModel::SOURCE_TICKET,
+            'source_id'   => $ticketId,
         ], $ids);
     }
 
@@ -794,9 +798,11 @@ class TicketsController extends BaseController
         $this->notifModel->createWithRecipients([
             'sender_id'  => $fromUserId,
             'type'       => 'individual',
-            'title'      => 'Nota interna en ' . $ticket['ticket_number'],
-            'body'       => 'Hay una nota interna nueva en el ticket: ' . $ticket['title'],
-            'created_at' => date('Y-m-d H:i:s'),
+            'title'       => 'Nota interna en ' . $ticket['ticket_number'],
+            'body'        => 'Hay una nota interna nueva en el ticket: ' . $ticket['title'],
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => NotificationModel::SOURCE_TICKET,
+            'source_id'   => $ticket['id'],
         ], $ids);
     }
 
@@ -816,11 +822,13 @@ class TicketsController extends BaseController
         }
 
         $this->notifModel->createWithRecipients([
-            'sender_id'  => $adminId,
-            'type'       => 'individual',
-            'title'      => $title,
-            'body'       => $body,
-            'created_at' => date('Y-m-d H:i:s'),
+            'sender_id'   => $adminId,
+            'type'        => 'individual',
+            'title'       => $title,
+            'body'        => $body,
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => NotificationModel::SOURCE_TICKET,
+            'source_id'   => $ticket['id'],
         ], [$ticket['user_id']]);
     }
 }
