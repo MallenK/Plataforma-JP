@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.7.2",
+        "date": "2026-09-16 20:00:00",
+        "description": "Mensajes: en conversaciones largas no se podía hacer scroll y solo se veían los últimos mensajes. Ahora el chat se desplaza con normalidad y, al subir, va cargando los mensajes anteriores por bloques hasta el inicio de la conversación, sin que abrir un chat largo sea más lento. Las imágenes adjuntas se cargan solo cuando se acercan a la pantalla, y si llega un mensaje nuevo mientras lees mensajes antiguos ya no te lleva de golpe al final."
+    },
+    {
         "version": "1.7.1",
         "date": "2026-09-15 00:15:00",
         "description": "Tutorial guiado: el título de cada paso (p. ej. 'Super Administrador') se veía casi invisible, en gris muy claro sobre fondo blanco. Ahora se muestra en el mismo color oscuro que el resto de títulos de la plataforma."

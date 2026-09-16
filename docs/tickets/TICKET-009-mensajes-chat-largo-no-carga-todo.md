@@ -8,7 +8,7 @@
 | Módulo       | Mensajes (chat 1-a-1)                                    |
 | Rama         | `fix/mensajes-historial-largo`                           |
 | Detectado en | Producción (reporte de usuario con captura de pantalla)  |
-| Entregado en | `v1.7.2` (pendiente)                                     |
+| Entregado en | `v1.7.2` (pendiente de despliegue)                       |
 
 ## Descripción
 
