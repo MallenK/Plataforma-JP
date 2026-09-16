@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.8.0",
+        "date": "2026-09-17 02:00:00",
+        "description": "Clases: un admin/superadmin puede filtrar el calendario (en Clases y en el Dashboard) por cada entrenador o miembro del staff, o ver solo las sesiones sin responsable asignado. Cada clase del calendario muestra ahora el nombre de su entrenador. Desde la ficha de una clase se puede cambiar su responsable con un botón 'Cambiar' (si es una sesión de una clase recurrente, se puede elegir cambiar solo esa sesión o esa y las siguientes); los alumnos que tenían al responsable anterior pasan al nuevo automáticamente. El cambio se refleja al momento en el calendario del entrenador afectado, que además recibe una notificación (tanto el que deja la clase como el que la recibe)."
+    },
+    {
         "version": "1.7.2",
         "date": "2026-09-16 20:00:00",
         "description": "Mensajes: en conversaciones largas no se podía hacer scroll y solo se veían los últimos mensajes. Ahora el chat se desplaza con normalidad y, al subir, va cargando los mensajes anteriores por bloques hasta el inicio de la conversación, sin que abrir un chat largo sea más lento. Las imágenes adjuntas se cargan solo cuando se acercan a la pantalla, y si llega un mensaje nuevo mientras lees mensajes antiguos ya no te lleva de golpe al final. Notificaciones: al pulsar un aviso de ticket (nuevo ticket, respuesta, cambio de estado, asignación, nota interna) o de mensaje nuevo ahora se abre directamente ese ticket o esa conversación, también desde la página de Notificaciones con el enlace 'Ver ticket' / 'Ir a la conversación'. Los avisos ya enviados quedan enlazados cuando se puede identificar su origen."
