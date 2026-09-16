@@ -1632,13 +1632,39 @@ input[type="time"] {
     flex: 1; overflow-y: auto;
     padding: 16px;
     display: flex; flex-direction: column;
+    /* Al anteponer mensajes antiguos la posición se corrige a mano en JS;
+       sin esto Chrome la corrige también y el scroll salta el doble. */
+    overflow-anchor: none;
+    overscroll-behavior: contain;
 }
 
+/* flex-shrink: 0 es imprescindible (TICKET-009): con min-height: 100% el
+   bloque se encogía hasta la altura del contenedor y, por el flex-end, los
+   mensajes que no cabían se salían por ARRIBA, donde no se puede hacer
+   scroll. Así crece con su contenido y el desbordamiento va hacia abajo. */
 .chat-messages-inner {
     display: flex; flex-direction: column;
     gap: 4px; min-height: 100%;
+    flex-shrink: 0;
     justify-content: flex-end;
 }
+
+/* Cabecera del historial: carga de mensajes anteriores / inicio */
+.chat-history-top {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 32px; padding: 4px 0 8px;
+    font-size: 11px; color: var(--text-muted);
+}
+.chat-history-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 11px; font-family: inherit;
+    cursor: pointer;
+}
+.chat-history-btn:hover { color: var(--accent); border-color: var(--accent); }
 
 .chat-loading {
     display: flex; justify-content: center;
@@ -1668,7 +1694,13 @@ input[type="time"] {
 .theirs .chat-bubble { background: var(--bg-card); color: var(--text-h); border-bottom-left-radius: 4px; box-shadow: var(--shadow-sm); }
 
 .chat-bubble-file { padding: 10px 14px; }
-.chat-img-preview { max-width: 200px; max-height: 200px; border-radius: 10px; display: block; cursor: pointer; }
+/* Tamaño fijo: la imagen se carga en diferido (loading="lazy") y así no
+   empuja los mensajes ni descoloca el scroll cuando termina de llegar. */
+.chat-img-preview {
+    width: 200px; height: 200px; object-fit: cover;
+    border-radius: 10px; display: block; cursor: pointer;
+    background: var(--bg-app);
+}
 .chat-file-link {
     display: flex; align-items: center; gap: 6px;
     font-size: 12px; text-decoration: none;

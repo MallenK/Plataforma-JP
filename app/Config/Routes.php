@@ -593,6 +593,7 @@ $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
 //  POST /mensajes/open                → abrir/crear conversación
 //  POST /mensajes/send                → enviar mensaje
 //  GET  /mensajes/:id/poll            → polling mensajes nuevos (AJAX)
+//  GET  /mensajes/:id/historial       → bloque de mensajes anteriores (?before=ID, AJAX)
 //  GET  /mensajes/conversations       → lista conversaciones (AJAX)
 //  GET  /mensajes/download/:id        → descargar archivo de mensaje
 //  POST /mensajes/report-error        → reportar error de la UI (crea ticket)
@@ -611,6 +612,10 @@ $routes->post('mensajes/send', 'MensajesController::ajaxSend', [
 ]);
 
 $routes->get('mensajes/(:num)/poll', 'MensajesController::ajaxPoll/$1', [
+    'filter' => 'auth',
+]);
+
+$routes->get('mensajes/(:num)/historial', 'MensajesController::ajaxHistory/$1', [
     'filter' => 'auth',
 ]);
 

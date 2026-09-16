@@ -98,14 +98,16 @@ class MensajesController extends BaseController
                 return $this->jsonError('No se pudo abrir la conversación.', 500, $ref);
             }
 
+            // Solo el bloque más reciente; el resto lo pide el chat al hacer
+            // scroll hacia arriba (GET /mensajes/:id/historial).
             try {
                 $this->msgModel->markReadInConversation($conv['id'], $userId);
-                $messages = $this->msgModel->getForConversation($conv['id'], 50);
+                $page = $this->msgModel->getPage((int) $conv['id']);
             } catch (\Throwable $e) {
                 // No bloqueamos la apertura de la conversación por un fallo al
                 // cargar el historial — se abre vacía y se registra el error.
                 $this->logAndRef($e, 'ajaxOpenConversation:messages');
-                $messages = [];
+                $page = ['messages' => [], 'has_more' => false];
             }
 
             return $this->response->setJSON([
@@ -116,7 +118,8 @@ class MensajesController extends BaseController
                     'avatar' => $otherUser['avatar'] ?? null,
                     'role'   => $otherUser['role'],
                 ],
-                'messages' => $messages,
+                'messages' => $page['messages'],
+                'has_more' => $page['has_more'],
                 'csrf'     => csrf_hash(),
             ]);
         } catch (\Throwable $e) {
@@ -238,11 +241,10 @@ class MensajesController extends BaseController
     public function ajaxPoll(int $convId): \CodeIgniter\HTTP\ResponseInterface
     {
         try {
-            $userId  = $this->currentUserId();
+            $userId  = (int) $this->currentUserId();
             $sinceId = (int) ($this->request->getGet('since') ?? 0);
 
-            $conv = $this->convModel->find($convId);
-            if (!$conv || ((int)$conv['user1_id'] !== $userId && (int)$conv['user2_id'] !== $userId)) {
+            if (!$this->findUserConversation($convId, $userId)) {
                 return $this->jsonError('Sin acceso.', 403);
             }
 
@@ -251,7 +253,7 @@ class MensajesController extends BaseController
                 ->join('users u', 'u.id = m.sender_id')
                 ->where('m.conversation_id', $convId)
                 ->where('m.id >', $sinceId)
-                ->orderBy('m.created_at', 'ASC')
+                ->orderBy('m.id', 'ASC')
                 ->get()->getResultArray();
 
             // Marcar como leídos los mensajes del otro
@@ -259,19 +261,49 @@ class MensajesController extends BaseController
                 $this->msgModel->markReadInConversation($convId, $userId);
             }
 
-            // Devolver IDs de mis mensajes ya leídos por el otro (para actualizar la UI)
-            $readIds = $this->db->table('messages')
-                ->select('id')
-                ->where('conversation_id', $convId)
-                ->where('sender_id', $userId)
-                ->where('read_at IS NOT NULL', null, false)
-                ->get()->getResultArray();
-            $readIds = array_column($readIds, 'id');
+            // IDs de mis mensajes ya leídos por el otro (para actualizar la UI).
+            // read_from = id del más antiguo que el chat aún pinta como no
+            // leído (0 = ninguno pendiente). Sin el parámetro (pestañas
+            // abiertas antes del cambio) se devuelven todos, como antes.
+            $readFrom = $this->request->getGet('read_from');
+            if ($readFrom === null) {
+                $readIds = $this->msgModel->getReadIdsFrom($convId, $userId);
+            } elseif ((int) $readFrom > 0) {
+                $readIds = $this->msgModel->getReadIdsFrom($convId, $userId, (int) $readFrom);
+            } else {
+                $readIds = [];
+            }
 
             return $this->response->setJSON(['messages' => $messages, 'read_ids' => $readIds]);
         } catch (\Throwable $e) {
             $ref = $this->logAndRef($e, 'ajaxPoll');
             return $this->jsonError('Ha ocurrido un error inesperado al comprobar mensajes nuevos.', 500, $ref);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // AJAX: carga progresiva — bloque de mensajes anteriores a un ID
+    // ─────────────────────────────────────────────────────────
+
+    public function ajaxHistory(int $convId): \CodeIgniter\HTTP\ResponseInterface
+    {
+        try {
+            $userId   = (int) $this->currentUserId();
+            $beforeId = (int) ($this->request->getGet('before') ?? 0);
+
+            if ($beforeId <= 0) {
+                return $this->jsonError('Falta el mensaje de referencia.', 422);
+            }
+            if (!$this->findUserConversation($convId, $userId)) {
+                return $this->jsonError('Sin acceso.', 403);
+            }
+
+            return $this->response->setJSON(
+                $this->msgModel->getPage($convId, MessageModel::PAGE_SIZE, $beforeId)
+            );
+        } catch (\Throwable $e) {
+            $ref = $this->logAndRef($e, 'ajaxHistory');
+            return $this->jsonError('Ha ocurrido un error inesperado al cargar mensajes anteriores.', 500, $ref);
         }
     }
 
@@ -421,6 +453,16 @@ class MensajesController extends BaseController
     // ─────────────────────────────────────────────────────────
     // Helpers privados
     // ─────────────────────────────────────────────────────────
+
+    /** La conversación, solo si $userId es uno de sus dos participantes. */
+    private function findUserConversation(int $convId, int $userId): ?array
+    {
+        $conv = $this->convModel->find($convId);
+        if (!$conv || ((int) $conv['user1_id'] !== $userId && (int) $conv['user2_id'] !== $userId)) {
+            return null;
+        }
+        return $conv;
+    }
 
     private function canChat(string $roleA, string $roleB): bool
     {
