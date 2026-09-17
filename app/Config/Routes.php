@@ -201,6 +201,13 @@ $routes->post('clases/nueva', 'ClasesController::store', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
+// ── Continuar clase recurrente (renovación de la serie) ─────
+// Solo admin/superadmin: generan el mes siguiente de una serie recurrente
+// ya terminada (o a punto de terminar), a partir de su plantilla (classes.id).
+$routes->post('clases/plantilla/(:num)/renovar', 'ClasesController::renewSeries/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 // ── Quick-create (AJAX, desde Dashboard / Torneos) ─────────
 $routes->post('clases/rapida', 'ClasesController::quickCreate', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],

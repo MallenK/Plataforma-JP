@@ -346,6 +346,24 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     </span>
                 </div>
                 <div class="card-jp-body">
+                    <input type="hidden" name="coach_ids_present" value="1">
+                    <?php if ($isRec && ($seriesFutureCount ?? 0) > 1): ?>
+                    <!-- Clase recurrente: preguntar el alcance del cambio de
+                         responsable, igual que el modal de la ficha (TICKET-011) —
+                         nunca aplicar a la serie entera sin que se elija a propósito. -->
+                    <div class="mb-3" style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--bg-app);border-radius:var(--radius-sm)">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="radio" name="coach_scope" value="single" checked>
+                            Solo esta sesión
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="radio" name="coach_scope" value="series">
+                            Esta y las siguientes (<?= $seriesFutureCount ?> sesiones de la serie)
+                        </label>
+                    </div>
+                    <?php else: ?>
+                    <input type="hidden" name="coach_scope" value="single">
+                    <?php endif; ?>
                     <!-- Selector entrenador -->
                     <select id="coachSelect" class="form-control-jp mb-2"
                             onchange="addCoach(this)"
@@ -557,6 +575,18 @@ const addedCoaches = new Set([<?= implode(',', array_map(fn($c) => $c['user_id']
 function addCoach(sel) {
     const id = parseInt(sel.value);
     if (!id || addedCoaches.has(id)) { sel.value = ''; return; }
+
+    // Solo se admite 1 responsable por sesión (ver ClasesService::syncCoaches,
+    // que solo guarda el primer coach_ids[] recibido). Si dejábamos acumular
+    // varias tarjetas aquí, el orden de los hidden inputs decidía en
+    // silencio cuál se guardaba de verdad — normalmente el más antiguo,
+    // ignorando el que se acababa de elegir. Añadir uno nuevo sustituye
+    // siempre al anterior.
+    addedCoaches.forEach(function (oldId) {
+        document.getElementById('coach-' + oldId)?.remove();
+    });
+    addedCoaches.clear();
+
     const name = sel.options[sel.selectedIndex].dataset.name;
     addedCoaches.add(id);
     sel.value = '';

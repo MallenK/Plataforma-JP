@@ -799,6 +799,10 @@ class ClasesService
     /**
      * Cierra la sesión: status='completed' + lista_pasada_at si aún no estaba marcada.
      * Única acción que finaliza una sesión.
+     *
+     * Si la sesión era la última 'scheduled' de una clase recurrente (y esa
+     * serie aún no se ha continuado), devuelve `offer_renewal`+`class_id`
+     * para que el controller ofrezca generar el mes siguiente.
      */
     public function cerrarSesion(int $sessionId, int $adminId): array
     {
@@ -807,6 +811,14 @@ class ClasesService
             return ['success' => false, 'error' => 'Sesión no encontrada.'];
         }
 
+        // Comprobar ANTES de actualizar: la propia sesión aún cuenta como
+        // 'scheduled' en este punto, así que si el recuento da 1 es que es
+        // la última que quedaba.
+        $seriesStatus = !empty($session['class_id'])
+            ? $this->getRecurringSeriesStatus((int) $session['class_id'])
+            : null;
+        $offerRenewal = $seriesStatus !== null && $seriesStatus['is_last'] && !$seriesStatus['already_renewed'];
+
         $update = ['status' => 'completed'];
         if (empty($session['lista_pasada_at'])) {
             $update['lista_pasada_at'] = date('Y-m-d H:i:s');
@@ -814,7 +826,12 @@ class ClasesService
         }
 
         $this->sessionModel->update($sessionId, $update);
-        return ['success' => true];
+
+        return [
+            'success'       => true,
+            'offer_renewal' => $offerRenewal,
+            'class_id'      => $offerRenewal ? (int) $session['class_id'] : null,
+        ];
     }
 
     /**
@@ -1486,6 +1503,136 @@ class ClasesService
             ->countAllResults();
     }
 
+    // ────────────────────────────────────────────────────────────────
+    //  Continuación de clases recurrentes (renovación de la serie)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Estado de renovación de una clase recurrente: cuántas sesiones
+     * 'scheduled' le quedan y si ya se generó su continuación.
+     * `is_last` es true tanto si queda exactamente 1 sesión programada
+     * (la serie está a punto de terminar) como si ya no queda ninguna (la
+     * serie ya terminó) — en ambos casos tiene sentido ofrecer continuarla.
+     *
+     * @return array{class:array,scheduled_remaining:int,is_last:bool,already_renewed:bool}|null
+     *         null si $classId no existe o no es una clase recurrente.
+     */
+    public function getRecurringSeriesStatus(int $classId): ?array
+    {
+        $class = $this->classModel->find($classId);
+        if (!$class || ($class['type'] ?? '') !== 'recurring') {
+            return null;
+        }
+
+        $scheduledRemaining = (int) $this->db->table('class_sessions')
+            ->where('class_id', $classId)
+            ->where('status', 'scheduled')
+            ->countAllResults();
+
+        return [
+            'class'               => $class,
+            'scheduled_remaining' => $scheduledRemaining,
+            'is_last'             => $scheduledRemaining <= 1,
+            'already_renewed'     => !empty($class['renewed_to_class_id']),
+        ];
+    }
+
+    /**
+     * Valores por defecto para el modal "Continuar clases recurrentes":
+     * mismo patrón de días un mes después, mismos horarios/lugar/objetivo
+     * de la plantilla, y responsable/alumnos heredados de la última sesión
+     * de la serie (esos datos no se guardan en la plantilla, solo por
+     * sesión). Todo queda editable en el modal antes de confirmar.
+     *
+     * @return array|null null si $classId no es una clase recurrente.
+     */
+    public function getRenewalDefaults(int $classId): ?array
+    {
+        $class = $this->classModel->find($classId);
+        if (!$class || ($class['type'] ?? '') !== 'recurring') {
+            return null;
+        }
+
+        $refSession = $this->db->table('class_sessions')
+            ->where('class_id', $classId)
+            ->orderBy('session_date', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->get(1)->getRowArray();
+
+        $sessionType = $refSession['session_type'] ?? 'coach';
+        $coachIds    = $refSession ? array_map('intval', array_column($this->getCoachesForSession((int) $refSession['id']), 'user_id')) : [];
+        $playerIds   = $refSession ? array_map('intval', array_column($this->getPlayersForSession((int) $refSession['id']), 'user_id')) : [];
+
+        $days = json_decode((string) $class['recurrence_days'], true);
+        $days = is_array($days) ? array_map('intval', $days) : [];
+
+        $newStart = $class['recurrence_start'] ? (new \DateTime($class['recurrence_start']))->modify('+1 month')->format('Y-m-d') : null;
+        $newEnd   = $class['recurrence_end']   ? (new \DateTime($class['recurrence_end']))->modify('+1 month')->format('Y-m-d')   : null;
+
+        return [
+            'title'            => $class['title'],
+            'description'      => $class['description'],
+            'class_format'     => $class['class_format'] ?? 'individual',
+            'session_type'     => in_array($sessionType, ['coach', 'staff']) ? $sessionType : 'coach',
+            'recurrence_days'  => $days,
+            'recurrence_start' => $newStart,
+            'recurrence_end'   => $newEnd,
+            'start_time'       => $class['recurrence_time_start'] ? substr((string) $class['recurrence_time_start'], 0, 5) : null,
+            'end_time'         => $class['recurrence_time_end'] ? substr((string) $class['recurrence_time_end'], 0, 5) : null,
+            'location_id'      => $class['default_location_id'],
+            'location_custom'  => $class['default_location_custom'],
+            'focus'            => $class['default_focus'],
+            'coach_ids'        => $coachIds,
+            'player_ids'       => $playerIds,
+        ];
+    }
+
+    /**
+     * Continúa una clase recurrente ya terminada (o a punto de terminar)
+     * generando una nueva plantilla enlazada, con sus sesiones. Reutiliza
+     * createRecurring() para la validación y generación — $data ya debe
+     * traer los mismos campos que la creación de una clase recurrente
+     * (title, recurrence_days[], recurrence_start/end, start_time/end_time,
+     * class_format, session_type, location_id/custom, focus, coach_ids[],
+     * player_ids[]), normalmente precargados desde getRenewalDefaults() y
+     * editados en el modal antes de confirmar.
+     *
+     * Una serie solo se puede continuar una vez (`renewed_to_class_id`).
+     */
+    public function renewRecurringClass(int $sourceClassId, array $data, int $userId): array
+    {
+        $source = $this->classModel->find($sourceClassId);
+        if (!$source || ($source['type'] ?? '') !== 'recurring') {
+            return ['success' => false, 'error' => 'La clase original no es una serie recurrente.'];
+        }
+        if (!empty($source['renewed_to_class_id'])) {
+            return ['success' => false, 'error' => 'Esta serie recurrente ya se ha continuado.'];
+        }
+        // El responsable es obligatorio al continuar una serie (a diferencia
+        // de crear/editar una clase suelta, donde sí puede quedar sin
+        // asignar) — no puede colar en silencio sin entrenador/staff.
+        if (empty(array_filter(array_map('intval', (array) ($data['coach_ids'] ?? []))))) {
+            return ['success' => false, 'error' => 'Debes asignar un responsable (entrenador o staff) para continuar la serie.'];
+        }
+
+        $data['type'] = 'recurring';
+        $result = $this->createRecurring($data, $userId);
+        if (!$result['success']) {
+            return $result;
+        }
+        if ($result['count'] === 0) {
+            // El rango de fechas indicado no contiene ningún día de la
+            // semana marcado: no tiene sentido dejar una plantilla vacía.
+            $this->classModel->delete((int) $result['class_id']);
+            return ['success' => false, 'error' => 'El rango de fechas indicado no genera ninguna sesión con los días de la semana marcados.'];
+        }
+
+        $this->classModel->update($sourceClassId, ['renewed_to_class_id' => $result['class_id']]);
+        $this->classModel->update((int) $result['class_id'], ['renewed_from_class_id' => $sourceClassId]);
+
+        return $result;
+    }
+
     /**
      * Cambia el responsable (entrenador o staff) de una sesión y, si se
      * pide, de las siguientes sesiones programadas de la misma clase
@@ -1561,7 +1708,9 @@ class ClasesService
             if ($oldId !== null) {
                 $builder->groupStart()->where('coach_id', $oldId)->orWhere('coach_id', null)->groupEnd();
             } else {
-                $builder->whereNull('coach_id');
+                // whereNull() no existe en esta versión de CI4/MySQLi Builder
+                // (misma trampa que orWhereNull(), ver Routes.php/CLAUDE.md).
+                $builder->where('coach_id', null);
             }
             $builder->update(['coach_id' => $newUserId, 'updated_at' => date('Y-m-d H:i:s')]);
         }

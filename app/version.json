@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.10.0",
+        "date": "2026-09-17 18:00:00",
+        "description": "Clases: cuando una clase recurrente llega a su última sesión programada, aparece un aviso para continuarla el mes siguiente (mismos días de la semana, mismo horario, entrenador y alumnos), tanto en la ficha de la clase como al cerrar esa última sesión desde Pasar lista. Antes de confirmar se puede editar todo: título, días, fechas, horario, lugar, responsable y alumnos. Solo admin/superadmin pueden continuar una serie, y cada serie solo se puede continuar una vez."
+    },
+    {
         "version": "1.9.0",
         "date": "2026-09-17 14:00:00",
         "description": "Clases: ya se pueden adjuntar fotos, vídeos y documentos a las observaciones de una sesión, tanto a las generales de toda la clase como a las individuales de cada jugador (desde el lápiz de su fila). Quedan siempre ligados a esa sesión y jugador, por lo que se pueden volver a encontrar entrando en la clase o, si son de un alumno concreto, desde su propia vista de la sesión. Además, se ha aclarado el texto de ambos bloques de observaciones (generales vs. individuales) para que quede claro cuál afecta a todo el grupo y cuál es solo de un jugador."

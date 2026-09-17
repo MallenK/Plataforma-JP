@@ -23,7 +23,7 @@ class EventNotificationModel extends Model
             ->join('event_team_members etm', 'etm.id = en.member_id')
             ->where('etm.user_id', $userId)
             ->where('etm.member_type', 'user')
-            ->whereNull('en.read_at')
+            ->where('en.read_at', null) // whereNull() no existe en esta versión de CI4/MySQLi Builder
             ->countAllResults();
     }
 
