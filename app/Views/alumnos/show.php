@@ -640,6 +640,50 @@ $formatTime = static function (?string $hms): string {
             <?php endif; ?>
         </div>
 
+        <!-- Vídeos y adjuntos de las clases -->
+        <?php $sessionAttachments = $alumno['session_attachments'] ?? []; ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title">
+                    <i class="bi bi-camera-video-fill me-2" style="color:#7c3aed"></i>
+                    Vídeos y adjuntos de clases
+                </span>
+                <span style="font-size:12px;color:var(--text-muted)"><?= count($sessionAttachments) ?> sesión(es) con adjuntos</span>
+            </div>
+            <?php if (empty($sessionAttachments)): ?>
+            <div class="card-jp-body">
+                <p style="font-size:13px;color:var(--text-muted);margin:0">
+                    Sin fotos, vídeos ni documentos todavía. Se suben desde la ficha de cada clase (observaciones de la sesión).
+                </p>
+            </div>
+            <?php else: ?>
+            <div class="card-jp-body d-flex flex-column gap-3" id="session-attachments-list">
+                <?php foreach ($sessionAttachments as $i => $group): ?>
+                <div class="session-attach-group<?= $i >= 3 ? ' d-none' : '' ?>">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <a href="<?= base_url('clases/' . (int) $group['session_id']) ?>" style="text-decoration:none;color:inherit">
+                            <div style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($group['session_title']) ?></div>
+                            <div style="font-size:11px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($group['session_date'])) ?></div>
+                        </a>
+                        <span style="font-size:11px;color:var(--text-muted)"><?= count($group['items']) ?> archivo(s)</span>
+                    </div>
+                    <div class="cs-attach-list">
+                        <?php foreach ($group['items'] as $att): ?>
+                            <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => false]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if (count($sessionAttachments) > 3): ?>
+                <button type="button" id="session-attach-toggle" class="btn-jp btn-jp-secondary btn-jp-sm align-self-start"
+                        onclick="document.querySelectorAll('.session-attach-group.d-none').forEach(el => el.classList.remove('d-none')); this.remove();">
+                    <i class="bi bi-chevron-down me-1"></i>Ver <?= count($sessionAttachments) - 3 ?> sesión(es) más
+                </button>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
         <!-- Documentos del alumno -->
         <div class="card-jp">
             <div class="card-jp-header">
@@ -972,5 +1016,23 @@ $internalAnnotations = array_filter($annotations ?? [], fn($a) => $a['type'] ===
     'metrics'    => $alumno['metrics'] ?? [],
     'attendance' => $alumno['attendance'] ?? [],
 ]) ?>
+
+<style>
+/* Chips de adjuntos de clase (mismo estilo que app/Views/clases/show.php) */
+.cs-attach-list { display:flex;flex-wrap:wrap;gap:8px; }
+.cs-attach-chip {
+    display:inline-flex;align-items:center;gap:6px;background:var(--bg-app);
+    border:1px solid var(--border);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px;
+}
+.cs-attach-chip a { display:inline-flex;align-items:center;gap:6px;color:var(--text-h);text-decoration:none;max-width:220px; }
+.cs-attach-name { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px; }
+.cs-attach-size { color:var(--text-muted);font-size:10.5px; }
+.cs-attach-del {
+    background:none;border:none;color:var(--text-muted);cursor:pointer;
+    width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;transition:background .15s,color .15s;
+}
+.cs-attach-del:hover { background:#dc262622;color:#dc2626; }
+</style>
 
 <?= $this->endSection() ?>

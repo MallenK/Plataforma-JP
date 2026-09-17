@@ -270,6 +270,25 @@ class PlayerService
             ->limit(10)
             ->get()->getResultArray();
 
+        // Adjuntos de observaciones de clase (generales de las sesiones en las
+        // que participó + los individuales ligados a él), agrupados por
+        // sesión (fecha + clase) y ordenados de más reciente a más antigua.
+        $flatAttachments = (new \App\Models\ClassSessionAttachmentModel())->getForUserAcrossSessions($id);
+        $groupedAttachments = [];
+        foreach ($flatAttachments as $att) {
+            $sid = (int) $att['session_id'];
+            if (!isset($groupedAttachments[$sid])) {
+                $groupedAttachments[$sid] = [
+                    'session_id'    => $sid,
+                    'session_title' => $att['session_title'],
+                    'session_date'  => $att['session_date'],
+                    'items'         => [],
+                ];
+            }
+            $groupedAttachments[$sid]['items'][] = $att;
+        }
+        $user['session_attachments'] = array_values($groupedAttachments);
+
         // Últimos documentos de la carpeta personal del alumno
         $docService = new \App\Services\DocumentService();
         $personalFolder = $docService->getOrCreatePersonalFolder($id);
