@@ -808,6 +808,28 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
+/* Selector "Ver calendario de…" (admin/superadmin, TICKET-011). Un
+   <select> en vez de más botones .calendar-view-tab: con muchos
+   entrenadores/staff no cabría, y de paso evita que switchView() (que
+   quita "active" a *todos* los .calendar-view-tab) lo desactive sin querer. */
+.cal-scope-select {
+    padding: 5px 26px 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-h);
+    cursor: pointer;
+    outline: none;
+    max-width: 190px;
+}
+.cal-scope-select:focus { border-color: var(--accent); }
+
+/* Nombre del responsable dentro de la tarjeta de cada clase (calendario) */
+.cal-chip-resp { opacity: .8; font-weight: 500; }
+.cal-event-resp { opacity: .85; font-weight: 500; }
+
 /* ── Calendario: clases solapadas (varias a la misma hora) ── */
 /* Chip que sustituye a un montón de clases simultáneas y abre el pop-up */
 .cal-event-more {

@@ -203,6 +203,13 @@
             p.classList.remove('active');
             const cb = p.querySelector('.cm-day-check'); if (cb) cb.checked = false;
         });
+        // Preselección del responsable (TICKET-011): al crear desde un
+        // calendario ya filtrado por "Ver calendario de <persona>", se
+        // asigna directamente en vez de dejarlo vacío.
+        if (prefill.coachId) {
+            const match = coachOptions.find(c => parseInt(c.id) === parseInt(prefill.coachId));
+            if (match) selectedCoaches.set(parseInt(match.id), match.name);
+        }
         renderTags('cm-coach-list', selectedCoaches);
         renderTags('cm-player-list', selectedPlayers);
         hide($('cm-error'));
