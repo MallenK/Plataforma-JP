@@ -471,6 +471,32 @@ $listaSaved = !empty($session['lista_pasada_at']);
         });
     }
 })();
+
+<?php $renewalClassId = session()->getFlashdata('offer_series_renewal_class_id'); ?>
+<?php if (!empty($renewalClassId)): ?>
+// Se acaba de cerrar la última sesión programada de una clase recurrente
+// (ver ClasesService::cerrarSesion) y aún no se ha continuado la serie.
+// Se ofrece generar el mes siguiente; si acepta, vamos a la ficha de la
+// sesión con ?renovar=1 para abrir el modal ya precargado.
+//
+// Se espera a DOMContentLoaded porque este bloque vive en page_content,
+// que el layout renderiza ANTES de cargar radix-ui.js (va en el footer de
+// layouts/base.php) — sin esperar, RadixUI aún no existiría y se colaría
+// el confirm() nativo del navegador.
+document.addEventListener('DOMContentLoaded', function () {
+    if (!window.RadixUI || typeof RadixUI.confirm !== 'function') return; // nunca alert()/confirm() nativo
+    // Botón resaltado (confirmLabel) = "Cancelar clases": la opción segura
+    // por defecto es NO continuar sin que el admin lo pida a propósito.
+    RadixUI.confirm({
+        title: '¿Continuar esta clase recurrente?',
+        description: 'Era la última sesión programada de esta serie. ¿Quieres generar las sesiones del mes siguiente (mismos días, editable antes de confirmar)?',
+        confirmLabel: 'Cancelar clases',
+        cancelLabel: 'Continuar con las clases'
+    }).then(function (cancelled) {
+        if (!cancelled) window.location = '/clases/<?= (int) $session['id'] ?>?renovar=1';
+    });
+});
+<?php endif; ?>
 </script>
 
 <?= $this->endSection() ?>

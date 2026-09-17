@@ -18,6 +18,6 @@ class ClassModel extends Model
         'recurrence_days', 'recurrence_start', 'recurrence_end',
         'recurrence_time_start', 'recurrence_time_end',
         'default_location_id', 'default_location_custom', 'default_focus',
-        'created_by',
+        'created_by', 'renewed_from_class_id', 'renewed_to_class_id',
     ];
 }

@@ -112,6 +112,28 @@ $statusHint   = [
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
 <?php endif; ?>
 
+<!-- ── Continuar clase recurrente (serie a punto de terminar / terminada) ── -->
+<?php if (!empty($renewalDefaults)): ?>
+<div class="card-jp mb-3" style="border-left:3px solid #7c3aed">
+    <div class="card-jp-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <div style="font-weight:700;color:var(--text-h);margin-bottom:4px">
+                <i class="bi bi-arrow-repeat me-2" style="color:#7c3aed"></i>
+                <?= $seriesRenewal['scheduled_remaining'] === 0
+                    ? 'Esta clase recurrente ha terminado'
+                    : 'Última sesión programada de esta clase recurrente' ?>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted)">
+                ¿Quieres continuar con las mismas sesiones el mes que viene? Podrás editarlo todo antes de confirmar.
+            </div>
+        </div>
+        <button type="button" class="btn-jp btn-jp-primary btn-jp-sm" onclick="openModal('modalRenewSeries')">
+            <i class="bi bi-arrow-repeat me-1"></i>Continuar clases recurrentes
+        </button>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- ── Mi convocatoria (solo jugadores) ────────────────────── -->
 <?php if ($myPlayer): ?>
 <?php
@@ -775,6 +797,205 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 </div>
 <?php endif; ?>
 
+<!-- ── Modal: continuar clase recurrente ──────────────────────── -->
+<?php if (!empty($renewalDefaults)): ?>
+<div id="modalRenewSeries" class="cs-modal-overlay d-none">
+    <div class="cs-modal" style="max-width:640px">
+        <div class="cs-modal-header">
+            <span><i class="bi bi-arrow-repeat me-2" style="color:#7c3aed"></i>Continuar clases recurrentes</span>
+            <button onclick="closeModal('modalRenewSeries')"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cs-modal-body">
+            <p style="font-size:12.5px;color:var(--text-muted);margin-top:0">
+                Se generará una nueva serie de clases a partir de estos datos (por defecto: mismos días de la semana,
+                un mes después). Revisa y edita lo que necesites antes de confirmar.
+            </p>
+            <form action="/clases/plantilla/<?= (int) $session['class_id'] ?>/renovar" method="POST" id="formRenewSeries">
+                <?= csrf_field() ?>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Título</label>
+                        <input type="text" name="title" class="form-control-jp" value="<?= esc($renewalDefaults['title']) ?>" required>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Formato</label>
+                        <div style="display:flex;gap:10px">
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid var(--border);border-radius:8px;flex:1">
+                                <input type="radio" name="class_format" value="individual" <?= $renewalDefaults['class_format'] === 'individual' ? 'checked' : '' ?>>
+                                Individual
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid var(--border);border-radius:8px;flex:1">
+                                <input type="radio" name="class_format" value="pareja" <?= $renewalDefaults['class_format'] === 'pareja' ? 'checked' : '' ?>>
+                                Pareja
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Tipo de responsable</label>
+                        <div style="display:flex;gap:10px">
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid var(--border);border-radius:8px;flex:1">
+                                <input type="radio" name="session_type" value="coach" id="rn-type-coach" <?= $renewalDefaults['session_type'] === 'coach' ? 'checked' : '' ?>>
+                                Entrenador
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid var(--border);border-radius:8px;flex:1">
+                                <input type="radio" name="session_type" value="staff" id="rn-type-staff" <?= $renewalDefaults['session_type'] === 'staff' ? 'checked' : '' ?>>
+                                Staff
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Días de la semana</label>
+                        <div class="cm-day-row">
+                            <?php foreach ([1=>'Lun',2=>'Mar',3=>'Mié',4=>'Jue',5=>'Vie',6=>'Sáb',7=>'Dom'] as $n=>$d): ?>
+                            <label class="cm-day-pill <?= in_array($n, $renewalDefaults['recurrence_days'], true) ? 'active' : '' ?>">
+                                <input type="checkbox" class="rn-day-check" name="recurrence_days[]" value="<?= $n ?>"
+                                       <?= in_array($n, $renewalDefaults['recurrence_days'], true) ? 'checked' : '' ?>>
+                                <span><?= $d ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Desde</label>
+                        <input type="date" name="recurrence_start" class="form-control-jp" value="<?= esc((string) $renewalDefaults['recurrence_start']) ?>" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hasta</label>
+                        <input type="date" name="recurrence_end" class="form-control-jp" value="<?= esc((string) $renewalDefaults['recurrence_end']) ?>" required>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Hora inicio</label>
+                        <input type="time" name="start_time" class="form-control-jp" value="<?= esc((string) $renewalDefaults['start_time']) ?>" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hora fin</label>
+                        <input type="time" name="end_time" class="form-control-jp" value="<?= esc((string) $renewalDefaults['end_time']) ?>">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Instalación</label>
+                        <select name="location_id" class="form-control-jp">
+                            <option value="">— Seleccionar —</option>
+                            <?php foreach ($locationOptions as $loc): ?>
+                            <option value="<?= $loc['id'] ?>" <?= (int) $renewalDefaults['location_id'] === (int) $loc['id'] ? 'selected' : '' ?>>
+                                <?= esc($loc['name']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">O lugar personalizado</label>
+                        <input type="text" name="location_custom" class="form-control-jp" value="<?= esc((string) $renewalDefaults['location_custom']) ?>">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Objetivo del entrenamiento</label>
+                        <input type="text" name="focus" class="form-control-jp" value="<?= esc((string) $renewalDefaults['focus']) ?>">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" id="rn-coach-label"><?= $renewalDefaults['session_type'] === 'staff' ? 'Staff' : 'Entrenador' ?></label>
+                        <select name="coach_ids[]" id="rn-coach-select" class="form-control-jp">
+                            <option value="">Sin responsable asignado</option>
+                            <?php foreach ($coachOptions as $c): ?>
+                            <option value="<?= $c['id'] ?>" data-pool="coach" <?= in_array((int) $c['id'], $renewalDefaults['coach_ids'], true) ? 'selected' : '' ?>>
+                                <?= esc($c['name']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                            <?php foreach ($staffOptions as $c): ?>
+                            <option value="<?= $c['id'] ?>" data-pool="staff" <?= in_array((int) $c['id'], $renewalDefaults['coach_ids'], true) ? 'selected' : '' ?>>
+                                <?= esc($c['name']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div id="rn-coach-error" class="cm-error d-none" style="margin-top:8px"></div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Alumnos</label>
+                        <?php
+                        $playerNameById = array_column($playerOptions, 'name', 'id');
+                        ?>
+                        <div class="cm-tags" style="border:1px solid var(--border);border-radius:8px;padding:10px;min-height:24px">
+                            <?php if (empty($renewalDefaults['player_ids'])): ?>
+                            <span style="font-size:12.5px;color:var(--text-muted)">Sin alumnos asignados</span>
+                            <?php else: ?>
+                                <?php foreach ($renewalDefaults['player_ids'] as $pid): ?>
+                                <span class="cm-tag"><?= esc($playerNameById[$pid] ?? ('Alumno #' . $pid)) ?></span>
+                                <input type="hidden" name="player_ids[]" value="<?= (int) $pid ?>">
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                            Los alumnos se mantienen: una clase recurrente continúa siempre con el mismo alumno/alumnos.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalRenewSeries')">Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Continuar clases</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+// Filtra el select de responsable según Entrenador/Staff elegido, para no
+// dejar seleccionable a alguien del pool equivocado (mismas reglas que
+// ClasesService::RESPONSABLE_TECNICO_ROLES / RESPONSABLE_STAFF_ROLES).
+(function () {
+    var sel = document.getElementById('rn-coach-select');
+    var label = document.getElementById('rn-coach-label');
+    if (!sel) return;
+    function applyPool() {
+        var isStaff = document.getElementById('rn-type-staff')?.checked;
+        label.textContent = isStaff ? 'Staff' : 'Entrenador';
+        Array.prototype.forEach.call(sel.options, function (opt) {
+            if (!opt.value) return;
+            var show = !opt.dataset.pool || opt.dataset.pool === (isStaff ? 'staff' : 'coach');
+            opt.hidden = !show;
+            if (!show && opt.selected) opt.selected = false;
+        });
+    }
+    document.getElementById('rn-type-coach')?.addEventListener('change', applyPool);
+    document.getElementById('rn-type-staff')?.addEventListener('change', applyPool);
+    applyPool();
+
+    document.querySelectorAll('.rn-day-check').forEach(function (chk) {
+        chk.addEventListener('change', function () {
+            chk.closest('.cm-day-pill')?.classList.toggle('active', chk.checked);
+        });
+    });
+
+    // El responsable es obligatorio al continuar una serie: dejarlo en
+    // "Sin responsable asignado" y guardar no puede colar en silencio.
+    var form = document.getElementById('formRenewSeries');
+    var errEl = document.getElementById('rn-coach-error');
+    form?.addEventListener('submit', function (e) {
+        if (!sel.value) {
+            e.preventDefault();
+            errEl.textContent = 'Selecciona ' + (document.getElementById('rn-type-staff')?.checked ? 'un miembro del staff' : 'un entrenador') + ' antes de continuar la serie.';
+            errEl.classList.remove('d-none');
+            sel.focus();
+        } else {
+            errEl.classList.add('d-none');
+        }
+    });
+})();
+// Auto-abrir el modal si venimos del aviso "última sesión" tras cerrar.
+// Se espera a DOMContentLoaded porque openModal() se define más abajo, en
+// la sección "scripts" del layout (renderizada después de este bloque).
+document.addEventListener('DOMContentLoaded', function () {
+    if (new URLSearchParams(window.location.search).get('renovar') === '1') {
+        openModal('modalRenewSeries');
+    }
+});
+</script>
+<?php endif; ?>
+
 <?= $this->section('scripts') ?>
 <style>
 .cs-modal-overlay {
@@ -813,6 +1034,29 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
     font-size:11px;transition:background .15s,color .15s;
 }
 .cs-attach-del:hover { background:#dc262622;color:#dc2626; }
+
+/* Días de la semana — modal "Continuar clases recurrentes" */
+.cm-day-row { display:flex; flex-wrap:wrap; gap:6px; }
+.cm-day-pill {
+    cursor:pointer; padding:6px 12px; border:1px solid var(--border);
+    border-radius:20px; font-size:12.5px; font-weight:600; color:var(--text-body);
+    transition:all .15s; user-select:none;
+}
+.cm-day-pill input { display:none; }
+.cm-day-pill.active { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+
+/* Alumnos (solo lectura) — modal "Continuar clases recurrentes" */
+.cm-tags { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.cm-tag {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600;
+    background:var(--accent-light); color:var(--accent);
+}
+.cm-error {
+    margin-top:6px; padding:8px 12px; border-radius:6px;
+    background:rgba(239,68,68,.10); color:var(--danger); font-size:12.5px;
+    border:1px solid rgba(239,68,68,.25);
+}
 </style>
 <script>
 function openModal(id) {

@@ -207,6 +207,19 @@ class ClasesController extends BaseController
             if ((int)$p['user_id'] === $userId) { $myPlayer = $p; break; }
         }
 
+        // Continuación de clases recurrentes: solo admin/superadmin pueden
+        // generar el mes siguiente. seriesRenewal viene null si la sesión no
+        // pertenece a una clase recurrente.
+        $canRenewSeries  = in_array($role, ['superadmin', 'admin']);
+        $seriesRenewal   = null;
+        $renewalDefaults = null;
+        if ($canRenewSeries && !empty($session['class_id'])) {
+            $seriesRenewal = $this->clasesService->getRecurringSeriesStatus((int) $session['class_id']);
+            if ($seriesRenewal !== null && $seriesRenewal['is_last'] && !$seriesRenewal['already_renewed']) {
+                $renewalDefaults = $this->clasesService->getRenewalDefaults((int) $session['class_id']);
+            }
+        }
+
         return view('clases/show', [
             'title'              => $session['title'] . ' — JP Preparation',
             'session'            => $session,
@@ -222,6 +235,9 @@ class ClasesController extends BaseController
             // "Cambiar responsable" (TICKET-011): nº de sesiones futuras de
             // la misma serie, para ofrecer el alcance "esta y las siguientes".
             'seriesFutureCount'  => $canManage ? $this->clasesService->countFutureSeriesSessions($id) : 0,
+            'canRenewSeries'     => $canRenewSeries,
+            'seriesRenewal'      => $seriesRenewal,
+            'renewalDefaults'    => $renewalDefaults,
         ]);
     }
 
@@ -249,6 +265,9 @@ class ClasesController extends BaseController
             'staffOptions'    => $this->clasesService->getStaffOptions(),
             'playerOptions'   => $this->clasesService->getPlayerOptions(),
             'locationOptions' => $this->clasesService->getLocationOptions(),
+            // Para ofrecer "solo esta sesión" / "esta y las siguientes" al
+            // cambiar el responsable, igual que el modal de show.php (TICKET-011).
+            'seriesFutureCount' => $this->clasesService->countFutureSeriesSessions($id),
         ]);
     }
 
@@ -264,7 +283,27 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $ok = $this->clasesService->updateSession($id, $this->request->getPost());
+        $data = $this->request->getPost();
+
+        // Si la sesión pertenece a una clase recurrente y se pidió aplicar el
+        // cambio de responsable a "esta y las siguientes", ese campo se
+        // gestiona aparte con changeResponsible() (misma lógica que el modal
+        // de la ficha, TICKET-011) — updateSession() no sabe de "series".
+        // coach_ids_present distingue "el formulario incluye la tarjeta de
+        // responsable" de "no venía ese campo": si se deja sin nadie
+        // asignado, el navegador no manda coach_ids[] en absoluto.
+        $coachScope = (string) ($data['coach_scope'] ?? 'single');
+        if ($coachScope === 'series' && !empty($session['class_id']) && !empty($data['coach_ids_present'])) {
+            $newCoachId = !empty($data['coach_ids'][0]) ? (int) $data['coach_ids'][0] : null;
+            $resp = $this->clasesService->changeResponsible($id, $newCoachId, 'series', $this->currentUserId());
+            if (!$resp['success']) {
+                session()->setFlashdata('error', $resp['error'] ?? 'No se pudo cambiar el responsable de la serie.');
+                return redirect()->back()->withInput();
+            }
+            unset($data['coach_ids']); // ya aplicado; que updateSession() no lo vuelva a tocar solo para esta sesión
+        }
+
+        $ok = $this->clasesService->updateSession($id, $data);
 
         if (!$ok) {
             session()->setFlashdata('error', 'Error al actualizar la sesión.');
@@ -321,9 +360,22 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $this->clasesService->cerrarSesion($id, $this->currentUserId());
+        $result = $this->clasesService->cerrarSesion($id, $this->currentUserId());
         session()->setFlashdata('success', 'Sesión cerrada y marcada como completada.');
+        $this->flagRenewalOffer($result);
         return redirect()->to('/clases/' . $id . '/lista');
+    }
+
+    /**
+     * Si cerrarSesion() indica que era la última sesión programada de una
+     * clase recurrente sin continuar, deja el aviso en flash para que la
+     * vista de "pasar lista" ofrezca generar el mes siguiente.
+     */
+    private function flagRenewalOffer(array $cerrarSesionResult): void
+    {
+        if (!empty($cerrarSesionResult['offer_renewal']) && in_array($this->currentRole(), ['superadmin', 'admin'])) {
+            session()->setFlashdata('offer_series_renewal_class_id', $cerrarSesionResult['class_id']);
+        }
     }
 
     /**
@@ -356,6 +408,30 @@ class ClasesController extends BaseController
 
         session()->setFlashdata('success', 'Sesión reabierta: ya puedes editar la asistencia de nuevo.');
         return redirect()->to('/clases/' . $id . '/lista');
+    }
+
+    /**
+     * Continúa una clase recurrente terminada generando el mes siguiente
+     * (mismo patrón de días, editable en el modal antes de confirmar).
+     * Solo admin/superadmin (filtro de ruta); $classId es classes.id, no
+     * una sesión.
+     */
+    public function renewSeries(int $classId)
+    {
+        $result = $this->clasesService->renewRecurringClass($classId, $this->request->getPost(), $this->currentUserId());
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se pudo continuar la clase recurrente.');
+            return redirect()->back()->withInput();
+        }
+
+        session()->setFlashdata('success', sprintf(
+            'Clases recurrentes continuadas: se %s %d sesión%s más.',
+            $result['count'] === 1 ? 'ha creado' : 'han creado',
+            $result['count'],
+            $result['count'] === 1 ? '' : 'es'
+        ));
+        return redirect()->to('/clases/' . $result['id']);
     }
 
     public function cancel(int $id)
@@ -740,7 +816,8 @@ class ClasesController extends BaseController
         // "Guardar y cerrar": un solo gesto para no dejar la sesión a medias.
         $cerrar = (string) $this->request->getPost('cerrar') === '1';
         if ($cerrar && ($session['status'] ?? '') === 'scheduled') {
-            $this->clasesService->cerrarSesion($id, $this->currentUserId());
+            $cierreResult = $this->clasesService->cerrarSesion($id, $this->currentUserId());
+            $this->flagRenewalOffer($cierreResult);
             $cierre = ' y sesión cerrada (puedes reabrirla si necesitas corregir algo)';
         }
 
