@@ -6,6 +6,7 @@ use App\Models\ClassModel;
 use App\Models\ClassSessionModel;
 use App\Models\ClassSessionCoachModel;
 use App\Models\ClassSessionPlayerModel;
+use App\Models\ClassSessionAttachmentModel;
 use App\Models\PlayerBonoModel;
 use App\Models\NotificationModel;
 use App\Models\UserModel;
@@ -29,15 +30,17 @@ class ClasesService
     protected ClassSessionModel $sessionModel;
     protected ClassSessionCoachModel $coachModel;
     protected ClassSessionPlayerModel $playerModel;
+    protected ClassSessionAttachmentModel $attachmentModel;
     protected $db;
 
     public function __construct()
     {
-        $this->classModel   = new ClassModel();
-        $this->sessionModel = new ClassSessionModel();
-        $this->coachModel   = new ClassSessionCoachModel();
-        $this->playerModel  = new ClassSessionPlayerModel();
-        $this->db           = \Config\Database::connect();
+        $this->classModel      = new ClassModel();
+        $this->sessionModel    = new ClassSessionModel();
+        $this->coachModel      = new ClassSessionCoachModel();
+        $this->playerModel     = new ClassSessionPlayerModel();
+        $this->attachmentModel = new ClassSessionAttachmentModel();
+        $this->db              = \Config\Database::connect();
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -640,6 +643,17 @@ class ClasesService
 
         $session['coaches'] = $this->getCoachesForSession($id);
         $session['players'] = $this->getPlayersForSession($id);
+
+        // Adjuntos: generales de la sesión + agrupados por jugador (player_id).
+        $session['attachments'] = $this->attachmentModel->getForSession($id);
+        $attachmentsByPlayer = [];
+        foreach ($this->attachmentModel->where('session_id', $id)->where('player_id IS NOT NULL')->findAll() as $att) {
+            $attachmentsByPlayer[(int) $att['player_id']][] = $att;
+        }
+        foreach ($session['players'] as &$p) {
+            $p['attachments'] = $attachmentsByPlayer[(int) $p['id']] ?? [];
+        }
+        unset($p);
 
         // Nombre de instalación si hay location_id
         if (!empty($session['location_id'])) {
@@ -1777,6 +1791,65 @@ class ClasesService
         }
 
         return true;
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Adjuntos de observaciones (fotos/vídeos/documentos)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Registra un adjunto ya subido a disco (ver ClasesController::handleFileUpload).
+     * $playerUserId: si viene, se resuelve la fila de class_session_players
+     * de ese alumno en esta sesión y el adjunto queda ligado a su observación
+     * individual; si es null, queda como adjunto general de la sesión.
+     */
+    public function addAttachment(int $sessionId, ?int $playerUserId, int $uploadedBy, array $fileData): array
+    {
+        $playerId = null;
+        if ($playerUserId !== null) {
+            $player = $this->playerModel
+                ->where('session_id', $sessionId)
+                ->where('user_id', $playerUserId)
+                ->first();
+            if (!$player) {
+                return ['success' => false, 'error' => 'El jugador no está asignado a esta sesión.'];
+            }
+            $playerId = (int) $player['id'];
+        }
+
+        $id = $this->attachmentModel->addAttachment($sessionId, $playerId, $uploadedBy, $fileData);
+
+        return ['success' => $id > 0, 'id' => $id];
+    }
+
+    public function getAttachment(int $attachmentId): ?array
+    {
+        return $this->attachmentModel->find($attachmentId);
+    }
+
+    /**
+     * Todos los adjuntos individuales de un alumno a lo largo de sus
+     * sesiones, para mostrarlos en su ficha de jugador.
+     */
+    public function getAttachmentsForUser(int $userId): array
+    {
+        return $this->attachmentModel->getForUserAcrossSessions($userId);
+    }
+
+    public function deleteAttachment(int $attachmentId): bool
+    {
+        $attach = $this->attachmentModel->find($attachmentId);
+        if (!$attach) {
+            return false;
+        }
+
+        helper('upload');
+        $fullPath = upload_resolve_stored($attach['file_path']);
+        if ($fullPath !== null && is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+
+        return (bool) $this->attachmentModel->delete($attachmentId);
     }
 
     // ────────────────────────────────────────────────────────────────

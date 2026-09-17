@@ -235,6 +235,19 @@ $routes->post('clases/(:num)/observaciones', 'ClasesController::saveObservations
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
+// ── Adjuntos de observaciones (fotos/vídeos/documentos) ────
+$routes->post('clases/(:num)/observaciones/adjuntos', 'ClasesController::uploadAttachment/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+// Descarga: filtro solo 'auth', el permiso fino (adjunto general vs
+// individual de otro alumno) lo resuelve ClasesController::canAccessAttachment().
+$routes->get('clases/adjuntos/(:num)/descargar', 'ClasesController::downloadAttachment/$1', [
+    'filter' => ['auth'],
+]);
+$routes->post('clases/adjuntos/(:num)/eliminar', 'ClasesController::deleteAttachment/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
 // ── Entrenadores ───────────────────────────────────────────
 $routes->post('clases/(:num)/coaches/add', 'ClasesController::addCoach/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],

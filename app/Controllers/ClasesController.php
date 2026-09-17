@@ -451,6 +451,197 @@ class ClasesController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  Adjuntos de observaciones (fotos/vídeos/documentos)
+    // ────────────────────────────────────────────────────────────────
+
+    /** Extensiones permitidas en adjuntos de observaciones de clase. */
+    private const ATTACHMENT_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif',
+        'pdf', 'doc', 'docx',
+        'mp4', 'mov',
+    ];
+
+    private const ATTACHMENT_VIDEO_EXTENSIONS = ['mp4', 'mov'];
+
+    /**
+     * Sube un adjunto ligado a las observaciones de la sesión.
+     * `player_uid` (opcional, POST): si viene, el adjunto queda ligado a la
+     * observación individual de ese alumno en vez de a la sesión completa.
+     */
+    public function uploadAttachment(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para adjuntar archivos a esta sesión.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $file = $this->request->getFile('attachment');
+        if (!$file || !$file->isValid()) {
+            session()->setFlashdata('error', 'No se ha recibido ningún archivo válido.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $result = $this->handleAttachmentUpload($file);
+        if (isset($result['error'])) {
+            session()->setFlashdata('error', $result['error']);
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $playerUid = $this->request->getPost('player_uid');
+        $playerUid = $playerUid !== null && $playerUid !== '' ? (int) $playerUid : null;
+
+        $saved = $this->clasesService->addAttachment($id, $playerUid, $this->currentUserId(), $result);
+        if (!$saved['success']) {
+            session()->setFlashdata('error', $saved['error'] ?? 'No se pudo guardar el adjunto.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        session()->setFlashdata('success', 'Adjunto guardado.');
+        return redirect()->to('/clases/' . $id);
+    }
+
+    public function downloadAttachment(int $attachId)
+    {
+        $attach = $this->clasesService->getAttachment($attachId);
+        if (!$attach) {
+            return $this->response->setStatusCode(404);
+        }
+
+        $session = $this->clasesService->getSession($attach['session_id']);
+        if (!$session || !$this->canAccessAttachment($session, $attach)) {
+            return $this->response->setStatusCode(403);
+        }
+
+        helper('upload');
+        $fullPath = upload_resolve_stored($attach['file_path']);
+        if ($fullPath === null) {
+            return $this->response->setStatusCode(404);
+        }
+
+        return $this->response->download($fullPath, null)->setFileName($attach['file_name']);
+    }
+
+    public function deleteAttachment(int $attachId)
+    {
+        $attach = $this->clasesService->getAttachment($attachId);
+        if (!$attach) {
+            return $this->response->setStatusCode(404);
+        }
+
+        $session = $this->clasesService->getSession($attach['session_id']);
+        if (!$session || !$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para borrar este adjunto.');
+            return redirect()->to('/clases/' . $attach['session_id']);
+        }
+
+        $this->clasesService->deleteAttachment($attachId);
+        session()->setFlashdata('success', 'Adjunto eliminado.');
+        return redirect()->to('/clases/' . $attach['session_id']);
+    }
+
+    /**
+     * ¿Puede el usuario actual descargar este adjunto?
+     * admin/superadmin y coach/staff asignados a la sesión: siempre.
+     * Alumno: solo si está en la sesión y el adjunto es general o suyo.
+     */
+    private function canAccessAttachment(array $session, array $attach): bool
+    {
+        if ($this->isAssignedOrAdmin($session)) {
+            return true;
+        }
+
+        $role = $this->currentRole();
+        if (!in_array($role, ['alumno', 'player'], true)) {
+            return false;
+        }
+
+        $userId = $this->currentUserId();
+        $myPlayer = null;
+        foreach ($session['players'] as $p) {
+            if ((int) $p['user_id'] === $userId) { $myPlayer = $p; break; }
+        }
+        if (!$myPlayer) {
+            return false;
+        }
+
+        // Adjunto general de la sesión: cualquier alumno asignado lo ve.
+        if ($attach['player_id'] === null) {
+            return true;
+        }
+
+        // Adjunto individual: solo el propio alumno.
+        return (int) $attach['player_id'] === (int) $myPlayer['id'];
+    }
+
+    private function handleAttachmentUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
+    {
+        helper('upload');
+
+        $maxSizeDefault = 5 * 1024 * 1024;   // 5 MB (imágenes/documentos)
+        $maxSizeVideo    = 80 * 1024 * 1024;  // 80 MB (vídeo)
+        $allowed = [
+            'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+            'application/pdf', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+
+        $clientExt = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
+        $isVideo   = in_array($clientExt, self::ATTACHMENT_VIDEO_EXTENSIONS, true);
+        $maxSize   = $isVideo ? $maxSizeVideo : $maxSizeDefault;
+
+        if ($file->getSize() > $maxSize) {
+            $limitMb = (int) ($maxSize / (1024 * 1024));
+            return ['error' => "El archivo supera el límite de {$limitMb} MB."];
+        }
+
+        try {
+            $mime = $file->getMimeType();
+        } catch (\Throwable $e) {
+            log_message('error', 'ClasesController::handleAttachmentUpload getMimeType failed: ' . $e->getMessage());
+            return ['error' => 'No se pudo procesar el archivo. Inténtalo de nuevo.'];
+        }
+
+        // Igual que en Mensajes: para vídeo aceptamos cualquier subtipo
+        // "video/*", el control de seguridad real es la lista blanca de
+        // extensión + nombre aleatorio + fuera del webroot + sin ejecución.
+        $mimeOk = in_array($mime, $allowed, true)
+            || ($isVideo && is_string($mime) && str_starts_with($mime, 'video/'));
+
+        if (!$mimeOk) {
+            return ['error' => 'Tipo de archivo no permitido.'];
+        }
+
+        $ext = upload_allowed_extension($file->getClientExtension(), self::ATTACHMENT_EXTENSIONS);
+        if ($ext === null) {
+            return ['error' => 'Extensión de archivo no permitida.'];
+        }
+
+        // Fuera del webroot: solo se sirve por ClasesController::downloadAttachment().
+        $uploadDir = upload_private_dir('clases');
+        upload_harden_dir($uploadDir);
+
+        $newName = bin2hex(random_bytes(16)) . '.' . $ext;
+        try {
+            $file->move($uploadDir, $newName);
+        } catch (\Throwable $e) {
+            log_message('error', 'ClasesController::handleAttachmentUpload move failed: ' . $e->getMessage());
+            return ['error' => 'No se pudo guardar el archivo. Inténtalo de nuevo.'];
+        }
+
+        return [
+            'path' => upload_stored_path('clases', $newName),
+            'name' => $file->getClientName(),
+            'size' => $file->getSize(),
+            'mime' => $mime,
+        ];
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Pasar Lista — Vista semanal (admin/superadmin)
     // ────────────────────────────────────────────────────────────────
 

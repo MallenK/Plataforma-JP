@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.9.0",
+        "date": "2026-09-17 14:00:00",
+        "description": "Clases: ya se pueden adjuntar fotos, vídeos y documentos a las observaciones de una sesión, tanto a las generales de toda la clase como a las individuales de cada jugador (desde el lápiz de su fila). Quedan siempre ligados a esa sesión y jugador, por lo que se pueden volver a encontrar entrando en la clase o, si son de un alumno concreto, desde su propia vista de la sesión. Además, se ha aclarado el texto de ambos bloques de observaciones (generales vs. individuales) para que quede claro cuál afecta a todo el grupo y cuál es solo de un jugador."
+    },
+    {
         "version": "1.8.0",
         "date": "2026-09-17 02:00:00",
         "description": "Clases: un admin/superadmin puede filtrar el calendario (en Clases y en el Dashboard) por cada entrenador o miembro del staff, o ver solo las sesiones sin responsable asignado. Cada clase del calendario muestra ahora el nombre de su entrenador. Desde la ficha de una clase se puede cambiar su responsable con un botón 'Cambiar' (si es una sesión de una clase recurrente, se puede elegir cambiar solo esa sesión o esa y las siguientes); los alumnos que tenían al responsable anterior pasan al nuevo automáticamente. El cambio se refleja al momento en el calendario del entrenador afectado, que además recibe una notificación (tanto el que deja la clase como el que la recibe)."

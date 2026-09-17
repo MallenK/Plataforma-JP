@@ -259,10 +259,13 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         <form action="/clases/<?= $session['id'] ?>/observaciones" method="POST">
             <?= csrf_field() ?>
             <div class="card-jp mb-3">
-                <div class="card-jp-header">
+                <div class="card-jp-header" style="flex-direction:column;align-items:flex-start;gap:2px">
                     <span class="card-jp-title">
                         <i class="bi bi-clipboard-fill me-2" style="color:#7c3aed"></i>
-                        Observaciones de la sesión
+                        Observaciones generales de la sesión
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:400">
+                        Sobre <strong>toda la clase</strong> — para notas de un jugador en concreto usa el lápiz de su fila más abajo.
                     </span>
                 </div>
                 <div class="card-jp-body">
@@ -296,11 +299,42 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 </div>
             </div>
         </form>
-        <?php elseif (!empty($session['pre_notes']) || !empty($session['post_notes'])): ?>
-        <!-- Vista read-only para jugadores -->
+
+        <!-- Adjuntos generales de la sesión -->
         <div class="card-jp mb-3">
             <div class="card-jp-header">
-                <span class="card-jp-title"><i class="bi bi-clipboard-fill me-2" style="color:#7c3aed"></i>Observaciones</span>
+                <span class="card-jp-title">
+                    <i class="bi bi-paperclip me-2" style="color:#7c3aed"></i>
+                    Adjuntos de la sesión
+                </span>
+            </div>
+            <div class="card-jp-body">
+                <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">
+                    Fotos, vídeos o documentos de <strong>toda la clase</strong>. Quedan siempre vinculados a esta sesión
+                    (<?= date('d/m/Y', strtotime($session['session_date'])) ?>) y visibles desde aquí — para material de un jugador concreto, súbelo desde su ficha de observaciones (lápiz en la tabla).
+                </p>
+                <div class="cs-attach-list mb-3">
+                    <?php if (empty($session['attachments'])): ?>
+                    <span style="font-size:12px;color:var(--text-muted)">Sin adjuntos todavía.</span>
+                    <?php else: foreach ($session['attachments'] as $att): ?>
+                        <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => true]) ?>
+                    <?php endforeach; endif; ?>
+                </div>
+                <form action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
+                    <?= csrf_field() ?>
+                    <input type="file" name="attachment" class="form-control-jp" style="max-width:320px" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.mp4,.mov" required>
+                    <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
+                        <i class="bi bi-upload me-1"></i>Subir adjunto
+                    </button>
+                </form>
+            </div>
+        </div>
+        <?php elseif (!empty($session['pre_notes']) || !empty($session['post_notes']) || !empty($session['attachments'])): ?>
+        <!-- Vista read-only para jugadores -->
+        <div class="card-jp mb-3">
+            <div class="card-jp-header" style="flex-direction:column;align-items:flex-start;gap:2px">
+                <span class="card-jp-title"><i class="bi bi-clipboard-fill me-2" style="color:#7c3aed"></i>Observaciones generales de la sesión</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:400">Sobre toda la clase, no solo sobre ti.</span>
             </div>
             <div class="card-jp-body">
                 <?php if (!empty($session['pre_notes'])): ?>
@@ -310,9 +344,19 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($session['post_notes'])): ?>
-                <div>
+                <div class="mb-3">
                     <div class="form-label"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Feedback</div>
                     <div style="background:var(--bg-app);padding:12px;border-radius:var(--radius-sm);font-size:13.5px;white-space:pre-wrap"><?= esc($session['post_notes']) ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($session['attachments'])): ?>
+                <div>
+                    <div class="form-label"><i class="bi bi-paperclip me-1" style="color:#7c3aed"></i>Adjuntos</div>
+                    <div class="cs-attach-list">
+                        <?php foreach ($session['attachments'] as $att): ?>
+                            <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => false]) ?>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>
@@ -338,7 +382,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                             <th>Jugador</th>
                             <th>Aviso alumno</th>
                             <th>Asistencia</th>
-                            <th>Obs.</th>
+                            <th title="Observaciones individuales de este jugador (no las generales de la sesión)">Obs. individuales</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -376,8 +420,14 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                             </td>
                             <td>
                                 <button type="button" onclick="openObsModal(<?= $p['user_id'] ?>, '<?= esc($p['name'], 'js') ?>', '<?= esc($p['pre_obs'] ?? '', 'js') ?>', '<?= esc($p['post_obs'] ?? '', 'js') ?>')"
-                                        class="btn-jp btn-jp-secondary btn-jp-sm">
+                                        class="btn-jp btn-jp-secondary btn-jp-sm"
+                                        title="Observaciones y adjuntos individuales de <?= esc($p['name'], 'attr') ?> (distinto de las observaciones generales de arriba)">
                                     <i class="bi bi-pencil-fill"></i>
+                                    <?php if (!empty($p['attachments'])): ?>
+                                    <span class="badge-status" style="background:#7c3aed22;color:#7c3aed;border:1px solid #7c3aed44;font-size:10px;margin-left:4px;padding:1px 5px">
+                                        <i class="bi bi-paperclip"></i> <?= count($p['attachments']) ?>
+                                    </span>
+                                    <?php endif; ?>
                                 </button>
                             </td>
                         </tr>
@@ -385,6 +435,11 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     </tbody>
                 </table>
             </div>
+            <!-- Plantillas ocultas con los adjuntos individuales de cada jugador,
+                 leídas por openObsModal() al abrir el modal de ese jugador. -->
+            <?php foreach ($session['players'] as $p): ?>
+            <template id="attachTpl-<?= $p['user_id'] ?>"><?php if (!empty($p['attachments'])): foreach ($p['attachments'] as $att): ?><?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => true]) ?><?php endforeach; else: ?><span style="font-size:12px;color:var(--text-muted)">Sin adjuntos todavía.</span><?php endif; ?></template>
+            <?php endforeach; ?>
             <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:right">
                 <a href="/clases/<?= $session['id'] ?>/lista" class="btn-jp btn-jp-primary btn-jp-sm">
                     <i class="bi bi-clipboard2-check-fill me-1"></i><?= $listaLabel ?>
@@ -408,13 +463,21 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44;font-size:10px">
                             <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
                         </span>
-                        <?php if ((int)$p['user_id'] === $currentUserId && (!empty($p['pre_obs']) || !empty($p['post_obs']))): ?>
+                        <?php if ((int)$p['user_id'] === $currentUserId && (!empty($p['pre_obs']) || !empty($p['post_obs']) || !empty($p['attachments']))): ?>
                         <div class="mt-2">
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Tus observaciones individuales</div>
                             <?php if (!empty($p['pre_obs'])): ?>
                                 <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px"><i class="bi bi-arrow-right-circle me-1" style="color:#7c3aed"></i>Pre: <?= esc($p['pre_obs']) ?></div>
                             <?php endif; ?>
                             <?php if (!empty($p['post_obs'])): ?>
                                 <div style="font-size:12px;color:var(--text-muted)"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Post: <?= esc($p['post_obs']) ?></div>
+                            <?php endif; ?>
+                            <?php if (!empty($p['attachments'])): ?>
+                            <div class="cs-attach-list mt-2">
+                                <?php foreach ($p['attachments'] as $att): ?>
+                                    <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => false]) ?>
+                                <?php endforeach; ?>
+                            </div>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>
@@ -665,9 +728,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 <!-- ── Modal: observaciones por jugador ─────────────────────── -->
 <div id="modalObs" class="cs-modal-overlay d-none">
     <div class="cs-modal" style="max-width:540px">
-        <div class="cs-modal-header">
+        <div class="cs-modal-header" style="flex-direction:column;align-items:flex-start;gap:2px">
             <span id="obsModalTitle">Observaciones</span>
-            <button onclick="closeModal('modalObs')"><i class="bi bi-x-lg"></i></button>
+            <span style="font-size:12px;color:var(--text-muted);font-weight:400">
+                Solo sobre este jugador — no se comparte con el resto del grupo ni con la observación general de la sesión.
+            </span>
+            <button onclick="closeModal('modalObs')" style="position:absolute;top:14px;right:14px"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="cs-modal-body">
             <form action="/clases/<?= $session['id'] ?>/observaciones" method="POST" id="obsForm">
@@ -691,6 +757,19 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-floppy-fill me-1"></i>Guardar</button>
                 </div>
             </form>
+
+            <hr style="border-color:var(--border);margin:18px 0">
+
+            <div class="form-label mb-2"><i class="bi bi-paperclip me-1" style="color:#7c3aed"></i>Adjuntos de este jugador</div>
+            <div id="obsAttachList" class="cs-attach-list mb-3"></div>
+            <form id="obsAttachForm" action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
+                <?= csrf_field() ?>
+                <input type="hidden" id="obsAttachPlayerUid" name="player_uid">
+                <input type="file" name="attachment" class="form-control-jp" style="max-width:260px" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.mp4,.mov" required>
+                <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
+                    <i class="bi bi-upload me-1"></i>Subir
+                </button>
+            </form>
         </div>
     </div>
 </div>
@@ -708,8 +787,8 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
     box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
 .cs-modal-header {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;position:relative;
+    padding:16px 44px 16px 20px;border-bottom:1px solid var(--border);
     font-size:15px;font-weight:700;color:var(--text-h);
 }
 .cs-modal-header button {
@@ -719,6 +798,21 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 }
 .cs-modal-header button:hover { background:var(--bg-app);color:var(--text-h); }
 .cs-modal-body { padding:20px;overflow-y:auto;flex:1; }
+
+.cs-attach-list { display:flex;flex-wrap:wrap;gap:8px; }
+.cs-attach-chip {
+    display:inline-flex;align-items:center;gap:6px;background:var(--bg-app);
+    border:1px solid var(--border);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px;
+}
+.cs-attach-chip a { display:inline-flex;align-items:center;gap:6px;color:var(--text-h);text-decoration:none;max-width:220px; }
+.cs-attach-name { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px; }
+.cs-attach-size { color:var(--text-muted);font-size:10.5px; }
+.cs-attach-del {
+    background:none;border:none;color:var(--text-muted);cursor:pointer;
+    width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;transition:background .15s,color .15s;
+}
+.cs-attach-del:hover { background:#dc262622;color:#dc2626; }
 </style>
 <script>
 function openModal(id) {
@@ -740,10 +834,15 @@ document.querySelectorAll('.cs-modal-overlay').forEach(overlay => {
 
 
 function openObsModal(userId, name, preObs, postObs) {
-    document.getElementById('obsModalTitle').textContent = 'Observaciones — ' + name;
+    document.getElementById('obsModalTitle').textContent = 'Observaciones individuales — ' + name;
     document.getElementById('obsUserId').value = userId;
     document.getElementById('obsPreInput').value = preObs;
     document.getElementById('obsPostInput').value = postObs;
+
+    // Adjuntos de este jugador (plantilla oculta renderizada por el servidor).
+    document.getElementById('obsAttachPlayerUid').value = userId;
+    const tpl = document.getElementById('attachTpl-' + userId);
+    document.getElementById('obsAttachList').innerHTML = tpl ? tpl.innerHTML : '';
 
     // Build hidden fields dynamically to submit player_obs[userId][pre/post]
     const obsForm = document.getElementById('obsForm');
