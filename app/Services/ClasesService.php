@@ -342,7 +342,7 @@ class ClasesService
      *   'all'            → todo (comportamiento de siempre)
      *   'mine'           → toggle "Mis clases" (admin/superadmin, v1.7.0)
      *   'none'           → "Sin responsable asignado"
-     *   'coach:<id>' / 'staff:<id>' → "Ver calendario de <persona>"
+     *   'coach:<id>' / 'staff:<id>' / 'admin:<id>' → "Ver calendario de <persona>"
      *
      * Se aplica igual para cualquier rol; es getSessionsForCalendar() quien
      * ignora $responsableFilter si el rol no es admin/superadmin.
@@ -359,7 +359,7 @@ class ClasesService
         if ($scope === 'none') {
             return ['onlyMine' => false, 'responsableFilter' => 'none'];
         }
-        if (preg_match('/^(?:coach|staff):(\d+)$/', $scope, $m)) {
+        if (preg_match('/^(?:coach|staff|admin):(\d+)$/', $scope, $m)) {
             return ['onlyMine' => false, 'responsableFilter' => $m[1]];
         }
         return ['onlyMine' => false, 'responsableFilter' => null];
@@ -534,11 +534,13 @@ class ClasesService
 
     /**
      * Opciones para el selector "Ver calendario de…" (admin/superadmin):
-     * solo entrenadores/staff que tienen (o han tenido) alguna sesión
+     * solo entrenadores/staff/admin que tienen (o han tenido) alguna sesión
      * asignada, para no llenar el desplegable de gente que nunca ha dado
-     * una clase.
+     * una clase. Un admin/superadmin también puede ser responsable de una
+     * sesión (RESPONSABLE_TECNICO_ROLES / RESPONSABLE_STAFF_ROLES), así que
+     * debe poder aparecer aquí igual que un coach o un staff.
      *
-     * @return array{coaches: array<int,array{id:int,name:string}>, staff: array<int,array{id:int,name:string}>}
+     * @return array{coaches: array<int,array{id:int,name:string}>, staff: array<int,array{id:int,name:string}>, admins: array<int,array{id:int,name:string}>}
      */
     public function getResponsableFilterOptions(): array
     {
@@ -546,14 +548,18 @@ class ClasesService
             ->select('u.id, u.name, u.role')
             ->distinct()
             ->join('class_session_coaches csc', 'csc.user_id = u.id')
-            ->whereIn('u.role', ['coach', 'staff'])
+            ->whereIn('u.role', ['coach', 'staff', 'admin', 'superadmin'])
             ->where('u.status', 'active')
             ->orderBy('u.name', 'ASC')
             ->get()->getResultArray();
 
-        $result = ['coaches' => [], 'staff' => []];
+        $result = ['coaches' => [], 'staff' => [], 'admins' => []];
         foreach ($rows as $r) {
-            $bucket = $r['role'] === 'staff' ? 'staff' : 'coaches';
+            $bucket = match ($r['role']) {
+                'staff'                  => 'staff',
+                'admin', 'superadmin'    => 'admins',
+                default                  => 'coaches',
+            };
             $result[$bucket][] = ['id' => (int) $r['id'], 'name' => $r['name']];
         }
         return $result;
