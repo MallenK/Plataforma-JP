@@ -126,6 +126,13 @@
                     <?php endforeach; ?>
                 </optgroup>
                 <?php endif; ?>
+                <?php if (!empty($responsableOptions['admins'])): ?>
+                <optgroup label="Administración">
+                    <?php foreach ($responsableOptions['admins'] as $a): ?>
+                    <option value="admin:<?= $a['id'] ?>"><?= esc($a['name']) ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
                 <option value="none">Sin responsable asignado</option>
             </select>
             <?php endif; ?>
@@ -549,9 +556,9 @@ const CAL = {
     day: null,
     events: [],
     // Ámbito del calendario (solo admin/superadmin ven el selector): "all",
-    // "mine", "none", o "coach:<id>"/"staff:<id>" para ver el de una persona
-    // concreta (TICKET-011). Es preferencia de este navegador, no cambia lo
-    // que ven los demás.
+    // "mine", "none", o "coach:<id>"/"staff:<id>"/"admin:<id>" para ver el
+    // de una persona concreta (TICKET-011). Es preferencia de este
+    // navegador, no cambia lo que ven los demás.
     scope: (function () { try { return localStorage.getItem('jp_cal_scope') || 'all'; } catch (e) { return 'all'; } })(),
 
     setScope(s) {
@@ -561,9 +568,10 @@ const CAL = {
     },
 
     // ID de la persona filtrada (para preseleccionarla al crear una sesión
-    // desde este calendario), o null si el ámbito no es "coach:"/"staff:".
+    // desde este calendario), o null si el ámbito no es
+    // "coach:"/"staff:"/"admin:".
     scopeResponsableId() {
-        const m = /^(?:coach|staff):(\d+)$/.exec(this.scope);
+        const m = /^(?:coach|staff|admin):(\d+)$/.exec(this.scope);
         return m ? parseInt(m[1]) : null;
     },
 

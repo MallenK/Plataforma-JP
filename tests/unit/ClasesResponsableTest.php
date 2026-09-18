@@ -41,11 +41,20 @@ final class ClasesResponsableTest extends CIUnitTestCase
         $this->assertSame(['onlyMine' => false, 'responsableFilter' => '7'], ClasesService::parseScopeParam('staff:7'));
     }
 
+    public function testScopeAdminConId(): void
+    {
+        // Un admin/superadmin también puede ser responsable de una sesión
+        // (RESPONSABLE_TECNICO_ROLES / RESPONSABLE_STAFF_ROLES), así que el
+        // selector "Ver calendario de…" debe poder filtrar por él igual que
+        // por un coach o un staff.
+        $this->assertSame(['onlyMine' => false, 'responsableFilter' => '3'], ClasesService::parseScopeParam('admin:3'));
+    }
+
     public function testScopeConIdInvalidoSeIgnora(): void
     {
         // Sin dígitos, o con basura detrás → no hay filtro (nunca 500 por un
         // valor manipulado a mano en la URL).
-        foreach (['coach:', 'coach:abc', 'coach:12x', 'staff:'] as $raw) {
+        foreach (['coach:', 'coach:abc', 'coach:12x', 'staff:', 'admin:', 'admin:abc'] as $raw) {
             $this->assertNull(ClasesService::parseScopeParam($raw)['responsableFilter'], $raw);
         }
     }

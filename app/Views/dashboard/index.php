@@ -253,6 +253,13 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                             <?php endforeach; ?>
                         </optgroup>
                         <?php endif; ?>
+                        <?php if (!empty($responsableOptions['admins'])): ?>
+                        <optgroup label="Administración">
+                            <?php foreach ($responsableOptions['admins'] as $a): ?>
+                            <option value="admin:<?= $a['id'] ?>"><?= esc($a['name']) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
                         <option value="none">Sin responsable asignado</option>
                     </select>
                     <?php endif; ?>
@@ -815,7 +822,7 @@ const DBCAL = {
     },
 
     scopeResponsableId() {
-        const m = /^(?:coach|staff):(\d+)$/.exec(this.scope);
+        const m = /^(?:coach|staff|admin):(\d+)$/.exec(this.scope);
         return m ? parseInt(m[1]) : null;
     },
 
