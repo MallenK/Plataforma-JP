@@ -18,7 +18,7 @@
     <!-- Toastify (notificaciones auth) -->
     <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet">
     <!-- App design system -->
-    <link href="<?= base_url('assets/css/app.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>" rel="stylesheet">
 
     <?= $this->renderSection('styles') ?>
 </head>
@@ -33,11 +33,11 @@
 <!-- Toastify -->
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <!-- App JS -->
-<script src="<?= base_url('assets/js/app.js') ?>"></script>
+<script src="<?= base_url('assets/js/app.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/app.js') ?: time() ?>"></script>
 <!-- Reporte de problemas desde alertas de error / permiso -->
-<script src="<?= base_url('assets/js/error-report.js') ?>"></script>
+<script src="<?= base_url('assets/js/error-report.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/error-report.js') ?: time() ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
-<script src="<?= base_url('assets/js/radix-ui.js') ?>"></script>
+<script src="<?= base_url('assets/js/radix-ui.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/radix-ui.js') ?: time() ?>"></script>
 
 <?= $this->renderSection('scripts') ?>
 </body>
