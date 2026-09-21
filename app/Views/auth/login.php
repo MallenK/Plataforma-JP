@@ -83,7 +83,9 @@ $guestLabels = [
     <?php if ($isDemo): ?>
     <aside class="login-pitch">
 
-        <img src="<?= base_url('assets/img/brand/logo-urpa-mono.png') ?>" alt="URPA" class="login-pitch-logo">
+        <div class="login-pitch-logo-wrap">
+            <img src="<?= base_url('assets/img/brand/logo-urpa-mono.png') ?>" alt="URPA" class="login-pitch-logo" width="160" height="94">
+        </div>
 
         <h2 class="login-pitch-title">La plataforma de gestión para tu academia de fútbol</h2>
         <p class="login-pitch-lead">Un único panel para llevar el día a día de una academia de tecnificación
