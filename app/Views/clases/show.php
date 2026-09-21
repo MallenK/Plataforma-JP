@@ -564,6 +564,26 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             </div>
         </div>
 
+        <!-- Campo / instalación -->
+        <div class="card-jp mb-3">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-geo-alt-fill me-2" style="color:#059669"></i>
+                    Campo
+                </span>
+                <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
+                <button class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalChangeLocation')">
+                    <i class="bi bi-arrow-repeat me-1"></i>Cambiar
+                </button>
+                <?php endif; ?>
+            </div>
+            <div class="card-jp-body py-2">
+                <div style="font-size:13px;font-weight:600;color:var(--text-h)">
+                    <?= $locationDisplay ? esc($locationDisplay) : '<span style="color:var(--text-muted);font-weight:400">No especificado</span>' ?>
+                </div>
+            </div>
+        </div>
+
         <!-- Resumen de asistencia -->
         <?php if (!empty($session['players'])): ?>
         <?php
@@ -746,6 +766,41 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<!-- ── Modal: cambiar campo/instalación ─────────────────────── -->
+<?php if ($isAdminRole): ?>
+<div id="modalChangeLocation" class="cs-modal-overlay d-none">
+    <div class="cs-modal">
+        <div class="cs-modal-header">
+            <span>Cambiar campo</span>
+            <button onclick="closeModal('modalChangeLocation')"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cs-modal-body">
+            <form action="/clases/<?= $session['id'] ?>/campo" method="POST">
+                <?= csrf_field() ?>
+                <label class="form-label">Instalación (de la lista)</label>
+                <select name="location_id" class="form-control-jp mb-3">
+                    <option value="">— Ninguna —</option>
+                    <?php foreach ($locationOptions as $loc): ?>
+                    <option value="<?= $loc['id'] ?>" <?= ((int) ($session['location_id'] ?? 0) === (int) $loc['id']) ? 'selected' : '' ?>>
+                        <?= esc($loc['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <label class="form-label">O lugar personalizado</label>
+                <input type="text" name="location_custom" class="form-control-jp mb-3"
+                       value="<?= esc($session['location_custom'] ?? '', 'attr') ?>"
+                       placeholder="Ej: Estadio Municipal, Campo 3">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalChangeLocation')">Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- ── Modal: observaciones por jugador ─────────────────────── -->
 <div id="modalObs" class="cs-modal-overlay d-none">
