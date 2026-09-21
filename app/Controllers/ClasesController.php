@@ -29,7 +29,7 @@ class ClasesController extends BaseController
         $isAdminRole = in_array($role, ['superadmin', 'admin']);
 
         return view('clases/index', [
-            'title'         => 'Clases — Tu Plataforma',
+            'title'         => 'Clases — URPA',
             'stats'         => $this->clasesService->getStats($userId, $role),
             'isAdmin'       => $this->isAdmin(),
             'canManage'     => $canManage,
@@ -106,7 +106,7 @@ class ClasesController extends BaseController
     public function create()
     {
         return view('clases/create', [
-            'title'           => 'Nueva Clase — Tu Plataforma',
+            'title'           => 'Nueva Clase — URPA',
             'session'         => null,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
@@ -198,7 +198,7 @@ class ClasesController extends BaseController
         }
 
         return view('clases/show', [
-            'title'           => $session['title'] . ' — Tu Plataforma',
+            'title'           => $session['title'] . ' — URPA',
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'canManage'       => $canManage,
@@ -229,7 +229,7 @@ class ClasesController extends BaseController
         }
 
         return view('clases/create', [
-            'title'           => 'Editar Clase — Tu Plataforma',
+            'title'           => 'Editar Clase — URPA',
             'session'         => $session,
             'isAdmin'         => $this->isAdmin(),
             'coachOptions'    => $this->clasesService->getCoachOptions(),
@@ -396,7 +396,7 @@ class ClasesController extends BaseController
         $data = $this->clasesService->getWeekSessions($weekOffset, $search);
 
         return view('clases/pasar_lista_semanal', [
-            'title'    => 'Pasar Lista — Tu Plataforma',
+            'title'    => 'Pasar Lista — URPA',
             'isAdmin'  => $this->isAdmin(),
             'weekData' => $data,
             'search'   => $search,

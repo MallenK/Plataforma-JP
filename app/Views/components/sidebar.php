@@ -32,10 +32,10 @@ if ($isAdmin) {
 
     <!-- Logo -->
     <a href="<?= base_url('dashboard') ?>" class="sidebar-logo">
-        <div class="sidebar-logo-icon">Mk</div>
+        <div class="sidebar-logo-icon">U</div>
         <div class="sidebar-logo-text">
-            Mallen&rsquo;k
-            <span>Academy Software</span>
+            URPA
+            <span>Academia Software</span>
         </div>
     </a>
 
@@ -59,7 +59,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('alumnos') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/alumnos', $currentUri) ?>">
                     <i class="bi bi-people-fill"></i>
-                    <?= esc(demo_label('alumno_plural')) ?>
+                    Alumnos
                 </a>
             </li>
             <?php endif; ?>
@@ -70,7 +70,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('alumno') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/alumno', $currentUri) ?>">
                     <i class="bi bi-person-badge-fill"></i>
-                    <?= esc(demo_label('mi_ficha')) ?>
+                    Mi ficha
                 </a>
             </li>
             <?php endif; ?>
@@ -80,7 +80,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('clases') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/clases', $currentUri) ?>">
                     <i class="bi bi-collection-play-fill"></i>
-                    <?= esc(demo_label('clase_plural')) ?>
+                    Clases
                 </a>
             </li>
 
@@ -90,7 +90,7 @@ if ($isAdmin) {
                 <a href="<?= base_url('entrenadores') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/entrenadores', $currentUri) ?>">
                     <i class="bi bi-person-workspace"></i>
-                    <?= esc(demo_label('entrenador_plural')) ?>
+                    Entrenadores
                 </a>
             </li>
             <?php endif; ?>

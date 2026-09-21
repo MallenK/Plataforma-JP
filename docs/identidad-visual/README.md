@@ -1,7 +1,7 @@
-# Identidad visual — Mallen'k · Academy Software
+# Identidad visual — URPA · Academia Software
 
-> Sistema de marca para el producto de gestión de academias deportivas.
-> Rama de trabajo: `feat/identidad-visual-amarillo` (partida de `demo`).
+> Sistema de marca para la demo de gestión de academias de fútbol.
+> Rama de trabajo: `feat/rebrand-urpa` (partida de `demo`).
 
 ---
 
@@ -9,25 +9,25 @@
 
 | | |
 |---|---|
-| **Nombre** | Mallen'k |
-| **Descriptor / categoría** | Academy Software |
-| **Bloque de firma** | `Mallen'k` + `ACADEMY SOFTWARE` (descriptor en mayúsculas, tracking amplio) |
-| **Isotipo / monograma** | `Mk` sobre cuadro redondeado negro, con filo amarillo inferior |
+| **Nombre** | URPA |
+| **Descriptor / categoría** | Academia Software |
+| **Bloque de firma** | `URPA` + `ACADEMIA SOFTWARE` (descriptor en mayúsculas, tracking amplio) |
+| **Isotipo / monograma** | `U` sobre cuadro redondeado negro |
 | **Tono** | Directo, deportivo, sin adornos. Herramienta de trabajo, no folleto. |
 
 ### Uso del nombre
-- Siempre `Mallen'k` con apóstrofo tipográfico (`'`, U+2019), nunca `Mallenk` ni `Mallen K`.
-- El descriptor "Academy Software" acompaña al nombre en la primera aparición de cada
-  pantalla/documento; después basta `Mallen'k`.
+- Siempre `URPA` en mayúsculas.
+- El descriptor "Academia Software" acompaña al nombre en la primera aparición de cada
+  pantalla/documento; después basta `URPA`.
 
 ### Archivos de logo
 ```
 public/assets/img/brand/
-├── isotipo-mallenk.svg            → solo monograma Mk (favicon, avatar, app icon)
-├── logo-mallenk.svg               → firma horizontal sobre fondo claro
-└── logo-mallenk-negativo.svg      → firma horizontal sobre fondo oscuro / amarillo
+└── logo-urpa.png    → wordmark oficial (letras amarillas con contorno negro y sombra en capas)
 ```
-El favicon se genera inline en `app/Views/layouts/base.php` (SVG data-URI, mismo monograma).
+El favicon y el monograma de sidebar se generan inline (SVG data-URI en
+`app/Views/layouts/base.php`, HTML/CSS en `app/Views/components/sidebar.php`) — no
+consumen el PNG del wordmark.
 
 ---
 
@@ -41,12 +41,12 @@ el amarillo marca *la acción* (lo que el usuario debe pulsar / dónde está), e
 
 | Token | HEX | Uso |
 |---|---|---|
-| `--brand-yellow` | `#FFC300` | Relleno de acción: botón primario, item de menú activo, foco, barras. **Siempre con texto negro encima.** |
-| `--brand-yellow-2` | `#FFB000` | Estado *hover* del amarillo. |
+| `--brand-yellow` | `#FFD21F` | Relleno de acción: botón primario, item de menú activo, foco, barras. **Siempre con texto negro encima.** |
+| `--brand-yellow-2` | `#E6BC10` | Estado *hover* del amarillo. |
 | `--brand-ink` | `#111111` | Negro de marca: sidebar, avatares, monograma, texto de titulares. |
 | `--on-yellow` | `#131313` | Tinta obligatoria para texto/iconos sobre amarillo. |
-| `--accent-dark` | `#B98900` | Amarillo "oscuro legible": para **texto y bordes de acento sobre blanco** (enlaces, iconos), donde el amarillo puro no contrasta. |
-| `--accent-light` | `#FFF6DC` | Fondo suave: fila activa, badges, estados "no leído". |
+| `--accent-dark` | `#A67D00` | Amarillo "oscuro legible": para **texto y bordes de acento sobre blanco** (enlaces, iconos), donde el amarillo puro no contrasta. |
+| `--accent-light` | `#FFF6D6` | Fondo suave: fila activa, badges, estados "no leído". |
 
 ### Neutros
 
@@ -71,9 +71,9 @@ el amarillo marca *la acción* (lo que el usuario debe pulsar / dónde está), e
 | "Programada" (clases/tickets) | — | `#2563EB` (azul funcional, deliberadamente fuera de la paleta de marca) |
 
 ### Regla de contraste del amarillo
-`#FFC300` sobre blanco **no** cumple contraste para texto (ratio ≈ 1.7).
+`#FFD21F` sobre blanco **no** cumple contraste para texto.
 - ✅ Amarillo como **fondo** + texto `#131313` encima.
-- ✅ Texto/borde de acento sobre blanco → usar `--accent-dark` (`#B98900`).
+- ✅ Texto/borde de acento sobre blanco → usar `--accent-dark` (`#A67D00`).
 - ❌ Nunca texto amarillo claro sobre blanco, ni texto blanco sobre amarillo.
 
 Todos los definidos en `:root` de `public/assets/css/app.css`.
@@ -83,8 +83,7 @@ Todos los definidos en `:root` de `public/assets/css/app.css`.
 ## 3. Tipografía
 
 **Familia única: Montserrat** (Google Fonts, pesos 400/500/600/700/800/900).
-Se cargó ya en `app/Views/layouts/base.php`. Se eliminó Oswald (los titulares de acceso
-pasan a Montserrat 900).
+Se carga en `app/Views/layouts/base.php`.
 
 | Rol | Peso | Notas |
 |---|---|---|
@@ -100,7 +99,7 @@ pasan a Montserrat 900).
 
 | Zona | Tratamiento |
 |---|---|
-| **Sidebar** | Fondo `--brand-ink`. Items en gris claro; el activo va en **amarillo con texto negro y peso 700**. Monograma `Mk` amarillo sobre cuadro negro. |
+| **Sidebar** | Fondo `--brand-ink`. Items en gris claro; el activo va en **amarillo con texto negro y peso 700**. Monograma `U` amarillo sobre cuadro negro. |
 | **Topbar** | Blanca, con **filo amarillo de 2 px** en el borde inferior (firma de marca). |
 | **Contenido** | Tarjetas blancas sobre `--bg-app`, sombras suaves de tinta (no azules). |
 | **Botón primario** | Amarillo, texto negro, peso 700. Hover → `--brand-yellow-2` + sombra amarilla. |
@@ -110,16 +109,29 @@ pasan a Montserrat 900).
 
 Las correcciones de contraste sobre amarillo están centralizadas al final de
 `public/assets/css/app.css` y `public/assets/css/tickets.css`
-(secciones `IDENTIDAD MALLEN'K`). Bootstrap `.btn-primary` / `.text-primary` / focus
+(secciones `IDENTIDAD URPA`). Bootstrap `.btn-primary` / `.text-primary` / focus
 rings se reasignan ahí a la marca.
 
 ---
 
-## 5. Qué NO hacer
+## 5. Alcance: solo fútbol
+
+Esta demo representa exclusivamente una **academia de fútbol** (sin selector de
+vertical ni vocabulario condicional: se eliminó el sistema de "verticales" —
+refuerzo escolar, idiomas, entrenamiento personal — que existía en versiones
+anteriores de la demo). Toda la terminología (alumno, entrenador, clase,
+categoría, convocatoria...) es fija y deportiva.
+
+---
+
+## 6. Qué NO hacer
 
 - No introducir un tercer color de marca (azul, morado…). El azul solo existe como
   código de estado "Programada".
 - No poner texto sobre amarillo que no sea `#131313`.
-- No usar el monograma `JP` ni el nombre "Tu Plataforma" / "JP Preparation" (legado).
+- No usar el monograma `JP`, ni los nombres "Tu Plataforma" / "JP Preparation" /
+  "Mallen'k" (todos legado).
+- No reintroducir el selector de vertical ni contenido de otros negocios
+  (refuerzo escolar, idiomas, entrenamiento personal).
 - No mezclar otra tipografía con Montserrat.
 - No degradados multicolor: si hay degradado, es negro→amarillo o amarillo→amarillo.

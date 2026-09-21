@@ -63,23 +63,23 @@ class DemoGuestsSeeder extends Seeder
     }
 
     /**
-     * Deja el nombre / remitente de la academia genérico para que la demo
-     * no parezca de un cliente concreto.
+     * Deja el nombre / remitente de la academia con el branding de la demo
+     * de URPA Academia Software (no un cliente concreto).
      */
     private function neutralBranding(): void
     {
         $settings = new SettingsModel();
         $brand = [
-            'academy_name'     => 'Tu Plataforma',
-            'academy_email'    => 'hola@tuplataforma.example',
+            'academy_name'     => 'Academia URPA',
+            'academy_email'    => 'hola@urpa.example',
             'academy_phone'    => '600 000 000',
             'academy_location' => 'Tu ciudad',
             'academy_website'  => '',
-            'smtp_from_name'   => 'Tu Plataforma',
+            'smtp_from_name'   => 'URPA',
         ];
         foreach ($brand as $k => $v) {
             $settings->setSetting($k, $v);
         }
-        echo "  branding neutro aplicado (academy_name = 'Tu Plataforma')\n";
+        echo "  branding aplicado (academy_name = 'Academia URPA')\n";
     }
 }

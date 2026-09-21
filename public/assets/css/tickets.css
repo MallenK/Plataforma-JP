@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   TICKETS — Sistema de soporte Tu Plataforma
+   TICKETS — Sistema de soporte URPA
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Badges de estado ───────────────────────────────────────── */
@@ -822,7 +822,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   IDENTIDAD MALLEN'K — contraste sobre amarillo
+   IDENTIDAD URPA — contraste sobre amarillo
    ══════════════════════════════════════════════════════════════ */
 
 /* Rellenos amarillos → texto/valor en tinta negra */
@@ -832,18 +832,18 @@
 
 .ticket-status--open,
 .ticket-kpi--open .ticket-kpi-value,
-.ticket-scope--academia { background: var(--accent-light, #FFF6DC); color: var(--accent-dark, #B98900); }
+.ticket-scope--academia { background: var(--accent-light, #FFF6D6); color: var(--accent-dark, #A67D00); }
 
-.ticket-role--admin { background: var(--accent-light, #FFF6DC); }
+.ticket-role--admin { background: var(--accent-light, #FFF6D6); }
 
 /* Botón / barra de progreso con relleno de marca */
-.ticket-bar-fill:hover { background: var(--brand-dark, #B98900); }
+.ticket-bar-fill:hover { background: var(--brand-dark, #A67D00); }
 
 /* Enlaces y bordes de acento sobre blanco → amarillo oscuro legible */
 #tf-search:focus,
-.ticket-scope-option:has(input:checked) { border-color: var(--accent-dark, #B98900); }
-.ticket-scope-option:has(input:checked) { background: var(--accent-light, #FFF6DC); }
+.ticket-scope-option:has(input:checked) { border-color: var(--accent-dark, #A67D00); }
+.ticket-scope-option:has(input:checked) { background: var(--accent-light, #FFF6D6); }
 
 /* Texto azul residual de tickets → tinta de marca */
 [class*="ticket-"] .btn-link,
-.ticket-reply-templates button { color: var(--accent-dark, #B98900); }
+.ticket-reply-templates button { color: var(--accent-dark, #A67D00); }

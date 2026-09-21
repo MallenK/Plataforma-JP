@@ -78,7 +78,7 @@ class DocumentacionController extends BaseController
             : [];
 
         return view('documentacion/index', [
-            'title'             => 'Documentación — Tu Plataforma',
+            'title'             => 'Documentación — URPA',
             'folders'           => $folders,
             'activeFolder'      => $activeFolder,
             'files'             => $files,

@@ -1,5 +1,5 @@
 /* ============================================================
-   Mallen'k — Academy Software · Design System
+   URPA — Academia Software · Design System
    Identidad: amarillo + negro + blanco
    Tema: sidebar negro + contenido claro, acento amarillo
    ============================================================ */
@@ -10,8 +10,8 @@
     --navbar-h:         64px;
 
     /* Marca */
-    --brand-yellow:    #FFC300;
-    --brand-yellow-2:  #FFB000;   /* amarillo profundo (hover, degradados) */
+    --brand-yellow:    #FFD21F;
+    --brand-yellow-2:  #E6BC10;   /* amarillo profundo (hover, degradados) */
     --brand-ink:       #111111;   /* negro de marca */
     --on-yellow:       #131313;   /* texto/iconos sobre amarillo */
 
@@ -29,11 +29,11 @@
     --text-sidebar:    #C7C7C2;
 
     /* Acentos (amarillo) */
-    --accent:          #FFC300;
-    --accent-dark:     #B98900;   /* variante oscura legible sobre blanco */
-    --accent-light:    #FFF6DC;   /* fondo suave para activos/badges */
-    --brand:           #FFC300;   /* alias usado por tickets.css */
-    --brand-dark:      #B98900;
+    --accent:          #FFD21F;
+    --accent-dark:     #A67D00;   /* variante oscura legible sobre blanco */
+    --accent-light:    #FFF6D6;   /* fondo suave para activos/badges */
+    --brand:           #FFD21F;   /* alias usado por tickets.css */
+    --brand-dark:      #A67D00;
 
     /* Estados */
     --success:         #1F9D57;
@@ -2406,36 +2406,6 @@ input[type="time"] {
 .login-pitch-for { font-size: 12.5px; line-height: 1.55; color: #97a3b6; margin: 0 0 22px; }
 .login-pitch-for strong { color: #cdd7e6; }
 
-.login-pitch-vertical { margin: 0 0 20px; }
-.login-pitch-vertical-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    color: #8b97ab;
-    margin-bottom: 8px;
-}
-.login-pitch-vertical-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-.login-pitch-vertical-pill {
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 195, 0, .28);
-    background: rgba(255, 255, 255, .04);
-    color: #cdd7e6;
-    cursor: pointer;
-    transition: background .15s ease, color .15s ease, border-color .15s ease;
-}
-.login-pitch-vertical-pill:hover { border-color: rgba(255, 195, 0, .55); }
-.login-pitch-vertical-pill.is-active {
-    background: var(--brand-yellow);
-    border-color: var(--brand-yellow);
-    color: #121212;
-}
-
 .login-contact {
     border-top: 1px solid rgba(255,255,255,.12);
     padding-top: 18px;
@@ -2500,8 +2470,8 @@ input[type="time"] {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   IDENTIDAD MALLEN'K — ajustes de contraste sobre amarillo
-   El amarillo de marca (#FFC300) exige tinta negra encima: aquí se
+   IDENTIDAD URPA — ajustes de contraste sobre amarillo
+   El amarillo de marca (#FFD21F) exige tinta negra encima: aquí se
    corrige cada punto donde el design system daba texto blanco, y se
    unifican los avatares en negro (círculo tinta + iniciales blancas).
    ══════════════════════════════════════════════════════════════ */
@@ -2581,7 +2551,7 @@ button:focus-visible,
 .sidebar-logo { border-bottom-color: #242424; }
 
 /* ── Enlaces / texto de acento sobre blanco → amarillo oscuro
-   legible (#B98900). El amarillo puro queda para fondos/rellenos. */
+   legible (#A67D00). El amarillo puro queda para fondos/rellenos. */
 .td-name a,
 .notif-dropdown-link,
 .notif-sender,
