@@ -766,7 +766,6 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
         </div>
     </div>
 </div>
-<?php endif; ?>
 
 <!-- ── Modal: cambiar campo/instalación ─────────────────────── -->
 <?php if ($isAdminRole): ?>
