@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= esc($title ?? "Mallen'k · Academy Software") ?></title>
+    <title><?= esc($title ?? 'URPA · Academia Software') ?></title>
 
-    <!-- Favicon — monograma Mk (identidad Mallen'k) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111111'/><text x='50' y='50' dy='.34em' text-anchor='middle' font-family='Montserrat,Arial,sans-serif' font-size='52' font-weight='800' fill='%23FFC300'>Mk</text></svg>">
+    <!-- Favicon — monograma U (identidad URPA) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111111'/><text x='50' y='50' dy='.34em' text-anchor='middle' font-family='Montserrat,Arial,sans-serif' font-size='52' font-weight='800' fill='%23FFD21F'>U</text></svg>">
     <!-- Google Fonts — Montserrat (única familia de la identidad) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -41,7 +41,7 @@ class BonosController extends BaseController
         };
 
         return view('bonos/index', [
-            'title'        => 'Bonos — Tu Plataforma',
+            'title'        => 'Bonos — URPA',
             'pageTitle'    => 'Bonos',
             'pageSubtitle' => 'Membresías y bonos de entrenamiento',
             'bonos'        => $bonos,
@@ -121,7 +121,7 @@ class BonosController extends BaseController
             : [];
 
         return view('bonos/show', [
-            'title'   => 'Bono — Tu Plataforma',
+            'title'   => 'Bono — URPA',
             'bono'    => $bono,
             'history' => $history,
             'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),

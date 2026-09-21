@@ -1,5 +1,5 @@
 -- ============================================================
--- Tu Plataforma — Módulo: Clases y Calendario
+-- URPA — Módulo: Clases y Calendario
 -- Ejecutar en la base de datos: jp_preparation
 -- ============================================================
 

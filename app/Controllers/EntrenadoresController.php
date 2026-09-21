@@ -26,7 +26,7 @@ class EntrenadoresController extends BaseController
         $coaches = $this->coachService->getCoaches();
 
         return view('entrenadores/index', [
-            'title'   => 'Entrenadores — Tu Plataforma',
+            'title'   => 'Entrenadores — URPA',
             'coaches' => $coaches,
         ]);
     }
@@ -38,7 +38,7 @@ class EntrenadoresController extends BaseController
     public function create()
     {
         return view('entrenadores/create', [
-            'title' => 'Nuevo entrenador — Tu Plataforma',
+            'title' => 'Nuevo entrenador — URPA',
         ]);
     }
 
@@ -83,7 +83,7 @@ class EntrenadoresController extends BaseController
         $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
 
         return view('entrenadores/show', [
-            'title'          => $coach['name'] . ' — Tu Plataforma',
+            'title'          => $coach['name'] . ' — URPA',
             'coach'          => $coach,
             'personalFolder' => $personalFolder,
             'documents'      => $documents,
@@ -103,7 +103,7 @@ class EntrenadoresController extends BaseController
         }
 
         return view('entrenadores/edit', [
-            'title' => 'Editar entrenador — Tu Plataforma',
+            'title' => 'Editar entrenador — URPA',
             'coach' => $coach,
         ]);
     }

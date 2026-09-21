@@ -3,12 +3,10 @@
 <?= $this->section('content') ?>
 <?php
 $isDemo = function_exists('demo_mode') && demo_mode();
-$vertical = $isDemo ? demo_current_vertical() : demo_default_vertical();
-$verticalData = demo_verticals()[$vertical];
 $guestLabels = [
     'admin'  => 'Dirección / Admin',
-    'coach'  => demo_label('entrenador'),
-    'player' => demo_label('alumno'),
+    'coach'  => 'Entrenador',
+    'player' => 'Alumno',
 ];
 ?>
 
@@ -85,35 +83,21 @@ $guestLabels = [
     <?php if ($isDemo): ?>
     <aside class="login-pitch">
 
-        <!-- Selector de vertical: cambia el texto de la portada al negocio
-             del visitante sin recargar toda la lógica, solo el vocabulario. -->
-        <form method="post" action="<?= base_url('demo/vertical') ?>" class="login-pitch-vertical" id="loginVerticalForm">
-            <?= csrf_field() ?>
-            <input type="hidden" name="redirect" value="<?= esc(current_url(true)->getPath(), 'attr') ?>">
-            <span class="login-pitch-vertical-label">¿Para qué tipo de negocio?</span>
-            <div class="login-pitch-vertical-pills">
-                <?php foreach (demo_verticals() as $key => $v): ?>
-                <button type="submit" name="vertical" value="<?= esc($key, 'attr') ?>"
-                        class="login-pitch-vertical-pill <?= $key === $vertical ? 'is-active' : '' ?>">
-                    <?= esc($v['label']) ?>
-                </button>
-                <?php endforeach; ?>
-            </div>
-        </form>
-
-        <h2 class="login-pitch-title"><?= esc($verticalData['pitch_title']) ?></h2>
-        <p class="login-pitch-lead"><?= esc($verticalData['pitch_lead']) ?></p>
+        <h2 class="login-pitch-title">La plataforma de gestión para tu academia de fútbol</h2>
+        <p class="login-pitch-lead">Un único panel para llevar el día a día de una academia de tecnificación
+            o club: sin hojas de cálculo sueltas ni grupos de WhatsApp descontrolados.</p>
 
         <ul class="login-pitch-list">
-            <li><i class="bi bi-people"></i><span><strong><?= esc(demo_label('alumno_plural')) ?> y <?= esc(mb_strtolower(demo_label('entrenador_plural'))) ?></strong> — fichas, seguimiento, categorías y grupos.</span></li>
-            <li><i class="bi bi-calendar3"></i><span><strong>Calendario de <?= esc(mb_strtolower(demo_label('clase_plural'))) ?></strong> — sesiones individuales y recurrentes, asignación y control de asistencia.</span></li>
+            <li><i class="bi bi-people"></i><span><strong>Alumnos y entrenadores</strong> — fichas, seguimiento, categorías y grupos.</span></li>
+            <li><i class="bi bi-calendar3"></i><span><strong>Calendario de clases</strong> — sesiones individuales y recurrentes, asignación y control de asistencia.</span></li>
             <li><i class="bi bi-ticket-perforated"></i><span><strong>Bonos y membresías</strong> — se descuentan solos al pasar lista.</span></li>
             <li><i class="bi bi-folder2-open"></i><span><strong>Documentación y mensajería</strong> — material con permisos y chat interno entre roles.</span></li>
             <li><i class="bi bi-bell"></i><span><strong>Notificaciones y soporte</strong> — avisos individuales o grupales y sistema de incidencias.</span></li>
         </ul>
 
         <p class="login-pitch-for">
-            <strong>Pensada para:</strong> <?= esc($verticalData['pitch_for']) ?>
+            <strong>Pensada para:</strong> academias de tecnificación, escuelas de fútbol,
+            clubes de base y entrenadores personales que gestionan varios grupos.
         </p>
 
         <div class="login-contact">

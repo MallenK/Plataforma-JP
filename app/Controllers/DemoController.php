@@ -175,32 +175,6 @@ class DemoController extends BaseController
         return $this->response->setBody($html);
     }
 
-    /**
-     * POST /demo/vertical — cambia el vocabulario visible de la demo
-     * (fútbol / refuerzo escolar / idiomas / clases particulares). Solo
-     * cambia etiquetas de texto (ver app/Helpers/vertical_helper.php); no
-     * toca datos ni rutas. Válido tanto antes como después de iniciar
-     * sesión, así que no requiere el filtro 'auth'.
-     */
-    public function setVertical()
-    {
-        $this->assertDemo();
-
-        $vertical  = (string) $this->request->getPost('vertical');
-        $verticals = demo_verticals();
-
-        if (isset($verticals[$vertical])) {
-            session()->set('demo_vertical', $vertical);
-        }
-
-        $back = (string) $this->request->getPost('redirect');
-        if ($back !== '' && str_starts_with($back, '/')) {
-            return redirect()->to($back);
-        }
-
-        return redirect()->back();
-    }
-
     private function assertDemo(): void
     {
         if (! demo_mode()) {
