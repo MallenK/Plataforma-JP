@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.10.2",
+        "date": "2026-09-21 12:45:00",
+        "description": "Clases: desde la ficha de la sesión se puede cambiar el campo o instalación con un botón 'Cambiar' (mismo patrón ya usado para el responsable), sin tener que abrir el formulario completo de 'Editar sesión'. Solo disponible con la sesión en estado programada, y solo para admin/superadmin/staff (igual que el cambio de responsable)."
+    },
+    {
         "version": "1.10.0",
         "date": "2026-09-17 18:00:00",
         "description": "Clases: cuando una clase recurrente llega a su última sesión programada, aparece un aviso para continuarla el mes siguiente (mismos días de la semana, mismo horario, entrenador y alumnos), tanto en la ficha de la clase como al cerrar esa última sesión desde Pasar lista. Antes de confirmar se puede editar todo: título, días, fechas, horario, lugar, responsable y alumnos. Solo admin/superadmin pueden continuar una serie, y cada serie solo se puede continuar una vez."
