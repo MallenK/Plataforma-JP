@@ -267,6 +267,11 @@ $routes->post('clases/(:num)/coaches/(:num)/remove', 'ClasesController::removeCo
 $routes->post('clases/(:num)/responsable', 'ClasesController::changeResponsible/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
+// Cambio rápido del campo/instalación de una sesión desde su ficha, sin
+// pasar por el formulario completo de "Editar sesión".
+$routes->post('clases/(:num)/campo', 'ClasesController::changeLocation/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
+]);
 
 // ── Jugadores ──────────────────────────────────────────────
 $routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [

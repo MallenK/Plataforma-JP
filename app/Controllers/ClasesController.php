@@ -937,6 +937,38 @@ class ClasesController extends BaseController
         return redirect()->to('/clases/' . $id);
     }
 
+    /**
+     * Cambio rápido del campo/instalación de una sesión desde su ficha,
+     * sin tener que abrir el formulario completo de "Editar sesión".
+     * Solo esta sesión (no toca el resto de la serie).
+     */
+    public function changeLocation(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para cambiar el campo de esta sesión.');
+            return redirect()->to('/clases/' . $id);
+        }
+        if ($session['status'] !== 'scheduled') {
+            session()->setFlashdata('error', 'No se puede cambiar el campo de una sesión cerrada o cancelada.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $locationId     = $this->request->getPost('location_id');
+        $locationCustom = trim((string) $this->request->getPost('location_custom'));
+
+        $ok = $this->clasesService->updateSession($id, [
+            'location_id'     => $locationId !== '' ? $locationId : '',
+            'location_custom' => $locationCustom,
+        ]);
+
+        session()->setFlashdata($ok ? 'success' : 'error', $ok ? 'Campo actualizado.' : 'No se pudo cambiar el campo.');
+        return redirect()->to('/clases/' . $id);
+    }
+
     // ────────────────────────────────────────────────────────────────
     //  Jugadores
     // ────────────────────────────────────────────────────────────────
