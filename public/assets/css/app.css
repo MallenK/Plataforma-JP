@@ -2391,21 +2391,18 @@ input[type="time"] {
     animation: loginRise .55s cubic-bezier(.16,1,.3,1) both;
 }
 .login-pitch-logo-wrap {
-    /* El PNG del wordmark es negro sobre fondo blanco sólido (sin canal
-       alfa), así que se aloja en una chip blanca en vez de intentar
-       invertirlo — evita que se vea como un bloque roto sobre el panel
-       oscuro del pitch. */
-    display: inline-block;
-    background: #fff;
-    border-radius: 14px;
-    padding: 10px 16px;
+    /* El PNG (fondo negro, letras amarillas, recortado a su contenido)
+       se funde con el panel oscuro del pitch sin necesitar chip ni
+       inversión de color. El wrap solo centra el logo dentro de su div. */
+    display: flex;
+    justify-content: center;
     margin: 0 0 22px;
-    box-shadow: 0 10px 26px -8px rgba(0,0,0,.5);
 }
 .login-pitch-logo {
     display: block;
-    width: 160px;
+    width: 200px;
     height: auto;
+    border-radius: 8px;
 }
 .login-pitch-title {
     font-family: 'Montserrat', system-ui, sans-serif;

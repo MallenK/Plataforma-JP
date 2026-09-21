@@ -84,7 +84,7 @@ $guestLabels = [
     <aside class="login-pitch">
 
         <div class="login-pitch-logo-wrap">
-            <img src="<?= base_url('assets/img/brand/logo-urpa-mono.png') ?>" alt="URPA" class="login-pitch-logo" width="160" height="94">
+            <img src="<?= base_url('assets/img/brand/logo-urpa-mono.png') ?>" alt="URPA" class="login-pitch-logo" width="200" height="57">
         </div>
 
         <h2 class="login-pitch-title">La plataforma de gestión para tu academia de fútbol</h2>
