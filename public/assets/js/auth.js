@@ -80,7 +80,7 @@ $(document).ready(function () {
             success: function () {
                 showToast("Login correcto", "success");
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    window.location.href = (typeof LOGIN_NEXT !== 'undefined' && LOGIN_NEXT) ? LOGIN_NEXT : '/dashboard';
                 }, 800);
             },
 

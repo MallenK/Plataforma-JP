@@ -35,6 +35,15 @@ class AuthFilter implements FilterInterface
         if ($lastActivity !== null && (time() - $lastActivity) > ($timeout * 60)) {
             $uid       = session()->get('id');
             $inactive  = time() - $lastActivity;
+
+            // Antes de destruir la sesión, guardamos a dónde iba: un admin
+            // rellenando un formulario largo (p.ej. editar la ficha de un
+            // alumno) perdía la sesión al pulsar "Guardar" y volvía siempre
+            // al dashboard, obligándole a rebuscar el alumno desde cero.
+            helper('redirect');
+            $next = (string) $request->getUri()->getPath();
+            $safeNext = is_safe_redirect_path($next) ? $next : null;
+
             session()->destroy();
 
             // Sin este log, un "no puedo responder" reportado por un usuario
@@ -62,7 +71,13 @@ class AuthFilter implements FilterInterface
                     ->setJSON(['error' => 'Tu sesión ha caducado. Vuelve a iniciar sesión.', 'session_expired' => true])
                     ->setStatusCode(401);
             }
-            return redirect()->to('/login?expired=1');
+
+            $loginUrl = '/login?expired=1';
+            if ($safeNext && $safeNext !== '/login') {
+                $loginUrl .= '&next=' . urlencode($safeNext);
+            }
+
+            return redirect()->to($loginUrl);
         }
 
         session()->set('last_activity', time());
