@@ -59,11 +59,18 @@
 
 <?= $this->section('scripts') ?>
 
+<?php
+// Solo se acepta una ruta interna para evitar un open-redirect vía ?next=.
+helper('redirect');
+$rawNext   = (string) service('request')->getGet('next');
+$loginNext = is_safe_redirect_path($rawNext) ? $rawNext : '';
+?>
 <script>
     const CSRF = {
         name: "<?= csrf_token() ?>",
         hash: "<?= csrf_hash() ?>"
     };
+    const LOGIN_NEXT = "<?= esc($loginNext, 'js') ?>";
 </script>
 
 <script src="<?= base_url('assets/js/auth.js') ?>"></script>
