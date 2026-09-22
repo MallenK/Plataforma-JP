@@ -33,7 +33,24 @@ class AuthFilter implements FilterInterface
         $lastActivity = session()->get('last_activity');
 
         if ($lastActivity !== null && (time() - $lastActivity) > ($timeout * 60)) {
+            $uid       = session()->get('id');
+            $inactive  = time() - $lastActivity;
             session()->destroy();
+
+            // Sin este log, un "no puedo responder" reportado por un usuario
+            // era indistinguible de cualquier otro fallo silencioso: no
+            // queda ninguna fila en BD (la sesión muere antes de llegar al
+            // controller) y no es una excepción, así que ReportableExceptionHandler
+            // tampoco lo captura. Se detectó investigando un caso real donde
+            // un admin no podía contestar en un chat largo con vídeos.
+            log_message('info', sprintf(
+                'AuthFilter: sesión caducada uid=%s path=%s inactivo=%ds (timeout=%dmin) ajax=%s',
+                $uid ?? '?',
+                (string) $request->getUri()->getPath(),
+                $inactive,
+                $timeout,
+                $request->isAJAX() ? 'si' : 'no'
+            ));
 
             // Las peticiones AJAX (fetch de Mensajes, Notificaciones, etc.) no
             // deben recibir una redirección — el JS no la interpreta como

@@ -199,6 +199,37 @@ $roleLabels = [
     </div>
 </div>
 
+<!-- ── Diálogo: sesión caducada — reautenticación rápida ──────── -->
+<div class="ru-overlay" data-ru-dialog id="modalReauth" hidden>
+    <div class="ru-dialog" role="dialog" aria-modal="true" aria-labelledby="modalReauthLabel">
+        <div class="ru-dialog-header">
+            <h3 id="modalReauthLabel">
+                <i class="bi bi-shield-lock-fill me-2" style="color:var(--danger)"></i>Sesión caducada
+            </h3>
+            <button type="button" data-ru-dialog-close aria-label="Cerrar" id="btn-reauth-cancel"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <form id="form-reauth">
+            <div class="ru-dialog-body">
+                <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">
+                    Por seguridad tu sesión ha caducado por inactividad. Introduce tu contraseña
+                    para seguir — no perderás lo que estabas escribiendo.
+                </p>
+                <div class="form-group mb-2">
+                    <input type="password" id="reauth-password" name="password" class="form-control-jp"
+                           placeholder="Tu contraseña" autocomplete="current-password" required>
+                </div>
+                <div id="reauth-error" class="alert-jp error d-none" style="font-size:12.5px"></div>
+            </div>
+            <div class="ru-dialog-footer">
+                <button type="button" class="btn-jp btn-jp-secondary" data-ru-dialog-close>Cancelar</button>
+                <button type="submit" class="btn-jp btn-jp-primary" id="btn-reauth-submit">
+                    <i class="bi bi-unlock-fill me-1"></i>Continuar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -206,6 +237,7 @@ $roleLabels = [
 (function () {
     const BASE        = '<?= base_url() ?>';
     const MY_ID       = <?= (int) $currentUserId ?>;
+    const MY_EMAIL    = <?= json_encode($currentEmail ?? '') ?>;
     const CSRF_NAME   = '<?= $csrfName ?>';
     let   activeConvId  = null;
     let   lastMsgId     = 0;
@@ -268,11 +300,18 @@ $roleLabels = [
 
     // onExpected(mensaje) recibe SIEMPRE un texto listo para mostrar al
     // usuario (validación de negocio, sesión caducada o genérico).
-    function handleFetchError(err, context, onExpected) {
+    //
+    // retryFn (opcional): si la sesión ha caducado, en vez de mandar al
+    // usuario a /login (perdiendo el mensaje que estaba escribiendo), se
+    // abre un modal de reautenticación rápida y, si la contraseña es
+    // correcta, se vuelve a ejecutar automáticamente la acción que falló
+    // — así "siempre se puede contestar" aunque la sesión haya caducado
+    // a mitad de leer un chat largo.
+    function handleFetchError(err, context, onExpected, retryFn) {
         console.error('[Mensajes]', context, err);
         if (err && err.sessionExpired) {
-            showSessionExpiredToast();
-            if (onExpected) onExpected('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+            openReauthModal(retryFn || null);
+            if (onExpected) onExpected('Tu sesión ha caducado. Introduce tu contraseña para continuar.');
             return;
         }
         if (err && err.unexpected) {
@@ -283,16 +322,70 @@ $roleLabels = [
         if (onExpected) onExpected((err && err.message) || 'Ha ocurrido un error.');
     }
 
-    function showSessionExpiredToast() {
-        if (typeof Toastify === 'undefined') { window.location.href = BASE + 'login?expired=1'; return; }
-        Toastify({
-            text: 'Tu sesión ha caducado — toca aquí para volver a iniciar sesión',
-            duration: 10000, close: true,
-            gravity: 'top', position: 'right',
-            style: { background: 'var(--danger)', borderRadius: '8px', cursor: 'pointer' },
-            onClick: function () { window.location.href = BASE + 'login?expired=1'; },
-        }).showToast();
+    // ── Reautenticación rápida (sesión caducada) ─────────────
+    let pendingRetry = null;
+
+    function openReauthModal(retryFn) {
+        stopPolling();
+        pendingRetry = retryFn || null;
+
+        const errEl = document.getElementById('reauth-error');
+        if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+        const passEl = document.getElementById('reauth-password');
+        if (passEl) passEl.value = '';
+
+        RadixUI.openDialog('modalReauth');
+        setTimeout(() => passEl?.focus(), 50);
     }
+
+    document.getElementById('btn-reauth-cancel')?.addEventListener('click', function () {
+        pendingRetry = null;
+    });
+
+    document.getElementById('form-reauth')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const btn      = document.getElementById('btn-reauth-submit');
+        const errEl    = document.getElementById('reauth-error');
+        const password = document.getElementById('reauth-password').value;
+        if (!password) return;
+
+        btn.disabled = true;
+        errEl.classList.add('d-none');
+
+        const fd = new FormData();
+        fd.append('email', MY_EMAIL);
+        fd.append('password', password);
+        fd.append(CSRF_NAME, csrfVal());
+
+        try {
+            const res  = await fetch(BASE + 'login', {
+                method: 'POST', body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+
+            if (res.ok && data.status === 'success') {
+                RadixUI.closeDialog('modalReauth');
+                const retry = pendingRetry;
+                pendingRetry = null;
+                if (retry) {
+                    await retry();
+                } else {
+                    startPolling();
+                }
+            } else {
+                errEl.textContent = data.error || 'Contraseña incorrecta.';
+                errEl.classList.remove('d-none');
+            }
+        } catch (netErr) {
+            errEl.textContent = 'Error de red. Comprueba tu conexión e inténtalo de nuevo.';
+            errEl.classList.remove('d-none');
+        }
+
+        btn.disabled = false;
+    });
 
     function showErrorReportToast(context, detail, ref) {
         if (typeof Toastify === 'undefined') return;
@@ -495,7 +588,7 @@ $roleLabels = [
 
         } catch (err) {
             if (seq !== convSeq) return;
-            handleFetchError(err, 'Abrir conversación', showChatError);
+            handleFetchError(err, 'Abrir conversación', showChatError, () => openConversation(convId, otherId));
         }
     }
 
@@ -534,7 +627,8 @@ $roleLabels = [
             lastMsgId = data.message.id;
             if (data.csrf) refreshCsrf(data.csrf);
         } catch (err) {
-            handleFetchError(err, 'Enviar mensaje', function (msg) { showToast(msg, 'error'); });
+            handleFetchError(err, 'Enviar mensaje', function (msg) { showToast(msg, 'error'); },
+                () => document.getElementById('form-message').requestSubmit());
         }
 
         btn.disabled = false;
@@ -609,8 +703,10 @@ $roleLabels = [
             }
         } catch (err) {
             if (err && err.sessionExpired) {
-                stopPolling();
-                showSessionExpiredToast();
+                // Se detecta aquí, en el sondeo periódico, antes de que el
+                // usuario intente responder — así al terminar de leer/ver
+                // los adjuntos ya puede escribir sin toparse con el error.
+                openReauthModal(startPolling);
                 return;
             }
             // El sondeo falla cada pocos segundos si hay un corte puntual de
@@ -643,8 +739,7 @@ $roleLabels = [
             if (data.conversations) updateConvList(data.conversations);
         } catch (err) {
             if (err && err.sessionExpired) {
-                stopPolling();
-                showSessionExpiredToast();
+                openReauthModal(startPolling);
                 return;
             }
             pollConvFailCount++;
