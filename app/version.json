@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.10.3",
+        "date": "2026-09-23 00:00:00",
+        "description": "Mensajes: si la sesión caduca por inactividad (p. ej. tras estar un rato viendo los vídeos adjuntos de un chat) ya no se pierde el mensaje que se estaba escribiendo ni hay que salir del chat para volver a entrar. Aparece un aviso para confirmar la contraseña sin salir de la conversación, y al confirmarla se reintenta automáticamente lo que había fallado (abrir el chat, enviar el mensaje o comprobar si hay nuevos). Internamente queda registrado en el log cuándo caduca una sesión, para poder investigar más rápido casos parecidos en el futuro."
+    },
+    {
         "version": "1.10.2",
         "date": "2026-09-21 12:45:00",
         "description": "Clases: desde la ficha de la sesión se puede cambiar el campo o instalación con un botón 'Cambiar' (mismo patrón ya usado para el responsable), sin tener que abrir el formulario completo de 'Editar sesión'. Solo disponible con la sesión en estado programada, y solo para admin/superadmin/staff (igual que el cambio de responsable)."

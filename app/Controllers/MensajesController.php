@@ -46,6 +46,7 @@ class MensajesController extends BaseController
         try {
             $conversations = $this->convModel->getForUser($userId);
             $contactables  = $this->getContactableUsers($userId, $role);
+            $currentEmail  = $this->userModel->find($userId)['email'] ?? '';
         } catch (\Throwable $e) {
             $ref = $this->logAndRef($e, 'index');
             return redirect()->to('/dashboard')
@@ -58,6 +59,7 @@ class MensajesController extends BaseController
             'contactables'  => $contactables,
             'currentUserId' => $userId,
             'currentRole'   => $role,
+            'currentEmail'  => $currentEmail,
         ]);
     }
 
