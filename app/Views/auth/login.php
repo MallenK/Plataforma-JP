@@ -9,8 +9,16 @@
 
     <div class="login-card">
 
+        <header class="login-brand">
+            <span class="login-logo">
+                <img src="<?= base_url('assets/img/logo-jp.svg') ?>" alt="JP Preparation" width="72" height="72">
+            </span>
+            <span class="login-brand-name">JP Preparation</span>
+            <span class="login-brand-tag">Tecnificación de alto rendimiento</span>
+        </header>
+
         <h1 class="login-title">Bienvenido</h1>
-        <p class="login-subtitle">Accede a tu plataforma JP Preparation</p>
+        <p class="login-subtitle">Accede a tu plataforma</p>
 
         <div id="errorBox" class="login-error d-none"></div>
 
@@ -53,6 +61,10 @@
         </form>
 
     </div>
+    <footer class="login-footer">
+        <span>Sant Vicenç dels Horts · Barcelona</span>
+        <span>© <?= date('Y') ?> JP Preparation</span>
+    </footer>
 </div>
 
 <?= $this->endSection() ?>
