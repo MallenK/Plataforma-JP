@@ -2,7 +2,7 @@
     {
         "version": "1.10.5",
         "date": "2026-09-24 00:00:00",
-        "description": "Clases: en la ficha de una clase, la lista de jugadores ahora se puede pulsar. Al hacer clic en la fila (o en el nombre del jugador) se abre directamente su perfil, sin tener que ir al listado de alumnos. Los botones de la fila (como el lápiz de observaciones) siguen funcionando igual. Disponible para superadmin, admin y entrenadores; el staff no tiene acceso a la ficha de alumnos, por lo que ahí no se muestra el enlace."
+        "description": "Acceso directo al perfil del alumno: en la ficha de una clase, en el listado de Alumnos y en la tabla de alumnos de cada entrenador, al hacer clic en la fila se abre directamente el perfil del alumno. En Bonos (listado y detalle) y en Pasar lista, el nombre del alumno es ahora un enlace a su perfil. Los botones de cada fila (lápiz de observaciones, editar, dar de baja...) siguen funcionando igual. En pantallas donde entra el staff, el enlace solo se muestra a superadmin, admin y entrenadores, porque el staff no tiene acceso a la ficha de alumnos."
     },
     {
         "version": "1.10.4",

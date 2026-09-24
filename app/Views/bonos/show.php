@@ -46,7 +46,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 <div style="font-size:13px;color:var(--text-muted)">Asigna un jugador desde abajo</div>
                 <?php else: ?>
                 <?= avatar_html($bono['player_avatar'] ?? null, $bono['player_name'], 'profile-avatar-lg') ?>
-                <div style="font-size:16px;font-weight:700;color:var(--text-h);margin-top:12px"><?= esc($bono['player_name']) ?></div>
+                <div style="font-size:16px;font-weight:700;color:var(--text-h);margin-top:12px"><a href="<?= base_url('alumnos/' . (int) $bono['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($bono['player_name']) ?></a></div>
                 <div style="font-size:13px;color:var(--text-muted)"><?= esc($bono['player_email']) ?></div>
                 <?php endif; ?>
 
