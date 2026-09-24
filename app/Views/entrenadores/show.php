@@ -228,7 +228,7 @@ $formatTime = static function (?string $hms): string {
                 <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
             </div>
             <div class="table-responsive">
-                <table class="table-jp">
+                <table class="table-jp" data-jp-list="coach-proximas">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -269,7 +269,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($sessionsList)): ?>
             <div class="table-responsive">
-                <table class="table-jp">
+                <table class="table-jp" data-jp-list="coach-historial">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -334,7 +334,7 @@ $formatTime = static function (?string $hms): string {
             <div id="coachPlayersList" class="d-none">
                 <?php if (!empty($playersList)): ?>
                 <div class="table-responsive">
-                    <table class="table-jp">
+                    <table class="table-jp" data-jp-list="coach-alumnos">
                         <thead>
                             <tr>
                                 <th>Alumno</th>
@@ -403,12 +403,12 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($documents)): ?>
             <div class="table-responsive">
-                <table class="table-jp">
+                <table class="table-jp" data-jp-list="coach-documentos">
                     <thead>
                         <tr>
                             <th>Archivo</th>
                             <th>Fecha</th>
-                            <th style="text-align:right">Acciones</th>
+                            <th class="no-sort" style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>

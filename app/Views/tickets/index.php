@@ -80,6 +80,7 @@ $priorityColors = [
         <i class="bi bi-arrow-counterclockwise me-1"></i>Quitar filtros
     </button>
 
+    <?= view('partials/list_view_toggle', ['key' => 'tickets']) ?>
     <div class="ticket-toolbar-export">
         <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -135,7 +136,7 @@ $priorityColors = [
 </div>
 
 <script>
-(function () {
+document.addEventListener("DOMContentLoaded", function () {
     const EXPORT_BASE = '<?= base_url('tickets/export') ?>';
     const list   = document.getElementById('ticket-list');
     const cards  = Array.from(list.querySelectorAll('.ticket-card'));
@@ -147,6 +148,7 @@ $priorityColors = [
     const resetB = document.getElementById('tf-reset');
     const countEl = document.getElementById('ticket-count');
     const noRes  = document.getElementById('ticket-noresults');
+    const pager  = JPCards.init({ list: '#ticket-list', item: '.ticket-card', key: 'tickets' });
 
     function state() {
         return {
@@ -159,16 +161,11 @@ $priorityColors = [
 
     function apply() {
         const s = state();
-        let visible = 0;
-        cards.forEach(c => {
-            const ok =
-                (!s.search   || c.dataset.text.includes(s.search)) &&
-                (!s.status   || c.dataset.status === s.status) &&
-                (!s.priority || c.dataset.priority === s.priority) &&
-                (!s.category || c.dataset.category === s.category);
-            c.hidden = !ok;
-            if (ok) visible++;
-        });
+        const visible = pager.setFilter(c =>
+            (!s.search   || c.dataset.text.includes(s.search)) &&
+            (!s.status   || c.dataset.status === s.status) &&
+            (!s.priority || c.dataset.priority === s.priority) &&
+            (!s.category || c.dataset.category === s.category));
         countEl.textContent = visible;
         noRes.hidden = visible > 0;
         list.hidden = visible === 0;
@@ -199,7 +196,7 @@ $priorityColors = [
     });
 
     apply();
-})();
+});
 </script>
 <?php endif; ?>
 

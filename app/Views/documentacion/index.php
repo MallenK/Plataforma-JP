@@ -110,6 +110,7 @@ $previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
             <?php endif; ?>
         </div>
         <span id="doc-count" style="font-size:12px;color:var(--text-muted);white-space:nowrap"></span>
+        <?= view('partials/list_view_toggle', ['key' => 'documentacion']) ?>
     </div>
 </div>
 
@@ -226,6 +227,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 }
 ?>
 
+<div id="doc-folders">
 <?php if (!empty($fPublic) || !empty($fInternal)): ?>
 <div class="row g-3 mb-3 doc-section-group">
     <?php foreach ($fPublic as $f): renderFolderCard($f, $activeFolder, $isAdmin); endforeach; ?>
@@ -247,6 +249,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 </div>
 <?php endif; ?>
 <?php endforeach; ?>
+</div><!-- /#doc-folders -->
 
 
 <?php endif; ?>
@@ -735,8 +738,8 @@ function openFolderModal(folderId) {
                             </div>
                         </div>
                     </td>
-                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${size}</td>
-                    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${date}</td>
+                    <td data-order="${parseInt(f.size_bytes) || 0}" style="font-size:12px;color:var(--text-muted);white-space:nowrap">${size}</td>
+                    <td data-order="${f.created_at || ""}" style="font-size:12px;color:var(--text-muted);white-space:nowrap">${date}</td>
                     <td>
                         <div style="display:flex;gap:4px;justify-content:flex-end">
                             ${previewBtn}
@@ -747,10 +750,11 @@ function openFolderModal(folderId) {
                 </tr>`;
             }).join('');
 
-            body.innerHTML = `<div class="table-responsive"><table class="table-jp">
-                <thead><tr><th>Archivo</th><th>Tamaño</th><th>Fecha</th><th style="text-align:right">Acciones</th></tr></thead>
+            body.innerHTML = `<div class="jp-files-toolbar">${JPList.toggleHtml('documentacion-archivos')}</div><div class="table-responsive"><table class="table-jp" id="doc-files-table">
+                <thead><tr><th>Archivo</th><th>Tamaño</th><th>Fecha</th><th class="no-sort" style="text-align:right">Acciones</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table></div>`;
+JPList.init({ table: '#doc-files-table', key: 'documentacion-archivos', dtSearch: true });
         }
 
         if (data.canWrite) {
@@ -781,27 +785,25 @@ function escHtml(str) {
     const countEl     = document.getElementById('doc-count');
     let activeFilter  = 'all';
 
+    // Paginación (25 por defecto) + lista/cuadrícula; buscador y filtros actúan sobre TODAS las carpetas
+    const pager = JPCards.init({
+        list: '#doc-folders', item: '.doc-folder-item', key: 'documentacion',
+        defaultView: 'grid', nested: true, noun: 'carpetas',
+        onRender: function (m) {
+            countEl.textContent = m.length + ' carpeta' + (m.length !== 1 ? 's' : '');
+            document.querySelectorAll('#doc-folders .doc-section-group').forEach(function (g) {
+                g.style.display = g.querySelector('.doc-folder-item:not([hidden])') ? '' : 'none';
+            });
+        },
+    });
+    if (!pager) return;
+
     function applyFilters() {
         const q = (searchInput.value || '').toLowerCase().trim();
-        const items = document.querySelectorAll('.doc-folder-item');
-        let visible = 0;
-
-        items.forEach(item => {
+        pager.setFilter(function (item) {
             const type = item.dataset.type || '';
             const name = item.dataset.name || '';
-            const matchFilter = activeFilter === 'all' || type === activeFilter;
-            const matchSearch = !q || name.includes(q);
-            const show = matchFilter && matchSearch;
-            item.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-
-        countEl.textContent = visible + ' carpeta' + (visible !== 1 ? 's' : '');
-
-        // Hide empty section headers
-        document.querySelectorAll('.doc-section-group').forEach(group => {
-            const hasVisible = [...group.querySelectorAll('.doc-folder-item')].some(i => i.style.display !== 'none');
-            group.style.display = hasVisible ? '' : 'none';
+            return (activeFilter === 'all' || type === activeFilter) && (!q || name.includes(q));
         });
     }
 
