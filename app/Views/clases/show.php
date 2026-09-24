@@ -408,16 +408,20 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($session['players'] as $p):
+                    <?php
+                    // /alumnos/:id solo lo abren superadmin, admin y coach (el staff recibiría 403)
+                    $canOpenProfile = in_array(session('role'), ['superadmin', 'admin', 'coach'], true);
+                    foreach ($session['players'] as $p):
                         [$aLabel, $aColor, $aIcon] = $attendanceMap[$p['attendance']] ?? $attendanceMap['pending'];
                         $hasNote = !empty($p['student_note']);
+                        $profileUrl = $canOpenProfile ? base_url('alumnos/' . (int) $p['user_id']) : null;
                     ?>
-                        <tr>
+                        <tr<?= $profileUrl ? ' class="row-link" data-href="' . esc($profileUrl, 'attr') . '" title="Ver perfil de ' . esc($p['name'], 'attr') . '"' : '' ?>>
                             <td>
                                 <div class="td-user">
                                     <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
                                     <div>
-                                        <div class="td-name"><?= esc($p['name']) ?></div>
+                                        <div class="td-name"><?php if ($profileUrl): ?><a href="<?= esc($profileUrl, 'attr') ?>" class="row-link-anchor"><?= esc($p['name']) ?></a><?php else: ?><?= esc($p['name']) ?><?php endif; ?></div>
                                     </div>
                                 </div>
                             </td>

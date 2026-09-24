@@ -65,3 +65,14 @@ $(document).ready(function () {
         if (window.innerWidth > 1024) closeSidebar();
     });
 })();
+// Filas clicables: <tr class="row-link" data-href="..."> navega al hacer clic en la fila,
+// salvo que el clic sea en un enlace, botón o control de formulario, o se esté seleccionando texto.
+document.addEventListener('click', function (e) {
+    var tr = e.target.closest && e.target.closest('tr.row-link[data-href]');
+    if (!tr) return;
+    if (e.target.closest('a, button, input, select, textarea, label, form')) return;
+    var sel = window.getSelection && window.getSelection();
+    if (sel && String(sel).length > 0) return;
+    if (e.ctrlKey || e.metaKey) { window.open(tr.dataset.href, '_blank'); return; }
+    window.location.href = tr.dataset.href;
+});
