@@ -11,7 +11,7 @@
 
         <header class="login-brand">
             <span class="login-logo">
-                <img src="<?= base_url('assets/img/logo-jp.svg') ?>" alt="JP Preparation" width="72" height="72">
+                <img src="<?= base_url('assets/img/logo-jp-preparation.webp') ?>" alt="JP Preparation — Coraje y corazón" width="160" height="121">
             </span>
             <span class="login-brand-name">JP Preparation</span>
             <span class="login-brand-tag">Tecnificación de alto rendimiento</span>
