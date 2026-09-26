@@ -170,11 +170,9 @@ final class MensajesInactiveUserTest extends CIUnitTestCase
     }
 
     /**
-     * ESTE es el bug reportado: un jugador/padre dado de baja (status=
-     * 'inactive') queda inalcanzable por Mensajes para el admin, incluso
-     * si ya existía una conversación con historial previo.
+     * Una conversación NUEVA con un usuario de baja sigue rechazada.
      */
-    public function testAdminCannotOpenConversationWithInactivePlayer(): void
+    public function testAdminCannotStartNewConversationWithInactivePlayer(): void
     {
         $adminId  = $this->makeUser('admin', 'active', 'admin.active2@test.local');
         $playerId = $this->makeUser('player', 'inactive', 'player.inactive@test.local');
@@ -194,7 +192,7 @@ final class MensajesInactiveUserTest extends CIUnitTestCase
      * solo que no se puedan crear conversaciones nuevas, es que las
      * existentes se vuelven inaccesibles para responder.
      */
-    public function testExistingConversationBecomesUnreachableOnceOtherUserGoesInactive(): void
+    public function testExistingConversationStaysReachableOnceOtherUserGoesInactive(): void
     {
         $adminId  = $this->makeUser('admin', 'active', 'admin.active3@test.local');
         $playerId = $this->makeUser('player', 'active', 'player.tobeinactive@test.local');
@@ -216,14 +214,17 @@ final class MensajesInactiveUserTest extends CIUnitTestCase
 
         $response = $ctrl->ajaxOpenConversation();
 
-        $this->assertSame(403, $response->getStatusCode(), 'La conversación con historial previo queda bloqueada, no solo las nuevas.');
+        // Se mira el cuerpo, no el código: service('response') es compartido y
+        // arrastra el 403 de tests anteriores (setJSON no lo resetea).
+        $this->assertArrayHasKey('conversation_id', $this->jsonOf($response));
+        $this->assertArrayNotHasKey('error', $this->jsonOf($response));
     }
 
     /**
      * Enviar un mensaje sobre una conversación ya abierta (conversation_id
      * conocido) también se bloquea, no solo el "open" inicial.
      */
-    public function testAdminCannotSendToInactivePlayerEvenWithKnownConversationId(): void
+    public function testAdminCanSendInExistingConversationWithInactivePlayer(): void
     {
         $adminId  = $this->makeUser('admin', 'active', 'admin.active4@test.local');
         $playerId = $this->makeUser('player', 'inactive', 'player.inactive2@test.local');
@@ -238,7 +239,7 @@ final class MensajesInactiveUserTest extends CIUnitTestCase
 
         $response = $ctrl->ajaxSend();
 
-        $this->assertSame(403, $response->getStatusCode());
+        $this->assertTrue($this->jsonOf($response)['ok'] ?? false);
     }
 
     /**

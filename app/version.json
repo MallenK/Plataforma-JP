@@ -1,5 +1,15 @@
 [
     {
+        "version": "1.10.7",
+        "date": "2026-09-26 00:00:00",
+        "description": "Mensajes: ya se puede contestar en las conversaciones existentes con usuarios dados de baja, y la barra para escribir deja de ocultarse cuando falla al abrir una conversación. Antes, al pulsar una conversación con un alumno de baja aparecía un error y la barra de texto desaparecía, así que no se podía responder. Las conversaciones nuevas con usuarios de baja siguen sin permitirse."
+    },
+    {
+        "version": "1.10.6",
+        "date": "2026-09-26 00:00:00",
+        "description": "Filas de alumno más agradables: al pasar el ratón por una fila que lleva al perfil del alumno, el fondo se aclara suavemente, el nombre se desplaza un poco y aparece una flecha, sin subrayado ni cambio de color. Se respeta la preferencia de sistema de reducir animaciones."
+    },
+    {
         "version": "1.10.5",
         "date": "2026-09-24 00:00:00",
         "description": "Acceso directo al perfil del alumno: en la ficha de una clase, en el listado de Alumnos y en la tabla de alumnos de cada entrenador, al hacer clic en la fila se abre directamente el perfil del alumno. En Bonos (listado y detalle) y en Pasar lista, el nombre del alumno es ahora un enlace a su perfil. Los botones de cada fila (lápiz de observaciones, editar, dar de baja...) siguen funcionando igual. En pantallas donde entra el staff, el enlace solo se muestra a superadmin, admin y entrenadores, porque el staff no tiene acceso a la ficha de alumnos."

@@ -105,7 +105,7 @@ $roleLabels = [
         </div>
 
         <!-- Input -->
-        <div class="chat-input-bar d-none" id="chat-input-bar">
+        <div class="chat-input-bar" id="chat-input-bar">
             <form id="form-message" enctype="multipart/form-data">
                 <input type="hidden" name="conversation_id" id="input-conv-id">
                 <input type="hidden" name="<?= $csrfName ?>" id="csrf-msg" value="<?= $csrfHash ?>">
@@ -573,7 +573,6 @@ $roleLabels = [
             document.getElementById('chat-empty').classList.add('d-none');
             document.getElementById('chat-header').classList.remove('d-none');
             document.getElementById('chat-messages').classList.remove('d-none');
-            document.getElementById('chat-input-bar').classList.remove('d-none');
 
             // Móvil
             document.getElementById('chat-sidebar').classList.add('chat-sidebar-hidden');
@@ -1015,7 +1014,6 @@ $roleLabels = [
     function showChatError(msg) {
         document.getElementById('chat-empty').classList.add('d-none');
         document.getElementById('chat-messages').classList.remove('d-none');
-        document.getElementById('chat-input-bar').classList.add('d-none');
         document.getElementById('chat-messages-inner').innerHTML =
             '<div class="text-center text-danger py-4"><i class="bi bi-exclamation-circle me-1"></i>' + escHtml(msg) + '</div>';
     }
