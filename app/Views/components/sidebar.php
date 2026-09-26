@@ -32,7 +32,9 @@ if ($isAdmin) {
 
     <!-- Logo -->
     <a href="<?= base_url('dashboard') ?>" class="sidebar-logo">
-        <div class="sidebar-logo-icon">JP</div>
+        <div class="sidebar-logo-icon">
+            <img src="<?= base_url('assets/img/logo-jp-preparation.webp') ?>" alt="" width="48" height="36">
+        </div>
         <div class="sidebar-logo-text">
             JP Preparation
             <span>Plataforma</span>
