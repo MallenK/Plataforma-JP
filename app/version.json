@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.10.9",
+        "date": "2026-09-27 00:00:00",
+        "description": "El logo de la academia aparece también en la cabecera del menú lateral, en lugar del cuadro azul con las letras JP."
+    },
+    {
         "version": "1.10.7",
         "date": "2026-09-26 00:00:00",
         "description": "Mensajes: ya se puede contestar en las conversaciones existentes con usuarios dados de baja, y la barra para escribir deja de ocultarse cuando falla al abrir una conversación. Antes, al pulsar una conversación con un alumno de baja aparecía un error y la barra de texto desaparecía, así que no se podía responder. Las conversaciones nuevas con usuarios de baja siguen sin permitirse."
