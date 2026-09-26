@@ -345,7 +345,7 @@ $formatTime = static function (?string $hms): string {
                         </thead>
                         <tbody>
                             <?php foreach ($playersList as $p): ?>
-                            <tr>
+                            <tr class="row-link" data-href="<?= base_url('alumnos/' . (int) $p['id']) ?>">
                                 <td>
                                     <a href="<?= base_url('alumnos/' . $p['id']) ?>" style="color:inherit;text-decoration:none">
                                         <div class="td-user">

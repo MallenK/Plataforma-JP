@@ -124,7 +124,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                 ?>
                 <tr data-uid="<?= $uid ?>">
                     <td>
-                        <div style="font-weight:600"><?= esc($p['name']) ?></div>
+                        <div style="font-weight:600"><?php if (in_array(session('role'), ['superadmin', 'admin', 'coach'], true)): ?><a href="<?= base_url('alumnos/' . $uid) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($p['name']) ?></a><?php else: ?><?= esc($p['name']) ?><?php endif; ?></div>
                         <div style="font-size:12px;color:var(--text-muted)"><?= esc($p['email'] ?? '') ?></div>
                     </td>
                     <td>

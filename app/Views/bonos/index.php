@@ -163,7 +163,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     <div style="display:flex;align-items:center;gap:10px">
                         <?= avatar_html($b['player_avatar'] ?? null, $b['player_name'], 'td-avatar') ?>
                         <div>
-                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><?= esc($b['player_name']) ?></div>
+                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><a href="<?= base_url('alumnos/' . (int) $b['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($b['player_name']) ?></a></div>
                             <div style="font-size:11px;color:var(--text-muted)"><?= esc($b['player_email']) ?></div>
                         </div>
                     </div>

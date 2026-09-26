@@ -89,7 +89,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
             </thead>
             <tbody>
                 <?php foreach ($players as $p): ?>
-                <tr
+                <tr class="row-link" data-href="<?= base_url('alumnos/' . (int) $p['id']) ?>"
                     data-name="<?= strtolower(esc($p['name'])) ?>"
                     data-email="<?= strtolower(esc($p['email'] ?? '')) ?>"
                     data-status="<?= esc($p['status'] ?? 'active') ?>"
