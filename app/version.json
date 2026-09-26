@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.10.7",
+        "date": "2026-09-26 00:00:00",
+        "description": "Mensajes: ya se puede contestar en las conversaciones existentes con usuarios dados de baja, y la barra para escribir deja de ocultarse cuando falla al abrir una conversación. Antes, al pulsar una conversación con un alumno de baja aparecía un error y la barra de texto desaparecía, así que no se podía responder. Las conversaciones nuevas con usuarios de baja siguen sin permitirse."
+    },
+    {
         "version": "1.10.6",
         "date": "2026-09-26 00:00:00",
         "description": "Filas de alumno más agradables: al pasar el ratón por una fila que lleva al perfil del alumno, el fondo se aclara suavemente, el nombre se desplaza un poco y aparece una flecha, sin subrayado ni cambio de color. Se respeta la preferencia de sistema de reducir animaciones."

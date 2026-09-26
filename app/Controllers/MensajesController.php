@@ -85,7 +85,11 @@ class MensajesController extends BaseController
             if (!$otherUser) {
                 return $this->jsonError('Usuario no encontrado.', 404);
             }
-            if (($otherUser['status'] ?? 'active') !== 'active') {
+            // Un usuario de baja no puede recibir conversaciones NUEVAS, pero
+            // una ya existente (con historial) sigue abierta para poder leerla
+            // y contestarla.
+            if (($otherUser['status'] ?? 'active') !== 'active'
+                && !$this->convModel->findBetween($userId, $otherId)) {
                 return $this->jsonError('Este usuario no está activo.', 403);
             }
 
