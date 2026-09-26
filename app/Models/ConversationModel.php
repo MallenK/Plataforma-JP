@@ -26,7 +26,7 @@ class ConversationModel extends Model
 
         [$u1, $u2] = $userA < $userB ? [$userA, $userB] : [$userB, $userA];
 
-        $conv = $this->where('user1_id', $u1)->where('user2_id', $u2)->first();
+        $conv = $this->findBetween($userA, $userB);
         if ($conv) {
             return $conv;
         }
@@ -53,6 +53,17 @@ class ConversationModel extends Model
         }
 
         return $this->find($newId) ?: [];
+    }
+
+    /**
+     * Conversación ya existente entre dos usuarios (sin crearla). El par se
+     * guarda ordenado por id, así que no importa quién la empezó.
+     */
+    public function findBetween(int $userA, int $userB): ?array
+    {
+        [$u1, $u2] = $userA < $userB ? [$userA, $userB] : [$userB, $userA];
+
+        return $this->where('user1_id', $u1)->where('user2_id', $u2)->first() ?: null;
     }
 
     /**
