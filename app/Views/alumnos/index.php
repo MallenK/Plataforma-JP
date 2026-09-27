@@ -70,12 +70,9 @@ $pageSubtitle = 'Gestión de alumnos registrados';
             <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>
             Alumnos registrados
         </span>
-        <div class="d-flex align-items-center gap-3">
-            <span style="font-size:12px;color:var(--text-muted)" id="total-count">
-                <?= count($players ?? []) ?> alumnos
-            </span>
-            <?= view('partials/list_view_toggle', ['key' => 'alumnos']) ?>
-        </div>
+        <span style="font-size:12px;color:var(--text-muted)" id="total-count">
+            <?= count($players ?? []) ?> alumnos
+        </span>
     </div>
 
     <?php if (!empty($players)): ?>
@@ -87,7 +84,7 @@ $pageSubtitle = 'Gestión de alumnos registrados';
                     <th>Email</th>
                     <th>Estado</th>
                     <th>Ficha</th>
-                    <th class="no-sort" style="text-align:right">Acciones</th>
+                    <th style="text-align:right">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -183,6 +180,41 @@ $pageSubtitle = 'Gestión de alumnos registrados';
 
 <?= $this->section('scripts') ?>
 <script>
-JPList.init({    table: '#alumnos-table', key: 'alumnos', search: '#search-input', searchAttrs: ['name', 'email'],    filters: [{ el: '#filter-status', attr: 'status' }, { el: '#filter-profile', attr: 'profile' }],    count: '#total-count', noun: 'alumnos'});
+// Filtro live de la tabla
+(function () {
+    const searchInput   = document.getElementById('search-input');
+    const filterStatus  = document.getElementById('filter-status');
+    const filterProfile = document.getElementById('filter-profile');
+    const rows          = document.querySelectorAll('#alumnos-table tbody tr');
+    const totalCount    = document.getElementById('total-count');
+
+    function applyFilters() {
+        const q       = searchInput.value.toLowerCase().trim();
+        const status  = filterStatus.value;
+        const profile = filterProfile.value;
+        let visible   = 0;
+
+        rows.forEach(row => {
+            const name    = row.dataset.name  || '';
+            const email   = row.dataset.email || '';
+            const rowSt   = row.dataset.status  || '';
+            const rowProf = row.dataset.profile || '';
+
+            const matchSearch  = !q || name.includes(q) || email.includes(q);
+            const matchStatus  = !status  || rowSt   === status;
+            const matchProfile = !profile || rowProf === profile;
+
+            const show = matchSearch && matchStatus && matchProfile;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        totalCount.textContent = visible + ' alumnos';
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    filterStatus.addEventListener('change', applyFilters);
+    filterProfile.addEventListener('change', applyFilters);
+})();
 </script>
 <?= $this->endSection() ?>

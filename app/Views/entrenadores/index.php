@@ -58,10 +58,9 @@ $pageSubtitle = 'Gestión del equipo técnico';
             <i class="bi bi-person-workspace me-2" style="color:var(--success)"></i>
             Equipo técnico
         </span>
-        <div class="d-flex align-items-center gap-3">
-            <span style="font-size:12px;color:var(--text-muted)" id="total-count"><?= count($coaches ?? []) ?> entrenador(es)</span>
-            <?= view('partials/list_view_toggle', ['key' => 'entrenadores']) ?>
-        </div>
+        <span style="font-size:12px;color:var(--text-muted)" id="total-count">
+            <?= count($coaches ?? []) ?> entrenador(es)
+        </span>
     </div>
 
     <?php if (!empty($coaches)): ?>
@@ -74,7 +73,7 @@ $pageSubtitle = 'Gestión del equipo técnico';
                     <th style="text-align:center">Sesiones</th>
                     <th style="text-align:center">Alumnos</th>
                     <th>Estado</th>
-                    <th class="no-sort" style="text-align:right">Acciones</th>
+                    <th style="text-align:right">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -160,6 +159,27 @@ $pageSubtitle = 'Gestión del equipo técnico';
 
 <?= $this->section('scripts') ?>
 <script>
-JPList.init({ table: '#coaches-table', key: 'entrenadores', search: '#search-input', searchAttrs: ['name', 'email'], count: '#total-count', noun: 'entrenador(es)' });
+(function () {
+    const searchInput = document.getElementById('search-input');
+    const rows        = document.querySelectorAll('#coaches-table tbody tr');
+    const totalCount  = document.getElementById('total-count');
+
+    function applyFilters() {
+        const q = searchInput.value.toLowerCase().trim();
+        let visible = 0;
+
+        rows.forEach(row => {
+            const name  = row.dataset.name  || '';
+            const email = row.dataset.email || '';
+            const show  = !q || name.includes(q) || email.includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        totalCount.textContent = visible + ' entrenador(es)';
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+})();
 </script>
 <?= $this->endSection() ?>

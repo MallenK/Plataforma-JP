@@ -181,7 +181,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
             </div>
             <?php else: ?>
             <div class="table-responsive">
-                <table style="width:100%;border-collapse:collapse;font-size:12px" data-jp-list="bono-historial">
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
                     <thead>
                         <tr>
                             <th style="padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)">Tipo</th>
