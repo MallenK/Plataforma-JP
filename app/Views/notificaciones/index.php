@@ -137,7 +137,7 @@ $sentNotifications = $sentNotifications ?? [];
             <p class="mt-3">No has enviado ninguna notificación aún.</p>
         </div>
         <?php else: ?>
-        <ul class="list-unstyled mb-0" id="notif-sent-list">
+        <ul class="list-unstyled mb-0">
             <?php foreach ($sentNotifications as $n): ?>
             <?php
                 $isGroup  = $n['type'] === 'group';
@@ -313,7 +313,6 @@ $sentNotifications = $sentNotifications ?? [];
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script>JPCards.init({ list: '#notif-list', item: '.notif-item', key: 'notif-recibidas', search: true, noun: 'notificaciones' });JPCards.init({ list: '#notif-sent-list', item: '.notif-item', key: 'notif-enviadas', search: true, noun: 'notificaciones' });</script>
 <script>
 (function () {
     const BASE = '<?= base_url() ?>';
