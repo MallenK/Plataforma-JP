@@ -75,7 +75,7 @@
 
         var dt = $(tableEl).DataTable({
             pageLength: o.pageLength || 25,
-            lengthMenu: [10, 25, 50, 100],
+            lengthMenu: [5, 10, 25, 50, 100].filter(function (n) { return n !== 5 || (o.pageLength || 25) === 5; }),
             order: o.order || [],
             ordering: o.ordering !== false,
             language: LANG,
@@ -247,7 +247,7 @@
             bar.className = 'jp-files-toolbar';
             bar.innerHTML = TOGGLE_HTML(key);
             anchor.parentNode.insertBefore(bar, anchor);
-            init({ table: t, key: key, ordering: false, dtSearch: t.querySelectorAll('tbody tr').length > 10 });
+            init({ table: t, key: key, ordering: false, pageLength: parseInt(t.getAttribute('data-jp-page-size'), 10) || 25, dtSearch: t.querySelectorAll('tbody tr').length > 10 });
         });
     });
 })(window, window.jQuery);

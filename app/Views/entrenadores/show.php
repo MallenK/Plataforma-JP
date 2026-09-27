@@ -228,7 +228,7 @@ $formatTime = static function (?string $hms): string {
                 <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
             </div>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-proximas">
+                <table class="table-jp" data-jp-list="coach-proximas" data-jp-page-size="5">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -269,7 +269,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($sessionsList)): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-historial">
+                <table class="table-jp" data-jp-list="coach-historial" data-jp-page-size="5">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -334,7 +334,7 @@ $formatTime = static function (?string $hms): string {
             <div id="coachPlayersList" class="d-none">
                 <?php if (!empty($playersList)): ?>
                 <div class="table-responsive">
-                    <table class="table-jp" data-jp-list="coach-alumnos">
+                    <table class="table-jp" data-jp-list="coach-alumnos" data-jp-page-size="5">
                         <thead>
                             <tr>
                                 <th>Alumno</th>
@@ -403,7 +403,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($documents)): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-documentos">
+                <table class="table-jp" data-jp-list="coach-documentos" data-jp-page-size="5">
                     <thead>
                         <tr>
                             <th>Archivo</th>
