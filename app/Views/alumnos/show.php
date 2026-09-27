@@ -366,7 +366,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($alumno['plans'])): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-bonos">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Bono</th>
@@ -442,7 +442,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($alumno['metrics'])): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-seguimiento">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -532,7 +532,7 @@ $formatTime = static function (?string $hms): string {
                 <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
             </div>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-proximas">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Clase</th>
@@ -588,7 +588,7 @@ $formatTime = static function (?string $hms): string {
             </div>
             <?php if (!empty($alumno['attendance'])): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-historial">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Clase</th>
@@ -717,12 +717,12 @@ $formatTime = static function (?string $hms): string {
             $previewDocExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
             ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-documentos">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Archivo</th>
                             <th>Fecha</th>
-                            <th class="no-sort" style="text-align:right">Acciones</th>
+                            <th style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>

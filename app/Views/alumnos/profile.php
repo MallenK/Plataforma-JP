@@ -209,12 +209,12 @@ $categoryLabel = match($profile['category'] ?? '') {
 
             <?php if (!empty($documents)): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="alumno-perfil-documentos">
+                <table class="table-jp">
                     <thead>
                         <tr>
                             <th>Archivo</th>
                             <th>Fecha</th>
-                            <th class="no-sort" style="text-align:right">Acciones</th>
+                            <th style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
