@@ -28,6 +28,9 @@
 
 <!-- jQuery -->
 <script src="<?= base_url('assets/js/vendor/jquery.min.js') ?>"></script>
+<!-- DataTables (paginación en cliente) + vista lista/cuadrícula -->
+<script src="<?= base_url('assets/js/datatables.min.js') ?>"></script>
+<script src="<?= base_url('assets/js/list-view.js') ?>"></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Toastify -->

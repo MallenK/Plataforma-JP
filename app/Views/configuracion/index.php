@@ -234,15 +234,16 @@ $sec  = $section;        // sección activa
                             <p class="mt-2 mb-0" style="color:var(--text-muted)">No hay usuarios de staff registrados.</p>
                         </div>
                     <?php else: ?>
+<div class="jp-files-toolbar px-3 pt-2"><?= view('partials/list_view_toggle', ['key' => 'config-staff']) ?></div>
                     <div class="table-responsive">
-                        <table class="table-jp">
+                        <table class="table-jp" id="cfg-staff-table">
                             <thead>
                                 <tr>
                                     <th>Usuario</th>
                                     <th>Rol actual</th>
                                     <th>Estado</th>
                                     <th>Cambiar rol</th>
-                                    <th></th>
+                                    <th class="no-sort no-label">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -351,8 +352,9 @@ $sec  = $section;        // sección activa
                             <p class="mt-2 mb-0" style="color:var(--text-muted)">No hay sedes registradas todavía.</p>
                         </div>
                     <?php else: ?>
+<div class="jp-files-toolbar px-3 pt-2"><?= view('partials/list_view_toggle', ['key' => 'config-sedes']) ?></div>
                     <div class="table-responsive">
-                        <table class="table-jp">
+                        <table class="table-jp" id="cfg-sedes-table">
                             <thead>
                                 <tr>
                                     <th>Sede</th>
@@ -360,7 +362,7 @@ $sec  = $section;        // sección activa
                                     <th>Dirección</th>
                                     <th>Aforo / Tel.</th>
                                     <th>Estado</th>
-                                    <th></th>
+                                    <th class="no-sort no-label">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -505,8 +507,9 @@ $sec  = $section;        // sección activa
                         'admin_pwreset'    => ['Reset por admin', '#7c3aed'],
                     ];
                     ?>
-                    <div class="table-responsive" style="max-height:360px;overflow-y:auto">
-                        <table class="table-jp">
+<div class="jp-files-toolbar px-3 pt-2"><?= view('partials/list_view_toggle', ['key' => 'config-seguridad']) ?></div>
+                    <div class="table-responsive">
+                        <table class="table-jp" id="cfg-security-table">
                             <thead>
                                 <tr><th>Fecha</th><th>Evento</th><th>Cuenta / usuario</th><th>IP</th></tr>
                             </thead>
@@ -540,8 +543,9 @@ $sec  = $section;        // sección activa
                             <p class="mt-2 mb-0" style="color:var(--text-muted)">Sin actividad registrada.</p>
                         </div>
                     <?php else: ?>
-                    <div class="table-responsive" style="max-height:400px;overflow-y:auto">
-                        <table class="table-jp">
+<div class="jp-files-toolbar px-3 pt-2"><?= view('partials/list_view_toggle', ['key' => 'config-auditoria']) ?></div>
+                    <div class="table-responsive">
+                        <table class="table-jp" id="cfg-audit-table">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -827,6 +831,7 @@ $sec  = $section;        // sección activa
 
 
 <?= $this->section('scripts') ?>
+<script>['staff', 'sedes', 'security', 'audit'].forEach(function (k) {    JPList.init({ table: '#cfg-' + k + '-table', key: 'config-' + (k === 'security' ? 'seguridad' : k === 'audit' ? 'auditoria' : k), dtSearch: true });});</script>
 <style>
 /* ── Modal overlay ───────────────────────────────────────────── */
 .cfg-modal-overlay {

@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.11.0",
+        "date": "2026-09-24 00:00:00",
+        "description": "Listados más ágiles: alumnos, entrenadores, bonos, tickets, notificaciones, documentación, configuración y las tablas de las fichas ya no muestran todos los registros de golpe. Se ven 25 por página (configurable a 10, 25, 50 o 100) con paginación, y el buscador y los filtros siguen buscando entre TODOS los registros, no solo entre los de la página visible. Además, cada listado tiene ahora botones para verlo en forma de lista o de cuadrícula (se recuerda tu elección; en el móvil se abre en cuadrícula por defecto). La gestión de tickets pasa a paginarse en el navegador en lugar de recargar la página."
+    },
+    {
         "version": "1.10.9",
         "date": "2026-09-27 00:00:00",
         "description": "El logo de la academia aparece también en la cabecera del menú lateral, en lugar del cuadro azul con las letras JP."
