@@ -468,3 +468,16 @@ details.pl-help[open] .pl-help-chev { transform: rotate(180deg); }
     .pl-filter { width: 100%; }
     .pl-filter .pl-chip { flex: 1; text-align: center; }
 }
+
+/* Buscador + toggle lista/cuadrícula (DataTables) */
+.pl-bulk-tools { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.pl-bulk-tools .input-search { min-width: 200px; }
+.pl-scroll .dt-container { min-width: 0; }
+/* En cuadrícula cada alumno es una tarjeta: sin ancho mínimo de tabla */
+.jp-list.jp-view-grid table { min-width: 0 !important; }
+.jp-list.jp-view-grid .att-select { min-width: 0; }
+.jp-list.jp-view-grid table tbody td:last-child:not(:first-child) > div { align-items: flex-start !important; }
+@media (max-width: 767px) {
+    .pl-bulk-tools { margin-left: 0; width: 100%; }
+    .pl-bulk-tools .input-search { flex: 1; }
+}
