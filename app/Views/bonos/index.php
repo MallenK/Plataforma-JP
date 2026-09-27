@@ -100,6 +100,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <a href="?filtro=vencidos"      class="calendar-view-tab <?= ($filtro ?? '') === 'vencidos'      ? 'active' : '' ?>" style="text-decoration:none">Vencidos</a>
             <a href="?filtro=todos"         class="calendar-view-tab <?= ($filtro ?? '') === 'todos'         ? 'active' : '' ?>" style="text-decoration:none">Todos</a>
         </div>
+        <?= view('partials/list_view_toggle', ['key' => 'bonos']) ?>
     </div>
 
     <?php if (empty($bonos)): ?>
@@ -124,16 +125,16 @@ $pageSubtitle = 'Gestión de bonos y membresías';
     </div>
     <?php else: ?>
     <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <table class="table-jp" id="bonos-table" style="font-size:13px">
             <thead>
                 <tr>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Jugador</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Tipo de bono</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Sesiones</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Inicio</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Caduca</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:2px solid var(--border)">Estado</th>
-                    <th style="padding:10px 12px;border-bottom:2px solid var(--border)"></th>
+                    <th>Jugador</th>
+                    <th>Tipo de bono</th>
+                    <th>Sesiones</th>
+                    <th>Inicio</th>
+                    <th>Caduca</th>
+                    <th>Estado</th>
+                    <th class="no-sort no-label">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -150,7 +151,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                 $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
                 $barColor    = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
             ?>
-            <tr style="border-bottom:1px solid var(--border)">
+            <tr>
                 <td style="padding:12px;vertical-align:middle">
                     <?php if ($unassigned): ?>
                     <div style="display:flex;align-items:center;gap:10px">
@@ -176,8 +177,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         <div style="height:5px;border-radius:3px;background:<?= $barColor ?>;width:<?= $pct ?>%"></div>
                     </div>
                 </td>
-                <td style="padding:12px;vertical-align:middle;font-size:12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($b['start_date'])) ?></td>
-                <td style="padding:12px;vertical-align:middle;font-size:12px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>">
+                <td data-order="<?= esc($b['start_date']) ?>" style="padding:12px;vertical-align:middle;font-size:12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($b['start_date'])) ?></td>
+                <td data-order="<?= esc($b['expires_at'] ?? '') ?>" style="padding:12px;vertical-align:middle;font-size:12px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>">
                     <?= !empty($b['expires_at']) ? date('d/m/Y', strtotime($b['expires_at'])) : '—' ?>
                 </td>
                 <td style="padding:12px;vertical-align:middle">
@@ -386,6 +387,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script>JPList.init({ table: '#bonos-table', key: 'bonos' });</script>
 <style>
 .bono-modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;

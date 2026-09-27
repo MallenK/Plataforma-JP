@@ -431,7 +431,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                 <span style="font-size:12px;color:var(--text-muted)"><?= count($pfp['plans']) ?> registrado(s)</span>
             </div>
             <div class="table-responsive">
-                <table class="table-jp">
+                <table class="table-jp" data-jp-list="perfil-bonos">
                     <thead>
                         <tr>
                             <th>Bono</th>
@@ -568,12 +568,12 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
             </div>
             <?php if (!empty($documents)): ?>
             <div class="table-responsive">
-                <table class="table-jp">
+                <table class="table-jp" data-jp-list="perfil-documentos">
                     <thead>
                         <tr>
                             <th>Archivo</th>
                             <th>Fecha</th>
-                            <th style="text-align:right">Acciones</th>
+                            <th class="no-sort" style="text-align:right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>

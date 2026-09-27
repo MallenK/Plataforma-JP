@@ -148,6 +148,7 @@ $priorityColors = [
         <label class="form-check-label" for="ticket-hide-own-toggle">Ocultar los tickets que he reportado yo</label>
     </div>
     <span class="text-muted" id="ticket-hide-own-count"></span>
+    <span class="ms-auto"><?= view('partials/list_view_toggle', ['key' => 'tickets-gestion']) ?></span>
 </div>
 
 <?php if (empty($tickets)): ?>
@@ -159,7 +160,7 @@ $priorityColors = [
 
 <?php else: ?>
 <div class="ticket-admin-table-wrap">
-    <table class="ticket-admin-table">
+    <table class="ticket-admin-table" id="tickets-admin-table">
         <thead>
             <tr>
                 <th>Nº Ticket</th>
@@ -171,7 +172,7 @@ $priorityColors = [
                 <th>Estado</th>
                 <th>Resp.</th>
                 <th>Creado</th>
-                <th></th>
+                <th class="no-sort no-label">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -230,55 +231,38 @@ $priorityColors = [
     </table>
 </div>
 
-<!-- Paginación -->
-<?php if ($totalPages > 1): ?>
-<nav class="d-flex justify-content-center mt-4">
-    <ul class="pagination pagination-sm mb-0">
-        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-        <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-            <a class="page-link" href="<?= base_url('tickets/gestion') ?>?page=<?= $p ?>
-                <?= $filters['status']   ? '&status='   . urlencode($filters['status'])   : '' ?>
-                <?= $filters['priority'] ? '&priority=' . urlencode($filters['priority']) : '' ?>
-                <?= $filters['category'] ? '&category=' . urlencode($filters['category']) : '' ?>
-                <?= $filters['search']   ? '&search='   . urlencode($filters['search'])   : '' ?>
-                <?= !empty($filters['assigned_to']) ? '&assigned_to=' . urlencode($filters['assigned_to']) : '' ?>
-                <?= !empty($filters['scope'])    ? '&scope='    . urlencode($filters['scope'])    : '' ?>
-                <?= !empty($filters['archived']) ? '&archived=' . urlencode($filters['archived']) : '' ?>
-            "><?= $p ?></a>
-        </li>
-        <?php endfor; ?>
-    </ul>
-</nav>
 <?php endif; ?>
-<?php endif; ?>
+<?= $this->endSection() ?>
 
+<?= $this->section('scripts') ?>
 <script>
 (function () {
     const KEY = 'jp_tickets_hide_own';
     const toggle = document.getElementById('ticket-hide-own-toggle');
     const countEl = document.getElementById('ticket-hide-own-count');
-    const rows = document.querySelectorAll('.ticket-admin-row[data-own-ticket="1"]');
+    let hide = false;
+    try { hide = localStorage.getItem(KEY) === '1'; } catch (_) {}
+    if (toggle) toggle.checked = hide;
 
+    // Filtro visual "ocultar los míos": va como filtro de la tabla para que la paginación cuente bien
+    const dt = JPList.init({
+        table: '#tickets-admin-table', key: 'tickets-gestion',
+        order: [],
+        rowFilter: tr => !(hide && tr.dataset.ownTicket === '1'),
+    });
     if (!toggle) return;
 
-    function applyState(hide) {
-        rows.forEach(r => { r.style.display = hide ? 'none' : ''; });
-        countEl.textContent = rows.length
-            ? (hide ? `(${rows.length} ocultado${rows.length === 1 ? '' : 's'})` : `(${rows.length} tuyo${rows.length === 1 ? '' : 's'} en esta página)`)
-            : '';
+    function label() {
+        const n = document.querySelectorAll('.ticket-admin-row[data-own-ticket="1"]').length;
+        countEl.textContent = n ? (hide ? `(${n} ocultado${n === 1 ? '' : 's'})` : `(${n} tuyo${n === 1 ? '' : 's'})`) : '';
     }
-
-    let hidden = false;
-    try { hidden = localStorage.getItem(KEY) === '1'; } catch (_) {}
-
-    toggle.checked = hidden;
-    applyState(hidden);
-
+    label();
     toggle.addEventListener('change', function () {
-        applyState(this.checked);
-        try { localStorage.setItem(KEY, this.checked ? '1' : '0'); } catch (_) {}
+        hide = this.checked;
+        try { localStorage.setItem(KEY, hide ? '1' : '0'); } catch (_) {}
+        if (dt) dt.draw();
+        label();
     });
 })();
 </script>
-
 <?= $this->endSection() ?>

@@ -245,8 +245,8 @@ class TicketsController extends BaseController
     {
         $filters = $this->requestFilters();
 
-        $page    = max(1, (int) ($this->request->getGet('page') ?? 1));
-        $perPage = 20;
+        $page    = 1; // la paginación es en el navegador (JPList)
+        $perPage = 5000; // tope de seguridad
         $offset  = ($page - 1) * $perPage;
 
         $tickets = $this->ticketModel->getAll($filters, $perPage, $offset);

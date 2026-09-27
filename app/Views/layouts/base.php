@@ -18,7 +18,7 @@
     <!-- Toastify (notificaciones auth) -->
     <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet">
     <!-- App design system -->
-    <link href="<?= base_url('assets/css/app.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>" rel="stylesheet">
 
     <?= $this->renderSection('styles') ?>
 </head>
@@ -28,6 +28,9 @@
 
 <!-- jQuery -->
 <script src="<?= base_url('assets/js/vendor/jquery.min.js') ?>"></script>
+<!-- DataTables (paginación en cliente) + vista lista/cuadrícula -->
+<script src="<?= base_url('assets/js/datatables.min.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/datatables.min.js') ?: time() ?>"></script>
+<script src="<?= base_url('assets/js/list-view.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/list-view.js') ?: time() ?>"></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Toastify -->
