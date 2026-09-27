@@ -105,6 +105,8 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                 <?php endif; ?>
             </div>
 
+            <div class="pl-toolbar-views">
+            <?= view('partials/list_view_toggle', ['key' => 'pasar-lista-semana']) ?>
             <div class="pl-toggle" role="tablist" aria-label="Vista">
                 <button id="btn-view-week" class="is-active" onclick="setView('week')">
                     <i class="bi bi-calendar-week me-1"></i>Semana
@@ -112,6 +114,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                 <button id="btn-view-day" onclick="setView('day')">
                     <i class="bi bi-calendar-day me-1"></i>Día
                 </button>
+            </div>
             </div>
         </div>
 
@@ -295,6 +298,26 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.toggleSession(h); }
         });
     });
+
+    // Lista / cuadrícula de las sesiones de cada día (se recuerda la elección).
+    var wrap = document.querySelector('.pl-wrap');
+    var VKEY = 'jp:view:pasar-lista-semana';
+    function setLayout(v, persist) {
+        wrap.classList.toggle('pl-layout-grid', v === 'grid');
+        document.querySelectorAll('[data-jp-view-for="pasar-lista-semana"]').forEach(function(b) {
+            var on = b.getAttribute('data-jp-view') === v;
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            b.classList.toggle('active', on);
+        });
+        if (persist) { try { localStorage.setItem(VKEY, v); } catch (e) {} }
+    }
+    document.querySelectorAll('[data-jp-view-for="pasar-lista-semana"]').forEach(function(b) {
+        b.addEventListener('click', function() { setLayout(b.getAttribute('data-jp-view'), true); });
+    });
+    var savedLayout = null;
+    try { savedLayout = localStorage.getItem(VKEY); } catch (e) {}
+    setLayout(savedLayout === 'grid' || savedLayout === 'list' ? savedLayout
+        : (window.matchMedia && matchMedia('(max-width: 767px)').matches ? 'grid' : 'list'), false);
 
     var currentView = 'week';
     var currentDay  = DEFAULT_DAY;
