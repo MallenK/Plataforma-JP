@@ -73,6 +73,7 @@
             return (i === 0 || !t || th.classList.contains('no-label') || t === 'Acciones') ? '' : t;
         });
 
+        var fits = !!o.pagerOnlyIfNeeded && tableEl.querySelectorAll('tbody tr:not(:has(.dt-empty))').length <= (o.pageLength || 25);
         var dt = $(tableEl).DataTable({
             pageLength: o.pageLength || 25,
             lengthMenu: [5, 10, 25, 50, 100].filter(function (n) { return n !== 5 || (o.pageLength || 25) === 5; }),
@@ -83,8 +84,9 @@
             columnDefs: [{ targets: '.no-sort', orderable: false }],
             layout: {
                 topStart: o.dtSearch ? 'search' : null, topEnd: null,
-                bottomStart: ['pageLength', 'info'],
-                bottomEnd: 'paging',
+                // pagerOnlyIfNeeded: sin controles de paginación si todo cabe en una página
+                bottomStart: fits ? null : ['pageLength', 'info'],
+                bottomEnd: fits ? null : 'paging',
             },
         });
 
@@ -247,7 +249,7 @@
             bar.className = 'jp-files-toolbar';
             bar.innerHTML = TOGGLE_HTML(key);
             anchor.parentNode.insertBefore(bar, anchor);
-            init({ table: t, key: key, ordering: false, pageLength: parseInt(t.getAttribute('data-jp-page-size'), 10) || 25, dtSearch: t.querySelectorAll('tbody tr').length > 10 });
+            init({ table: t, key: key, ordering: false, pageLength: parseInt(t.getAttribute('data-jp-page-size'), 10) || 25, pagerOnlyIfNeeded: t.hasAttribute('data-jp-page-size'), dtSearch: t.querySelectorAll('tbody tr').length > 10 });
         });
     });
 })(window, window.jQuery);
