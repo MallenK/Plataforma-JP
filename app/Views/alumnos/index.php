@@ -183,6 +183,11 @@ $pageSubtitle = 'Gestión de alumnos registrados';
 
 <?= $this->section('scripts') ?>
 <script>
-JPList.init({    table: '#alumnos-table', key: 'alumnos', search: '#search-input', searchAttrs: ['name', 'email'],    filters: [{ el: '#filter-status', attr: 'status' }, { el: '#filter-profile', attr: 'profile' }],    count: '#total-count', noun: 'alumnos'});
+JPList.init({
+    table: '#alumnos-table', key: 'alumnos', search: '#search-input', searchAttrs: ['name', 'email'],
+    filters: [{ el: '#filter-status', attr: 'status' }, { el: '#filter-profile', attr: 'profile' }],
+    count: '#total-count', noun: 'alumnos',
+    pageLength: 10, defaultView: 'list',   // por defecto; la elección del usuario manda
+});
 </script>
 <?= $this->endSection() ?>

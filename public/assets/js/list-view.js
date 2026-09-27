@@ -4,13 +4,18 @@
  * La búsqueda y los filtros actúan sobre TODAS las filas (no solo la página visible);
  * la paginación es solo de presentación (25 por defecto).
  *
+ * La vista (lista/cuadrícula) y las filas por página que elige el usuario se
+ * recuerdan por listado en localStorage (`jp:view:<key>` y `jp:size:<key>`), así
+ * que `pageLength` y `defaultView` solo mandan mientras no haya elegido nada.
+ *
  * Uso:
  *   JPList.init({
  *     table:   '#alumnos-table',
- *     key:     'alumnos',                       // clave para recordar la vista elegida
+ *     key:     'alumnos',                       // clave para recordar vista y tamaño
  *     search:  '#search-input',                 // opcional
  *     filters: [{ el: '#filter-status', attr: 'status' }],  // compara con data-<attr> del <tr>
  *     count:   '#total-count', noun: 'alumnos', // opcional
+ *     pageLength: 10, defaultView: 'list',      // opcional (por defecto 25 y lista/cuadrícula según pantalla)
  *   });
  * Botones de vista: cualquier <button data-jp-view="list|grid" data-jp-view-for="<key>">.
  * Columnas no ordenables: <th class="no-sort">. Sin etiqueta en tarjeta: <th class="no-label">.
@@ -40,6 +45,22 @@
         if (v === 'list' || v === 'grid') return v;
         if (def) return def;
         return window.matchMedia && window.matchMedia('(max-width: 767px)').matches ? 'grid' : 'list';
+    }
+
+    // Filas por página elegidas por el usuario, recordadas por listado.
+    function loadSize(key, def) {
+        var n;
+        try { n = parseInt(window.localStorage.getItem('jp:size:' + key), 10); } catch (e) { n = NaN; }
+        return n > 0 ? n : def;
+    }
+    function saveSize(key, n) {
+        try { window.localStorage.setItem('jp:size:' + key, String(n)); } catch (e) { /* sin persistencia */ }
+    }
+    // El menú siempre debe contener el tamaño activo, o el <select> saldría vacío.
+    function sizeMenu(size, base) {
+        var menu = (base || [10, 25, 50, 100]).slice();
+        if (menu.indexOf(size) === -1) menu.push(size);
+        return menu.sort(function (a, b) { return a - b; });
     }
 
     function init(o) {
@@ -73,10 +94,11 @@
             return (i === 0 || !t || th.classList.contains('no-label') || t === 'Acciones') ? '' : t;
         });
 
-        var fits = !!o.pagerOnlyIfNeeded && tableEl.querySelectorAll('tbody tr:not(:has(.dt-empty))').length <= (o.pageLength || 25);
+        var size = loadSize(o.key, o.pageLength || 25);
+        var fits = !!o.pagerOnlyIfNeeded && tableEl.querySelectorAll('tbody tr:not(:has(.dt-empty))').length <= size;
         var dt = $(tableEl).DataTable({
-            pageLength: o.pageLength || 25,
-            lengthMenu: [5, 10, 25, 50, 100].filter(function (n) { return n !== 5 || (o.pageLength || 25) === 5; }),
+            pageLength: size,
+            lengthMenu: sizeMenu(size, o.lengthMenu),
             order: o.order || [],
             ordering: o.ordering !== false,
             language: LANG,
@@ -107,6 +129,14 @@
         dt.on('draw', decorate);
         decorate();
 
+        dt.on('length.dt', function (e, settings, len) { if (len > 0) saveSize(o.key, len); });
+        // Al volver atrás, el navegador repone el valor del <select> sin avisar a
+        // DataTables: se veían 25 filas con "10" elegido. Mandan las filas pintadas.
+        window.addEventListener('pageshow', function () {
+            var sel = container.find('.dt-length select')[0];
+            if (sel && sel.value !== String(dt.page.len())) sel.value = String(dt.page.len());
+        });
+
         if (o.search) {
             var s = document.querySelector(o.search);
             if (s) s.addEventListener('input', function () {
@@ -130,7 +160,7 @@
         Array.prototype.forEach.call(document.querySelectorAll('[data-jp-view-for="' + o.key + '"]'), function (b) {
             b.addEventListener('click', function () { setView(b.getAttribute('data-jp-view'), true); });
         });
-        setView(initialView(o.key), false);
+        setView(initialView(o.key, o.defaultView), false);
 
         return dt;
     }
@@ -153,7 +183,7 @@
         var list = document.querySelector(o.list);
         if (!list) return null;
         var items = Array.prototype.slice.call(list.querySelectorAll(o.item));
-        var size = o.pageSize || 25, page = 1, q = '';
+        var size = loadSize(o.key, o.pageSize || 25), page = 1, q = '';
         var pred = function () { return true; };
         var texts = items.map(function (el) { return (el.textContent || '').toLowerCase().replace(/\s+/g, ' '); });
         var countEl = null;
@@ -188,7 +218,7 @@
             if (m.length === 0) {
                 pager.innerHTML = q || o.search ? '<div class="jp-pager-empty">Sin resultados para esta búsqueda</div>' : '';
             } else {
-                var opts = [10, 25, 50, 100].map(function (n) {
+                var opts = sizeMenu(size, o.lengthMenu).map(function (n) {
                     return '<option value="' + n + '"' + (n === size ? ' selected' : '') + '>' + n + '</option>';
                 }).join('');
                 pager.innerHTML =
@@ -208,7 +238,7 @@
             if (b && !b.disabled) { page = parseInt(b.getAttribute('data-p'), 10); render(); }
         });
         pager.addEventListener('change', function (e) {
-            if (e.target.tagName === 'SELECT') { size = parseInt(e.target.value, 10); page = 1; render(); }
+            if (e.target.tagName === 'SELECT') { size = parseInt(e.target.value, 10); saveSize(o.key, size); page = 1; render(); }
         });
 
         var sel = '[data-jp-view-for="' + o.key + '"]';
