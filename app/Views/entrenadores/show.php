@@ -225,10 +225,13 @@ $formatTime = static function (?string $hms): string {
                     <i class="bi bi-calendar3 me-2" style="color:var(--success)"></i>
                     Próximas sesiones
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= $upcomingCount ?> programada(s)</span>
+                    <?= view('partials/list_view_toggle', ['key' => 'coach-proximas']) ?>
+                </div>
             </div>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-proximas" data-jp-page-size="5">
+                <table class="table-jp" id="coach-proximas-table">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -265,11 +268,14 @@ $formatTime = static function (?string $hms): string {
                     <i class="bi bi-calendar-check me-2" style="color:var(--accent)"></i>
                     Últimas sesiones dirigidas
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($sessionsList) ?> registro(s)</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= count($sessionsList) ?> registro(s)</span>
+                    <?= view('partials/list_view_toggle', ['key' => 'coach-historial']) ?>
+                </div>
             </div>
             <?php if (!empty($sessionsList)): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-historial" data-jp-page-size="5">
+                <table class="table-jp" id="coach-historial-table">
                     <thead>
                         <tr>
                             <th>Sesión</th>
@@ -328,13 +334,14 @@ $formatTime = static function (?string $hms): string {
                 </span>
                 <span style="display:flex;align-items:center;gap:10px">
                     <span style="font-size:12px;color:var(--text-muted)"><?= $playersCount ?> alumno(s)</span>
+                    <?= view('partials/list_view_toggle', ['key' => 'coach-alumnos']) ?>
                     <i class="bi bi-chevron-down toggle-icon" style="font-size:14px;color:var(--text-muted)"></i>
                 </span>
             </div>
             <div id="coachPlayersList" class="d-none">
                 <?php if (!empty($playersList)): ?>
                 <div class="table-responsive">
-                    <table class="table-jp" data-jp-list="coach-alumnos" data-jp-page-size="5">
+                    <table class="table-jp" id="coach-alumnos-table">
                         <thead>
                             <tr>
                                 <th>Alumno</th>
@@ -399,11 +406,14 @@ $formatTime = static function (?string $hms): string {
                     <i class="bi bi-folder-fill me-2" style="color:var(--accent)"></i>
                     Documentos
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($documents ?? []) ?> archivo(s)</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= count($documents ?? []) ?> archivo(s)</span>
+                    <?= view('partials/list_view_toggle', ['key' => 'coach-documentos']) ?>
+                </div>
             </div>
             <?php if (!empty($documents)): ?>
             <div class="table-responsive">
-                <table class="table-jp" data-jp-list="coach-documentos" data-jp-page-size="5">
+                <table class="table-jp" id="coach-documentos-table">
                     <thead>
                         <tr>
                             <th>Archivo</th>
@@ -477,4 +487,41 @@ $formatTime = static function (?string $hms): string {
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+(function () {
+    var dtOpts = { ordering: false, pageLength: 5, pagerOnlyIfNeeded: true };
+
+    <?php if (!empty($upcomingList)): ?>
+    JPList.init(Object.assign({ table: '#coach-proximas-table', key: 'coach-proximas' }, dtOpts));
+    <?php endif; ?>
+
+    <?php if (!empty($sessionsList)): ?>
+    JPList.init(Object.assign({ table: '#coach-historial-table', key: 'coach-historial' }, dtOpts));
+    <?php endif; ?>
+
+    <?php if (!empty($documents)): ?>
+    JPList.init(Object.assign({ table: '#coach-documentos-table', key: 'coach-documentos' }, dtOpts));
+    <?php endif; ?>
+
+    <?php if (!empty($playersList)): ?>
+    // Inicialización diferida: DataTables no mide bien columnas en elementos ocultos.
+    var alumnos = document.getElementById('coachPlayersList');
+    var alumnosInited = false;
+    var header = alumnos ? alumnos.previousElementSibling : null;
+    if (header) {
+        header.addEventListener('click', function () {
+            if (!alumnosInited) {
+                alumnosInited = true;
+                setTimeout(function () {
+                    JPList.init(Object.assign({ table: '#coach-alumnos-table', key: 'coach-alumnos' }, dtOpts));
+                }, 50);
+            }
+        });
+    }
+    <?php endif; ?>
+})();
+</script>
 <?= $this->endSection() ?>
