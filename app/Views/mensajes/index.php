@@ -686,8 +686,9 @@ $roleLabels = [
     // ── Polling de mensajes nuevos ───────────────────────────
     function startPolling() {
         pollConversations(); // update sidebar immediately (adds new conv item if needed)
-        pollTimer = setInterval(pollMessages, 3000);
-        pollConvTimer = setInterval(pollConversations, 10000);
+        // Con la pestaña oculta no se sondea (cada sondeo abre una conexión a BD)
+        pollTimer = setInterval(() => { if (!document.hidden) pollMessages(); }, 5000);
+        pollConvTimer = setInterval(() => { if (!document.hidden) pollConversations(); }, 20000);
     }
     function stopPolling() {
         clearInterval(pollTimer);

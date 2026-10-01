@@ -201,6 +201,13 @@ class Database extends Config
             $this->defaultGroup = 'tests';
         }
 
+        // Conexiones persistentes (DB_PCONNECT=true): cada worker de Apache reutiliza su
+        // conexión en vez de abrir una por petición. Pensado para PPR/demo en Render con
+        // BD remota en hosting compartido (límite max_connections_per_hour).
+        if (filter_var(env('DB_PCONNECT', false), FILTER_VALIDATE_BOOLEAN)) {
+            $this->default['pConnect'] = true;
+        }
+
         // Enable SSL for TiDB Cloud (and similar providers that require encrypted transport)
         if (env('DB_SSL', false)) {
             $this->default['encrypt'] = ['ssl_verify' => false];
