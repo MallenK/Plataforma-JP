@@ -103,9 +103,10 @@ final class NotificacionesOrigenTest extends CIUnitTestCase
 
     public function testLaCampanitaYElCentroDeNotificacionesEnlazanAlOrigen(): void
     {
+        // La campanita abre el detalle (que lleva al origen con su botón);
+        // el centro de notificaciones sigue enlazando al origen directamente.
         $navbar = file_get_contents(APPPATH . 'Views/components/navbar.php');
-        $this->assertStringContainsString("BASE + 'tickets/' + sourceId", $navbar);
-        $this->assertStringContainsString("BASE + 'mensajes?conv=' + sourceId", $navbar);
+        $this->assertStringContainsString("BASE + 'notificaciones/' + id", $navbar);
 
         $center = file_get_contents(APPPATH . 'Views/notificaciones/index.php');
         $this->assertStringContainsString('NotificationModel::sourceLink($n)', $center);

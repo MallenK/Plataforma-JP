@@ -122,6 +122,63 @@ class NotificationModel extends Model
     }
 
     /**
+     * Una notificación para su pantalla de detalle, solo si $userId es su
+     * destinatario o su remitente (misma regla que la descarga del adjunto).
+     * Devuelve null si no existe O si no tiene permiso: el llamador responde
+     * 404 en ambos casos para no revelar qué ids existen.
+     *
+     * Añade: sender_name/avatar/role, is_recipient, is_sender, recipient_read_at
+     * (null si no es destinatario) y, para el remitente, recipient_count/read_count.
+     */
+    public function findForViewer(int $id, int $userId): ?array
+    {
+        if ($id <= 0 || $userId <= 0) {
+            return null;
+        }
+
+        $notif = $this->db->table('notifications n')
+            ->select('n.*, u.name AS sender_name, u.avatar AS sender_avatar, u.role AS sender_role')
+            ->join('users u', 'u.id = n.sender_id', 'left')
+            ->where('n.id', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$notif) {
+            return null;
+        }
+
+        $row = $this->db->table('notification_recipients')
+            ->select('read_at')
+            ->where('notification_id', $id)
+            ->where('recipient_id', $userId)
+            ->get()
+            ->getRowArray();
+
+        $isRecipient = $row !== null;
+        $isSender    = (int) $notif['sender_id'] === $userId;
+
+        if (!$isRecipient && !$isSender) {
+            return null;
+        }
+
+        $notif['is_recipient']       = $isRecipient;
+        $notif['is_sender']          = $isSender;
+        $notif['recipient_read_at']  = $row['read_at'] ?? null;
+
+        if ($isSender) {
+            $stats = $this->db->table('notification_recipients')
+                ->select('COUNT(id) AS recipient_count, SUM(read_at IS NOT NULL) AS read_count')
+                ->where('notification_id', $id)
+                ->get()
+                ->getRowArray();
+            $notif['recipient_count'] = (int) ($stats['recipient_count'] ?? 0);
+            $notif['read_count']      = (int) ($stats['read_count'] ?? 0);
+        }
+
+        return $notif;
+    }
+
+    /**
      * Cuenta las no leídas de un usuario.
      */
     public function countUnread(int $userId): int
