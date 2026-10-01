@@ -238,6 +238,7 @@ class ClasesController extends BaseController
             'canRenewSeries'     => $canRenewSeries,
             'seriesRenewal'      => $seriesRenewal,
             'renewalDefaults'    => $renewalDefaults,
+            'attachLimits'       => self::attachmentLimits(),  // TICKET-012: aviso previo de tamaño
         ]);
     }
 
@@ -540,6 +541,37 @@ class ClasesController extends BaseController
     private const ATTACHMENT_VIDEO_EXTENSIONS = ['mp4', 'mov'];
 
     /**
+     * Límites de tamaño. Públicos: las vistas los pasan a attach-upload.js
+     * para avisar ANTES de subir (un vídeo de móvil tarda minutos en subir
+     * y el servidor solo lo rechazaba al final). Un minuto de vídeo de
+     * iPhone (.mov) ronda los 100-200 MB, de ahí el tope de vídeo.
+     */
+    public const ATTACHMENT_MAX_DEFAULT_BYTES = 5 * 1024 * 1024;    // imágenes/documentos
+    public const ATTACHMENT_MAX_VIDEO_BYTES   = 200 * 1024 * 1024;  // vídeo
+
+    /**
+     * Límites efectivos para el aviso previo del navegador: el tope de la app
+     * recortado por lo que el PHP del servidor acepte de verdad
+     * (upload_max_filesize / post_max_size). Si el hosting ignora los
+     * `php_value` del .htaccess (LiteSpeed/FPM), el aviso refleja la realidad.
+     *
+     * @return array{video:int, other:int}
+     */
+    public static function attachmentLimits(): array
+    {
+        $phpCap = array_filter([
+            (int) ini_parse_quantity((string) ini_get('upload_max_filesize')),
+            (int) ini_parse_quantity((string) ini_get('post_max_size')),
+        ], static fn (int $v): bool => $v > 0);
+        $cap = $phpCap ? min($phpCap) : PHP_INT_MAX;
+
+        return [
+            'video' => min(self::ATTACHMENT_MAX_VIDEO_BYTES, $cap),
+            'other' => min(self::ATTACHMENT_MAX_DEFAULT_BYTES, $cap),
+        ];
+    }
+
+    /**
      * Sube un adjunto ligado a las observaciones de la sesión.
      * `player_uid` (opcional, POST): si viene, el adjunto queda ligado a la
      * observación individual de ese alumno en vez de a la sesión completa.
@@ -551,21 +583,30 @@ class ClasesController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        if (!$this->isAssignedOrAdmin($session)) {
-            session()->setFlashdata('error', 'No tienes permiso para adjuntar archivos a esta sesión.');
+        // attach-upload.js sube por XHR (con barra de progreso) y espera JSON;
+        // sin JS el formulario sigue funcionando con redirect + flash.
+        $ajax = $this->request->isAJAX();
+        $fail = function (string $msg, int $status = 422) use ($id, $ajax) {
+            if ($ajax) {
+                return $this->response->setStatusCode($status)
+                    ->setJSON(['error' => $msg, 'csrf' => csrf_hash()]);
+            }
+            session()->setFlashdata('error', $msg);
             return redirect()->to('/clases/' . $id);
+        };
+
+        if (!$this->isAssignedOrAdmin($session)) {
+            return $fail('No tienes permiso para adjuntar archivos a esta sesión.', 403);
         }
 
         $file = $this->request->getFile('attachment');
         if (!$file || !$file->isValid()) {
-            session()->setFlashdata('error', 'No se ha recibido ningún archivo válido.');
-            return redirect()->to('/clases/' . $id);
+            return $fail('No se ha recibido ningún archivo válido.');
         }
 
         $result = $this->handleAttachmentUpload($file);
         if (isset($result['error'])) {
-            session()->setFlashdata('error', $result['error']);
-            return redirect()->to('/clases/' . $id);
+            return $fail($result['error']);
         }
 
         $playerUid = $this->request->getPost('player_uid');
@@ -573,11 +614,13 @@ class ClasesController extends BaseController
 
         $saved = $this->clasesService->addAttachment($id, $playerUid, $this->currentUserId(), $result);
         if (!$saved['success']) {
-            session()->setFlashdata('error', $saved['error'] ?? 'No se pudo guardar el adjunto.');
-            return redirect()->to('/clases/' . $id);
+            return $fail($saved['error'] ?? 'No se pudo guardar el adjunto.');
         }
 
         session()->setFlashdata('success', 'Adjunto guardado.');
+        if ($ajax) {
+            return $this->response->setJSON(['success' => true, 'csrf' => csrf_hash()]);
+        }
         return redirect()->to('/clases/' . $id);
     }
 
@@ -658,8 +701,6 @@ class ClasesController extends BaseController
     {
         helper('upload');
 
-        $maxSizeDefault = 5 * 1024 * 1024;   // 5 MB (imágenes/documentos)
-        $maxSizeVideo    = 80 * 1024 * 1024;  // 80 MB (vídeo)
         $allowed = [
             'image/jpeg', 'image/png', 'image/webp', 'image/gif',
             'application/pdf', 'application/msword',
@@ -668,7 +709,7 @@ class ClasesController extends BaseController
 
         $clientExt = strtolower(pathinfo($file->getClientName(), PATHINFO_EXTENSION));
         $isVideo   = in_array($clientExt, self::ATTACHMENT_VIDEO_EXTENSIONS, true);
-        $maxSize   = $isVideo ? $maxSizeVideo : $maxSizeDefault;
+        $maxSize   = $isVideo ? self::ATTACHMENT_MAX_VIDEO_BYTES : self::ATTACHMENT_MAX_DEFAULT_BYTES;
 
         if ($file->getSize() > $maxSize) {
             $limitMb = (int) ($maxSize / (1024 * 1024));
