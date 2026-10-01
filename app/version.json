@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.12.1",
+        "date": "2026-10-01 00:00:00",
+        "description": "Documentación: al eliminar un archivo desde el modal de una carpeta, la fila desaparece con una animación suave y se actualiza el contador (antes el borrado funcionaba pero la pantalla no cambiaba hasta recargar). La subida de archivos, tanto desde Subir archivo como desde el modal de carpeta, muestra ahora una barra de progreso real con el porcentaje y se mantiene hasta que el archivo está subido."
+    },
+    {
         "version": "1.12.0",
         "date": "2026-10-01 00:00:00",
         "description": "Subida de adjuntos en clases más clara: al elegir el archivo se comprueba el formato y el tamaño antes de subir (con aviso inmediato si es incompatible o demasiado grande), en los vídeos se muestran duración y resolución, y mientras se sube aparece el porcentaje de progreso. El límite de vídeo pasa a 500 MB (en clases y mensajes; documentación ya lo tenía) y se ajusta automáticamente a lo que acepte el servidor."
