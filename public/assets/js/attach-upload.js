@@ -42,6 +42,12 @@
         var maxOther = parseInt(form.dataset.maxOther, 10) || 0;
         var idleHtml = button.innerHTML;
 
+        // [data-attach-reveal] en el botón: solo aparece cuando el archivo ya
+        // está procesado (leído y validado). Sin JS el botón se ve siempre.
+        var reveal = button.hasAttribute('data-attach-reveal');
+        function setReady(ok) { if (reveal) { button.style.display = ok ? '' : 'none'; } }
+        setReady(false);
+
         // La barra se puede colocar a mano con [data-attach-progress]; si no, se añade al final.
         var bar = form.querySelector('[data-attach-progress]');
         var ownBar = !bar;
@@ -131,6 +137,7 @@
         function inspect(file) {
             var token = ++inspectToken;
             var ext = extOf(file.name);
+            setReady(false);
 
             if (allowedExt.length && allowedExt.indexOf(ext) === -1) {
                 toast('Formato no compatible (.' + (ext || '?') + '). Se admiten: ' +
@@ -157,12 +164,14 @@
 
             if (!lim.isVideo) {
                 showInfo(base + bigNote, big ? 'warn' : '');
+                setReady(true);
                 return true;
             }
 
             showInfo(base + ' · leyendo vídeo…');
             readVideoMeta(file).then(function (m) {
                 if (token !== inspectToken) { return; }   // el usuario eligió otro archivo
+                setReady(true);                            // procesado: ya se puede subir
                 if (m) {
                     showInfo(base + ' · ' + fmtDuration(m.duration) + ' · ' + m.w + '×' + m.h + bigNote,
                         big ? 'warn' : '');
@@ -178,8 +187,15 @@
         // Aviso inmediato al elegir el archivo, no tras minutos de subida.
         input.addEventListener('change', function () {
             var file = input.files && input.files[0];
-            if (!file) { inspectToken++; showInfo(''); return; }
+            if (!file) { inspectToken++; showInfo(''); setReady(false); return; }
             inspect(file);
+        });
+
+        // form.reset() (p. ej. al abrir otra carpeta) deja el formulario como nuevo.
+        form.addEventListener('reset', function () {
+            inspectToken++;
+            showInfo('');
+            setReady(false);
         });
 
         form.addEventListener('submit', function (e) {
