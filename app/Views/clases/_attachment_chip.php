@@ -22,6 +22,7 @@ $sizeLabel = $sizeKb >= 1024 ? round($sizeKb / 1024, 1) . ' MB' : $sizeKb . ' KB
     </a>
     <?php if (!empty($canDelete)): ?>
     <form action="/clases/adjuntos/<?= $att['id'] ?>/eliminar" method="POST" style="display:inline"
+          data-ajax-delete data-remove-target=".cs-attach-chip"
           data-ru-confirm="¿Eliminar este adjunto?"
           data-ru-confirm-desc="Se borrará «<?= esc($att['file_name'], 'attr') ?>» de forma permanente."
           data-ru-confirm-label="Eliminar" data-ru-confirm-danger>

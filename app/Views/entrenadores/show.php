@@ -468,7 +468,7 @@ $formatTime = static function (?string $hms): string {
             <?php endif; ?>
             <?php if (!empty($personalFolder) && $isAdminUser): ?>
             <div class="card-jp-body" style="border-top:1px solid var(--border)">
-                <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data"
+                <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data" data-attach-upload
                       class="d-flex gap-2 align-items-center flex-wrap">
                     <?= csrf_field() ?>
                     <input type="hidden" name="folder_id" value="<?= (int)$personalFolder['id'] ?>">

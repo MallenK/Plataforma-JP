@@ -522,7 +522,6 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 
 
 <?= $this->section('scripts') ?>
-<script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 <style>
 /* ── Modales ──────────────────────────────────────────────────────── */
 .modal-overlay {

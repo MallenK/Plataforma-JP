@@ -653,12 +653,20 @@ class ClasesController extends BaseController
         }
 
         $session = $this->clasesService->getSession($attach['session_id']);
+        $ajax    = $this->request->isAJAX();   // ajax-delete.js: quita el chip sin recargar
         if (!$session || !$this->isAssignedOrAdmin($session)) {
+            if ($ajax) {
+                return $this->response->setStatusCode(403)
+                    ->setJSON(['success' => false, 'error' => 'No tienes permiso para borrar este adjunto.']);
+            }
             session()->setFlashdata('error', 'No tienes permiso para borrar este adjunto.');
             return redirect()->to('/clases/' . $attach['session_id']);
         }
 
         $this->clasesService->deleteAttachment($attachId);
+        if ($ajax) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Adjunto eliminado.', 'csrf' => csrf_hash()]);
+        }
         session()->setFlashdata('success', 'Adjunto eliminado.');
         return redirect()->to('/clases/' . $attach['session_id']);
     }
