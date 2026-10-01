@@ -134,87 +134,6 @@ $statusHint   = [
 </div>
 <?php endif; ?>
 
-<!-- ── Mi convocatoria (solo jugadores) ────────────────────── -->
-<?php if ($myPlayer): ?>
-<?php
-$myAttendance = $myPlayer['attendance'] ?? 'pending';
-[$aLabel, $aColor, $aIcon] = $attendanceMap[$myAttendance] ?? $attendanceMap['pending'];
-$hasStudentNote = !empty($myPlayer['student_note']);
-$noticeDeadline = \App\Services\ClasesService::absenceNoticeDeadline($session);
-$pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
-?>
-<div class="card-jp mb-3" style="border-left:3px solid <?= $statusColor ?>">
-    <div class="card-jp-body">
-        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-            <div>
-                <div style="font-weight:700;color:var(--text-h);margin-bottom:6px">Mi asistencia</div>
-                <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44">
-                    <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
-                </span>
-                <?php if ($myPlayer['coach_name']): ?>
-                    <span style="font-size:12px;color:var(--text-muted);margin-left:10px">
-                        <i class="bi bi-person-workspace me-1"></i><?= $isStaffSession ? 'Staff' : 'Entrenador' ?>: <?= esc($myPlayer['coach_name']) ?>
-                    </span>
-                <?php endif; ?>
-                <?php if (!empty($myPlayer['absence_reason'])): ?>
-                <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">
-                    <i class="bi bi-chat-left-text me-1" style="color:var(--danger)"></i>
-                    <strong style="color:var(--danger)">Motivo (admin):</strong> <?= esc($myPlayer['absence_reason']) ?>
-                </div>
-                <?php endif; ?>
-                <?php if ($hasStudentNote): ?>
-                <div style="margin-top:6px;font-size:12.5px;color:var(--text-muted)">
-                    <i class="bi bi-check-circle-fill me-1" style="color:#059669"></i>
-                    <strong style="color:#059669">Tu aviso enviado:</strong> <?= esc($myPlayer['student_note']) ?>
-                    <span style="font-size:11px;margin-left:4px">(<?= !empty($myPlayer['student_noted_at']) ? date('d/m H:i', strtotime($myPlayer['student_noted_at'])) : '' ?>)</span>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <?php if ($session['status'] === 'scheduled' && $hasStudentNote): ?>
-            <span style="font-size:12px;color:#059669">
-                <i class="bi bi-check-circle-fill me-1"></i>Aviso enviado
-            </span>
-            <?php endif; ?>
-        </div>
-
-        <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
-        <?php
-        $deadlineDate = $noticeDeadline ? $noticeDeadline->format('d/m/Y') : '';
-        $deadlineTime = $noticeDeadline ? $noticeDeadline->format('H:i') : '';
-        ?>
-        <div class="aviso-ausencia">
-            <?php if ($noticeDeadline): ?>
-            <div class="aviso-panel <?= $pastCutoff ? 'is-late' : 'is-ok' ?>" role="<?= $pastCutoff ? 'alert' : 'status' ?>">
-                <i class="bi <?= $pastCutoff ? 'bi-exclamation-octagon-fill' : 'bi-check-circle-fill' ?> aviso-panel__icon" aria-hidden="true"></i>
-                <div class="aviso-panel__text">
-                    <div class="aviso-panel__title">
-                        <?= $pastCutoff ? 'Ya no estás a tiempo de avisar' : 'Aún estás a tiempo de avisar' ?>
-                    </div>
-                    <p>Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong> al inicio de la clase.</p>
-                    <?php if ($pastCutoff): ?>
-                    <p>El plazo terminó el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>. Si avisas ahora, tu aviso se registrará igualmente como <strong>aviso tardío</strong>.</p>
-                    <?php else: ?>
-                    <p>Puedes avisar hasta el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>.</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-            <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" class="aviso-form">
-                <?= csrf_field() ?>
-                <label for="student-note-<?= (int) $session['id'] ?>" class="aviso-form__label">Motivo <span>(opcional)</span></label>
-                <textarea id="student-note-<?= (int) $session['id'] ?>" name="student_note" class="form-control-jp" rows="3"
-                          placeholder="Cuéntanos por qué no puedes asistir…"></textarea>
-                <button type="submit" class="btn-jp btn-jp-danger aviso-form__btn">
-                    <i class="bi bi-calendar-x-fill me-1"></i><?= $pastCutoff ? 'Avisar igualmente' : 'Avisar que no puedo asistir' ?>
-                </button>
-            </form>
-        </div>
-        <?php endif; ?>
-    </div>
-</div>
-<?php endif; ?>
-
 <div class="row g-3">
 
     <!-- ── Columna principal ──────────────────────────────── -->
@@ -596,6 +515,87 @@ $pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
                 </div>
             </div>
         </div>
+
+        <!-- ── Mi convocatoria (solo jugadores) ────────────────────── -->
+        <?php if ($myPlayer): ?>
+        <?php
+        $myAttendance = $myPlayer['attendance'] ?? 'pending';
+        [$aLabel, $aColor, $aIcon] = $attendanceMap[$myAttendance] ?? $attendanceMap['pending'];
+        $hasStudentNote = !empty($myPlayer['student_note']);
+        $noticeDeadline = \App\Services\ClasesService::absenceNoticeDeadline($session);
+        $pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
+        ?>
+        <div class="card-jp mb-3" style="border-left:3px solid <?= $statusColor ?>">
+            <div class="card-jp-body">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div style="font-weight:700;color:var(--text-h);margin-bottom:6px">Mi asistencia</div>
+                        <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44">
+                            <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
+                        </span>
+                        <?php if ($myPlayer['coach_name']): ?>
+                            <span style="font-size:12px;color:var(--text-muted);margin-left:10px">
+                                <i class="bi bi-person-workspace me-1"></i><?= $isStaffSession ? 'Staff' : 'Entrenador' ?>: <?= esc($myPlayer['coach_name']) ?>
+                            </span>
+                        <?php endif; ?>
+                        <?php if (!empty($myPlayer['absence_reason'])): ?>
+                        <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">
+                            <i class="bi bi-chat-left-text me-1" style="color:var(--danger)"></i>
+                            <strong style="color:var(--danger)">Motivo (admin):</strong> <?= esc($myPlayer['absence_reason']) ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($hasStudentNote): ?>
+                        <div style="margin-top:6px;font-size:12.5px;color:var(--text-muted)">
+                            <i class="bi bi-check-circle-fill me-1" style="color:#059669"></i>
+                            <strong style="color:#059669">Tu aviso enviado:</strong> <?= esc($myPlayer['student_note']) ?>
+                            <span style="font-size:11px;margin-left:4px">(<?= !empty($myPlayer['student_noted_at']) ? date('d/m H:i', strtotime($myPlayer['student_noted_at'])) : '' ?>)</span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($session['status'] === 'scheduled' && $hasStudentNote): ?>
+                    <span style="font-size:12px;color:#059669">
+                        <i class="bi bi-check-circle-fill me-1"></i>Aviso enviado
+                    </span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
+                <?php
+                $deadlineDate = $noticeDeadline ? $noticeDeadline->format('d/m/Y') : '';
+                $deadlineTime = $noticeDeadline ? $noticeDeadline->format('H:i') : '';
+                ?>
+                <div class="aviso-ausencia">
+                    <?php if ($noticeDeadline): ?>
+                    <div class="aviso-panel <?= $pastCutoff ? 'is-late' : 'is-ok' ?>" role="<?= $pastCutoff ? 'alert' : 'status' ?>">
+                        <i class="bi <?= $pastCutoff ? 'bi-exclamation-octagon-fill' : 'bi-check-circle-fill' ?> aviso-panel__icon" aria-hidden="true"></i>
+                        <div class="aviso-panel__text">
+                            <div class="aviso-panel__title">
+                                <?= $pastCutoff ? 'Ya no estás a tiempo de avisar' : 'Aún estás a tiempo de avisar' ?>
+                            </div>
+                            <p>Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong> al inicio de la clase.</p>
+                            <?php if ($pastCutoff): ?>
+                            <p>El plazo terminó el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>. Si avisas ahora, tu aviso se registrará igualmente como <strong>aviso tardío</strong>.</p>
+                            <?php else: ?>
+                            <p>Puedes avisar hasta el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" class="aviso-form">
+                        <?= csrf_field() ?>
+                        <label for="student-note-<?= (int) $session['id'] ?>" class="aviso-form__label">Motivo <span>(opcional)</span></label>
+                        <textarea id="student-note-<?= (int) $session['id'] ?>" name="student_note" class="form-control-jp" rows="3"
+                                  placeholder="Cuéntanos por qué no puedes asistir…"></textarea>
+                        <button type="submit" class="btn-jp btn-jp-danger aviso-form__btn">
+                            <i class="bi bi-calendar-x-fill me-1"></i><?= $pastCutoff ? 'Avisar igualmente' : 'Avisar que no puedo asistir' ?>
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Resumen de asistencia -->
         <?php if (!empty($session['players'])): ?>
