@@ -335,7 +335,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                     Fotos, vídeos o documentos de <strong>toda la clase</strong>. Quedan siempre vinculados a esta sesión
                     (<?= date('d/m/Y', strtotime($session['session_date'])) ?>) y visibles desde aquí — para material de un jugador concreto, súbelo desde su ficha de observaciones (lápiz en la tabla).
                 </p>
-                <div class="cs-attach-list mb-3">
+                <div class="cs-attach-list mb-3" data-empty-text="Sin adjuntos todavía.">
                     <?php if (empty($session['attachments'])): ?>
                     <span style="font-size:12px;color:var(--text-muted)">Sin adjuntos todavía.</span>
                     <?php else: foreach ($session['attachments'] as $att): ?>
@@ -841,7 +841,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
             <hr style="border-color:var(--border);margin:18px 0">
 
             <div class="form-label mb-2"><i class="bi bi-paperclip me-1" style="color:#7c3aed"></i>Adjuntos de este jugador</div>
-            <div id="obsAttachList" class="cs-attach-list mb-3"></div>
+            <div id="obsAttachList" class="cs-attach-list mb-3" data-empty-text="Sin adjuntos todavía."></div>
             <form id="obsAttachForm" action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" data-attach-upload data-max-video="<?= $attachLimits['video'] ?>" data-max-other="<?= $attachLimits['other'] ?>" class="d-flex gap-2 flex-wrap align-items-center">
                 <?= csrf_field() ?>
                 <input type="hidden" id="obsAttachPlayerUid" name="player_uid">
@@ -1055,7 +1055,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php endif; ?>
 
 <?= $this->section('scripts') ?>
-<script src="/assets/js/attach-upload.js?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 <style>
 .cs-modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;

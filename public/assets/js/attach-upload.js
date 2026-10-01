@@ -58,7 +58,7 @@
         }
         bar.setAttribute('role', 'progressbar');
         var fill = document.createElement('div');
-        fill.style.cssText = 'height:100%;width:0;background:#7c3aed;transition:width .2s';
+        fill.style.cssText = 'height:100%;width:0;background:var(--accent);transition:width .2s';
         bar.appendChild(fill);
 
         function limitFor(file) {

@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.13.1",
+        "date": "2026-10-01 00:00:00",
+        "description": "Subidas de documentos más claras: desde la ficha del alumno, el perfil del alumno, la ficha del entrenador y Mi perfil, el archivo se sube ahora con una barra de progreso real y aviso previo del formato y tamaño. Además, al eliminar un adjunto de una clase, desaparece al instante con una animación suave sin recargar la página."
+    },
+    {
         "version": "1.13.0",
         "date": "2026-10-01 00:00:00",
         "description": "Documentación: en una carpeta vacía ahora se puede arrastrar un archivo directamente (o tocar la zona para elegirlo). El botón Subir del modal de carpeta solo aparece cuando el archivo ya se ha leído y validado, para no subir nada incompatible."
