@@ -55,9 +55,9 @@ archivo se estaba cargando.
 
 - Nuevas constantes públicas:
   - `ATTACHMENT_MAX_DEFAULT_BYTES = 5 * 1024 * 1024` (5 MB, imágenes/PDF)
-  - `ATTACHMENT_MAX_VIDEO_BYTES = 200 * 1024 * 1024` (200 MB, vídeos)
+  - `ATTACHMENT_MAX_VIDEO_BYTES = 500 * 1024 * 1024` (500 MB, vídeos; también Mensajes; Documentación ya lo tenía)
 
-  **Nota**: Los 200 MB son compatibles con la mayoría de hostings compartidos
+  **Nota**: 500 MB es el máximo que cabe en `post_max_size=520M` del `.htaccess`; si el hosting tiene un tope menor, `attachmentLimits()` lo recorta
   (que tienen 200-256 MB de límite de POST). En Hostinger se puede subir hasta
   200 MB sin problemas; en otros hostings puede que haya que reducir a 100 MB.
 
@@ -68,9 +68,9 @@ archivo se estaba cargando.
   return ['video' => int, 'other' => int];
   ```
   De modo que:
-  - **En local**: devuelve 200 MB (vídeo) y 5 MB (otros) — son los límites del
+  - **En local**: devuelve 500 MB (vídeo) y 5 MB (otros) — son los límites del
     `.htaccess`.
-  - **En Hostinger**: si post_max_size=256M, devuelve `min(200M, 256M) = 200 MB`.
+  - **En Hostinger**: si post_max_size=256M, devuelve `min(500M, 256M) = 256 MB`.
   - **En otro hosting con límite bajo**: si post_max_size=100M, devuelve
     `min(200M, 100M) = 100 MB`.
 
@@ -83,7 +83,7 @@ Nuevo archivo: `public/assets/js/attach-upload.js` — módulo que:
   `data-max-other`).
 - **Si es demasiado grande**: muestra un toast con consejo:
   - Para imágenes/documentos: "El archivo pesa 500 MB, máximo 5 MB. Redimensiónalo."
-  - Para vídeos: "El archivo pesa 300 MB, máximo 200 MB. Recórtalo en menor calidad e inténtalo de nuevo."
+  - Para vídeos: "El archivo pesa 300 MB, máximo 500 MB. Recórtalo en menor calidad e inténtalo de nuevo."
 - **Si pasa el aviso**: sube por XHR (no formulario tradicional) y muestra:
   - Porcentaje en tiempo real ("Subiendo… 45%").
   - Si el servidor rechaza: HTTP 413 → toast "El archivo es demasiado grande
@@ -168,7 +168,7 @@ El script `attach-upload.js` inicializa todos los formularios con este atributo.
 ### ✅ Después
 
 1. Usuario elige un vídeo de 150 MB.
-2. Aparece un toast inmediato: "El archivo pesa 150 MB, máximo 200 MB. Recórtalo..."
+2. Aparece un toast inmediato: "El archivo pesa 150 MB, máximo 500 MB. Recórtalo..."
 3. El usuario toma medidas (comprime en iMovie) y elige un vídeo de 120 MB.
 4. Hace clic en "Subir adjunto".
 5. Barra de progreso: "Subiendo… 0%", "Subiendo… 45%", etc.

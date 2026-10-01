@@ -520,7 +520,7 @@ class MensajesController extends BaseController
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file, string $subfolder): array
     {
         $maxSizeDefault = 5 * 1024 * 1024;   // 5 MB (imágenes/documentos)
-        $maxSizeVideo    = 80 * 1024 * 1024;  // 80 MB (vídeo de chat)
+        $maxSizeVideo    = 500 * 1024 * 1024; // 500 MB (vídeo de chat, igual que Clases/Documentación)
         $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif',
                     'application/pdf', 'application/msword',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
