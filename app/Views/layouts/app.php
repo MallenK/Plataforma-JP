@@ -166,8 +166,17 @@ $tkIsPlayer = in_array($tkRole, ['player', 'alumno'], true);
         form.querySelector('[name="context"]').value = '';
     });
 
+    const rapidoFile = form?.querySelector('input[type="file"]');
+    if (rapidoFile) {
+        AttachUpload.bind(rapidoFile, { maxVideo: 10 * 1048576, maxOther: 10 * 1048576 });
+    }
+    const rapidoBar = rapidoFile ? AttachUpload.bar(rapidoFile.parentNode) : null;
+    let sendingRapido = false;
+
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (sendingRapido) return;
+        sendingRapido = true;
         errBox.classList.add('d-none');
         btnLbl.classList.add('d-none');
         btnSpin.classList.remove('d-none');
@@ -176,11 +185,11 @@ $tkIsPlayer = in_array($tkRole, ['player', 'alumno'], true);
         fd.set(CSRF_NAME, csrfHash);
 
         try {
-            const res  = await fetch(BASE + 'tickets', {
+            const res  = await AttachUpload.send(BASE + 'tickets', {
                 method:  'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body:    fd,
-            });
+            }, rapidoFile && rapidoFile.files[0] ? rapidoBar.set : null);
             const data = await res.json();
 
             if (data.csrf) csrfHash = data.csrf;
@@ -201,6 +210,8 @@ $tkIsPlayer = in_array($tkRole, ['player', 'alumno'], true);
             btnLbl.classList.remove('d-none');
             btnSpin.classList.add('d-none');
         }
+        if (rapidoBar) rapidoBar.hide();
+        sendingRapido = false;
     });
 })();
 </script>

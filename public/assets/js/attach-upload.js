@@ -257,6 +257,103 @@
         });
     }
 
+    // ── API para pantallas que envían por fetch propio (Mensajes, Notificaciones, Tickets) ──
+    //
+    //   AttachUpload.send(url, {method, body, headers}, onProgress)
+    //       Sustituto de fetch() con progreso de subida. Resuelve con un objeto
+    //       parecido a Response ({ok, status, json()}); ante un corte de red
+    //       rechaza con TypeError, igual que fetch.
+    //   AttachUpload.bind(input, {maxVideo, maxOther})
+    //       Aviso previo al elegir el archivo: formato (atributo accept) y tamaño.
+    //       Si no vale, vacía el input y avisa con un toast.
+    //   AttachUpload.bar(parent[, after])
+    //       Barra de progreso fina dentro de `parent` (o justo tras `after`): {set(pct), hide()}.
+    window.AttachUpload = {
+        send: function (url, options, onProgress) {
+            options = options || {};
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open(options.method || 'POST', url);
+                var headers = options.headers || {};
+                Object.keys(headers).forEach(function (k) { xhr.setRequestHeader(k, headers[k]); });
+                xhr.upload.onprogress = function (ev) {
+                    if (onProgress && ev.lengthComputable) {
+                        onProgress(Math.min(100, Math.round(ev.loaded / ev.total * 100)));
+                    }
+                };
+                xhr.onload = function () {
+                    var text = xhr.responseText;
+                    resolve({
+                        ok: xhr.status >= 200 && xhr.status < 300,
+                        status: xhr.status,
+                        json: function () {
+                            try { return Promise.resolve(JSON.parse(text)); }
+                            catch (err) { return Promise.reject(err); }
+                        }
+                    });
+                };
+                xhr.onerror = xhr.onabort = xhr.ontimeout = function () {
+                    reject(new TypeError('Network request failed'));
+                };
+                xhr.send(options.body);
+            });
+        },
+
+        bind: function (input, limits) {
+            if (!input) { return; }
+            limits = limits || {};
+            var allowed = (input.getAttribute('accept') || '')
+                .split(',')
+                .map(function (s) { return s.trim().replace(/^\./, '').toLowerCase(); })
+                .filter(Boolean);
+
+            // En captura: corre antes que los manejadores de cada pantalla (vista previa del archivo).
+            input.addEventListener('change', function () {
+                var file = input.files && input.files[0];
+                if (!file) { return; }
+                var ext = extOf(file.name);
+                var isVideo = VIDEO_EXT.indexOf(ext) !== -1;
+                var max = isVideo ? (limits.maxVideo || limits.maxOther) : limits.maxOther;
+                var msg = null;
+
+                if (allowed.length && allowed.indexOf(ext) === -1) {
+                    msg = 'Formato no compatible (.' + (ext || '?') + '). Se admiten: ' +
+                        allowed.join(', ').toUpperCase() + '.';
+                } else if (max && file.size > max) {
+                    msg = 'El archivo pesa ' + fmtMb(file.size) + ' y el máximo es ' + fmtMb(max) + '.';
+                }
+                if (msg) {
+                    input.value = '';
+                    toast(msg, 'warning');
+                    input.dispatchEvent(new Event('change'));   // avisa a la vista previa de que ya no hay archivo
+                } else if (file.size >= 30 * 1024 * 1024) {
+                    toast('Archivo grande (' + fmtMb(file.size) + '): la subida puede tardar. No cierres la pantalla.', 'warning');
+                }
+            }, true);
+        },
+
+        bar: function (parent, after) {
+            var track = document.createElement('div');
+            track.setAttribute('role', 'progressbar');
+            track.style.cssText = 'display:none;height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:6px;width:100%';
+            var fill = document.createElement('div');
+            fill.style.cssText = 'height:100%;width:0;background:var(--accent);transition:width .2s';
+            track.appendChild(fill);
+            if (after) { after.parentNode.insertBefore(track, after.nextSibling); }
+            else { parent.appendChild(track); }
+            return {
+                set: function (pct) {
+                    track.style.display = 'block';
+                    fill.style.width = pct + '%';
+                },
+                hide: function () {
+                    track.style.display = 'none';
+                    fill.style.width = '0';
+                }
+            };
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('form[data-attach-upload]').forEach(init);
     });

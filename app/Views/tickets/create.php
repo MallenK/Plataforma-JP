@@ -220,7 +220,7 @@ if ($pf) {
         dropzone.classList.remove('dragover');
         if (e.dataTransfer.files[0]) {
             fileInput.files = e.dataTransfer.files;
-            showPreview(e.dataTransfer.files[0].name);
+            fileInput.dispatchEvent(new Event('change'));   // valida y muestra la vista previa
         }
     });
     function showPreview(name) {
@@ -228,6 +228,10 @@ if ($pf) {
         preview.classList.remove('d-none');
         dropzone.querySelector('.ticket-dropzone-label').classList.add('d-none');
     }
+
+    AttachUpload.bind(fileInput, { maxVideo: 10 * 1048576, maxOther: 10 * 1048576 });
+    const upBar = AttachUpload.bar(dropzone.parentNode);
+    let sending = false;
 
     // Submit
     const form    = document.getElementById('ticket-create-form');
@@ -237,6 +241,8 @@ if ($pf) {
 
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (sending) return;
+        sending = true;
         errBox.classList.add('d-none');
         btnLbl.classList.add('d-none');
         btnSpin.classList.remove('d-none');
@@ -245,11 +251,11 @@ if ($pf) {
         fd.set(CSRF_NAME, csrfHash);
 
         try {
-            const res  = await fetch(BASE + 'tickets', {
+            const res  = await AttachUpload.send(BASE + 'tickets', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: fd,
-            });
+            }, fileInput.files[0] ? upBar.set : null);
             const data = await res.json();
             if (data.ok) {
                 window.location.href = data.redirect;
@@ -262,6 +268,8 @@ if ($pf) {
         } finally {
             btnLbl.classList.remove('d-none');
             btnSpin.classList.add('d-none');
+            upBar.hide();
+            sending = false;
         }
     });
 

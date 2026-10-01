@@ -619,6 +619,12 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 
     // ── Enviar respuesta ───────────────────────────────────
     const replyForm = document.getElementById('reply-form');
+    let sendingReply = false;
+    let replyBar = null;
+    if (replyFile) {
+        AttachUpload.bind(replyFile, { maxVideo: 10 * 1048576, maxOther: 10 * 1048576 });
+        replyBar = AttachUpload.bar(null, replyFile.parentNode);
+    }
     if (replyForm) {
         const btnLbl  = replyForm.querySelector('.btn-label');
         const btnSpin = replyForm.querySelector('.btn-spinner');
@@ -626,6 +632,8 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
 
         replyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (sendingReply) return;
+            sendingReply = true;
             errBox.classList.add('d-none');
             btnLbl.classList.add('d-none');
             btnSpin.classList.remove('d-none');
@@ -634,11 +642,11 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             fd.set(CSRF_NAME, csrfHash);
 
             try {
-                const res  = await fetch(BASE + 'tickets/' + TICKET_ID + '/reply', {
+                const res  = await AttachUpload.send(BASE + 'tickets/' + TICKET_ID + '/reply', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: fd,
-                });
+                }, replyFile && replyFile.files[0] ? replyBar.set : null);
                 const data = await res.json();
                 if (data.csrf) csrfHash = data.csrf;
                 if (data.ok) {
@@ -654,6 +662,8 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             } finally {
                 btnLbl.classList.remove('d-none');
                 btnSpin.classList.add('d-none');
+                if (replyBar) replyBar.hide();
+                sendingReply = false;
             }
         });
     }

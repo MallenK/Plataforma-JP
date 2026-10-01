@@ -268,7 +268,10 @@ $roleLabels = [
     async function fetchJSON(url, options) {
         let res;
         try {
-            res = await fetch(url, options);
+            // Con onProgress la subida va por XHR para poder mostrar el avance del adjunto.
+            res = options.onProgress
+                ? await AttachUpload.send(url, options, options.onProgress)
+                : await fetch(url, options);
         } catch (netErr) {
             const err = new Error('Error de red. Comprueba tu conexión.');
             err.unexpected = true;
@@ -592,6 +595,9 @@ $roleLabels = [
     }
 
     // ── Enviar mensaje ───────────────────────────────────────
+    let sendingMsg = false;
+    const msgBar = AttachUpload.bar(document.getElementById('msg-file-preview'));
+    AttachUpload.bind(document.getElementById('msg-file'), { maxVideo: 500 * 1048576, maxOther: 5 * 1048576 });
     document.getElementById('form-message')?.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (!activeConvId) {
@@ -605,17 +611,28 @@ $roleLabels = [
 
         if (!body && !fileInput.files[0]) return;
 
+        // Un envío a la vez: Enter también llega aquí, así que el botón deshabilitado no basta.
+        if (sendingMsg) return;
+        sendingMsg = true;
+
         const formData = new FormData(this);
         formData.set(CSRF_NAME, csrfVal());
 
-        // Deshabilitar envío mientras procesa
+        // Deshabilitar envío (y cambio de archivo) mientras procesa
         const btn = document.getElementById('btn-send-msg');
         btn.disabled = true;
+        const hasFile = !!fileInput.files[0];
+        if (hasFile) {
+            fileInput.disabled = true;
+            document.getElementById('btn-clear-file').disabled = true;
+            msgBar.set(0);
+        }
 
         try {
             const data = await fetchJSON(BASE + 'mensajes/send', {
                 method: 'POST', body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                onProgress: hasFile ? msgBar.set : null
             });
 
             bodyInput.value = '';
@@ -631,6 +648,10 @@ $roleLabels = [
         }
 
         btn.disabled = false;
+        fileInput.disabled = false;
+        document.getElementById('btn-clear-file').disabled = false;
+        msgBar.hide();
+        sendingMsg = false;
     });
 
     // Enter para enviar (Shift+Enter = nueva línea)

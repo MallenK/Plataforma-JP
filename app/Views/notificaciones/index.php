@@ -363,8 +363,12 @@ $sentNotifications = $sentNotifications ?? [];
     });
 
     // ── Enviar notificación ──────────────────────────────────
+    let sendingNotif = false;
+    const notifBar = AttachUpload.bar(document.getElementById('notif-file').parentNode);
+    AttachUpload.bind(document.getElementById('notif-file'), { maxVideo: 5 * 1048576, maxOther: 5 * 1048576 });
     document.getElementById('form-notif')?.addEventListener('submit', async function (e) {
         e.preventDefault();
+        if (sendingNotif) return;
         const btn     = document.getElementById('btn-send-notif');
         const spinner = document.getElementById('notif-spinner');
         const icon    = document.getElementById('notif-icon');
@@ -375,16 +379,18 @@ $sentNotifications = $sentNotifications ?? [];
         icon.classList.add('d-none');
         errEl.classList.add('d-none');
 
+        sendingNotif = true;
         const formData = new FormData(this);
         const c = csrf();
         formData.set(c.name, c.value);
+        const hasFile = !!document.getElementById('notif-file').files[0];
 
         try {
-            const res = await fetch(BASE + 'notificaciones/send', {
+            const res = await AttachUpload.send(BASE + 'notificaciones/send', {
                 method: 'POST',
                 body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            }, hasFile ? notifBar.set : null);
             const data = await res.json();
 
             if (res.ok && data.ok) {
@@ -409,6 +415,8 @@ $sentNotifications = $sentNotifications ?? [];
         btn.disabled = false;
         spinner.classList.add('d-none');
         icon.classList.remove('d-none');
+        notifBar.hide();
+        sendingNotif = false;
     });
 
     // ── Marcar una notificación como leída ───────────────────
