@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.13.0",
+        "date": "2026-10-01 00:00:00",
+        "description": "Documentación: en una carpeta vacía ahora se puede arrastrar un archivo directamente (o tocar la zona para elegirlo). El botón Subir del modal de carpeta solo aparece cuando el archivo ya se ha leído y validado, para no subir nada incompatible."
+    },
+    {
         "version": "1.12.1",
         "date": "2026-10-01 00:00:00",
         "description": "Documentación: al eliminar un archivo desde el modal de una carpeta, la fila desaparece con una animación suave y se actualiza el contador (antes el borrado funcionaba pero la pantalla no cambiaba hasta recargar). La subida de archivos, tanto desde Subir archivo como desde el modal de carpeta, muestra ahora una barra de progreso real con el porcentaje y se mantiene hasta que el archivo está subido."

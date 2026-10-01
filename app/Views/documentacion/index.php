@@ -289,7 +289,8 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                 <input type="file" name="archivo" class="form-control-jp" style="flex:1;min-width:180px"
                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm" required>
                 <input type="text" name="description" class="form-control-jp" placeholder="Descripción" style="flex:1;min-width:140px">
-                <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="white-space:nowrap">
+                <div data-attach-info style="display:none;flex:1 0 100%;font-size:12px;color:var(--text-muted)"></div>
+                <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="white-space:nowrap" data-attach-reveal>
                     <i class="bi bi-cloud-upload-fill me-1"></i>Subir
                 </button>
             </form>
@@ -535,6 +536,14 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
     padding: 16px;
 }
 .modal-overlay.open { display: flex; }
+.doc-dropzone {
+    border: 2px dashed var(--border); border-radius: 12px; margin: 4px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+}
+.doc-dropzone:hover, .doc-dropzone.is-over {
+    border-color: var(--accent); background: rgba(124,58,237,.06);
+}
+.doc-dropzone.is-over { color: var(--accent) !important; }
 
 .modal-box {
     background: var(--bg-card);
@@ -624,6 +633,46 @@ function deleteFolder(id, name) {
     }
 }
 
+// ── Estado «Carpeta vacía»; con permiso de escritura es zona de arrastre ──
+function renderEmptyFolder(canWrite) {
+    const body = document.getElementById('modal-folder-body');
+    body.innerHTML = '<div id="doc-dropzone" style="text-align:center;padding:32px 0;color:var(--text-muted)">'
+        + '<i class="bi bi-folder2-open" style="font-size:32px"></i>'
+        + '<p style="margin-top:10px;font-size:13px">Carpeta vacía</p>'
+        + (canWrite ? '<p class="doc-drop-hint" style="margin:4px 0 0;font-size:12px">Arrastra un archivo aquí o toca para elegirlo</p>' : '')
+        + '</div>';
+    if (!canWrite) return;
+
+    const zone  = document.getElementById('doc-dropzone');
+    const input = document.querySelector('#modal-folder-upload input[type="file"]');
+    if (!zone || !input) return;
+
+    zone.classList.add('doc-dropzone');
+    const setOver = (on) => zone.classList.toggle('is-over', on);
+
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        setOver(true);
+    }));
+    zone.addEventListener('dragleave', (e) => {
+        if (!zone.contains(e.relatedTarget)) setOver(false);
+    });
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        setOver(false);
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (!files || !files.length) return;
+        if (files.length > 1) showAlert('Se sube un archivo cada vez: se ha cogido «' + files[0].name + '».', 'info');
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        // attach-upload.js lee el archivo y muestra «Subir» cuando está procesado.
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    zone.addEventListener('click', () => input.click());   // en móvil: abrir el selector
+}
+
 // ── Quita la fila de un archivo con una animación sutil ──────────────
 function removeFileRow(id) {
     const btn = document.querySelector('#modal-folder-body [data-del-id="' + id + '"]');
@@ -646,8 +695,7 @@ function removeFileRow(id) {
         const countEl = document.getElementById('modal-folder-count');
         if (countEl) countEl.textContent = left + ' archivo(s)';
         if (left === 0) {
-            document.getElementById('modal-folder-body').innerHTML =
-                '<div style="text-align:center;padding:32px 0;color:var(--text-muted)"><i class="bi bi-folder2-open" style="font-size:32px"></i><p style="margin-top:10px;font-size:13px">Carpeta vacía</p></div>';
+            renderEmptyFolder(document.getElementById('modal-folder-upload').style.display !== 'none');
         }
     };
 
@@ -692,6 +740,7 @@ function openFolderModal(folderId) {
     title.textContent = 'Cargando...';
     count.textContent = '';
     uploadBox.style.display = 'none';
+    uploadBox.querySelector('form')?.reset();   // sin restos del archivo de otra carpeta
     body.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><i class="bi bi-hourglass-split" style="font-size:28px"></i><p style="margin-top:8px;font-size:13px">Cargando archivos...</p></div>';
 
     openModal('modal-folder-files');
@@ -714,7 +763,7 @@ function openFolderModal(folderId) {
         const previewExts = ['pdf','jpg','jpeg','png','gif','webp','mp4','webm'];
 
         if (files.length === 0) {
-            body.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--text-muted)"><i class="bi bi-folder2-open" style="font-size:32px"></i><p style="margin-top:10px;font-size:13px">Carpeta vacía</p></div>';
+            renderEmptyFolder(!!data.canWrite);
         } else {
             let rows = files.map(f => {
                 const ext = (f.extension || '').toLowerCase();
