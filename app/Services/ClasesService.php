@@ -52,6 +52,44 @@ class ClasesService
      * Acepta '9:5', '09:05', '09:05:00', ' 09:05 '. Devuelve null si no es
      * una hora válida (fuera de rango, texto, vacío…).
      */
+    /** Antelación mínima (horas) con la que el alumno debe avisar de una ausencia. */
+    public const ABSENCE_NOTICE_HOURS = 24;
+
+    /**
+     * Momento límite para avisar de una ausencia: ABSENCE_NOTICE_HOURS antes
+     * del inicio de la clase. Null si la sesión no tiene fecha/hora válidas.
+     */
+    public static function absenceNoticeDeadline(array $session): ?\DateTimeImmutable
+    {
+        $date  = $session['session_date'] ?? '';
+        $start = self::normalizeTime($session['start_time'] ?? null);
+        if ($date === '' || $start === null) {
+            return null;
+        }
+
+        try {
+            $startAt = new \DateTimeImmutable($date . ' ' . $start . ':00');
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        return $startAt->modify('-' . self::ABSENCE_NOTICE_HOURS . ' hours');
+    }
+
+    /**
+     * ¿Llega tarde el aviso? True si ya pasó el límite (24 h antes del inicio).
+     * Justo en el límite todavía se considera a tiempo.
+     */
+    public static function isLateAbsenceNotice(array $session, ?\DateTimeInterface $now = null): bool
+    {
+        $deadline = self::absenceNoticeDeadline($session);
+        if ($deadline === null) {
+            return false;
+        }
+
+        return ($now ?? new \DateTimeImmutable()) > $deadline;
+    }
+
     public static function normalizeTime(?string $time): ?string
     {
         $time = trim((string) $time);
@@ -1874,8 +1912,8 @@ class ClasesService
 
     /**
      * El alumno indica que no puede asistir, opcionalmente con un motivo.
-     * Se advierte si se notifica después de las 10:00 del día de la clase,
-     * pero igualmente se registra el aviso (el rechazo de guardar es opcional
+     * Se advierte si se notifica con menos de 24 h de antelación al inicio de
+     * la clase, pero igualmente se registra el aviso (el rechazo de guardar es opcional
      * según la regla de negocio; aquí dejamos pasar con advertencia).
      */
     public function notifyAbsence(int $userId, int $sessionId, string $note): array
@@ -1898,24 +1936,110 @@ class ClasesService
             return ['success' => false, 'error' => 'No se puede notificar ausencia en una sesión que no está programada.'];
         }
 
-        $now = new \DateTime();
-        $sessionDate = $session['session_date'];
-        $todayStr    = $now->format('Y-m-d');
-        $lateNotice  = false;
+        $lateNotice = self::isLateAbsenceNotice($session);
 
-        if ($sessionDate === $todayStr && $now->format('H:i') > '10:00') {
-            $lateNotice = true;
-        }
+        // Reenviar el formulario (doble clic, pestaña vieja) no debe volver a
+        // avisar al equipo. Solo es "nuevo" el primer aviso, o el que añade
+        // un motivo a uno anterior enviado sin él (la ficha sigue mostrando el
+        // formulario mientras no haya motivo).
+        $firstNotice = empty($player['student_noted_at'])
+            || (empty($player['student_note']) && trim($note) !== '');
 
         $this->playerModel->update($player['id'], [
             'student_note'      => $note ?: null,
             'student_noted_at'  => date('Y-m-d H:i:s'),
         ]);
 
+        if ($firstNotice) {
+            $this->notifyAbsenceToStaff($session, $player, $userId, $note, $lateNotice);
+        }
+
         return [
             'success'    => true,
             'lateNotice' => $lateNotice,
         ];
+    }
+
+    /**
+     * Título y cuerpo de la notificación que recibe el equipo cuando un
+     * alumno avisa de que no puede asistir. Puro (sin BD) para poder testearlo.
+     *
+     * @return array{title: string, body: string}
+     */
+    public static function buildAbsenceNotification(array $session, string $studentName, string $note, bool $late): array
+    {
+        $date  = date('d/m/Y', strtotime($session['session_date']));
+        $start = self::normalizeTime($session['start_time'] ?? null) ?? '';
+
+        $body = sprintf(
+            '%s avisa de que no podrá asistir a la clase "%s" del %s%s.',
+            $studentName,
+            $session['title'],
+            $date,
+            $start !== '' ? ' a las ' . $start : ''
+        );
+
+        $note = trim($note);
+        $body .= $note !== '' ? ' Motivo: "' . $note . '".' : ' No ha indicado motivo.';
+
+        if ($late) {
+            $body .= sprintf(' Aviso tardío: se ha enviado con menos de %d horas de antelación.', self::ABSENCE_NOTICE_HOURS);
+        }
+
+        return [
+            'title' => '🚫 Aviso de ausencia: ' . $studentName,
+            'body'  => $body,
+        ];
+    }
+
+    /**
+     * Notifica el aviso de ausencia a: los entrenadores de la clase (los de
+     * la sesión y el asignado al alumno) y todos los admin/superadmin activos.
+     * Un fallo al notificar nunca debe impedir que el aviso quede registrado.
+     */
+    private function notifyAbsenceToStaff(array $session, array $player, int $studentId, string $note, bool $late): void
+    {
+        try {
+            $recipients = array_map(
+                fn($c) => (int) $c['user_id'],
+                $this->getCoachesForSession((int) $session['id'])
+            );
+            if (!empty($player['coach_id'])) {
+                $recipients[] = (int) $player['coach_id'];
+            }
+
+            $admins = (new UserModel())
+                ->select('id')
+                ->whereIn('role', ['admin', 'superadmin'])
+                ->where('status', 'active')
+                ->findAll();
+            foreach ($admins as $a) {
+                $recipients[] = (int) $a['id'];
+            }
+
+            $recipients = array_values(array_unique(array_filter(
+                $recipients,
+                fn($r) => $r > 0 && $r !== $studentId
+            )));
+            if (empty($recipients)) {
+                return;
+            }
+
+            $student = (new UserModel())->select('name')->find($studentId);
+            $msg     = self::buildAbsenceNotification($session, $student['name'] ?? 'Un alumno', $note, $late);
+
+            (new NotificationModel())->createWithRecipients([
+                'sender_id'   => $studentId,
+                'type'        => 'individual',
+                'title'       => $msg['title'],
+                'body'        => $msg['body'],
+                'created_at'  => date('Y-m-d H:i:s'),
+                'source_type' => NotificationModel::SOURCE_CLASS,
+                'source_id'   => (int) $session['id'],
+            ], $recipients);
+        } catch (\Throwable $e) {
+            log_message('error', 'notifyAbsenceToStaff falló: ' . $e->getMessage());
+        }
     }
 
     // ────────────────────────────────────────────────────────────────

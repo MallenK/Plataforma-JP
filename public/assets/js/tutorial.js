@@ -45,7 +45,7 @@
             },
             {
                 title: 'Avisar una ausencia',
-                body: 'Si no puedes ir a una sesión, entra en su detalle y usa el botón <strong>"Notificar ausencia"</strong>. Puedes añadir un motivo. Si avisas después de las 10:00 del mismo día, la plataforma te lo indicará.',
+                body: 'Si no puedes ir a una sesión, entra en su detalle y usa el botón <strong>"Notificar ausencia"</strong>. Puedes añadir un motivo. Debes avisar con al menos 24 horas de antelación al inicio de la sesión; si avisas más tarde, la plataforma te lo indicará.',
                 icon: 'bi-calendar-x-fill',
                 color: '#ef4444',
                 target: null,

@@ -508,7 +508,7 @@ class ClasesController extends BaseController
         } else {
             $msg = 'Tu aviso de ausencia ha sido registrado.';
             if ($result['lateNotice'] ?? false) {
-                $msg .= ' Nota: el aviso se ha enviado después de las 10:00 del día de la clase.';
+                $msg .= ' Nota: el aviso se ha enviado con menos de 24 horas de antelación a la clase.';
             }
             session()->setFlashdata('success', $msg);
         }
