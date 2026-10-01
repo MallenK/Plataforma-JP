@@ -2505,3 +2505,64 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
 .jp-list .dt-layout-cell.dt-layout-full { width:100%; flex:1 1 100%; min-width:0; }
 .jp-list .dt-layout-table { padding:0; }
 .jp-list.jp-view-grid table tbody td { overflow-wrap:anywhere; min-width:0; }
+
+/* ── Aviso de ausencia del alumno (clases/show.php · "Mi asistencia") ──
+   Panel de plazo (verde = a tiempo, rojo = fuera de plazo) + formulario.
+   Layout en columna y fluido: sin anchos fijos, el texto nunca se parte en
+   columnas (el panel NO es .alert-jp porque ese es flex y desarmaba el texto). */
+.aviso-ausencia {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 680px;
+}
+
+.aviso-panel {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    font-size: 13px;
+    line-height: 1.5;
+    min-width: 0;
+}
+.aviso-panel__icon { font-size: 18px; line-height: 1.3; flex-shrink: 0; }
+.aviso-panel__text { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+.aviso-panel__text p { margin: 0 0 4px; }
+.aviso-panel__text p:last-child { margin-bottom: 0; }
+.aviso-panel__title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+
+.aviso-panel.is-ok {
+    background: var(--success-light);
+    border-color: rgba(16, 185, 129, .35);
+    border-left-color: var(--success);
+    color: #065f46;
+}
+.aviso-panel.is-ok .aviso-panel__icon { color: var(--success); }
+
+.aviso-panel.is-late {
+    background: var(--danger-light);
+    border-color: rgba(239, 68, 68, .4);
+    border-left-color: var(--danger);
+    color: #991b1b;
+}
+.aviso-panel.is-late .aviso-panel__icon { color: var(--danger); }
+.aviso-panel.is-late .aviso-panel__title { font-size: 15px; }
+
+.aviso-form { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.aviso-form__label { font-size: 12.5px; font-weight: 600; color: var(--text-h); margin: 0; }
+.aviso-form__label span { font-weight: 400; color: var(--text-muted); }
+.aviso-form textarea.form-control-jp { min-height: 76px; resize: vertical; font-size: 13.5px; }
+.aviso-form__btn { align-self: flex-start; padding: 9px 18px; font-size: 13px; }
+
+@media (max-width: 575.98px) {
+    .aviso-ausencia { max-width: none; }
+    .aviso-panel { padding: 11px 12px; gap: 10px; }
+    .aviso-form__btn { align-self: stretch; justify-content: center; padding: 11px 16px; }
+}

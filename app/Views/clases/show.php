@@ -171,35 +171,46 @@ $pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
                 <?php endif; ?>
             </div>
 
-            <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
-            <div style="width:100%;max-width:320px">
-                <?php if ($pastCutoff): ?>
-                <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    <strong>Aviso tardío:</strong> Los avisos deben enviarse con al menos 24 horas de antelación a la clase. Tu aviso se registrará igualmente.
-                </div>
-                <?php elseif ($noticeDeadline): ?>
-                <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
-                    <i class="bi bi-clock-fill me-1"></i>
-                    Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong>, es decir, antes del <strong><?= $noticeDeadline->format('d/m/Y') ?> a las <?= $noticeDeadline->format('H:i') ?></strong>.
-                </div>
-                <?php endif; ?>
-                <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" style="margin:0">
-                    <?= csrf_field() ?>
-                    <textarea name="student_note" class="form-control-jp mb-2" rows="2"
-                              placeholder="Motivo (opcional)…"
-                              style="resize:none;font-size:13px"></textarea>
-                    <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm w-100">
-                        <i class="bi bi-calendar-x-fill me-1"></i>Avisar que no puedo asistir
-                    </button>
-                </form>
-            </div>
-            <?php elseif ($session['status'] === 'scheduled' && $hasStudentNote): ?>
+            <?php if ($session['status'] === 'scheduled' && $hasStudentNote): ?>
             <span style="font-size:12px;color:#059669">
                 <i class="bi bi-check-circle-fill me-1"></i>Aviso enviado
             </span>
             <?php endif; ?>
         </div>
+
+        <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
+        <?php
+        $deadlineDate = $noticeDeadline ? $noticeDeadline->format('d/m/Y') : '';
+        $deadlineTime = $noticeDeadline ? $noticeDeadline->format('H:i') : '';
+        ?>
+        <div class="aviso-ausencia">
+            <?php if ($noticeDeadline): ?>
+            <div class="aviso-panel <?= $pastCutoff ? 'is-late' : 'is-ok' ?>" role="<?= $pastCutoff ? 'alert' : 'status' ?>">
+                <i class="bi <?= $pastCutoff ? 'bi-exclamation-octagon-fill' : 'bi-check-circle-fill' ?> aviso-panel__icon" aria-hidden="true"></i>
+                <div class="aviso-panel__text">
+                    <div class="aviso-panel__title">
+                        <?= $pastCutoff ? 'Ya no estás a tiempo de avisar' : 'Aún estás a tiempo de avisar' ?>
+                    </div>
+                    <p>Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong> al inicio de la clase.</p>
+                    <?php if ($pastCutoff): ?>
+                    <p>El plazo terminó el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>. Si avisas ahora, tu aviso se registrará igualmente como <strong>aviso tardío</strong>.</p>
+                    <?php else: ?>
+                    <p>Puedes avisar hasta el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" class="aviso-form">
+                <?= csrf_field() ?>
+                <label for="student-note-<?= (int) $session['id'] ?>" class="aviso-form__label">Motivo <span>(opcional)</span></label>
+                <textarea id="student-note-<?= (int) $session['id'] ?>" name="student_note" class="form-control-jp" rows="3"
+                          placeholder="Cuéntanos por qué no puedes asistir…"></textarea>
+                <button type="submit" class="btn-jp btn-jp-danger aviso-form__btn">
+                    <i class="bi bi-calendar-x-fill me-1"></i><?= $pastCutoff ? 'Avisar igualmente' : 'Avisar que no puedo asistir' ?>
+                </button>
+            </form>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>

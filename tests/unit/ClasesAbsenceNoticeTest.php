@@ -102,4 +102,20 @@ final class ClasesAbsenceNoticeTest extends CIUnitTestCase
         $this->assertStringContainsString('Aviso tardío', $n['body']);
         $this->assertStringContainsString('24 horas', $n['body']);
     }
+
+    // ── Vista: panel de plazo claro (verde a tiempo / rojo fuera de plazo) ──
+
+    public function testViewShowsClearDeadlinePanelWithoutBrokenSentence(): void
+    {
+        $view = file_get_contents(APPPATH . 'Views/clases/show.php');
+
+        $this->assertStringContainsString('Recuerda: los avisos deben enviarse con al menos', $view);
+        $this->assertStringContainsString('Aún estás a tiempo de avisar', $view);
+        $this->assertStringContainsString('Ya no estás a tiempo de avisar', $view);
+        $this->assertStringContainsString("'is-late' : 'is-ok'", $view);
+        // La frase antigua partida ("…, es decir, antes del dd/mm a las") ya no existe.
+        $this->assertStringNotContainsString('es decir, antes del', $view);
+        // El panel no debe ser .alert-jp (flex: partía el texto en columnas).
+        $this->assertStringNotContainsString('class="alert-jp" style="background:rgba(245,158,11', $view);
+    }
 }
