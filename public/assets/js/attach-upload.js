@@ -69,15 +69,109 @@
             if (!busy) { fill.style.width = '0'; }
         }
 
-        // Aviso inmediato al elegir el archivo, no tras minutos de subida.
-        input.addEventListener('change', function () {
-            var file = input.files && input.files[0];
-            if (!file) { return; }
+        // Extensiones admitidas = las del atributo accept del input.
+        var allowedExt = (input.getAttribute('accept') || '')
+            .split(',')
+            .map(function (s) { return s.trim().replace(/^\./, '').toLowerCase(); })
+            .filter(Boolean);
+
+        // Línea de información bajo el selector (propiedades del archivo elegido).
+        var info = document.createElement('div');
+        info.style.cssText = 'display:none;flex:1 0 100%;font-size:12px;color:var(--text-muted)';
+        form.insertBefore(info, bar);
+
+        function showInfo(html, tone) {
+            info.style.display = html ? 'block' : 'none';
+            info.style.color = tone === 'warn' ? '#b45309' : 'var(--text-muted)';
+            info.innerHTML = html;
+        }
+
+        function fmtDuration(sec) {
+            sec = Math.round(sec);
+            return Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2);
+        }
+
+        // Lee duración y resolución de un vídeo sin subirlo. Resuelve null si
+        // el navegador no puede decodificarlo (p. ej. HEVC en Chrome de escritorio).
+        function readVideoMeta(file) {
+            return new Promise(function (resolve) {
+                var url = URL.createObjectURL(file);
+                var v = document.createElement('video');
+                var done = false;
+                function finish(val) {
+                    if (done) { return; }
+                    done = true;
+                    URL.revokeObjectURL(url);
+                    v.removeAttribute('src');
+                    resolve(val);
+                }
+                v.preload = 'metadata';
+                v.muted = true;
+                v.onloadedmetadata = function () {
+                    finish({ duration: v.duration, w: v.videoWidth, h: v.videoHeight });
+                };
+                v.onerror = function () { finish(null); };
+                setTimeout(function () { finish(null); }, 4000);
+                v.src = url;
+            });
+        }
+
+        var inspectToken = 0;
+
+        // Revisa el archivo elegido ANTES de subir: tipo, tamaño y, en vídeo,
+        // sus propiedades. Devuelve true si se puede subir.
+        function inspect(file) {
+            var token = ++inspectToken;
+            var ext = extOf(file.name);
+
+            if (allowedExt.length && allowedExt.indexOf(ext) === -1) {
+                toast('Formato no compatible (.' + (ext || '?') + '). Se admiten: ' +
+                    allowedExt.join(', ').toUpperCase() + '.', 'warning');
+                input.value = '';
+                showInfo('');
+                return false;
+            }
+
             var lim = limitFor(file);
             if (lim.max && file.size > lim.max) {
                 toast(tooBigMessage(file, lim), 'warning');
                 input.value = '';
+                showInfo('');
+                return false;
             }
+
+            var base = '<i class="bi bi-file-earmark me-1"></i>' + file.name.replace(/[<>&]/g, '') +
+                ' · ' + fmtMb(file.size);
+            var big = file.size >= 30 * 1024 * 1024;
+            var bigNote = big
+                ? ' — archivo grande: la subida puede tardar varios minutos. No cierres ni bloquees la pantalla.'
+                : '';
+
+            if (!lim.isVideo) {
+                showInfo(base + bigNote, big ? 'warn' : '');
+                return true;
+            }
+
+            showInfo(base + ' · leyendo vídeo…');
+            readVideoMeta(file).then(function (m) {
+                if (token !== inspectToken) { return; }   // el usuario eligió otro archivo
+                if (m) {
+                    showInfo(base + ' · ' + fmtDuration(m.duration) + ' · ' + m.w + '×' + m.h + bigNote,
+                        big ? 'warn' : '');
+                } else {
+                    showInfo(base + ' — no se pueden leer las propiedades del vídeo en este navegador ' +
+                        '(códec poco común). Se subirá igualmente, pero puede no reproducirse en todos los dispositivos.' +
+                        bigNote, 'warn');
+                }
+            });
+            return true;
+        }
+
+        // Aviso inmediato al elegir el archivo, no tras minutos de subida.
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) { inspectToken++; showInfo(''); return; }
+            inspect(file);
         });
 
         form.addEventListener('submit', function (e) {
