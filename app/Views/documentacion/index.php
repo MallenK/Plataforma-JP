@@ -281,7 +281,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
             </div>
         </div>
         <div id="modal-folder-upload" style="display:none;border-top:1px solid var(--border);padding:16px">
-            <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data"
+            <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data" data-attach-upload
                   class="d-flex gap-2 align-items-center flex-wrap">
                 <?= csrf_field() ?>
                 <input type="hidden" name="folder_id" id="modal-upload-folder-id" value="">
@@ -305,7 +305,7 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
             <span class="card-jp-title"><i class="bi bi-cloud-upload-fill me-2" style="color:var(--accent)"></i>Subir archivo</span>
             <button onclick="closeModal('modal-upload')" class="btn-jp btn-jp-secondary btn-jp-sm btn-jp-icon"><i class="bi bi-x-lg"></i></button>
         </div>
-        <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data" id="form-upload">
+        <form method="post" action="<?= base_url('documentacion/upload') ?>" enctype="multipart/form-data" id="form-upload" data-attach-upload>
             <?= csrf_field() ?>
             <div class="row g-3 mt-1">
 
@@ -343,12 +343,8 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
                 </div>
 
                 <div class="col-12">
-                    <div id="upload-progress" style="display:none">
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Subiendo archivo...</div>
-                        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
-                            <div id="progress-bar" style="height:100%;background:var(--accent);width:0;transition:width .3s"></div>
-                        </div>
-                    </div>
+                    <div data-attach-info style="display:none;font-size:12px;color:var(--text-muted);margin-bottom:6px"></div>
+                    <div data-attach-progress style="display:none;height:8px;border-radius:4px;background:var(--border);overflow:hidden"></div>
                 </div>
 
                 <div class="col-12 d-flex gap-2 justify-content-end">
@@ -524,7 +520,8 @@ function renderFolderCard(array $f, ?array $activeFolder, bool $isAdmin): void {
 <?= $this->endSection() ?>
 
 
-<?= $this->section('scripts') ?>
+<?= $this->section('scripts') ?>
+<script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 <style>
 /* ── Modales ──────────────────────────────────────────────────────── */
 .modal-overlay {
@@ -627,6 +624,41 @@ function deleteFolder(id, name) {
     }
 }
 
+// ── Quita la fila de un archivo con una animación sutil ──────────────
+function removeFileRow(id) {
+    const btn = document.querySelector('#modal-folder-body [data-del-id="' + id + '"]');
+    const row = btn ? btn.closest('tr') : null;
+    if (!row) return;
+
+    const finish = () => {
+        const table = document.getElementById('doc-files-table');
+        const isDT  = window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable(table);
+        let left;
+        if (isDT) {
+            // DataTables mantiene su propio modelo de filas: hay que quitarla por su API.
+            const dt = jQuery(table).DataTable();
+            dt.row(row).remove().draw(false);
+            left = dt.rows().count();
+        } else {
+            row.remove();
+            left = table.querySelectorAll('tbody tr').length;
+        }
+        const countEl = document.getElementById('modal-folder-count');
+        if (countEl) countEl.textContent = left + ' archivo(s)';
+        if (left === 0) {
+            document.getElementById('modal-folder-body').innerHTML =
+                '<div style="text-align:center;padding:32px 0;color:var(--text-muted)"><i class="bi bi-folder2-open" style="font-size:32px"></i><p style="margin-top:10px;font-size:13px">Carpeta vacía</p></div>';
+        }
+    };
+
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+
+    row.style.transition = 'opacity .28s ease, transform .28s ease';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(14px)';
+    setTimeout(finish, 290);
+}
+
 // ── Eliminar archivo individual (AJAX POST con confirmación) ─────────
 function deleteFile(id, name) {
     if (!confirm('¿Eliminar el archivo «' + name + '»?\nEsta acción no se puede deshacer.')) return;
@@ -641,44 +673,14 @@ function deleteFile(id, name) {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
-            // Remove the file row from the table
-            const btn = document.querySelector('[onclick*="deleteFile(' + id + ',"]');
-            if (btn) {
-                const row = btn.closest('tr');
-                if (row) row.remove();
-            }
-            // Update count in modal header
-            const countEl = document.getElementById('modal-folder-count');
-            if (countEl) {
-                const match = countEl.textContent.match(/\d+/);
-                if (match) countEl.textContent = (parseInt(match[0]) - 1) + ' archivo(s)';
-            }
-        } else {
+        if (!data.success) {
             showAlert(data.error || 'Error al eliminar el archivo.');
+            return;
         }
+        removeFileRow(id);
     })
     .catch(() => showAlert('Error de red al eliminar el archivo.'));
 }
-
-// ── Indicador de progreso en subida ─────────────────────────────────
-document.getElementById('form-upload')?.addEventListener('submit', function() {
-    const progress = document.getElementById('upload-progress');
-    const bar      = document.getElementById('progress-bar');
-    const btn      = document.getElementById('btn-upload');
-
-    if (progress) progress.style.display = 'block';
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Subiendo...'; }
-
-    if (bar) {
-        let w = 0;
-        const interval = setInterval(() => {
-            w = Math.min(w + 2, 90);
-            bar.style.width = w + '%';
-            if (w >= 90) clearInterval(interval);
-        }, 150);
-    }
-});
 
 // ── Modal de archivos de carpeta (AJAX) ─────────────────────────────
 function openFolderModal(folderId) {

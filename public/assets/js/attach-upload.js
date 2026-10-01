@@ -42,13 +42,18 @@
         var maxOther = parseInt(form.dataset.maxOther, 10) || 0;
         var idleHtml = button.innerHTML;
 
-        var bar = document.createElement('div');
+        // La barra se puede colocar a mano con [data-attach-progress]; si no, se añade al final.
+        var bar = form.querySelector('[data-attach-progress]');
+        var ownBar = !bar;
+        if (ownBar) {
+            bar = document.createElement('div');
+            bar.style.cssText = 'display:none;flex:1 0 100%;height:6px;border-radius:3px;background:var(--border);overflow:hidden';
+            form.appendChild(bar);
+        }
         bar.setAttribute('role', 'progressbar');
-        bar.style.cssText = 'display:none;flex:1 0 100%;height:6px;border-radius:3px;background:var(--border);overflow:hidden';
         var fill = document.createElement('div');
         fill.style.cssText = 'height:100%;width:0;background:#7c3aed;transition:width .2s';
         bar.appendChild(fill);
-        form.appendChild(bar);
 
         function limitFor(file) {
             var isVideo = VIDEO_EXT.indexOf(extOf(file.name)) !== -1;
@@ -76,9 +81,12 @@
             .filter(Boolean);
 
         // Línea de información bajo el selector (propiedades del archivo elegido).
-        var info = document.createElement('div');
-        info.style.cssText = 'display:none;flex:1 0 100%;font-size:12px;color:var(--text-muted)';
-        form.insertBefore(info, bar);
+        var info = form.querySelector('[data-attach-info]');
+        if (!info) {
+            info = document.createElement('div');
+            info.style.cssText = 'display:none;flex:1 0 100%;font-size:12px;color:var(--text-muted)';
+            form.insertBefore(info, bar);
+        }
 
         function showInfo(html, tone) {
             info.style.display = html ? 'block' : 'none';
