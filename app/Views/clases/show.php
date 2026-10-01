@@ -140,10 +140,8 @@ $statusHint   = [
 $myAttendance = $myPlayer['attendance'] ?? 'pending';
 [$aLabel, $aColor, $aIcon] = $attendanceMap[$myAttendance] ?? $attendanceMap['pending'];
 $hasStudentNote = !empty($myPlayer['student_note']);
-$sessionDate    = $session['session_date'] ?? '';
-$todayStr       = date('Y-m-d');
-$isToday        = $sessionDate === $todayStr;
-$pastCutoff     = $isToday && date('H:i') > '10:00';
+$noticeDeadline = \App\Services\ClasesService::absenceNoticeDeadline($session);
+$pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
 ?>
 <div class="card-jp mb-3" style="border-left:3px solid <?= $statusColor ?>">
     <div class="card-jp-body">
@@ -178,12 +176,12 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                 <?php if ($pastCutoff): ?>
                 <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    <strong>Aviso tardío:</strong> Los avisos deben enviarse antes de las 10:00 del día de la clase. Tu aviso se registrará igualmente.
+                    <strong>Aviso tardío:</strong> Los avisos deben enviarse con al menos 24 horas de antelación a la clase. Tu aviso se registrará igualmente.
                 </div>
-                <?php elseif ($isToday): ?>
+                <?php elseif ($noticeDeadline): ?>
                 <div class="alert-jp" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:8px">
                     <i class="bi bi-clock-fill me-1"></i>
-                    Recuerda: los avisos deben enviarse <strong>antes de las 10:00</strong> del día de la clase.
+                    Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong>, es decir, antes del <strong><?= $noticeDeadline->format('d/m/Y') ?> a las <?= $noticeDeadline->format('H:i') ?></strong>.
                 </div>
                 <?php endif; ?>
                 <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" style="margin:0">

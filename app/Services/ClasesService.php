@@ -52,6 +52,44 @@ class ClasesService
      * Acepta '9:5', '09:05', '09:05:00', ' 09:05 '. Devuelve null si no es
      * una hora válida (fuera de rango, texto, vacío…).
      */
+    /** Antelación mínima (horas) con la que el alumno debe avisar de una ausencia. */
+    public const ABSENCE_NOTICE_HOURS = 24;
+
+    /**
+     * Momento límite para avisar de una ausencia: ABSENCE_NOTICE_HOURS antes
+     * del inicio de la clase. Null si la sesión no tiene fecha/hora válidas.
+     */
+    public static function absenceNoticeDeadline(array $session): ?\DateTimeImmutable
+    {
+        $date  = $session['session_date'] ?? '';
+        $start = self::normalizeTime($session['start_time'] ?? null);
+        if ($date === '' || $start === null) {
+            return null;
+        }
+
+        try {
+            $startAt = new \DateTimeImmutable($date . ' ' . $start . ':00');
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        return $startAt->modify('-' . self::ABSENCE_NOTICE_HOURS . ' hours');
+    }
+
+    /**
+     * ¿Llega tarde el aviso? True si ya pasó el límite (24 h antes del inicio).
+     * Justo en el límite todavía se considera a tiempo.
+     */
+    public static function isLateAbsenceNotice(array $session, ?\DateTimeInterface $now = null): bool
+    {
+        $deadline = self::absenceNoticeDeadline($session);
+        if ($deadline === null) {
+            return false;
+        }
+
+        return ($now ?? new \DateTimeImmutable()) > $deadline;
+    }
+
     public static function normalizeTime(?string $time): ?string
     {
         $time = trim((string) $time);
@@ -1874,8 +1912,8 @@ class ClasesService
 
     /**
      * El alumno indica que no puede asistir, opcionalmente con un motivo.
-     * Se advierte si se notifica después de las 10:00 del día de la clase,
-     * pero igualmente se registra el aviso (el rechazo de guardar es opcional
+     * Se advierte si se notifica con menos de 24 h de antelación al inicio de
+     * la clase, pero igualmente se registra el aviso (el rechazo de guardar es opcional
      * según la regla de negocio; aquí dejamos pasar con advertencia).
      */
     public function notifyAbsence(int $userId, int $sessionId, string $note): array
@@ -1898,14 +1936,7 @@ class ClasesService
             return ['success' => false, 'error' => 'No se puede notificar ausencia en una sesión que no está programada.'];
         }
 
-        $now = new \DateTime();
-        $sessionDate = $session['session_date'];
-        $todayStr    = $now->format('Y-m-d');
-        $lateNotice  = false;
-
-        if ($sessionDate === $todayStr && $now->format('H:i') > '10:00') {
-            $lateNotice = true;
-        }
+        $lateNotice = self::isLateAbsenceNotice($session);
 
         $this->playerModel->update($player['id'], [
             'student_note'      => $note ?: null,
