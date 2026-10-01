@@ -91,7 +91,9 @@ $sentNotifications = $sentNotifications ?? [];
                         <span class="notif-sender"><?= esc($n['sender_name'] ?? 'Sistema') ?></span>
                         <span class="notif-time"><?= esc($timeAgo) ?></span>
                     </div>
-                    <div class="notif-title"><?= esc($n['title']) ?></div>
+                    <div class="notif-title">
+                        <a href="<?= base_url('notificaciones/' . (int) $n['id']) ?>" class="notif-title-link"><?= esc($n['title']) ?></a>
+                    </div>
                     <div class="notif-text"><?= nl2br(esc($n['body'])) ?></div>
 
                     <?php if ($n['file_name']): ?>
@@ -164,7 +166,9 @@ $sentNotifications = $sentNotifications ?? [];
                         </span>
                         <span class="notif-time"><?= esc($timeAgo) ?></span>
                     </div>
-                    <div class="notif-title"><?= esc($n['title']) ?></div>
+                    <div class="notif-title">
+                        <a href="<?= base_url('notificaciones/' . (int) $n['id']) ?>" class="notif-title-link"><?= esc($n['title']) ?></a>
+                    </div>
                     <div class="notif-text"><?= nl2br(esc($n['body'])) ?></div>
 
                     <?php if ($n['file_name']): ?>

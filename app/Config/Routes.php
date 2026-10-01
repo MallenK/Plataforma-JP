@@ -589,6 +589,7 @@ $routes->post('perfil/(:num)/reset-password', 'PerfilController::resetPassword/$
 //  POST /notificaciones/read-all  → marcar todas como leídas
 //  GET  /notificaciones/:id/download → descargar adjunto
 //  GET  /notificaciones/latest  → AJAX campana navbar (últimas N + unread count)
+//  GET  /notificaciones/:id     → detalle de una notificación (solo destinatario o remitente; si no, 404). La marca como leída.
 // ------------------------------------------------------------
 
 $routes->get('notificaciones', 'NotificacionesController::index', [
@@ -612,6 +613,12 @@ $routes->get('notificaciones/(:num)/download', 'NotificacionesController::downlo
 ]);
 
 $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
+    'filter' => 'auth',
+]);
+
+// Detalle: va DESPUÉS de las rutas literales (latest, read-all) por claridad;
+// (:num) ya no casa con ellas.
+$routes->get('notificaciones/(:num)', 'NotificacionesController::show/$1', [
     'filter' => 'auth',
 ]);
 

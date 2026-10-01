@@ -190,19 +190,14 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
             </li>`;
         }).join('');
 
-        // Clic en item → marcar leída y navegar al origen (conversación o ticket)
+        // Clic en item → pantalla de detalle de la notificación (para todos los
+        // tipos de origen). La propia pantalla la marca como leída; el botón
+        // "Ver clase / ticket / conversación" lleva al origen.
         list.querySelectorAll('.notif-dd-item[data-id]').forEach(item => {
             item.addEventListener('click', () => {
                 const id = parseInt(item.dataset.id);
                 markRead(id, item);
-
-                const sourceType = item.dataset.sourceType;
-                const sourceId   = item.dataset.sourceId;
-                if (sourceType === 'conversation' && sourceId) {
-                    window.location.href = BASE + 'mensajes?conv=' + sourceId;
-                } else if (sourceType === 'ticket' && sourceId) {
-                    window.location.href = BASE + 'tickets/' + sourceId;
-                }
+                window.location.href = BASE + 'notificaciones/' + id;
             });
         });
     }

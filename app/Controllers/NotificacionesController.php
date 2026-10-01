@@ -66,6 +66,32 @@ class NotificacionesController extends BaseController
     }
 
     // ─────────────────────────────────────────────────────────
+    // DETALLE de una notificación (destinatario o remitente)
+    // ─────────────────────────────────────────────────────────
+
+    public function show(int $id): string
+    {
+        $userId = (int) $this->currentUserId();
+
+        // null = no existe o no es tuya → 404 igual en ambos casos.
+        $notif = $this->notifModel->findForViewer($id, $userId);
+        if ($notif === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        // Abrirla = leerla (idempotente: no hace nada si ya estaba leída).
+        if ($notif['is_recipient'] && empty($notif['recipient_read_at'])) {
+            $this->notifModel->markRead($userId, $id);
+            $notif['recipient_read_at'] = date('Y-m-d H:i:s');
+        }
+
+        return view('notificaciones/show', [
+            'title' => $notif['title'],
+            'n'     => $notif,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // AJAX: últimas N notificaciones (campana del navbar)
     // ─────────────────────────────────────────────────────────
 

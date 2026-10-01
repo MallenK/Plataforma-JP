@@ -1280,6 +1280,10 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
     .metric-icon { width: 32px; height: 32px; font-size: 15px; }
     .profile-avatar-lg { width: 64px; height: 64px; font-size: 22px; }
     .topbar-title h1 { font-size: 13px; }
+    /* Títulos largos ("Notificaciones") empujaban los iconos fuera a 320 px */
+    .topbar-title { min-width: 0; flex: 1 1 0; }
+    .topbar-title h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .topbar-right { flex-shrink: 0; gap: 6px; }
     .topbar-btn { width: 32px; height: 32px; }
     .topbar-avatar { width: 32px; height: 32px; font-size: 12px; }
 }
@@ -1487,6 +1491,66 @@ input[type="time"] {
     opacity: .7; transition: opacity .12s;
 }
 .notif-read-btn:hover { opacity: 1; }
+
+/* ── Detalle de una notificación ────────────────────────────── */
+.notif-detail { max-width: 760px; margin: 0 auto; }
+.notif-detail-back { margin-bottom: 14px; }
+.notif-detail-card { overflow: hidden; }
+.notif-detail-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.notif-detail-meta { flex: 1; min-width: 0; }
+.notif-detail-sender {
+    font-size: 14px; font-weight: 700; color: var(--text-h);
+    overflow-wrap: anywhere;
+}
+.notif-detail-sub {
+    display: flex; flex-wrap: wrap; gap: 2px 12px;
+    font-size: 12px; color: var(--text-muted); margin-top: 2px;
+}
+.notif-detail-sub i { margin-right: 3px; }
+.notif-detail-chip {
+    flex-shrink: 0; font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--accent-light); color: var(--accent);
+    white-space: nowrap;
+}
+.notif-detail-body { padding: 20px 18px; }
+.notif-detail-title {
+    font-size: 1.15rem; font-weight: 700; color: var(--text-h);
+    margin: 0 0 12px; overflow-wrap: anywhere;
+}
+.notif-detail-text {
+    font-size: 14px; line-height: 1.6; color: var(--text-body);
+    overflow-wrap: anywhere; word-break: break-word;
+}
+.notif-detail-file {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 18px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--accent); text-decoration: none; font-size: 13px;
+}
+.notif-detail-file:hover { background: var(--bg-app); }
+.notif-detail-file-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.notif-detail-file-size { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.notif-detail-sent { margin: 16px 0 0; font-size: 12px; color: var(--text-muted); }
+.notif-detail-actions {
+    padding: 14px 18px; border-top: 1px solid var(--border);
+    background: var(--bg-app);
+}
+.notif-detail-actions .btn-jp { width: 100%; justify-content: center; }
+@media (min-width: 576px) {
+    .notif-detail-head { padding: 18px 22px; }
+    .notif-detail-body { padding: 24px 22px; }
+    .notif-detail-actions { padding: 14px 22px; }
+    .notif-detail-actions .btn-jp { width: auto; }
+}
+
+/* Título clicable en el Centro de notificaciones */
+a.notif-title-link { color: inherit; text-decoration: none; }
+a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
+.notif-title, .notif-text { overflow-wrap: anywhere; }
 
 /* ── Badge en sidebar ───────────────────────────────────────── */
 .sidebar-badge {
