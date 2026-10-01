@@ -70,4 +70,36 @@ final class ClasesAbsenceNoticeTest extends CIUnitTestCase
         $this->assertNull(ClasesService::absenceNoticeDeadline(['session_date' => '2026-09-29', 'start_time' => '']));
         $this->assertFalse(ClasesService::isLateAbsenceNotice(['session_date' => '', 'start_time' => '17:00']));
     }
+
+    // ── Notificación al equipo (entrenadores de la clase + admin/superadmin) ──
+
+    public function testNotificationIncludesStudentClassDateAndReason(): void
+    {
+        $n = ClasesService::buildAbsenceNotification(
+            ['title' => 'Anillo Calvet', 'session_date' => '2026-09-29', 'start_time' => '17:00:00'],
+            'Ana Calvet',
+            'Tengo médico',
+            false
+        );
+
+        $this->assertStringContainsString('Ana Calvet', $n['title']);
+        $this->assertStringContainsString('"Anillo Calvet"', $n['body']);
+        $this->assertStringContainsString('29/09/2026 a las 17:00', $n['body']);
+        $this->assertStringContainsString('Motivo: "Tengo médico".', $n['body']);
+        $this->assertStringNotContainsString('tardío', $n['body']);
+    }
+
+    public function testNotificationFlagsLateNoticeAndMissingReason(): void
+    {
+        $n = ClasesService::buildAbsenceNotification(
+            ['title' => 'Clase', 'session_date' => '2026-09-29', 'start_time' => '17:00'],
+            'Ana',
+            '  ',
+            true
+        );
+
+        $this->assertStringContainsString('No ha indicado motivo', $n['body']);
+        $this->assertStringContainsString('Aviso tardío', $n['body']);
+        $this->assertStringContainsString('24 horas', $n['body']);
+    }
 }

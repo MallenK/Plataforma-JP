@@ -2,7 +2,7 @@
     {
         "version": "1.12.1",
         "date": "2026-10-01 00:00:00",
-        "description": "Aviso de ausencia del alumno: ahora debe enviarse con al menos 24 horas de antelación al inicio de la clase (antes: antes de las 10:00 del día de la clase). La ficha de la clase muestra la fecha y hora límite exacta y, pasado ese momento, el aviso tardío. Sigue siendo solo una advertencia: el aviso se registra igualmente. No afecta a bonos ni a la asistencia."
+        "description": "Aviso de ausencia del alumno: ahora debe enviarse con al menos 24 horas de antelación al inicio de la clase (antes: antes de las 10:00 del día de la clase). La ficha de la clase muestra la fecha y hora límite exacta y, pasado ese momento, el aviso tardío. Sigue siendo solo una advertencia: el aviso se registra igualmente. Además, cada aviso genera una notificación para el entrenador de la clase y para todos los admin y superadmin (con alumno, clase, fecha, motivo y si es tardío). No afecta a bonos ni a la asistencia."
     },
     {
         "version": "1.12.0",
