@@ -148,6 +148,13 @@ class TicketsController extends BaseController
             ], JSON_UNESCAPED_UNICODE);
         }
 
+        // El adjunto se valida y guarda ANTES de crear el ticket: si falla, no queda
+        // un ticket creado sin su archivo (antes el error se ignoraba en silencio).
+        $attach = $this->storeOptionalAttachment();
+        if (isset($attach['error'])) {
+            return $this->response->setJSON(['error' => $attach['error'], 'csrf' => csrf_hash()])->setStatusCode(422);
+        }
+
         $ticketId = $this->ticketModel->createTicket([
             'user_id'     => $userId,
             'title'       => $title,
@@ -162,18 +169,14 @@ class TicketsController extends BaseController
         ]);
 
         if (!$ticketId) {
+            $this->discardAttachment($attach);
             return $this->response->setJSON(['error' => 'Error al crear el ticket.'])->setStatusCode(500);
         }
 
         $this->eventModel->log($ticketId, $userId, 'created');
 
-        // Adjunto opcional
-        $file = $this->request->getFile('attachment');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $result = $this->handleFileUpload($file);
-            if (!isset($result['error'])) {
-                $this->attachModel->addAttachment($ticketId, null, $result);
-            }
+        if ($attach) {
+            $this->attachModel->addAttachment($ticketId, null, $attach);
         }
 
         // Notificar a todos los superadmins
@@ -414,19 +417,21 @@ class TicketsController extends BaseController
         $isInternal = (bool) $this->request->getPost('is_internal');
         $userId     = (int) $this->currentUserId();
 
+        // Adjunto validado y guardado antes de crear la respuesta (ver store()).
+        $attach = $this->storeOptionalAttachment();
+        if (isset($attach['error'])) {
+            return $this->response->setJSON(['error' => $attach['error'], 'csrf' => csrf_hash()])->setStatusCode(422);
+        }
+
         $replyId = $this->replyModel->createReply($id, $userId, $body, $isInternal);
 
         if (!$replyId) {
+            $this->discardAttachment($attach);
             return $this->response->setJSON(['error' => 'Error al guardar la respuesta.'])->setStatusCode(500);
         }
 
-        // Adjunto opcional en la respuesta
-        $file = $this->request->getFile('attachment');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $result = $this->handleFileUpload($file);
-            if (!isset($result['error'])) {
-                $this->attachModel->addAttachment($id, $replyId, $result);
-            }
+        if ($attach) {
+            $this->attachModel->addAttachment($id, $replyId, $attach);
         }
 
         $this->eventModel->log($id, $userId, $isInternal ? 'internal_note' : 'reply');
@@ -712,6 +717,36 @@ class TicketsController extends BaseController
         'pdf', 'doc', 'docx', 'xls', 'xlsx',
         'txt', 'mp4',
     ];
+
+    /**
+     * Valida y guarda el adjunto opcional de la petición.
+     * Devuelve null si no se envió archivo, ['error' => …] si no es válido,
+     * o los datos del archivo guardado (path/name/size/mime).
+     */
+    private function storeOptionalAttachment(): ?array
+    {
+        $file = $this->request->getFile('attachment');
+        if (!$file || $file->getError() === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if (!$file->isValid() || $file->hasMoved()) {
+            return ['error' => 'No se pudo recibir el archivo adjunto: ' . $file->getErrorString() . '.'];
+        }
+        return $this->handleFileUpload($file);
+    }
+
+    /** Borra un adjunto ya guardado cuando el registro que lo iba a llevar no se pudo crear. */
+    private function discardAttachment(?array $attach): void
+    {
+        if (!$attach || isset($attach['error'])) {
+            return;
+        }
+        helper('upload');
+        $full = upload_resolve_stored($attach['path']);
+        if ($full && is_file($full)) {
+            @unlink($full);
+        }
+    }
 
     private function handleFileUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
     {

@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.15.0",
+        "date": "2026-10-01 00:00:00",
+        "description": "Adjuntos con barra de progreso real y aviso previo de formato y tamaño también en Mensajes, Notificaciones y Tickets (nuevo ticket, ticket rápido y respuestas). En el chat, el botón de enviar queda bloqueado mientras se sube un archivo para no duplicar el mensaje. En los tickets, si el adjunto no es válido ahora se avisa y no se crea el ticket ni la respuesta a medias (antes se creaba sin el archivo y sin avisar)."
+    },
+    {
         "version": "1.14.0",
         "date": "2026-10-01 00:00:00",
         "description": "Cada notificación tiene ahora su propia pantalla de detalle (/notificaciones/ID) con el título, quién la envió, fecha y hora, el mensaje completo, el adjunto descargable y un botón para ir directamente al origen (clase, ticket o conversación). Al pulsar una notificación en la campanita se abre esa pantalla —también las de clases y las que no tienen origen, que antes no hacían nada— y queda marcada como leída. En el Centro de notificaciones, el título de cada notificación abre su detalle."
