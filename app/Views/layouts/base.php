@@ -41,6 +41,9 @@
 <script src="<?= base_url('assets/js/error-report.js') ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
 <script src="<?= base_url('assets/js/radix-ui.js') ?>"></script>
+<!-- Subidas con aviso previo y progreso / borrado dinámico con animación -->
+<script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
+<script src="<?= base_url('assets/js/ajax-delete.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/ajax-delete.js') ?: time() ?>"></script>
 
 <?= $this->renderSection('scripts') ?>
 </body>

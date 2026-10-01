@@ -104,6 +104,17 @@ class DocumentacionController extends BaseController
 
         $result = $this->docService->uploadFile($file, $folderId, $userId, $role, $desc);
 
+        // attach-upload.js sube por XHR (barra de progreso) y espera JSON;
+        // sin JS el formulario sigue funcionando con redirect + flash.
+        if ($this->request->isAJAX()) {
+            if (!$result['success']) {
+                return $this->response->setStatusCode(422)
+                    ->setJSON(['error' => $result['error'], 'csrf' => csrf_hash()]);
+            }
+            session()->setFlashdata('success', 'Archivo subido correctamente.');
+            return $this->response->setJSON(['success' => true, 'csrf' => csrf_hash()]);
+        }
+
         if (!$result['success']) {
             session()->setFlashdata('upload_error', $result['error']);
         } else {
