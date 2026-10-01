@@ -2,7 +2,7 @@
     {
         "version": "1.12.0",
         "date": "2026-10-01 00:00:00",
-        "description": "Subida de adjuntos en clases más clara: al elegir el archivo se comprueba el formato y el tamaño antes de subir (con aviso inmediato si es incompatible o demasiado grande), en los vídeos se muestran duración y resolución, y mientras se sube aparece el porcentaje de progreso. El límite de vídeo pasa de 80 a 200 MB y se ajusta automáticamente a lo que acepte el servidor."
+        "description": "Subida de adjuntos en clases más clara: al elegir el archivo se comprueba el formato y el tamaño antes de subir (con aviso inmediato si es incompatible o demasiado grande), en los vídeos se muestran duración y resolución, y mientras se sube aparece el porcentaje de progreso. El límite de vídeo pasa a 500 MB (en clases y mensajes; documentación ya lo tenía) y se ajusta automáticamente a lo que acepte el servidor."
     },
     {
         "version": "1.11.0",

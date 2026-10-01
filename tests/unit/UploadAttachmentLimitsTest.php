@@ -24,9 +24,9 @@ class UploadAttachmentLimitsTest extends CIUnitTestCase
 
     public function testAttachmentLimitsDefaultValues()
     {
-        // 5 MB por defecto para imágenes/documentos, 200 MB para vídeo.
+        // 5 MB por defecto para imágenes/documentos, 500 MB para vídeo.
         $this->assertSame(5 * 1024 * 1024, ClasesController::ATTACHMENT_MAX_DEFAULT_BYTES);
-        $this->assertSame(200 * 1024 * 1024, ClasesController::ATTACHMENT_MAX_VIDEO_BYTES);
+        $this->assertSame(500 * 1024 * 1024, ClasesController::ATTACHMENT_MAX_VIDEO_BYTES);
     }
 
     public function testAttachmentLimitsFunctionExists()

@@ -544,10 +544,10 @@ class ClasesController extends BaseController
      * Límites de tamaño. Públicos: las vistas los pasan a attach-upload.js
      * para avisar ANTES de subir (un vídeo de móvil tarda minutos en subir
      * y el servidor solo lo rechazaba al final). Un minuto de vídeo de
-     * iPhone (.mov) ronda los 100-200 MB, de ahí el tope de vídeo.
+     * iPhone (.mov) ronda los 100-200 MB (400 MB en 4K); 500 MB es lo que cabe en post_max_size=520M del .htaccess.
      */
     public const ATTACHMENT_MAX_DEFAULT_BYTES = 5 * 1024 * 1024;    // imágenes/documentos
-    public const ATTACHMENT_MAX_VIDEO_BYTES   = 200 * 1024 * 1024;  // vídeo
+    public const ATTACHMENT_MAX_VIDEO_BYTES   = 500 * 1024 * 1024;  // vídeo (igual que Documentación)
 
     /**
      * Límites efectivos para el aviso previo del navegador: el tope de la app
