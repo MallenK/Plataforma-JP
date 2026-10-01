@@ -342,7 +342,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
                         <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => true]) ?>
                     <?php endforeach; endif; ?>
                 </div>
-                <form action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
+                <form action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" data-attach-upload data-max-video="<?= $attachLimits['video'] ?>" data-max-other="<?= $attachLimits['other'] ?>" class="d-flex gap-2 flex-wrap align-items-center">
                     <?= csrf_field() ?>
                     <input type="file" name="attachment" class="form-control-jp" style="max-width:320px" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.mp4,.mov" required>
                     <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
@@ -842,7 +842,7 @@ $pastCutoff     = $isToday && date('H:i') > '10:00';
 
             <div class="form-label mb-2"><i class="bi bi-paperclip me-1" style="color:#7c3aed"></i>Adjuntos de este jugador</div>
             <div id="obsAttachList" class="cs-attach-list mb-3"></div>
-            <form id="obsAttachForm" action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
+            <form id="obsAttachForm" action="/clases/<?= $session['id'] ?>/observaciones/adjuntos" method="POST" enctype="multipart/form-data" data-attach-upload data-max-video="<?= $attachLimits['video'] ?>" data-max-other="<?= $attachLimits['other'] ?>" class="d-flex gap-2 flex-wrap align-items-center">
                 <?= csrf_field() ?>
                 <input type="hidden" id="obsAttachPlayerUid" name="player_uid">
                 <input type="file" name="attachment" class="form-control-jp" style="max-width:260px" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.mp4,.mov" required>
@@ -1055,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php endif; ?>
 
 <?= $this->section('scripts') ?>
+<script src="/assets/js/attach-upload.js?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 <style>
 .cs-modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;

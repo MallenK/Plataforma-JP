@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.12.0",
+        "date": "2026-10-01 00:00:00",
+        "description": "Subida de adjuntos en clases más clara: al elegir el archivo se comprueba el formato y el tamaño antes de subir (con aviso inmediato si es incompatible o demasiado grande), en los vídeos se muestran duración y resolución, y mientras se sube aparece el porcentaje de progreso. El límite de vídeo pasa de 80 a 200 MB y se ajusta automáticamente a lo que acepte el servidor."
+    },
+    {
         "version": "1.11.0",
         "date": "2026-09-28 00:00:00",
         "description": "Listados más ágiles: alumnos, entrenadores, bonos, tickets, notificaciones, documentación y configuración ya no muestran todos los registros de golpe. Se ven 25 por página (configurable a 10, 25, 50 o 100), y el buscador y los filtros siguen buscando entre TODOS los registros, no solo entre los de la página visible. Además, cada listado tiene botones para verlo en forma de lista o de cuadrícula (se recuerda tu elección; en el móvil se abre en cuadrícula por defecto). En Pasar lista: el resumen semanal se puede ver en lista o en cuadrícula, y dentro de una sesión hay buscador de alumno, paginación y las dos vistas (al guardar se registra la asistencia de TODOS los alumnos, también la de los que no están en la página visible). En la ficha del entrenador las tablas se ven de 5 en 5 y solo aparece la paginación si hay más de 5 filas. Las fichas de alumno se quedan como estaban, sin paginación. En Alumnos se ven 10 por página y en formato de lista de entrada, y tanto las filas por página como la vista elegida se recuerdan en el navegador para la próxima visita."
