@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.15.1",
+        "date": "2026-10-01 00:00:00",
+        "description": "Corrección: cuando un alumno avisa de que no asistirá sin indicar motivo, ahora se refleja en la pantalla de la clase (columna Aviso alumno, contador del resumen y Pasar lista semanal). Antes solo aparecía si escribía un motivo."
+    },
+    {
         "version": "1.15.0",
         "date": "2026-10-01 00:00:00",
         "description": "Adjuntos con barra de progreso real y aviso previo de formato y tamaño también en Mensajes, Notificaciones y Tickets (nuevo ticket, ticket rápido y respuestas). En el chat, el botón de enviar queda bloqueado mientras se sube un archivo para no duplicar el mensaje. En los tickets, si el adjunto no es válido ahora se avisa y no se crea el ticket ni la respuesta a medias (antes se creaba sin el archivo y sin avisar)."
