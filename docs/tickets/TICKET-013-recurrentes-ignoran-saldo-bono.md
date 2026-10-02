@@ -49,9 +49,6 @@ después, al pasar lista, así que la creación nunca lo tiene en cuenta.
 - ¿Se cuentan las sesiones ya programadas pendientes del alumno, o solo el saldo actual?
 - ¿Qué pasa con alumnos sin bono (clases sueltas/pago aparte)?
 
-## Criterios de aceptación
-
-
 ## Escala (datos de prod, 02/10/2026)
 
 Al menos 25 de 155 alumnos tenían más clases futuras programadas que saldo de bono
