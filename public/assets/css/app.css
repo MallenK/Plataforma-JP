@@ -692,14 +692,20 @@ body {
     color: #fff;
 }
 
+/* Contraste: antes iba transparente con borde y texto muy claros y se perdía
+   sobre el fondo gris de la app. Ahora: fondo blanco, borde y texto oscuros. */
 .btn-jp-secondary {
-    background: transparent;
-    color: var(--text-body);
-    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-h);
+    border: 1px solid var(--border-dark);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+    font-weight: 600;
 }
 
 .btn-jp-secondary:hover {
-    background: var(--bg-app);
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent-dark);
 }
 
 .btn-jp-danger {

@@ -329,9 +329,17 @@ class BonosController extends BaseController
 
         $bono = $this->bonoModel->getActiveBono($playerId);
 
+        // TICKET-013: clases ya dadas sin bono. Al emitir un bono se descuenta
+        // 1 sesión por cada una, así que se avisa ANTES de crearlo.
+        $debts = array_map(
+            fn($d) => ['title' => $d['title'], 'date' => $d['session_date']],
+            (new BonoControlService())->openDebts($playerId)
+        );
+
         return $this->response->setJSON([
             'has_active' => $bono !== null,
             'bono'       => $bono,
+            'debts'      => $debts,
         ]);
     }
 

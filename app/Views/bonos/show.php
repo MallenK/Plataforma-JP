@@ -140,7 +140,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         <!-- Deudas abiertas del alumno (TICKET-013) -->
         <div class="card-jp" style="border:1px solid #fecaca">
             <div class="card-jp-header">
-                <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Sesiones dadas sin bono (<?= count($debts) ?>)</span>
+                <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin bono (<?= count($debts) ?>)</span>
                 <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none">Gestionar</a>
             </div>
             <div class="card-jp-body" style="font-size:13px">
@@ -151,7 +151,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 </div>
                 <?php endforeach; ?>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:8px">
-                    Se saldan solas con el siguiente bono (primero las más antiguas) y se avisa a los administradores.
+                    Se cubrirán solas con el siguiente bono: se descuenta 1 sesión por clase, empezando por la más antigua, y se avisa a los administradores.
                 </div>
             </div>
         </div>
@@ -167,13 +167,13 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
             <div class="card-jp-body">
                 <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
                     <?php if ($expired): ?>
-                        Este bono caducó el <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>. Al ampliarlo, los días cuentan desde hoy.
+                        Este bono caducó el <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>. Si lo amplías, los días cuentan desde hoy. Ejemplo: «+15 días» = caduca dentro de 15 días.
                     <?php elseif ($daysLeft <= 7): ?>
                         <strong style="color:#92400e">Caduca en <?= max(0, $daysLeft) ?> día<?= $daysLeft === 1 ? '' : 's' ?></strong> (<?= date('d/m/Y', strtotime($bono['expires_at'])) ?>).
                     <?php else: ?>
                         Caduca el <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>.
                     <?php endif; ?>
-                    Queda anotado en el registro del bono y se avisa al alumno.
+                    Puedes darle más días si lo necesita. Queda anotado en el registro del bono y se avisa al alumno.
                 </p>
                 <form action="<?= base_url('bonos/' . $bono['id'] . '/ampliar') ?>" method="post" class="d-flex flex-wrap gap-2 align-items-center" id="formExtend">
                     <?= csrf_field() ?>
@@ -273,7 +273,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
             </div>
             <?php if (empty($movements)): ?>
             <div class="card-jp-body">
-                <p style="color:var(--text-muted);font-size:13px;margin:0">Todavía no hay movimientos registrados. Desde ahora se anotan aquí altas, descuentos, devoluciones, ampliaciones y deudas.</p>
+                <p style="color:var(--text-muted);font-size:13px;margin:0">Todavía no hay movimientos. Aquí verás cuándo se emitió el bono, cada clase descontada o devuelta, las ampliaciones de fecha y los avisos.</p>
             </div>
             <?php else: ?>
             <div class="table-responsive">

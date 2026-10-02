@@ -419,15 +419,15 @@ class ClasesService
                 if ($gap <= 0) {
                     continue;
                 }
-                $adminBody  = "Se ha programado la serie \"{$title}\" con {$gap} sesión(es) sin bono para {$c['name']} (pendientes de bono). "
-                            . "Si asiste sin bono se registrará una deuda hasta que se le asigne uno nuevo.";
-                $playerBody = "Tienes {$gap} clase(s) de la serie \"{$title}\" programadas sin bono que las cubra. "
+                $adminBody  = "Se han creado {$gap} clase(s) de \"{$title}\" para {$c['name']} sin bono que las cubra. "
+                            . "Si viene, quedarán apuntadas como clases sin bono hasta que tenga uno nuevo.";
+                $playerBody = "Tienes {$gap} clase(s) de \"{$title}\" sin bono que las cubra. "
                             . "Habla con la academia para renovar tu bono.";
 
                 $notif->createWithRecipients([
                     'sender_id'   => $actorId,
                     'type'        => 'group',
-                    'title'       => "🎟️ Serie sin cobertura de bono: {$c['name']}",
+                    'title'       => "🎟️ Clases creadas sin bono: {$c['name']}",
                     'body'        => $adminBody,
                     'created_at'  => date('Y-m-d H:i:s'),
                     'source_type' => NotificationModel::SOURCE_CLASS,

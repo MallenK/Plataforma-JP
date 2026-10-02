@@ -116,10 +116,10 @@ class BonoControlService
         if ($settled > 0) {
             $this->notifyAdmins(
                 $playerId,
-                '🎟️ Deuda saldada con el bono nuevo',
-                sprintf('%s tenía %d sesión(es) dadas sin bono (%s). Se han descontado automáticamente del bono nuevo.%s Revísalo en Bonos; si algo no cuadra, se puede devolver la sesión desde la clase.',
+                '🎟️ Clases sin bono cubiertas con el bono nuevo',
+                sprintf('%s había dado %d clase(s) sin bono (%s). Se ha descontado 1 sesión del bono nuevo por cada una.%s Si algo no cuadra, puedes devolver la sesión desde la propia clase.',
                     $this->playerName($playerId), $settled, implode(', ', $names),
-                    $remaining > 0 ? " Quedan {$remaining} pendientes por falta de saldo." : ''),
+                    $remaining > 0 ? " Quedan {$remaining} clase(s) sin cubrir porque no había más sesiones." : ''),
                 $actorId
             );
         }
@@ -298,7 +298,7 @@ class BonoControlService
                     ->countAllResults();
 
                 $when = date('d/m/Y', strtotime($r['expires_at']));
-                $extra = $after > 0 ? " Tiene {$after} clase(s) programadas después de esa fecha." : '';
+                $extra = $after > 0 ? " Tiene {$after} clase(s) programadas para después de esa fecha." : '';
 
                 $sender = $this->anyAdminId();
                 if (!$sender) {
@@ -309,7 +309,7 @@ class BonoControlService
                     'sender_id'   => $sender,
                     'type'        => 'group',
                     'title'       => '⏳ Bono a punto de caducar: ' . $r['player_name'],
-                    'body'        => "El bono \"{$r['bono_name']}\" de {$r['player_name']} caduca el {$when} y le quedan {$r['sessions_remaining']} sesión(es) sin usar.{$extra} Puedes ampliarlo desde el detalle del bono.",
+                    'body'        => "El bono \"{$r['bono_name']}\" de {$r['player_name']} caduca el {$when} y le quedan {$r['sessions_remaining']} sesión(es) sin usar.{$extra} Si hace falta, puedes darle más días desde el detalle del bono.",
                     'source_type' => NotificationModel::SOURCE_BONO,
                     'source_id'   => (int) $r['id'],
                 ], $this->adminIds());
@@ -317,7 +317,7 @@ class BonoControlService
                     'sender_id' => $sender,
                     'type'      => 'individual',
                     'title'     => '⏳ Tu bono caduca pronto',
-                    'body'      => "Tu bono \"{$r['bono_name']}\" caduca el {$when} y te quedan {$r['sessions_remaining']} sesión(es) sin usar. Habla con la academia si quieres ampliarlo o renovarlo.",
+                    'body'      => "Tu bono \"{$r['bono_name']}\" caduca el {$when} y te quedan {$r['sessions_remaining']} sesión(es) sin usar. Si quieres más días o renovarlo, habla con la academia.",
                 ], [(int) $r['player_id']]);
 
                 BonoLedgerService::log((int) $r['player_id'], BonoLedgerService::EXPIRY_ALERT, 0, (int) $r['id'], null,

@@ -357,7 +357,7 @@ $statusHint   = [
                                             if (!empty($p['bono_resolution'])) {
                                                 $bcTag = ['#475569', '#f1f5f9', 'bi-check2-square', $p['bono_resolution'] === 'external' ? 'Pagada fuera de bono' : 'Condonada'];
                                             } elseif ($session['status'] === 'completed' && \App\Services\ClasesService::attendanceConsumesBono($p['attendance'])) {
-                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-receipt', 'Sin descontar: deuda de sesión'];
+                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-receipt', 'Clase dada sin bono'];
                                             } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'uncovered') {
                                                 $bcTag = ['#b91c1c', '#fee2e2', 'bi-ticket-perforated', 'Pendiente de bono'];
                                             } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'at_risk') {

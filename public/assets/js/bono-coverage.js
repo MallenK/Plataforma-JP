@@ -56,7 +56,7 @@
             var s = p.summary;
             var head;
             if (p.never_had_bono) {
-                head = '<span class="bc-tag bc-tag-none"><i class="bi bi-ticket-perforated me-1"></i>Sin bono registrado</span>';
+                head = '<span class="bc-tag bc-tag-none"><i class="bi bi-ticket-perforated me-1"></i>Nunca ha tenido bono</span>';
             } else if (!p.bonos.length) {
                 head = '<span class="bc-tag bc-tag-gap"><i class="bi bi-ticket-perforated me-1"></i>Sin saldo de bono</span>';
             } else {
@@ -67,17 +67,17 @@
 
             var notes = '';
             if (p.debt_count > 0) {
-                notes += '<div class="bc-note bc-note-gap"><i class="bi bi-exclamation-circle me-1"></i>Tiene '
-                    + p.debt_count + ' sesión' + (p.debt_count === 1 ? '' : 'es') + ' dada' + (p.debt_count === 1 ? '' : 's')
-                    + ' sin bono (deuda); se saldará primero con su próximo bono.</div>';
+                notes += '<div class="bc-note bc-note-gap"><i class="bi bi-exclamation-circle me-1"></i>Ya dio '
+                    + p.debt_count + ' clase' + (p.debt_count === 1 ? '' : 's')
+                    + ' sin bono. Se descontarán primero de su próximo bono.</div>';
             }
             if (p.expiring_soon) {
                 notes += '<div class="bc-note bc-note-risk"><i class="bi bi-hourglass-split me-1"></i>Su bono caduca el '
-                    + esc(fmtFull(p.expiring_soon)) + '. Puedes ampliarlo desde Bonos.</div>';
+                    + esc(fmtFull(p.expiring_soon)) + '. Si hace falta, dale más días desde Bonos.</div>';
             }
             if (p.never_had_bono) {
-                notes += '<div class="bc-note"><i class="bi bi-info-circle me-1"></i>Nunca ha tenido bono en la plataforma: '
-                    + 'se crearán todas las clases, pero si asiste quedará registrada como sesión sin bono hasta que se le asigne uno.</div>';
+                notes += '<div class="bc-note"><i class="bi bi-info-circle me-1"></i>Nunca ha tenido bono aquí, así que se crearán todas las clases. '
+                    + 'Si viene a alguna, quedará apuntada como «clase sin bono» hasta que se le asigne uno.</div>';
             }
 
             var chips = Object.keys(p.dates).sort().map(function (d) {
@@ -98,9 +98,9 @@
 
         function legend() {
             return '<div class="bc-legend">'
-                + '<span class="bc-chip bc-chip-ok">Cubierta</span> el bono tiene sesión libre · '
-                + '<span class="bc-chip bc-chip-risk">Caduca antes</span> hay saldo pero el bono vence antes de esa clase (ampliable) · '
-                + '<span class="bc-chip bc-chip-gap">Pendiente</span> sin saldo: si asiste, queda como deuda hasta el próximo bono.</div>';
+                + '<span class="bc-chip bc-chip-ok">Cubierta</span> tiene una clase de bono libre para ese día · '
+                + '<span class="bc-chip bc-chip-risk">Caduca antes</span> tiene bono, pero vence antes de ese día (se puede ampliar) · '
+                + '<span class="bc-chip bc-chip-gap">Pendiente</span> no le queda bono: si viene, la clase queda apuntada hasta que tenga uno nuevo.</div>';
         }
 
         function decision(shortPlayers) {
@@ -116,13 +116,13 @@
             }
             return '<div class="bc-decision" role="radiogroup" aria-label="Qué hacer con las clases sin cubrir">'
                 + '<div class="bc-decision-title"><i class="bi bi-exclamation-triangle-fill me-1"></i>'
-                + 'El bono no cubre toda la serie de ' + names + '. ¿Qué hacemos?</div>' + fitHtml
+                + 'Al bono de ' + names + ' no le llegan las clases para toda la serie. ¿Qué hacemos?</div>' + fitHtml
                 + '<label class="bc-opt"><input type="radio" name="bc-mode-radio" value="limit" checked>'
                 + '<span><strong>Crear solo las cubiertas</strong> (recomendado)<br>'
-                + '<small>El alumno solo entra en las sesiones que su bono cubre. Más adelante se pueden añadir al renovar el bono.</small></span></label>'
+                + '<small>Ejemplo: si tiene 2 clases de bono y pides 5, se crean 2. Las demás se crean cuando renueve el bono.</small></span></label>'
                 + '<label class="bc-opt' + (state.canForce ? '' : ' bc-opt-off') + '"><input type="radio" name="bc-mode-radio" value="all"' + forceDisabled + '>'
-                + '<span><strong>Crear todas, aunque no estén cubiertas</strong><br>'
-                + '<small>Las no cubiertas quedan marcadas como <em>pendientes de bono</em> y se avisa al alumno y a los administradores.'
+                + '<span><strong>Crear todas, aunque no tenga bono para todas</strong><br>'
+                + '<small>Ejemplo: se crean las 5; las 3 sin bono quedan «pendientes de bono» y se avisa al alumno y a los administradores.'
                 + (state.canForce ? '' : ' Solo administradores.') + '</small></span></label>'
                 + '</div>';
         }
