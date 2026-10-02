@@ -23,18 +23,18 @@ function assert(cond, label) {
     if (!cond) failed++;
 }
 
-function make(days, times) {
+function make(days, times, extra) {
     const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { runScripts: 'outside-only' });
     const w = dom.window;
     w.confirm = () => true;
     w.eval(SRC);
     const state = { days: days || [4], times: times || { start: '09:00', end: '10:00' }, changes: 0 };
-    const sb = w.SeriesBuilder.attach({
+    const sb = w.SeriesBuilder.attach(Object.assign({
         root: w.document.getElementById('root'),
         getDays: () => state.days,
         getTimes: () => state.times,
         onChange: () => { state.changes++; }
-    });
+    }, extra || {}));
     const $ = k => w.document.querySelector('[data-sb="' + k + '"]');
     const fire = (el, type) => el.dispatchEvent(new w.Event(type, { bubbles: true }));
     return { w, sb, $, fire, state };
@@ -159,6 +159,24 @@ function make(days, times) {
     state.times = { start: '17:00', end: '18:00' };
     sb.refresh();
     assert(/17:00–18:00/.test($('summary').innerHTML), 'si cambia la hora por defecto, el resumen se actualiza');
+}
+
+// ── 6) Modo simple (clase rápida) ──
+{
+    console.log('Modo simple (clase rápida)');
+    const { sb, $, fire, w } = make([1, 3], null, { simple: true, moreUrl: '/clases/nueva' });
+    const root = w.document.getElementById('root');
+    assert(root.querySelector('.sb').classList.contains('sb-simple'), 'el panel se marca como simple (el CSS oculta lo avanzado)');
+    assert(root.querySelectorAll('[data-sb-adv]').length === 3, 'fecha límite, ayuda larga y casilla "todas iguales" quedan marcadas como avanzadas');
+    assert(/formulario completo/.test(root.innerHTML) && /href="\/clases\/nueva"/.test(root.innerHTML), 'ofrece ir al formulario completo');
+    $('start').value = '2026-10-05';
+    $('count').value = '3';
+    fire($('count'), 'input');
+    assert(JSON.stringify(sb.dates()) === JSON.stringify(['2026-10-05', '2026-10-07', '2026-10-12']), 'lun + mié, 3 clases: 5, 7 y 12 de octubre');
+    assert(sb.validate() === null, 'es válida');
+    const fd = new w.FormData(); sb.appendTo(fd);
+    assert(fd.get('recurrence_count') === '3' && !fd.has('recurrence_end') && !fd.has('custom_schedule'), 'envía solo inicio y nº de clases');
+    assert($('same').checked, 'siempre "todas iguales"');
 }
 
 process.exit(failed ? 1 : 0);

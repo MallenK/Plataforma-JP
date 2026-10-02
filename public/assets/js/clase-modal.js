@@ -112,6 +112,8 @@
         if (window.SeriesBuilder && $('cm-series-builder')) {
             sb = SeriesBuilder.attach({
                 root:     $('cm-series-builder'),
+                simple:   true,                  // clase rápida: solo primera clase + nº de clases
+                moreUrl:  '/clases/nueva',       // lo avanzado, en el formulario completo
                 getDays:  () => Array.from(selectedDays),
                 getTimes: curTimes,
                 onChange: refreshCov
