@@ -296,6 +296,55 @@ class BonoCoverageService
     }
 
     /**
+     * Recalcula la marca `bono_coverage` de las clases FUTURAS ya programadas de
+     * un alumno (sin descuento): se llama cuando cambia su saldo (bono nuevo,
+     * ampliación, descuento, devolución…). Solo toca la marca; nunca crea ni
+     * borra nada. Si dos sesiones caen el mismo día comparten marca.
+     */
+    public function refreshMarks(int $playerId, ?string $today = null): int
+    {
+        try {
+            $today = $today ?: date('Y-m-d');
+            $rows  = $this->db->table('class_session_players csp')
+                ->select('csp.id, cs.session_date')
+                ->join('class_sessions cs', 'cs.id = csp.session_id')
+                ->where('csp.user_id', $playerId)
+                ->where('cs.status', 'scheduled')
+                ->where('cs.session_date >=', $today)
+                ->where('csp.bono_deducted_at IS NULL', null, false)
+                ->get()->getResultArray();
+            if (empty($rows)) {
+                return 0;
+            }
+
+            $dates = array_values(array_unique(array_column($rows, 'session_date')));
+            sort($dates);
+
+            $bonos = [];
+            foreach ($this->db->table('player_bonos')
+                ->select('id, sessions_remaining, expires_at')
+                ->where('player_id', $playerId)->where('sessions_remaining >', 0)
+                ->groupStart()->where('expires_at IS NULL')->orWhere('expires_at >=', $today)->groupEnd()
+                ->orderBy('created_at', 'ASC')->orderBy('id', 'ASC')->get()->getResultArray() as $b) {
+                $bonos[] = ['id' => (int) $b['id'], 'remaining' => (int) $b['sessions_remaining'], 'expires_at' => $b['expires_at']];
+            }
+
+            $alloc = self::allocate($dates, [], $bonos, $this->debtCounts([$playerId])[$playerId] ?? 0);
+
+            $n = 0;
+            foreach ($rows as $r) {
+                $status = $alloc[$r['session_date']]['status'] ?? self::UNCOVERED;
+                $this->db->table('class_session_players')->where('id', $r['id'])->update(['bono_coverage' => $status]);
+                $n++;
+            }
+            return $n;
+        } catch (\Throwable $e) {
+            log_message('error', 'BonoCoverageService::refreshMarks falló: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Deudas abiertas por alumno: sesiones ya dadas (cerradas, con asistencia
      * que consume bono) SIN descuento y sin resolver, posteriores al punto de
      * control. Las anteriores no son deuda: se informan aparte como "no reflejadas".

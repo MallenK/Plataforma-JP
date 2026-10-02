@@ -282,7 +282,7 @@ class ClasesService
             if ($sid) {
                 $ids[] = $sid;
                 $this->syncCoaches($sid, $data['coach_ids'] ?? []);
-                $this->syncPlayers($sid, $sessionPlayers, $data['player_coach_map'] ?? []);
+                $this->syncPlayers($sid, $sessionPlayers, $data['player_coach_map'] ?? [], false);
                 foreach ($sessionPlayers as $pid) {
                     $status = $coverage[$pid]['allocation'][$date]['status'] ?? null;
                     if ($status !== null) {
@@ -1263,6 +1263,8 @@ class ClasesService
         $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
         $bonoName  = $typeRow['name'] ?? null;
 
+        BonoLedgerService::log($playerId, BonoLedgerService::DEDUCTED, -1, (int) $bono['id'], $sessionId, null);
+
         return [
             'success'            => true,
             'sessions_remaining' => $remaining,
@@ -1323,6 +1325,9 @@ class ClasesService
             'bono_deducted_at'      => null,
             'bono_deducted_from_id' => null,
         ]);
+
+        BonoLedgerService::log((int) $player['user_id'], BonoLedgerService::REFUNDED, $creditedId ? 1 : 0, $creditedId, (int) $player['session_id'],
+            $creditedId ? null : 'Sin bono destino: la sesión no se pudo acreditar');
 
         return ['refunded' => true, 'bono_id' => $creditedId];
     }
@@ -2018,7 +2023,9 @@ class ClasesService
             'updated_at' => $now,
         ]);
 
-        return ['success' => true];
+        $coverage = $this->markCoverage($sessionId, [$userId])[$userId] ?? null;
+
+        return ['success' => true, 'coverage' => $coverage];
     }
 
     public function removePlayer(int $sessionId, int $userId): bool
@@ -2544,8 +2551,9 @@ class ClasesService
      * alumnos que siguen; solo inserta los nuevos y elimina los que se quitan
      * (devolviéndoles el bono si se les había descontado).
      */
-    private function syncPlayers(int $sessionId, array $userIds, array $coachMap): void
+    private function syncPlayers(int $sessionId, array $userIds, array $coachMap, bool $mark = true): void
     {
+        $inserted = [];
         $wanted = array_values(array_unique(array_filter(array_map('intval', (array)$userIds))));
 
         $existing = $this->db->table('class_session_players')
@@ -2588,8 +2596,44 @@ class ClasesService
             ]);
             if ($this->db->affectedRows() === 0) {
                 log_message('error', 'syncPlayers: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
+            } else {
+                $inserted[] = $uid;
             }
         }
+
+        // TICKET-013: marca de cobertura de los alumnos recién añadidos (las
+        // series ya la marcan ellas con su plan, por eso createRecurring pasa false).
+        if ($mark && $inserted) {
+            $this->markCoverage($sessionId, $inserted);
+        }
+    }
+
+    /**
+     * Marca `bono_coverage` de unos alumnos en una sesión concreta según su
+     * saldo. Solo informativa: nunca bloquea ni falla la operación.
+     *
+     * @return array<int,string> estado por alumno (covered|at_risk|uncovered)
+     */
+    private function markCoverage(int $sessionId, array $userIds): array
+    {
+        $out = [];
+        try {
+            $s = $this->sessionModel->find($sessionId);
+            if (!$s || ($s['status'] ?? '') !== 'scheduled') {
+                return $out;
+            }
+            $cov = (new BonoCoverageService($this->db))->analyze($userIds, [$s['session_date']], [$sessionId]);
+            foreach ($cov as $pid => $c) {
+                $status = $c['allocation'][$s['session_date']]['status'] ?? BonoCoverageService::UNCOVERED;
+                $this->db->table('class_session_players')
+                    ->where('session_id', $sessionId)->where('user_id', $pid)
+                    ->update(['bono_coverage' => $status]);
+                $out[(int) $pid] = $status;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'markCoverage falló (sesión ' . $sessionId . '): ' . $e->getMessage());
+        }
+        return $out;
     }
 
     private function nextPlayerRowId(): int

@@ -327,6 +327,18 @@ $routes->post('bonos/check-active', 'BonosController::checkActive', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->get('bonos/deudas', 'BonosController::deudas', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/deudas/(:num)/resolver', 'BonosController::resolveDebt/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/(:num)/ampliar', 'BonosController::extend/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 $routes->get('bonos/(:num)', 'BonosController::show/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

@@ -1074,9 +1074,16 @@ class ClasesController extends BaseController
     {
         $result = $this->clasesService->addPlayer($id, $this->request->getPost());
 
+        $msg = 'Jugador añadido.';
+        if (!empty($result['success']) && ($result['coverage'] ?? null) === BonoCoverageService::UNCOVERED) {
+            $msg .= ' Ojo: no tiene saldo de bono para esta clase (queda como pendiente de bono; si asiste, se registrará una deuda).';
+        } elseif (!empty($result['success']) && ($result['coverage'] ?? null) === BonoCoverageService::AT_RISK) {
+            $msg .= ' Ojo: su bono caduca antes de esta clase; puedes ampliarlo desde Bonos.';
+        }
+
         session()->setFlashdata(
             $result['success'] ? 'success' : 'error',
-            $result['success'] ? 'Jugador añadido.' : ($result['error'] ?? 'Error.')
+            $result['success'] ? $msg : ($result['error'] ?? 'Error.')
         );
 
         return redirect()->to('/clases/' . $id);

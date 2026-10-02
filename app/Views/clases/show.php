@@ -350,6 +350,22 @@ $statusHint   = [
                                     <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
                                     <div>
                                         <div class="td-name"><?php if ($profileUrl): ?><a href="<?= esc($profileUrl, 'attr') ?>" class="row-link-anchor"><?= esc($p['name']) ?></a><?php else: ?><?= esc($p['name']) ?><?php endif; ?></div>
+                                        <?php
+                                        // TICKET-013: estado de bono de la plaza (solo gestión).
+                                        if (in_array(session('role'), ['superadmin', 'admin'], true) && empty($p['bono_deducted_at'])):
+                                            $bcTag = null;
+                                            if (!empty($p['bono_resolution'])) {
+                                                $bcTag = ['#475569', '#f1f5f9', 'bi-check2-square', $p['bono_resolution'] === 'external' ? 'Pagada fuera de bono' : 'Condonada'];
+                                            } elseif ($session['status'] === 'completed' && \App\Services\ClasesService::attendanceConsumesBono($p['attendance'])) {
+                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-receipt', 'Sin descontar: deuda de sesión'];
+                                            } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'uncovered') {
+                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-ticket-perforated', 'Pendiente de bono'];
+                                            } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'at_risk') {
+                                                $bcTag = ['#92400e', '#fef3c7', 'bi-hourglass-split', 'El bono caduca antes'];
+                                            }
+                                            if ($bcTag): ?>
+                                        <span style="display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:6px;color:<?= $bcTag[0] ?>;background:<?= $bcTag[1] ?>"><i class="bi <?= $bcTag[2] ?> me-1"></i><?= $bcTag[3] ?></span>
+                                        <?php endif; endif; ?>
                                     </div>
                                 </div>
                             </td>

@@ -17,7 +17,13 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-secondary" style="text-decoration:none">
+            <i class="bi bi-receipt"></i> Deudas de sesión
+            <?php if (!empty($debtCount)): ?>
+            <span class="badge-status inactive" style="font-size:10px;margin-left:4px"><?= (int) $debtCount ?></span>
+            <?php endif; ?>
+        </a>
         <button class="btn-jp btn-jp-secondary" onclick="openModalTipos()">
             <i class="bi bi-grid-fill"></i> Tipos de bono
         </button>

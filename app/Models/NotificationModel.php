@@ -24,6 +24,7 @@ class NotificationModel extends Model
     public const SOURCE_TICKET       = 'ticket';
     public const SOURCE_CONVERSATION = 'conversation';
     public const SOURCE_CLASS        = 'class';
+    public const SOURCE_BONO         = 'bono';
 
     /**
      * Inserta una notificación y sus destinatarios en una sola operación.
@@ -77,6 +78,7 @@ class NotificationModel extends Model
             self::SOURCE_TICKET       => ['path' => 'tickets/' . $id, 'label' => 'Ver ticket', 'icon' => 'bi-life-preserver'],
             self::SOURCE_CONVERSATION => ['path' => 'mensajes?conv=' . $id, 'label' => 'Ir a la conversación', 'icon' => 'bi-chat-dots'],
             self::SOURCE_CLASS        => ['path' => 'clases/' . $id, 'label' => 'Ver clase', 'icon' => 'bi-calendar3'],
+            self::SOURCE_BONO         => ['path' => 'bonos/' . $id, 'label' => 'Ver bono', 'icon' => 'bi-ticket-perforated'],
             default                   => null,
         };
     }
@@ -89,7 +91,7 @@ class NotificationModel extends Model
      */
     public static function prepareSource(array $data, bool $columnsExist): array
     {
-        $valid = in_array($data['source_type'] ?? null, [self::SOURCE_TICKET, self::SOURCE_CONVERSATION, self::SOURCE_CLASS], true)
+        $valid = in_array($data['source_type'] ?? null, [self::SOURCE_TICKET, self::SOURCE_CONVERSATION, self::SOURCE_CLASS, self::SOURCE_BONO], true)
             && (int) ($data['source_id'] ?? 0) > 0;
 
         if (!$columnsExist || !$valid) {
