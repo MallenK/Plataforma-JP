@@ -148,7 +148,14 @@ class ClasesController extends BaseController
         $post      = (array) $this->request->getPost();
         $playerIds = array_map('intval', (array) ($post['player_ids'] ?? []));
 
-        if (!empty($post['recurrence_days']) && !empty($post['recurrence_start']) && !empty($post['recurrence_end'])) {
+        $count = (int) ($post['recurrence_count'] ?? 0);
+        if (!empty($post['recurrence_days']) && !empty($post['recurrence_start']) && $count > 0) {
+            $dates = BonoCoverageService::recurrenceDatesByCount(
+                (array) $post['recurrence_days'],
+                (string) $post['recurrence_start'],
+                $count
+            );
+        } elseif (!empty($post['recurrence_days']) && !empty($post['recurrence_start']) && !empty($post['recurrence_end'])) {
             $dates = BonoCoverageService::recurrenceDates(
                 (array) $post['recurrence_days'],
                 (string) $post['recurrence_start'],
@@ -165,9 +172,25 @@ class ClasesController extends BaseController
 
         $coverage = (new BonoCoverageService())->analyze($playerIds, $dates);
 
+        // "Ajustar al bono": nº de clases que caben para TODOS los alumnos con bono
+        // (el que menos saldo libre tiene manda) y la fecha de la última.
+        $fit = null;
+        $withBono = array_filter($coverage, fn($c) => !$c['never_had_bono']);
+        if (!empty($withBono) && !empty($post['recurrence_days']) && !empty($post['recurrence_start'])) {
+            $n = min(array_map(fn($c) => $c['free_slots'], $withBono));
+            $n = min($n, BonoCoverageService::MAX_SERIES_SESSIONS);
+            if ($n > 0) {
+                $fitDates = BonoCoverageService::recurrenceDatesByCount((array) $post['recurrence_days'], (string) $post['recurrence_start'], $n);
+                $fit = ['count' => count($fitDates), 'end' => end($fitDates) ?: null];
+            } else {
+                $fit = ['count' => 0, 'end' => null];
+            }
+        }
+
         return $this->response->setJSON([
             'success'   => true,
             'dates'     => $dates,
+            'fit'       => $fit,
             'players'   => BonoCoverageService::payload($coverage),
             'can_force' => in_array(session('role'), ['superadmin', 'admin'], true),
             'csrf'      => csrf_hash(),

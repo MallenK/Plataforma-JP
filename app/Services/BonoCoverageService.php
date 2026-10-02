@@ -169,11 +169,48 @@ class BonoCoverageService
                 'name'           => $c['name'],
                 'never_had_bono' => $c['never_had_bono'],
                 'debt_count'     => $c['debt_count'],
+                'balance'        => $c['balance'] ?? 0,
+                'free_slots'     => $c['free_slots'] ?? 0,
                 'bonos'          => $c['bonos'],
                 'expiring_soon'  => $expiring,
                 'summary'        => $c['summary'],
                 'dates'          => $dates,
             ];
+        }
+        return $out;
+    }
+
+    /** Tope de clases de una serie y horizonte máximo (días) al terminar "por nº de clases". */
+    public const MAX_SERIES_SESSIONS = 60;
+    public const MAX_SERIES_DAYS     = 730;
+
+    /**
+     * Las primeras $count fechas de una serie recurrente a partir de $start,
+     * para los días ISO indicados (1=Lun … 7=Dom). Es la forma natural de pedir
+     * una serie ("quiero 4 clases") sin tener que calcular la fecha de fin.
+     * Se corta a MAX_SERIES_SESSIONS clases y MAX_SERIES_DAYS días.
+     *
+     * @param int[] $days
+     * @return string[]
+     */
+    public static function recurrenceDatesByCount(array $days, string $start, int $count): array
+    {
+        $days  = array_map('intval', $days);
+        $count = max(0, min($count, self::MAX_SERIES_SESSIONS));
+        $out   = [];
+        if ($count === 0 || empty($days)) {
+            return $out;
+        }
+        try {
+            $cur = new \DateTime($start);
+        } catch (\Throwable $e) {
+            return [];
+        }
+        for ($i = 0; $i < self::MAX_SERIES_DAYS && count($out) < $count; $i++) {
+            if (in_array((int) $cur->format('N'), $days, true)) {
+                $out[] = $cur->format('Y-m-d');
+            }
+            $cur->modify('+1 day');
         }
         return $out;
     }
@@ -282,8 +319,15 @@ class BonoCoverageService
         $out = [];
         foreach ($playerIds as $pid) {
             $alloc = self::allocate($dates, $existingBy[$pid] ?? [], $bonosBy[$pid] ?? [], $debts[$pid] ?? 0);
+            $balance = 0;
+            foreach ($bonosBy[$pid] ?? [] as $b) {
+                $balance += $b['remaining'];
+            }
             $out[$pid] = [
                 'player_id'      => $pid,
+                'balance'        => $balance,
+                // Clases que aún caben con su bono (saldo − ya programadas − deudas).
+                'free_slots'     => max(0, $balance - count($existingBy[$pid] ?? []) - ($debts[$pid] ?? 0)),
                 'name'           => $names[$pid] ?? ('#' . $pid),
                 'bonos'          => $bonosBy[$pid] ?? [],
                 'never_had_bono' => empty($everHad[$pid]),
