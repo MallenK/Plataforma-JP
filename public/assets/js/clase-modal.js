@@ -24,6 +24,9 @@
     const selectedDays    = new Set();
 
     let currentType = 'single';
+    let cov = null; // BonoCoverage (TICKET-013)
+
+    function refreshCov() { if (cov) cov.refresh(); }
 
     // ── DOM helpers ─────────────────────────────────────────────
     function $(id)  { return document.getElementById(id); }
@@ -68,6 +71,7 @@
                 pill.classList.toggle('active', cb.checked);
                 if (cb.checked) selectedDays.add(parseInt(cb.value));
                 else            selectedDays.delete(parseInt(cb.value));
+                refreshCov();
             });
         });
 
@@ -91,11 +95,34 @@
             this.value = '';
             renderTags('cm-player-list', selectedPlayers);
             updateWarning();
+            refreshCov();
         });
 
         // Submit
         const submitBtn = overlay.querySelector('button[id$="submit"]') || $('cm-submit');
         submitBtn?.addEventListener('click', submit);
+
+        // Cobertura de bono (TICKET-013): solo para series recurrentes
+        if (window.BonoCoverage && $('cm-bono-cov')) {
+            cov = BonoCoverage.attach({
+                panel:     $('cm-bono-cov'),
+                modeInput: $('cm-bono-mode'),
+                csrfName:  opts.csrfName,
+                csrfHash:  opts.csrfHash,
+                collect: function () {
+                    if (currentType !== 'recurring') return null;
+                    const start = $('cm-rec-start').value, end = $('cm-rec-end').value;
+                    if (!selectedPlayers.size || !selectedDays.size || !start || !end || end < start) return null;
+                    const fd = new FormData();
+                    selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+                    selectedDays.forEach(d => fd.append('recurrence_days[]', d));
+                    fd.append('recurrence_start', start);
+                    fd.append('recurrence_end', end);
+                    return fd;
+                }
+            });
+            ['cm-rec-start', 'cm-rec-end'].forEach(id => $(id).addEventListener('change', refreshCov));
+        }
 
         // Inicializar tipo
         setType('single');
@@ -146,6 +173,7 @@
             el.classList.toggle('d-none', currentType !== 'single'));
         document.querySelectorAll('.cm-block-recurring').forEach(el =>
             el.classList.toggle('d-none', currentType !== 'recurring'));
+        refreshCov();
     }
 
     // ── Render tags ────────────────────────────────────────────
@@ -161,6 +189,7 @@
                 map.delete(id);
                 renderTags(containerId, map);
                 updateWarning();
+                if (containerId === 'cm-player-list') refreshCov();
             });
             el.appendChild(tag);
         });
@@ -237,6 +266,7 @@
             $('cm-end-m').value   = '00';
         }
 
+        if (cov) cov.reset();
         setType('single');
         $('modalCreateClass').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
@@ -317,6 +347,7 @@
 
         selectedCoaches.forEach((_, id) => fd.append('coach_ids[]', id));
         selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+        if (currentType === 'recurring' && cov && cov.state.mode) fd.append('coverage_mode', cov.state.mode);
 
         // Botón
         const btn = $('cm-submit');
@@ -335,6 +366,7 @@
             } else {
                 errEl.textContent = data.error || 'Error al crear la sesión.';
                 show(errEl);
+                if (data.needs_decision) refreshCov(); // el saldo cambió o no se había calculado
             }
         } catch (e) {
             errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';

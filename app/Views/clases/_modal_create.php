@@ -150,6 +150,10 @@ $btnId   = $btnId   ?? 'cm-submit';
                 </div>
             </div>
 
+            <!-- Cobertura de bono (TICKET-013): solo series recurrentes con alumnos -->
+            <div id="cm-bono-cov" class="d-none" style="margin-top:12px"></div>
+            <input type="hidden" id="cm-bono-mode" value="">
+
             <div id="cm-warning" class="cm-warning d-none">
                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
                 <span id="cm-warning-text"></span>

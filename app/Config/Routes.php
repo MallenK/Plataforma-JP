@@ -189,6 +189,9 @@ $routes->get('clases/api/opciones', 'ClasesController::opciones', [
 $routes->get('clases/api/buscar', 'ClasesController::buscar', [
     'filter' => 'auth',
 ]);
+$routes->post('clases/api/cobertura', 'ClasesController::coverage', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 $routes->get('clases/api/check-location', 'ClasesController::checkLocation', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);

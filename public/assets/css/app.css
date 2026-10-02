@@ -2630,3 +2630,32 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
     .aviso-panel { padding: 11px 12px; gap: 10px; }
     .aviso-form__btn { align-self: stretch; justify-content: center; padding: 11px 16px; }
 }
+
+/* ── TICKET-013: cobertura de bono al crear clases ───────────── */
+.bc-head { font-weight: 600; font-size: .85rem; color: var(--text-h); margin-bottom: 8px; }
+.bc-loading { font-size: .8rem; color: var(--text-muted); padding: 6px 0; }
+.bc-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; background: var(--bg-card); }
+.bc-card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+.bc-name { font-weight: 600; font-size: .85rem; color: var(--text-h); }
+.bc-line { font-size: .8rem; color: var(--text-h); margin-bottom: 6px; }
+.bc-gap-text { color: var(--danger); font-weight: 600; }
+.bc-risk-text { color: #b45309; font-weight: 600; }
+.bc-tag { font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.bc-tag-ok   { background: var(--success-light); color: #047857; }
+.bc-tag-gap  { background: var(--danger-light);  color: #b91c1c; }
+.bc-tag-none { background: var(--bg-secondary);  color: #475569; }
+.bc-note { font-size: .74rem; color: #475569; background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 6px; }
+.bc-note-gap  { background: var(--danger-light);  color: #b91c1c; }
+.bc-note-risk { background: var(--warning-light); color: #92400e; }
+.bc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.bc-chip { font-size: .7rem; font-weight: 600; padding: 2px 7px; border-radius: 6px; border: 1px solid transparent; }
+.bc-chip-ok   { background: var(--success-light); color: #047857; border-color: #a7f3d0; }
+.bc-chip-risk { background: var(--warning-light); color: #92400e; border-color: #fde68a; }
+.bc-chip-gap  { background: var(--danger-light);  color: #b91c1c; border-color: #fecaca; }
+.bc-legend { font-size: .72rem; color: var(--text-muted); line-height: 1.9; margin: 2px 0 8px; }
+.bc-decision { border: 1px solid #fde68a; background: var(--warning-light); border-radius: var(--radius-sm); padding: 10px 12px; }
+.bc-decision-title { font-size: .82rem; font-weight: 600; color: #92400e; margin-bottom: 8px; }
+.bc-opt { display: flex; gap: 8px; align-items: flex-start; font-size: .8rem; cursor: pointer; margin-bottom: 6px; color: var(--text-h); }
+.bc-opt input { margin-top: 3px; accent-color: var(--accent); }
+.bc-opt small { color: #475569; }
+.bc-opt-off { opacity: .55; cursor: not-allowed; }

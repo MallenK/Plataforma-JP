@@ -1001,6 +1001,10 @@ $statusHint   = [
                     </div>
                 </div>
 
+                <!-- Cobertura de bono (TICKET-013): cruza la serie con el saldo de cada alumno -->
+                <div id="rn-bono-cov" class="d-none" style="margin-top:14px"></div>
+                <input type="hidden" name="coverage_mode" id="rn-bono-mode" value="">
+
                 <div class="d-flex gap-2 justify-content-end mt-3">
                     <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalRenewSeries')">Cancelar</button>
                     <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Continuar clases</button>
@@ -1009,6 +1013,7 @@ $statusHint   = [
         </div>
     </div>
 </div>
+<script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script>
 // Filtra el select de responsable según Entrenador/Staff elegido, para no
 // dejar seleccionable a alguien del pool equivocado (mismas reglas que
@@ -1036,6 +1041,36 @@ $statusHint   = [
             chk.closest('.cm-day-pill')?.classList.toggle('active', chk.checked);
         });
     });
+
+    // Cobertura de bono (TICKET-013): la serie nueva copia los alumnos de la
+    // anterior, así que aquí es donde más se acumulaban sesiones sin bono.
+    var rnForm = document.getElementById('formRenewSeries');
+    if (window.BonoCoverage && rnForm) {
+        var rnCov = BonoCoverage.attach({
+            panel:     document.getElementById('rn-bono-cov'),
+            modeInput: document.getElementById('rn-bono-mode'),
+            csrfName:  <?= json_encode(csrf_token()) ?>,
+            csrfHash:  <?= json_encode(csrf_hash()) ?>,
+            collect: function () {
+                var players = rnForm.querySelectorAll('[name="player_ids[]"]');
+                var days    = rnForm.querySelectorAll('[name="recurrence_days[]"]:checked');
+                var start   = rnForm.querySelector('[name="recurrence_start"]').value;
+                var end     = rnForm.querySelector('[name="recurrence_end"]').value;
+                if (!players.length || !days.length || !start || !end || end < start) return null;
+                var fd = new FormData();
+                players.forEach(function (p) { fd.append('player_ids[]', p.value); });
+                days.forEach(function (d) { fd.append('recurrence_days[]', d.value); });
+                fd.append('recurrence_start', start);
+                fd.append('recurrence_end', end);
+                return fd;
+            }
+        });
+        rnForm.addEventListener('change', function (e) {
+            var n = e.target && e.target.name;
+            if (n === 'recurrence_days[]' || n === 'recurrence_start' || n === 'recurrence_end') rnCov.refresh();
+        });
+        document.addEventListener('DOMContentLoaded', function () { rnCov.refresh(); });
+    }
 
     // El responsable es obligatorio al continuar una serie: dejarlo en
     // "Sin responsable asignado" y guardar no puede colar en silencio.

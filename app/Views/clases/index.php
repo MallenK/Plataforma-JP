@@ -541,6 +541,7 @@ window.CalOverlap = (function () {
     };
 })();
 </script>
+<script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
 <script>
 const canManage = <?= $canManage ? 'true' : 'false' ?>;
