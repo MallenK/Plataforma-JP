@@ -22,6 +22,10 @@
  *   sb.validate();       // null si todo bien, o el texto del error
  *   sb.setCount(n);      // "Ajustar al bono"
  *
+ * Con `simple: true` (clase rápida) solo se ven "Primera clase" y "Nº de clases":
+ * la fecha límite y el calendario clase a clase quedan para el formulario completo.
+ * La lógica es la misma (los campos siguen ahí, ocultos y vacíos).
+ *
  * En el formulario completo los inputs llevan `name`, así que viajan solos al
  * enviar (recurrence_start, recurrence_count, recurrence_end, custom_schedule).
  */
@@ -71,23 +75,28 @@
         var edited = false; // el admin tocó la tabla
 
         root.innerHTML =
-            '<div class="sb">'
+            '<div class="sb' + (cfg.simple ? ' sb-simple' : '') + '">'
           +   '<div class="sb-grid">'
           +     '<div><label class="form-label">Primera clase <span class="sb-req">*</span></label>'
           +       '<input type="date" class="form-control-jp" data-sb="start" name="recurrence_start" value="' + today + '"></div>'
           +     '<div><label class="form-label">Nº de clases</label>'
           +       '<input type="number" class="form-control-jp" data-sb="count" name="recurrence_count" min="1" max="' + MAX + '" value="4" placeholder="Ej: 4"></div>'
-          +     '<div><label class="form-label">Fecha límite <small>(opcional)</small></label>'
+          +     '<div data-sb-adv><label class="form-label">Fecha límite <small>(opcional)</small></label>'
           +       '<input type="date" class="form-control-jp" data-sb="end" name="recurrence_end"></div>'
           +   '</div>'
-          +   '<div class="sb-help">Se crean clases hasta llegar al <strong>nº de clases</strong> o a la <strong>fecha límite</strong>, lo que pase primero. '
+          +   '<div class="sb-help sb-help-simple">Se crean tantas clases como indiques, el mismo día de la semana y a la misma hora.</div>'
+          +   '<div class="sb-help" data-sb-adv>Se crean clases hasta llegar al <strong>nº de clases</strong> o a la <strong>fecha límite</strong>, lo que pase primero. '
           +     'Ejemplo: 8 clases con límite el 31/10 → si el 31/10 llega antes de la 8ª, se para ahí. Puedes rellenar solo una de las dos.</div>'
-          +   '<label class="sb-check"><input type="checkbox" data-sb="same" checked> '
+          +   '<label class="sb-check" data-sb-adv><input type="checkbox" data-sb="same" checked> '
           +     '<span><strong>Todas las clases el mismo día de la semana y a la misma hora</strong>'
           +     '<small>Desmárcalo si alguna clase cambia de día u hora: podrás ajustar cada una.</small></span></label>'
           +   '<div data-sb="summary" class="sb-summary"></div>'
           +   '<div data-sb="table" class="sb-table d-none"></div>'
           +   '<input type="hidden" data-sb="schedule" name="custom_schedule" value="">'
+          +   (cfg.simple && cfg.moreUrl
+                ? '<div class="sb-more">¿Necesitas fecha límite o cambiar el día u hora de alguna clase? '
+                  + '<a href="' + esc(cfg.moreUrl) + '">Usa el formulario completo</a>.</div>'
+                : '')
           + '</div>';
 
         function q(k) { return root.querySelector('[data-sb="' + k + '"]'); }
