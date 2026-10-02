@@ -1051,6 +1051,7 @@ DBCAL.load();
 </script>
 <?php if ($dbCanManage): ?>
 <script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
+<script src="<?= base_url('assets/js/series-builder.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/series-builder.js') ?>"></script>
 <script src="<?= base_url('assets/js/clase-modal.js') ?>"></script>
 <script>
 ClaseModal.init({

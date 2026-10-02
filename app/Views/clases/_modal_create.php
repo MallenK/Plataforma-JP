@@ -77,33 +77,9 @@ $btnId   = $btnId   ?? 'cm-submit';
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <div class="col-6 cm-block-recurring d-none">
-                    <label class="form-label">Desde <span style="color:var(--danger)">*</span></label>
-                    <input type="date" id="cm-rec-start" class="form-control-jp">
-                </div>
+                <!-- Configuración de la serie (TICKET-013): lo pinta series-builder.js -->
                 <div class="col-12 cm-block-recurring d-none">
-                    <label class="form-label">¿Cómo termina la serie? <span style="color:var(--danger)">*</span></label>
-                    <div class="d-flex gap-2 flex-wrap mb-2">
-                        <label class="end-mode-opt is-active" id="cm-lbl-end-count">
-                            <input type="radio" name="cm-end-mode" value="count" checked style="accent-color:var(--accent)">
-                            <span><strong>Número de clases</strong><small>Tú dices cuántas; el fin se calcula solo</small></span>
-                        </label>
-                        <label class="end-mode-opt" id="cm-lbl-end-date">
-                            <input type="radio" name="cm-end-mode" value="date" style="accent-color:var(--accent)">
-                            <span><strong>Hasta una fecha</strong><small>Todas las clases hasta ese día</small></span>
-                        </label>
-                    </div>
-                    <div class="row g-2 align-items-end">
-                        <div class="col-6" id="cm-end-count-wrap">
-                            <label class="form-label">Nº de clases</label>
-                            <input type="number" id="cm-rec-count" class="form-control-jp" min="1" max="60" value="4">
-                        </div>
-                        <div class="col-6 d-none" id="cm-end-date-wrap">
-                            <label class="form-label">Hasta</label>
-                            <input type="date" id="cm-rec-end" class="form-control-jp">
-                        </div>
-                        <div class="col-6"><div id="cm-end-hint" style="font-size:12px;color:var(--text-muted);padding-bottom:8px"></div></div>
-                    </div>
+                    <div id="cm-series-builder"></div>
                 </div>
 
                 <!-- Hora inicio (24h custom) -->
