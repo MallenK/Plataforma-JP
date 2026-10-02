@@ -189,6 +189,9 @@ $routes->get('clases/api/opciones', 'ClasesController::opciones', [
 $routes->get('clases/api/buscar', 'ClasesController::buscar', [
     'filter' => 'auth',
 ]);
+$routes->post('clases/api/cobertura', 'ClasesController::coverage', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
 $routes->get('clases/api/check-location', 'ClasesController::checkLocation', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
@@ -321,6 +324,18 @@ $routes->post('bonos/store', 'BonosController::store', [
 ]);
 
 $routes->post('bonos/check-active', 'BonosController::checkActive', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('bonos/deudas', 'BonosController::deudas', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/deudas/(:num)/resolver', 'BonosController::resolveDebt/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->post('bonos/(:num)/ampliar', 'BonosController::extend/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 

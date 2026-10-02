@@ -290,6 +290,16 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
         <!-- ── Sidebar ──────────────────────────────────── -->
         <div class="col-12 col-lg-4">
 
+            <?php if (!$isEdit): ?>
+            <!-- Cobertura de bono (TICKET-013): se rellena por JS al elegir alumnos + serie -->
+            <div class="card-jp mb-3 d-none" id="bono-cov-card">
+                <div class="card-jp-body">
+                    <div id="bono-cov"></div>
+                    <input type="hidden" name="coverage_mode" id="bono-cov-mode" value="">
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Acción -->
             <div class="card-jp mb-3">
                 <div class="card-jp-body">
@@ -448,6 +458,9 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 </form>
 
 <?= $this->section('scripts') ?>
+<?php if (!$isEdit): ?>
+<script src="/assets/js/bono-coverage.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
+<?php endif; ?>
 <?php
 // Opciones para JS. Los nombres los controla el usuario (un alumno puede
 // cambiar el suyo), así que se escapan <, >, ', ", & para que no puedan
@@ -551,6 +564,43 @@ function toggleType(v) {
         setBlockDisabled(single, false);
     }
 }
+// ── Cobertura de bono (TICKET-013) ────────────────────────────
+// Solo al crear una serie: cruza alumnos × fechas con su saldo y deja
+// elegir qué hacer con las sesiones sin cobertura antes de guardar.
+let bonoCov = null;
+<?php if (!$isEdit): ?>
+bonoCov = BonoCoverage.attach({
+    panel:     document.getElementById('bono-cov'),
+    modeInput: document.getElementById('bono-cov-mode'),
+    csrfName:  <?= json_encode(csrf_token()) ?>,
+    csrfHash:  <?= json_encode(csrf_hash()) ?>,
+    onChange:  function () {
+        const hasPanel = document.getElementById('bono-cov').innerHTML.trim() !== '';
+        document.getElementById('bono-cov-card').classList.toggle('d-none', !hasPanel);
+    },
+    collect: function () {
+        const form = document.getElementById('claseForm');
+        if ((form.querySelector('[name="type"]:checked')?.value || 'single') !== 'recurring') return null;
+        const players = form.querySelectorAll('[name="player_ids[]"]');
+        const days    = form.querySelectorAll('[name="recurrence_days[]"]:checked');
+        const start   = form.querySelector('[name="recurrence_start"]')?.value;
+        const end     = form.querySelector('[name="recurrence_end"]')?.value;
+        if (!players.length || !days.length || !start || !end || end < start) return null;
+        const fd = new FormData();
+        players.forEach(p => fd.append('player_ids[]', p.value));
+        days.forEach(d => fd.append('recurrence_days[]', d.value));
+        fd.append('recurrence_start', start);
+        fd.append('recurrence_end', end);
+        return fd;
+    }
+});
+document.getElementById('claseForm').addEventListener('change', function (e) {
+    const n = e.target && e.target.name;
+    if (n === 'recurrence_days[]' || n === 'recurrence_start' || n === 'recurrence_end' || n === 'type') bonoCov.refresh();
+});
+<?php endif; ?>
+function refreshBonoCov() { if (bonoCov) bonoCov.refresh(); }
+
 // Init
 toggleType(document.querySelector('[name="type"]:checked')?.value || 'single');
 
@@ -638,12 +688,14 @@ function addPlayer(sel) {
     </div>`;
     document.getElementById('playerList').insertAdjacentHTML('beforeend', html);
     document.getElementById('playerEmpty').style.display = 'none';
+    refreshBonoCov();
 }
 
 function removePlayer(id) {
     addedPlayers.delete(id);
     document.getElementById('player-' + id)?.remove();
     if (!addedPlayers.size) document.getElementById('playerEmpty').style.display = '';
+    refreshBonoCov();
 }
 
 // ── Aviso conflicto instalación ───────────────────────────────
