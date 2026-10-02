@@ -28,6 +28,41 @@
 
     function refreshCov() { if (cov) cov.refresh(); }
 
+    // ── Fin de la serie: nº de clases o fecha (TICKET-013) ───────
+    function endMode() {
+        const r = document.querySelector('input[name="cm-end-mode"]:checked');
+        return r ? r.value : 'count';
+    }
+    function nthDate(startStr, days, n) {
+        if (!startStr || !days.size || !(n >= 1)) return null;
+        const d = new Date(startStr + 'T00:00:00');
+        let found = 0;
+        for (let i = 0; i < 740; i++) {
+            const iso = d.getDay() === 0 ? 7 : d.getDay();
+            if (days.has(iso)) { found++; if (found === n) return d; }
+            d.setDate(d.getDate() + 1);
+        }
+        return null;
+    }
+    function updateEndHint() {
+        const hint = $('cm-end-hint');
+        if (!hint) return;
+        if (endMode() !== 'count') { hint.textContent = ''; return; }
+        if (!selectedDays.size) { hint.textContent = 'Elige los días de la semana.'; return; }
+        const last = nthDate($('cm-rec-start').value, selectedDays, parseInt($('cm-rec-count').value || '0', 10));
+        hint.innerHTML = last
+            ? 'Terminará el <strong>' + last.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }) + '</strong>'
+            : '';
+    }
+    function applyEndMode() {
+        const isCount = endMode() === 'count';
+        $('cm-end-count-wrap')?.classList.toggle('d-none', !isCount);
+        $('cm-end-date-wrap')?.classList.toggle('d-none', isCount);
+        $('cm-lbl-end-count')?.classList.toggle('is-active', isCount);
+        $('cm-lbl-end-date')?.classList.toggle('is-active', !isCount);
+        updateEndHint();
+    }
+
     // ── DOM helpers ─────────────────────────────────────────────
     function $(id)  { return document.getElementById(id); }
     function show(el){ el && el.classList.remove('d-none'); }
@@ -71,6 +106,7 @@
                 pill.classList.toggle('active', cb.checked);
                 if (cb.checked) selectedDays.add(parseInt(cb.value));
                 else            selectedDays.delete(parseInt(cb.value));
+                updateEndHint();
                 refreshCov();
             });
         });
@@ -112,16 +148,34 @@
                 collect: function () {
                     if (currentType !== 'recurring') return null;
                     const start = $('cm-rec-start').value, end = $('cm-rec-end').value;
-                    if (!selectedPlayers.size || !selectedDays.size || !start || !end || end < start) return null;
+                    const count = parseInt($('cm-rec-count').value || '0', 10);
+                    if (!selectedPlayers.size || !selectedDays.size || !start) return null;
                     const fd = new FormData();
                     selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
                     selectedDays.forEach(d => fd.append('recurrence_days[]', d));
                     fd.append('recurrence_start', start);
-                    fd.append('recurrence_end', end);
+                    if (endMode() === 'count') {
+                        if (!(count >= 1)) return null;
+                        fd.append('recurrence_count', count);
+                    } else {
+                        if (!end || end < start) return null;
+                        fd.append('recurrence_end', end);
+                    }
                     return fd;
+                },
+                // "Ajustar al bono": la serie pasa a tantas clases como caben
+                onFit: function (fit) {
+                    if (!fit || !(fit.count > 0)) return;
+                    const r = document.querySelector('input[name="cm-end-mode"][value="count"]');
+                    if (r) r.checked = true;
+                    $('cm-rec-count').value = fit.count;
+                    applyEndMode();
+                    refreshCov();
                 }
             });
-            ['cm-rec-start', 'cm-rec-end'].forEach(id => $(id).addEventListener('change', refreshCov));
+            ['cm-rec-start', 'cm-rec-end'].forEach(id => $(id).addEventListener('change', () => { updateEndHint(); refreshCov(); }));
+            $('cm-rec-count').addEventListener('input', () => { updateEndHint(); refreshCov(); });
+            document.querySelectorAll('input[name="cm-end-mode"]').forEach(r => r.addEventListener('change', () => { applyEndMode(); refreshCov(); }));
         }
 
         // Inicializar tipo
@@ -225,6 +279,9 @@
         $('cm-location-id').value = '';
         $('cm-rec-start').value = '';
         $('cm-rec-end').value = '';
+        $('cm-rec-count').value = '4';
+        const rc = document.querySelector('input[name="cm-end-mode"][value="count"]');
+        if (rc) rc.checked = true;
         selectedCoaches.clear();
         selectedPlayers.clear();
         selectedDays.clear();
@@ -267,6 +324,7 @@
         }
 
         if (cov) cov.reset();
+        applyEndMode();
         setType('single');
         $('modalCreateClass').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
@@ -310,10 +368,15 @@
             if (selectedDays.size === 0) {
                 errEl.textContent = 'Selecciona al menos un día de la semana.'; show(errEl); return;
             }
-            if (!$('cm-rec-start').value || !$('cm-rec-end').value) {
-                errEl.textContent = 'Selecciona el rango de fechas para la recurrencia.'; show(errEl); return;
+            if (!$('cm-rec-start').value) {
+                errEl.textContent = 'Selecciona la fecha de inicio de la serie.'; show(errEl); return;
             }
-            if ($('cm-rec-end').value < $('cm-rec-start').value) {
+            if (endMode() === 'count') {
+                const n = parseInt($('cm-rec-count').value || '0', 10);
+                if (!(n >= 1) || n > 60) {
+                    errEl.textContent = 'Indica entre 1 y 60 clases.'; show(errEl); return;
+                }
+            } else if (!$('cm-rec-end').value || $('cm-rec-end').value < $('cm-rec-start').value) {
                 errEl.textContent = 'La fecha "Hasta" debe ser posterior a "Desde".'; show(errEl); return;
             }
         }
@@ -341,7 +404,8 @@
             fd.append('session_date', $('cm-date').value);
         } else {
             fd.append('recurrence_start', $('cm-rec-start').value);
-            fd.append('recurrence_end',   $('cm-rec-end').value);
+            if (endMode() === 'count') fd.append('recurrence_count', $('cm-rec-count').value);
+            else                       fd.append('recurrence_end',   $('cm-rec-end').value);
             selectedDays.forEach(d => fd.append('recurrence_days[]', d));
         }
 

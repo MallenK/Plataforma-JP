@@ -1079,6 +1079,12 @@ $statusHint   = [
                 fd.append('recurrence_start', start);
                 fd.append('recurrence_end', end);
                 return fd;
+            },
+            // "Ajustar al bono": acorta la fecha de fin a la última clase que cabe
+            onFit: function (fit) {
+                if (!fit || !fit.end) return;
+                rnForm.querySelector('[name="recurrence_end"]').value = fit.end;
+                rnCov.refresh();
             }
         });
         rnForm.addEventListener('change', function (e) {

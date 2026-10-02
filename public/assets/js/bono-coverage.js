@@ -42,7 +42,7 @@
 
     function attach(cfg) {
         var panel = cfg.panel;
-        var state = { loading: false, needsDecision: false, mode: '', players: [], canForce: false };
+        var state = { loading: false, needsDecision: false, mode: '', players: [], canForce: false, fit: null };
         var timer = null;
         var seq = 0;
 
@@ -106,9 +106,17 @@
         function decision(shortPlayers) {
             var names = shortPlayers.map(function (p) { return esc(p.name); }).join(', ');
             var forceDisabled = state.canForce ? '' : ' disabled';
+            var fitHtml = '';
+            if (state.fit && typeof cfg.onFit === 'function') {
+                fitHtml = state.fit.count > 0
+                    ? '<div class="bc-fit"><span>Con su bono caben <strong>' + state.fit.count + '</strong> clase' + (state.fit.count === 1 ? '' : 's')
+                        + (state.fit.end ? ' (hasta el ' + esc(fmtFull(state.fit.end)) + ')' : '') + '.</span>'
+                        + '<button type="button" data-bc-fit>Ajustar la serie a ' + state.fit.count + ' clase' + (state.fit.count === 1 ? '' : 's') + '</button></div>'
+                    : '<div class="bc-fit"><span>Ahora mismo no le queda saldo libre para ninguna clase de esta serie.</span></div>';
+            }
             return '<div class="bc-decision" role="radiogroup" aria-label="Qué hacer con las clases sin cubrir">'
                 + '<div class="bc-decision-title"><i class="bi bi-exclamation-triangle-fill me-1"></i>'
-                + 'El bono no cubre toda la serie de ' + names + '. ¿Qué hacemos?</div>'
+                + 'El bono no cubre toda la serie de ' + names + '. ¿Qué hacemos?</div>' + fitHtml
                 + '<label class="bc-opt"><input type="radio" name="bc-mode-radio" value="limit" checked>'
                 + '<span><strong>Crear solo las cubiertas</strong> (recomendado)<br>'
                 + '<small>El alumno solo entra en las sesiones que su bono cubre. Más adelante se pueden añadir al renovar el bono.</small></span></label>'
@@ -144,6 +152,8 @@
             panel.innerHTML = html;
 
             if (state.needsDecision) {
+                var fitBtn = panel.querySelector('[data-bc-fit]');
+                if (fitBtn) { fitBtn.addEventListener('click', function () { cfg.onFit(state.fit); }); }
                 var keep = (state.mode === 'all' && state.canForce) ? 'all' : 'limit';
                 var radios = panel.querySelectorAll('input[name="bc-mode-radio"]');
                 Array.prototype.forEach.call(radios, function (r) {
@@ -170,6 +180,7 @@
                     if (mine !== seq) { return; }
                     state.loading = false;
                     state.players = (d && d.success) ? (d.players || []) : [];
+                    state.fit = (d && d.success) ? (d.fit || null) : null;
                     state.canForce = !!(d && d.can_force);
                     render();
                 })

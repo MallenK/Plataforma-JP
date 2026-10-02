@@ -37,6 +37,29 @@ final class BonoCoverageServiceTest extends CIUnitTestCase
         $this->assertSame([], Cov::recurrenceDates([], '2026-10-01', '2026-10-31'));
     }
 
+    public function testRecurrenceDatesByCountDaLasPrimerasN(): void
+    {
+        // "Quiero 4 clases": jueves desde el 1/10 → 1, 8, 15, 22 (sin calcular fecha de fin).
+        $this->assertSame(
+            ['2026-10-01', '2026-10-08', '2026-10-15', '2026-10-22'],
+            Cov::recurrenceDatesByCount([4], '2026-10-01', 4)
+        );
+    }
+
+    public function testRecurrenceDatesByCountConVariosDias(): void
+    {
+        // Lun+Mié desde el lunes 5/10: 5, 7, 12
+        $this->assertSame(['2026-10-05', '2026-10-07', '2026-10-12'], Cov::recurrenceDatesByCount([1, 3], '2026-10-05', 3));
+    }
+
+    public function testRecurrenceDatesByCountRespetaTopesYEntradasInvalidas(): void
+    {
+        $this->assertCount(Cov::MAX_SERIES_SESSIONS, Cov::recurrenceDatesByCount([1, 2, 3, 4, 5, 6, 7], '2026-10-01', 500));
+        $this->assertSame([], Cov::recurrenceDatesByCount([4], '2026-10-01', 0));
+        $this->assertSame([], Cov::recurrenceDatesByCount([], '2026-10-01', 3));
+        $this->assertSame([], Cov::recurrenceDatesByCount([4], 'no-fecha', 3));
+    }
+
     public function testCasoAaronBonoDeDosCubreSoloDosDeCinco(): void
     {
         $alloc = Cov::allocate(self::THURSDAYS, [], [['id' => 1, 'remaining' => 2, 'expires_at' => null]]);

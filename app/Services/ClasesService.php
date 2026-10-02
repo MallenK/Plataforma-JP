@@ -212,8 +212,21 @@ class ClasesService
         if (empty(trim($data['title'] ?? ''))) {
             return ['success' => false, 'error' => 'El título es obligatorio.'];
         }
-        if (empty($days) || empty($data['recurrence_start']) || empty($data['recurrence_end'])) {
-            return ['success' => false, 'error' => 'Faltan datos de recurrencia (días, inicio o fin).'];
+        // La serie puede terminar por fecha ("hasta") o por nº de clases
+        // (`recurrence_count`): con nº de clases la fecha de fin se calcula sola.
+        $count = (int) ($data['recurrence_count'] ?? 0);
+        if ($count > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['success' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+        if (empty($days) || empty($data['recurrence_start']) || ($count <= 0 && empty($data['recurrence_end']))) {
+            return ['success' => false, 'error' => 'Faltan datos de recurrencia (días, inicio y fin o nº de clases).'];
+        }
+        if ($count > 0) {
+            $byCount = BonoCoverageService::recurrenceDatesByCount($days, (string) $data['recurrence_start'], $count);
+            if (empty($byCount)) {
+                return ['success' => false, 'error' => 'No se pueden calcular las fechas de la serie. Revisa la fecha de inicio y los días.'];
+            }
+            $data['recurrence_end'] = end($byCount);
         }
         if (strtotime((string) $data['recurrence_end']) < strtotime((string) $data['recurrence_start'])) {
             return ['success' => false, 'error' => 'La fecha "hasta" debe ser posterior a la fecha "desde".'];
