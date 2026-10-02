@@ -212,24 +212,24 @@ class ClasesService
         if (empty(trim($data['title'] ?? ''))) {
             return ['success' => false, 'error' => 'El título es obligatorio.'];
         }
-        // La serie puede terminar por fecha ("hasta") o por nº de clases
-        // (`recurrence_count`): con nº de clases la fecha de fin se calcula sola.
-        $count = (int) ($data['recurrence_count'] ?? 0);
-        if ($count > BonoCoverageService::MAX_SERIES_SESSIONS) {
-            return ['success' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        // Fechas de la serie: por patrón (días + inicio + nº de clases y/o fecha
+        // límite) o, si el admin desmarcó "mismo día y hora", por calendario
+        // clase a clase (`custom_schedule`). Misma función que la vista previa.
+        $series = self::resolveSeriesDates($data);
+        if (!$series['ok']) {
+            return ['success' => false, 'error' => $series['error']];
         }
-        if (empty($days) || empty($data['recurrence_start']) || ($count <= 0 && empty($data['recurrence_end']))) {
-            return ['success' => false, 'error' => 'Faltan datos de recurrencia (días, inicio y fin o nº de clases).'];
+        $days     = $series['days'];
+        $schedule = $series['schedule'];
+        $data['recurrence_start'] = $series['schedule'] ? $series['start'] : $data['recurrence_start'];
+        $data['recurrence_end']   = $series['end'];
+        if ($schedule && empty($data['start_time'])) {
+            $data['start_time'] = $schedule[0]['start'];
+            $data['end_time']   = $schedule[0]['end'];
         }
-        if ($count > 0) {
-            $byCount = BonoCoverageService::recurrenceDatesByCount($days, (string) $data['recurrence_start'], $count);
-            if (empty($byCount)) {
-                return ['success' => false, 'error' => 'No se pueden calcular las fechas de la serie. Revisa la fecha de inicio y los días.'];
-            }
-            $data['recurrence_end'] = end($byCount);
-        }
-        if (strtotime((string) $data['recurrence_end']) < strtotime((string) $data['recurrence_start'])) {
-            return ['success' => false, 'error' => 'La fecha "hasta" debe ser posterior a la fecha "desde".'];
+        $timeByDate = [];
+        foreach ($schedule ?? [] as $it) {
+            $timeByDate[$it['date']] = ['start_time' => $it['start'], 'end_time' => $it['end']];
         }
 
         $times = $this->resolveTimes($data);
@@ -241,7 +241,7 @@ class ClasesService
 
         // TICKET-013: la serie no se genera a ciegas — se cruza con el saldo de
         // bono de cada alumno ANTES de crear nada (ni siquiera la plantilla).
-        $dates    = BonoCoverageService::recurrenceDates($days, (string) $data['recurrence_start'], (string) $data['recurrence_end']);
+        $dates    = $series['dates'];
         $playerIds = array_values(array_unique(array_filter(array_map('intval', (array) ($data['player_ids'] ?? [])))));
         $plan = $this->planSeriesCoverage($playerIds, $dates, $data);
         if (!$plan['success']) {
@@ -290,7 +290,7 @@ class ClasesService
 
             $sid = $this->insertSingle(array_merge($data, [
                 'session_date' => $date,
-            ]), $userId, $classId);
+            ], $timeByDate[$date] ?? []), $userId, $classId);
 
             if ($sid) {
                 $ids[] = $sid;
@@ -317,6 +317,114 @@ class ClasesService
             'skipped'  => $plan['skipped'],
             'coverage' => $plan['payload'],
         ];
+    }
+
+    /**
+     * Fechas (y horas) de una serie a partir de lo que llega del formulario.
+     * ÚNICA fuente de verdad: la usan createRecurring() y la vista previa de
+     * cobertura, así lo que se previsualiza es exactamente lo que se crea.
+     *
+     * Dos formas de pedirla:
+     *  - Patrón: `recurrence_days[]` + `recurrence_start` + `recurrence_count`
+     *    y/o `recurrence_end` (fecha límite). Vale el primer límite que se cumpla.
+     *  - Calendario clase a clase: `custom_schedule` (JSON [{date,start,end}]),
+     *    para cuando no todas las clases son el mismo día/hora.
+     *
+     * @return array{ok:bool,error?:string,dates?:string[],schedule?:?array,days?:int[],start?:string,end?:string}
+     */
+    public static function resolveSeriesDates(array $in): array
+    {
+        $days = array_values(array_unique(array_filter(array_map('intval', (array) ($in['recurrence_days'] ?? [])))));
+        sort($days);
+
+        $raw = trim((string) ($in['custom_schedule'] ?? ''));
+        if ($raw !== '') {
+            $p = self::parseCustomSchedule($raw);
+            if (!$p['ok']) {
+                return ['ok' => false, 'error' => $p['error']];
+            }
+            $items = $p['items'];
+            $dates = array_column($items, 'date');
+            if (empty($days)) {
+                foreach ($dates as $d) {
+                    $days[] = (int) date('N', strtotime($d));
+                }
+                $days = array_values(array_unique($days));
+                sort($days);
+            }
+            return ['ok' => true, 'dates' => $dates, 'schedule' => $items, 'days' => $days, 'start' => $dates[0], 'end' => end($dates)];
+        }
+
+        $start = (string) ($in['recurrence_start'] ?? '');
+        $end   = (string) ($in['recurrence_end'] ?? '');
+        $count = (int) ($in['recurrence_count'] ?? 0);
+
+        if (empty($days) || $start === '' || strtotime($start) === false) {
+            return ['ok' => false, 'error' => 'Elige los días de la semana y la fecha de inicio de la serie.'];
+        }
+        if ($count <= 0 && $end === '') {
+            return ['ok' => false, 'error' => 'Indica cuántas clases quieres o hasta qué fecha (o las dos cosas).'];
+        }
+        if ($count > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['ok' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+        if ($end !== '' && (strtotime($end) === false || strtotime($end) < strtotime($start))) {
+            return ['ok' => false, 'error' => 'La fecha límite no puede ser anterior a la fecha de inicio.'];
+        }
+
+        $dates = BonoCoverageService::recurrenceDatesLimited($days, $start, $count, $end !== '' ? $end : null);
+        if (empty($dates)) {
+            return ['ok' => false, 'error' => 'Con esos días y fechas no sale ninguna clase. Revisa el inicio, la fecha límite y los días.'];
+        }
+
+        return ['ok' => true, 'dates' => $dates, 'schedule' => null, 'days' => $days, 'start' => $start, 'end' => end($dates)];
+    }
+
+    /**
+     * Valida el calendario clase a clase (`custom_schedule`, JSON).
+     * Cada clase: fecha Y-m-d, hora de inicio HH:MM y hora de fin opcional
+     * (= inicio + 1 h). Máx. 60 clases, sin dos clases el mismo día.
+     *
+     * @return array{ok:bool,error?:string,items?:array<int,array{date:string,start:string,end:string}>}
+     */
+    public static function parseCustomSchedule(string $json): array
+    {
+        $rows = json_decode($json, true);
+        if (!is_array($rows) || empty($rows)) {
+            return ['ok' => false, 'error' => 'El calendario de la serie está vacío. Añade al menos una clase.'];
+        }
+        if (count($rows) > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['ok' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+
+        $items = [];
+        $seen  = [];
+        foreach (array_values($rows) as $i => $r) {
+            $n    = $i + 1;
+            $date = (string) ($r['date'] ?? '');
+            $ts   = $date !== '' ? strtotime($date) : false;
+            if ($ts === false || date('Y-m-d', $ts) !== $date) {
+                return ['ok' => false, 'error' => "La clase {$n} no tiene una fecha válida."];
+            }
+            if (isset($seen[$date])) {
+                return ['ok' => false, 'error' => 'Hay dos clases el mismo día (' . date('d/m/Y', $ts) . '). Cambia una de las dos.'];
+            }
+            $seen[$date] = true;
+
+            $start = self::normalizeTime($r['start'] ?? null);
+            if ($start === null) {
+                return ['ok' => false, 'error' => "La clase {$n} (" . date('d/m', $ts) . ") no tiene una hora de inicio válida."];
+            }
+            $endRaw = $r['end'] ?? null;
+            $end    = ($endRaw === null || $endRaw === '') ? date('H:i', strtotime($start) + 3600) : self::normalizeTime($endRaw);
+            if ($end === null || ($end <= $start && $end !== '00:00')) {
+                return ['ok' => false, 'error' => "En la clase {$n} (" . date('d/m', $ts) . ") la hora de fin debe ser posterior a la de inicio."];
+            }
+            $items[] = ['date' => $date, 'start' => $start, 'end' => $end];
+        }
+
+        usort($items, fn($a, $b) => [$a['date'], $a['start']] <=> [$b['date'], $b['start']]);
+        return ['ok' => true, 'items' => $items];
     }
 
     /**
@@ -419,15 +527,15 @@ class ClasesService
                 if ($gap <= 0) {
                     continue;
                 }
-                $adminBody  = "Se ha programado la serie \"{$title}\" con {$gap} sesión(es) sin bono para {$c['name']} (pendientes de bono). "
-                            . "Si asiste sin bono se registrará una deuda hasta que se le asigne uno nuevo.";
-                $playerBody = "Tienes {$gap} clase(s) de la serie \"{$title}\" programadas sin bono que las cubra. "
+                $adminBody  = "Se han creado {$gap} clase(s) de \"{$title}\" para {$c['name']} sin bono que las cubra. "
+                            . "Si viene, quedarán apuntadas como clases sin bono hasta que tenga uno nuevo.";
+                $playerBody = "Tienes {$gap} clase(s) de \"{$title}\" sin bono que las cubra. "
                             . "Habla con la academia para renovar tu bono.";
 
                 $notif->createWithRecipients([
                     'sender_id'   => $actorId,
                     'type'        => 'group',
-                    'title'       => "🎟️ Serie sin cobertura de bono: {$c['name']}",
+                    'title'       => "🎟️ Clases creadas sin bono: {$c['name']}",
                     'body'        => $adminBody,
                     'created_at'  => date('Y-m-d H:i:s'),
                     'source_type' => NotificationModel::SOURCE_CLASS,

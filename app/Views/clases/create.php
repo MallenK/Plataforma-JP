@@ -179,42 +179,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                                 <input type="time" name="end_time" class="form-control-jp"
                                        value="<?= $v('end_time') ?>" disabled>
                             </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label">Desde <span style="color:var(--danger)">*</span></label>
-                                <input type="date" name="recurrence_start" class="form-control-jp"
-                                       value="<?= $v('recurrence_start', date('Y-m-d')) ?>" disabled>
-                            </div>
                         </div>
 
-                        <!-- ¿Cómo termina la serie? (TICKET-013): por nº de clases o por fecha -->
-                        <div class="row g-3 mt-0">
-                            <div class="col-12">
-                                <label class="form-label">¿Cómo termina la serie? <span style="color:var(--danger)">*</span></label>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <label class="end-mode-opt" id="lbl-end-count">
-                                        <input type="radio" name="end_mode" value="count" checked disabled style="accent-color:var(--accent)">
-                                        <span><strong>Número de clases</strong><small>Tú dices cuántas; la fecha de fin se calcula sola</small></span>
-                                    </label>
-                                    <label class="end-mode-opt" id="lbl-end-date">
-                                        <input type="radio" name="end_mode" value="date" disabled style="accent-color:var(--accent)">
-                                        <span><strong>Hasta una fecha</strong><small>Se crean todas las clases hasta ese día</small></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-3" id="end-count-wrap">
-                                <label class="form-label">Nº de clases <span style="color:var(--danger)">*</span></label>
-                                <input type="number" name="recurrence_count" class="form-control-jp" min="1" max="60"
-                                       value="<?= $v('recurrence_count', '4') ?>" disabled>
-                            </div>
-                            <div class="col-6 col-md-3 d-none" id="end-date-wrap">
-                                <label class="form-label">Hasta <span style="color:var(--danger)">*</span></label>
-                                <input type="date" name="recurrence_end" class="form-control-jp"
-                                       value="<?= $v('recurrence_end', date('Y-m-d', strtotime('+1 month'))) ?>" disabled>
-                            </div>
-                            <div class="col-12 col-md-6 d-flex align-items-end">
-                                <div id="end-hint" style="font-size:12.5px;color:var(--text-muted);padding-bottom:8px"></div>
-                            </div>
-                        </div>
+                        <!-- Configuración de la serie (TICKET-013): primera clase, nº de clases, fecha límite,
+                             y "todas iguales" o clase a clase. Lo pinta series-builder.js -->
+                        <div class="mt-3" id="series-builder"></div>
                     </div>
                 </div>
             </div>
@@ -485,6 +454,7 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 <?= $this->section('scripts') ?>
 <?php if (!$isEdit): ?>
 <script src="/assets/js/bono-coverage.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
+<script src="/assets/js/series-builder.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/series-builder.js') ?>"></script>
 <?php endif; ?>
 <?php
 // Opciones para JS. Los nombres los controla el usuario (un alumno puede
@@ -580,7 +550,7 @@ function toggleType(v) {
         lblS.style.borderColor = 'var(--border)';
         setBlockDisabled(single, true);
         setBlockDisabled(recur, false);
-        applyEndMode();
+        if (seriesBuilder) seriesBuilder.syncDisabled();
     } else {
         recur.classList.add('d-none');
         single.classList.remove('d-none');
@@ -594,49 +564,26 @@ function toggleType(v) {
 // Solo al crear una serie: cruza alumnos × fechas con su saldo y deja
 // elegir qué hacer con las sesiones sin cobertura antes de guardar.
 let bonoCov = null;
+let seriesBuilder = null;
 
-// ── Fin de la serie: nº de clases o fecha ─────────────────────
-function endMode() {
-    return document.querySelector('#claseForm [name="end_mode"]:checked')?.value || 'count';
+function recurDays() {
+    return Array.from(document.querySelectorAll('#claseForm [name="recurrence_days[]"]:checked')).map(c => parseInt(c.value, 10));
 }
-// Fecha de la clase nº N (JS puro, para el aviso "Terminará el …" sin llamar al servidor)
-function nthSeriesDate(startStr, days, n) {
-    if (!startStr || !days.length || !(n >= 1)) return null;
-    const d = new Date(startStr + 'T00:00:00');
-    let found = 0;
-    for (let i = 0; i < 740; i++) {
-        const iso = d.getDay() === 0 ? 7 : d.getDay();
-        if (days.includes(iso)) { found++; if (found === n) return d; }
-        d.setDate(d.getDate() + 1);
-    }
-    return null;
-}
-function updateEndHint() {
-    const form = document.getElementById('claseForm');
-    const hint = document.getElementById('end-hint');
-    if (!hint) return;
-    if (endMode() !== 'count') { hint.textContent = ''; return; }
-    const days  = Array.from(form.querySelectorAll('[name="recurrence_days[]"]:checked')).map(c => parseInt(c.value, 10));
-    const start = form.querySelector('[name="recurrence_start"]')?.value;
-    const n     = parseInt(form.querySelector('[name="recurrence_count"]')?.value || '0', 10);
-    if (!days.length) { hint.textContent = 'Elige los días de la semana.'; return; }
-    const last = nthSeriesDate(start, days, n);
-    hint.innerHTML = last
-        ? 'Terminará el <strong>' + last.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + '</strong>.'
-        : '';
-}
-function applyEndMode() {
-    const recurActive = !document.getElementById('block-recurring').classList.contains('d-none');
-    const isCount = endMode() === 'count';
-    document.getElementById('end-count-wrap').classList.toggle('d-none', !isCount);
-    document.getElementById('end-date-wrap').classList.toggle('d-none', isCount);
-    document.querySelector('#claseForm [name="recurrence_count"]').disabled = !recurActive || !isCount;
-    document.querySelector('#claseForm [name="recurrence_end"]').disabled   = !recurActive || isCount;
-    document.getElementById('lbl-end-count').classList.toggle('is-active', isCount);
-    document.getElementById('lbl-end-date').classList.toggle('is-active', !isCount);
-    updateEndHint();
+function recurTimes() {
+    const f = document.getElementById('claseForm');
+    return {
+        start: f.querySelector('#block-recurring [name="start_time"]')?.value || '',
+        end:   f.querySelector('#block-recurring [name="end_time"]')?.value || ''
+    };
 }
 <?php if (!$isEdit): ?>
+// Configuración de la serie: primera clase, nº de clases, fecha límite, todas iguales o una a una
+seriesBuilder = SeriesBuilder.attach({
+    root:     document.getElementById('series-builder'),
+    getDays:  recurDays,
+    getTimes: recurTimes,
+    onChange: function () { if (bonoCov) bonoCov.refresh(); }
+});
 bonoCov = BonoCoverage.attach({
     panel:     document.getElementById('bono-cov'),
     modeInput: document.getElementById('bono-cov-mode'),
@@ -650,43 +597,23 @@ bonoCov = BonoCoverage.attach({
         const form = document.getElementById('claseForm');
         if ((form.querySelector('[name="type"]:checked')?.value || 'single') !== 'recurring') return null;
         const players = form.querySelectorAll('[name="player_ids[]"]');
-        const days    = form.querySelectorAll('[name="recurrence_days[]"]:checked');
-        const start   = form.querySelector('[name="recurrence_start"]')?.value;
-        const mode    = endMode();
-        const end     = form.querySelector('[name="recurrence_end"]')?.value;
-        const count   = parseInt(form.querySelector('[name="recurrence_count"]')?.value || '0', 10);
-        if (!players.length || !days.length || !start) return null;
+        const days    = recurDays();
+        if (!players.length || !days.length || seriesBuilder.validate()) return null;
         const fd = new FormData();
         players.forEach(p => fd.append('player_ids[]', p.value));
-        days.forEach(d => fd.append('recurrence_days[]', d.value));
-        fd.append('recurrence_start', start);
-        if (mode === 'count') {
-            if (!(count >= 1)) return null;
-            fd.append('recurrence_count', count);
-        } else {
-            if (!end || end < start) return null;
-            fd.append('recurrence_end', end);
-        }
+        days.forEach(d => fd.append('recurrence_days[]', d));
+        seriesBuilder.appendTo(fd);
         return fd;
     },
-    // "Ajustar al bono": pasa la serie a tantas clases como caben
+    // "Ajustar al bono": la serie pasa a tantas clases como caben
     onFit: function (fit) {
-        if (!fit || !(fit.count > 0)) return;
-        const form = document.getElementById('claseForm');
-        form.querySelector('[name="end_mode"][value="count"]').checked = true;
-        form.querySelector('[name="recurrence_count"]').value = fit.count;
-        applyEndMode();
-        bonoCov.refresh();
+        if (fit && fit.count > 0) seriesBuilder.setCount(fit.count);
     }
 });
 document.getElementById('claseForm').addEventListener('change', function (e) {
     const n = e.target && e.target.name;
-    if (n === 'end_mode') applyEndMode();
-    if (n === 'recurrence_days[]' || n === 'recurrence_start' || n === 'recurrence_end' || n === 'recurrence_count' || n === 'end_mode' || n === 'type') bonoCov.refresh();
-    if (n === 'recurrence_days[]' || n === 'recurrence_start') updateEndHint();
-});
-document.getElementById('claseForm').addEventListener('input', function (e) {
-    if (e.target && e.target.name === 'recurrence_count') { updateEndHint(); bonoCov.refresh(); }
+    if (n === 'recurrence_days[]' || n === 'start_time' || n === 'end_time') { seriesBuilder.refresh(); bonoCov.refresh(); }
+    if (n === 'type') { seriesBuilder.syncDisabled(); bonoCov.refresh(); }
 });
 <?php endif; ?>
 function refreshBonoCov() { if (bonoCov) bonoCov.refresh(); }

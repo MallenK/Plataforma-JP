@@ -216,6 +216,40 @@ class BonoCoverageService
     }
 
     /**
+     * Fechas de una serie con DOS límites a la vez, vale el primero que se cumpla:
+     * hasta $count clases y/o hasta la fecha $end (ambos opcionales, pero al menos uno).
+     * Ej.: jueves, 8 clases, límite 31/10 → para en la clase 5 si el límite llega antes.
+     *
+     * @param int[]       $days
+     * @return string[]
+     */
+    public static function recurrenceDatesLimited(array $days, string $start, int $count, ?string $end): array
+    {
+        $days = array_map('intval', $days);
+        if (empty($days) || ($count <= 0 && empty($end))) {
+            return [];
+        }
+        $max = $count > 0 ? min($count, self::MAX_SERIES_SESSIONS) : self::MAX_SERIES_SESSIONS;
+        try {
+            $cur   = new \DateTime($start);
+            $limit = $end ? new \DateTime($end) : null;
+        } catch (\Throwable $e) {
+            return [];
+        }
+        $out = [];
+        for ($i = 0; $i < self::MAX_SERIES_DAYS && count($out) < $max; $i++) {
+            if ($limit && $cur > $limit) {
+                break;
+            }
+            if (in_array((int) $cur->format('N'), $days, true)) {
+                $out[] = $cur->format('Y-m-d');
+            }
+            $cur->modify('+1 day');
+        }
+        return $out;
+    }
+
+    /**
      * Fechas de una serie recurrente (Y-m-d) entre dos fechas, para los días
      * ISO indicados (1=Lun … 7=Dom). Única fuente de verdad para crear y previsualizar.
      *

@@ -148,19 +148,11 @@ class ClasesController extends BaseController
         $post      = (array) $this->request->getPost();
         $playerIds = array_map('intval', (array) ($post['player_ids'] ?? []));
 
-        $count = (int) ($post['recurrence_count'] ?? 0);
-        if (!empty($post['recurrence_days']) && !empty($post['recurrence_start']) && $count > 0) {
-            $dates = BonoCoverageService::recurrenceDatesByCount(
-                (array) $post['recurrence_days'],
-                (string) $post['recurrence_start'],
-                $count
-            );
-        } elseif (!empty($post['recurrence_days']) && !empty($post['recurrence_start']) && !empty($post['recurrence_end'])) {
-            $dates = BonoCoverageService::recurrenceDates(
-                (array) $post['recurrence_days'],
-                (string) $post['recurrence_start'],
-                (string) $post['recurrence_end']
-            );
+        // Mismas reglas que al crear (ClasesService::resolveSeriesDates): lo que
+        // se previsualiza es exactamente lo que se va a crear.
+        $series = ClasesService::resolveSeriesDates($post);
+        if ($series['ok']) {
+            $dates = $series['dates'];
         } elseif (!empty($post['session_date']) && strtotime((string) $post['session_date']) !== false) {
             $dates = [date('Y-m-d', strtotime((string) $post['session_date']))];
         } else {
@@ -176,7 +168,8 @@ class ClasesController extends BaseController
         // (el que menos saldo libre tiene manda) y la fecha de la última.
         $fit = null;
         $withBono = array_filter($coverage, fn($c) => !$c['never_had_bono']);
-        if (!empty($withBono) && !empty($post['recurrence_days']) && !empty($post['recurrence_start'])) {
+        // (no tiene sentido con calendario clase a clase: ahí cada fecha la pone el admin)
+        if (!empty($withBono) && $series['ok'] && empty($series['schedule'])) {
             $n = min(array_map(fn($c) => $c['free_slots'], $withBono));
             $n = min($n, BonoCoverageService::MAX_SERIES_SESSIONS);
             if ($n > 0) {
