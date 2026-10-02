@@ -36,6 +36,15 @@ INSERT INTO `academy_settings` (`setting_key`, `setting_value`, `setting_type`, 
 SELECT 'bono_control_since', CURDATE(), 'string', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM `academy_settings` WHERE `setting_key` = 'bono_control_since');
 
--- Si en la tabla `notifications` la columna source_type sigue siendo ENUM (sin la
--- migración 2026-09-17-000001), hay que ejecutar antes docs/deploy/migraciones_notificaciones_clase.sql
--- para admitir los nuevos orígenes 'class' y 'bono'.
+-- Los avisos nuevos usan los orígenes 'class' y 'bono' en notifications.source_type:
+-- si esa columna sigue siendo ENUM (entorno sin la migración 2026-09-17-000001) no
+-- los admite. Este MODIFY es inofensivo si ya es VARCHAR(20).
+-- (Si la columna NO existe, ejecuta antes docs/deploy/migraciones_notificaciones_origen.sql.)
+ALTER TABLE `notifications`
+  MODIFY COLUMN `source_type` VARCHAR(20) NULL DEFAULT NULL;
+
+-- (OPCIONAL) Registrar la migración como ya aplicada, para que un futuro
+-- `php spark migrate` no la repita (aunque es idempotente y no daría error):
+-- INSERT INTO `migrations` (`version`, `class`, `group`, `namespace`, `time`, `batch`)
+--   SELECT '2026-10-02-000001', 'App\\Database\\Migrations\\CreateBonoMovementsAndCoverage', 'default', 'App',
+--          UNIX_TIMESTAMP(), COALESCE(MAX(`batch`), 0) + 1 FROM `migrations`;
