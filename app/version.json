@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.18.0",
+        "date": "2026-10-03 00:00:00",
+        "description": "El calendario de clases ahora usa colores para ver de un vistazo cómo va cada clase: azul si aún no se ha realizado, verde si la asistencia está en orden, naranja si falta pasar lista el mismo día, hay una ausencia justificada o la clase no tiene entrenador, rojo suave si llevan más de 24 horas sin pasar lista o hay una ausencia no justificada, y gris si la clase está cancelada. Al pasar el ratón sale el motivo, las clases con aviso llevan un ⚠ y las canceladas se ven tachadas, y bajo el calendario hay una leyenda. Lo ven administradores, staff y entrenadores (los entrenadores ya pueden ver las clases que se les han cancelado); los alumnos siguen viendo los colores de siempre. Los bonos no influyen en estos colores: se siguen viendo en la ficha de la clase y en la página de bonos."
+    },
+    {
         "version": "1.17.0",
         "date": "2026-10-03 00:00:00",
         "description": "Nueva forma de crear clases recurrentes: ahora indicas la primera clase, el número de clases y/o una fecha límite (se para en lo que ocurra antes), y puedes desmarcar «todas el mismo día y hora» para ajustar cada clase por separado. La clase rápida del calendario queda más simple (primera clase y número de clases) y enlaza al formulario completo para lo avanzado. Al crear un bono, si el jugador tiene clases dadas sin bono, la plataforma avisa antes de cuántas sesiones se descontarán (una por clase, no el bono entero). «Deudas de sesión» pasa a llamarse «Clases sin bono», con botones más claros («Ya está pagada» y «No cobrar»). Textos de bonos y avisos reescritos en lenguaje más sencillo con ejemplos, y los botones secundarios de toda la plataforma tienen ahora más contraste."

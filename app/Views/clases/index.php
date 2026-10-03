@@ -156,6 +156,15 @@
 
         <!-- Grid del calendario -->
         <div id="cal-grid"></div>
+        <?php if (in_array(session('role'), ['superadmin', 'admin', 'staff', 'coach'], true)): ?>
+        <div class="cal-legend" aria-label="Leyenda de colores">
+            <span><i style="background:#3b82f6"></i>Pendiente</span>
+            <span><i style="background:#10b981"></i>Asistencia en orden</span>
+            <span><i style="background:#f59e0b"></i>Revisar (falta lista, ausencia justificada)</span>
+            <span><i style="background:#d9706a"></i>Sin lista &gt;24 h / ausencia no justificada</span>
+            <span><i style="background:#6b7280"></i>Cancelada</span>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -436,10 +445,10 @@ window.CalOverlap = (function () {
                 out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44" ' +
-                    'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + '" ' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + (ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : '') + '" ' +
+                    'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + (ev.alert_reason ? ' &middot; ' + esc(ev.alert_reason) : '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    esc(ev.start) + ' ' + esc(mainLabel) + respShort +
+                    (ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn' || ev.alert_level === 'danger') ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
                     '</a>';
             });
         });
@@ -694,11 +703,11 @@ const CAL = {
                 const t = CalOverlap.esc(mainLabel);
                 const respFull  = ev.responsable_name ? ' · ' + CalOverlap.esc(ev.responsable_name) : '';
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
-                const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + ev.end;
+                const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + ev.end + (ev.alert_reason ? ' · ' + CalOverlap.esc(ev.alert_reason) : '');
                 html += `<a href="/clases/${ev.id}" class="cal-chip"
-                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
+                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44${ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : ''}"
                             title="${tooltip}">
-                            ${ev.start} ${t}${respShort}
+                            ${ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn' || ev.alert_level === 'danger') ? '&#9888; ' : ''}${ev.start} ${t}${respShort}
                          </a>`;
             });
             if (dayEvts.length > 3) {
