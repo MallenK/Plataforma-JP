@@ -727,7 +727,7 @@ class ClasesService
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end   = date('Y-m-t', strtotime($start));
 
-        $select = 'cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_type';
+        $select = 'cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_type, cs.lista_pasada_at';
 
         if ($isPlayer) {
             $sessions = $this->db->table('class_sessions cs')
@@ -746,7 +746,6 @@ class ClasesService
                 ->select($select)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->where('NOT EXISTS (SELECT 1 FROM class_session_coaches csc WHERE csc.session_id = cs.id)', null, false)
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
@@ -760,7 +759,6 @@ class ClasesService
                 ->where('csc.user_id', (int) $responsableFilter)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -773,7 +771,6 @@ class ClasesService
                 ->where('csc.user_id', $userId)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -781,7 +778,7 @@ class ClasesService
             $sessions = $this->sessionModel->getForMonth($year, $month);
         }
 
-        return $this->attachResponsable($sessions);
+        return $this->attachResponsable($sessions, !$isPlayer);
     }
 
     /**
@@ -789,7 +786,7 @@ class ClasesService
      * consulta extra (máx. 1 responsable por sesión — ver syncCoaches()) y
      * da forma final al evento para el calendario.
      */
-    private function attachResponsable(array $sessions): array
+    private function attachResponsable(array $sessions, bool $withAlerts = false): array
     {
         $ids = array_map(fn($s) => (int) $s['id'], $sessions);
 
@@ -822,10 +819,22 @@ class ClasesService
             }
         }
 
-        return array_map(function ($s) use ($coachMap, $playerNamesMap) {
+        $alertData = $withAlerts ? $this->loadAlertData($ids) : [];
+
+        return array_map(function ($s) use ($coachMap, $playerNamesMap, $withAlerts, $alertData) {
             $sid   = (int) $s['id'];
             $c     = $coachMap[$sid] ?? null;
             $playerLabel = self::playerLabel($playerNamesMap[$sid] ?? []);
+
+            // Alumno: color clásico por estado. Resto de roles: nivel de alerta.
+            $alert = $withAlerts ? self::alertLevel([
+                'status'      => $s['status'],
+                'date'        => $s['session_date'],
+                'end_time'    => $s['end_time'],
+                'has_coach'   => $c !== null,
+                'list_taken'  => !empty($s['lista_pasada_at']),
+                'attendances' => $alertData[$sid]['attendances'] ?? [],
+            ]) : null;
 
             return [
                 'id'               => $sid,
@@ -834,7 +843,9 @@ class ClasesService
                 'start'            => substr($s['start_time'], 0, 5),
                 'end'              => substr($s['end_time'], 0, 5),
                 'status'           => $s['status'],
-                'color'            => $this->statusColor($s['status']),
+                'color'            => $alert ? self::ALERT_COLORS[$alert['level']] : $this->statusColor($s['status']),
+                'alert_level'      => $alert['level'] ?? null,
+                'alert_reason'     => $alert['reason'] ?? null,
                 'session_type'     => $s['session_type'] ?? 'coach',
                 'responsable_id'   => $c['id'] ?? null,
                 'responsable_name' => $c['name'] ?? null,
@@ -2761,6 +2772,112 @@ class ClasesService
     {
         $row = $this->db->query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM class_session_players')->getRowArray();
         return (int)($row['next_id'] ?? 1);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Nivel de alerta del calendario (azul / verde / naranja / rojo / gris)
+    //  Solo ASISTENCIA y estado de la clase. Los bonos se ven en la ficha de
+    //  la clase y en la página de bonos, no aquí.
+    // ────────────────────────────────────────────────────────────────
+
+    public const ALERT_PENDING   = 'pending';
+    public const ALERT_OK        = 'ok';
+    public const ALERT_WARN      = 'warn';
+    public const ALERT_DANGER    = 'danger';
+    public const ALERT_CANCELLED = 'cancelled';
+
+    /** Rojo deliberadamente suave: avisa sin gritar. */
+    public const ALERT_COLORS = [
+        self::ALERT_PENDING   => '#3b82f6',
+        self::ALERT_OK        => '#10b981',
+        self::ALERT_WARN      => '#f59e0b',
+        self::ALERT_DANGER    => '#d9706a',
+        self::ALERT_CANCELLED => '#6b7280',
+    ];
+
+    /**
+     * Calcula el nivel de alerta de una sesión (lógica pura, sin BD).
+     * El peor caso gana: danger > warn. Sin nada que señalar:
+     * clase aún no realizada → pending (azul); ya con lista/cerrada → ok (verde).
+     *
+     * @param array{status:string,date:string,end_time?:?string,has_coach:bool,
+     *              list_taken:bool,attendances?:string[]} $in
+     * @param int|null $now Timestamp "ahora" (inyectable para tests).
+     * @return array{level:string,reason:string}
+     */
+    public static function alertLevel(array $in, ?int $now = null): array
+    {
+        $now    = $now ?? time();
+        $status = $in['status'] ?? '';
+
+        if ($status === 'cancelled') {
+            return ['level' => self::ALERT_CANCELLED, 'reason' => 'Clase cancelada'];
+        }
+
+        $danger = [];
+        $warn   = [];
+
+        // Asistencia registrada (solo cuenta si ya se pasó lista).
+        $listTaken   = !empty($in['list_taken']) || $status === 'completed';
+        $attendances = $listTaken ? ($in['attendances'] ?? []) : [];
+        if (in_array('unjustified', $attendances, true)) {
+            $danger[] = 'Ausencia no justificada de algún alumno';
+        }
+        if (in_array('absent', $attendances, true)) {
+            $warn[] = 'Ausencia justificada de algún alumno';
+        }
+
+        if (empty($in['has_coach'])) {
+            $warn[] = 'Sin entrenador asignado';
+        }
+
+        $past = false;
+        if ($status === 'scheduled') {
+            $end   = ($in['date'] ?? '') . ' ' . substr((string) ($in['end_time'] ?: '23:59'), 0, 5) . ':00';
+            $endTs = strtotime($end);
+            $past  = $endTs !== false && $endTs < $now;
+            if ($past && !$listTaken) {
+                if ($now - $endTs > 86400) {
+                    $danger[] = 'Hace más de 24 h que terminó y no se ha pasado lista';
+                } else {
+                    $warn[] = 'La clase ya terminó y falta pasar lista';
+                }
+            }
+        }
+
+        if ($danger) {
+            return ['level' => self::ALERT_DANGER, 'reason' => implode('. ', array_merge($danger, $warn))];
+        }
+        if ($warn) {
+            return ['level' => self::ALERT_WARN, 'reason' => implode('. ', $warn)];
+        }
+        if ($status === 'scheduled' && !$listTaken) {
+            return ['level' => self::ALERT_PENDING, 'reason' => 'Pendiente de realizar'];
+        }
+        return ['level' => self::ALERT_OK, 'reason' => 'Asistencia en orden'];
+    }
+
+    /**
+     * Asistencia de los alumnos por sesión para el calendario (1 consulta para todo el mes).
+     *
+     * @param int[] $ids
+     * @return array<int,array{attendances:string[]}>
+     */
+    private function loadAlertData(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        $out  = [];
+        $rows = $this->db->table('class_session_players')
+            ->select('session_id, attendance')
+            ->whereIn('session_id', $ids)
+            ->where('attendance IS NOT NULL', null, false)
+            ->get()->getResultArray();
+        foreach ($rows as $r) {
+            $out[(int) $r['session_id']]['attendances'][] = $r['attendance'];
+        }
+        return $out;
     }
 
     private function statusColor(string $status): string
