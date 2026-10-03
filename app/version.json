@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.18.1",
+        "date": "2026-10-03 00:00:00",
+        "description": "Corrección: cuando un alumno avisa de que no asistirá sin indicar motivo, ahora se refleja en la pantalla de la clase (columna Aviso alumno, contador del resumen y Pasar lista semanal). Antes solo aparecía si escribía un motivo."
+    },
+    {
         "version": "1.18.0",
         "date": "2026-10-03 00:00:00",
         "description": "El calendario de clases ahora usa colores para ver de un vistazo cómo va cada clase: azul si aún no se ha realizado, verde si la asistencia está en orden, naranja si falta pasar lista el mismo día, hay una ausencia justificada o la clase no tiene entrenador, rojo suave si llevan más de 24 horas sin pasar lista o hay una ausencia no justificada, y gris si la clase está cancelada. Al pasar el ratón sale el motivo, las clases con aviso llevan un ⚠ y las canceladas se ven tachadas, y bajo el calendario hay una leyenda. Lo ven administradores, staff y entrenadores (los entrenadores ya pueden ver las clases que se les han cancelado); los alumnos siguen viendo los colores de siempre. Los bonos no influyen en estos colores: se siguen viendo en la ficha de la clase y en la página de bonos."
