@@ -136,6 +136,59 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         </div>
         <?php endif; ?>
 
+        <?php if (!$unassigned && !empty($debts)): ?>
+        <!-- Deudas abiertas del alumno (TICKET-013) -->
+        <div class="card-jp" style="border:1px solid #fecaca">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin bono (<?= count($debts) ?>)</span>
+                <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none">Gestionar</a>
+            </div>
+            <div class="card-jp-body" style="font-size:13px">
+                <?php foreach ($debts as $d): ?>
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+                    <span><?= esc($d['title']) ?></span>
+                    <span style="color:var(--text-muted)"><?= date('d/m/Y', strtotime($d['session_date'])) ?></span>
+                </div>
+                <?php endforeach; ?>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:8px">
+                    Se cubrirán solas con el siguiente bono: se descuenta 1 sesión por clase, empezando por la más antigua, y se avisa a los administradores.
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!$unassigned && !empty($bono['expires_at'])): ?>
+        <!-- Ampliar caducidad (TICKET-013) -->
+        <?php $daysLeft = (int) floor((strtotime($bono['expires_at']) - strtotime($today)) / 86400); ?>
+        <div class="card-jp" <?= ($daysLeft <= 7) ? 'style="border:1px solid #fde68a"' : '' ?>>
+            <div class="card-jp-header">
+                <span class="card-jp-title"><i class="bi bi-calendar-plus-fill me-2" style="color:#d97706"></i>Ampliar caducidad</span>
+            </div>
+            <div class="card-jp-body">
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
+                    <?php if ($expired): ?>
+                        Este bono caducó el <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>. Si lo amplías, los días cuentan desde hoy. Ejemplo: «+15 días» = caduca dentro de 15 días.
+                    <?php elseif ($daysLeft <= 7): ?>
+                        <strong style="color:#92400e">Caduca en <?= max(0, $daysLeft) ?> día<?= $daysLeft === 1 ? '' : 's' ?></strong> (<?= date('d/m/Y', strtotime($bono['expires_at'])) ?>).
+                    <?php else: ?>
+                        Caduca el <?= date('d/m/Y', strtotime($bono['expires_at'])) ?>.
+                    <?php endif; ?>
+                    Puedes darle más días si lo necesita. Queda anotado en el registro del bono y se avisa al alumno.
+                </p>
+                <form action="<?= base_url('bonos/' . $bono['id'] . '/ampliar') ?>" method="post" class="d-flex flex-wrap gap-2 align-items-center" id="formExtend">
+                    <?= csrf_field() ?>
+                    <?php foreach (\App\Services\BonoControlService::EXTEND_PRESETS as $d): ?>
+                    <button type="submit" name="mode" value="<?= $d ?>" class="btn-jp btn-jp-secondary btn-jp-sm">+<?= $d ?> días</button>
+                    <?php endforeach; ?>
+                    <span style="font-size:12px;color:var(--text-muted)">o</span>
+                    <input type="date" name="custom_date" class="form-control-jp" style="width:auto;padding:5px 8px"
+                           min="<?= date('Y-m-d', strtotime(max($bono['expires_at'], $today) . ' +1 day')) ?>" aria-label="Fecha personalizada">
+                    <button type="submit" name="mode" value="custom" class="btn-jp btn-jp-primary btn-jp-sm">Fecha personalizada</button>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Editar bono -->
         <div class="card-jp">
             <div class="card-jp-header">
@@ -203,6 +256,47 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                         <td style="padding:8px 12px"><?= (int)$h['sessions_remaining'] ?> / <?= (int)$h['sessions_total'] ?></td>
                         <td style="padding:8px 12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($h['start_date'])) ?></td>
                         <td style="padding:8px 12px"><span class="badge-status <?= $hCls ?>" style="font-size:10px"><?= $hLbl ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!$unassigned): ?>
+        <!-- Registro de movimientos del alumno (TICKET-013) -->
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title"><i class="bi bi-journal-text me-2" style="color:var(--text-muted)"></i>Registro de movimientos</span>
+            </div>
+            <?php if (empty($movements)): ?>
+            <div class="card-jp-body">
+                <p style="color:var(--text-muted);font-size:13px;margin:0">Todavía no hay movimientos. Aquí verás cuándo se emitió el bono, cada clase descontada o devuelta, las ampliaciones de fecha y los avisos.</p>
+            </div>
+            <?php else: ?>
+            <div class="table-responsive">
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead>
+                        <tr>
+                            <?php foreach (['Fecha', 'Movimiento', 'Sesiones', 'Detalle', 'Por'] as $th): ?>
+                            <th style="padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:left"><?= $th ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($movements as $m):
+                        [$mLabel, $mIcon, $mTone] = \App\Services\BonoLedgerService::label($m['type']);
+                        $mColor = $mTone === 'ok' ? '#047857' : ($mTone === 'risk' ? '#92400e' : 'var(--text-h)');
+                        $detail = trim(($m['session_title'] ? $m['session_title'] . ' (' . date('d/m', strtotime($m['session_date'])) . ')' : '') . ($m['note'] ? ' ' . $m['note'] : ''));
+                    ?>
+                    <tr style="border-bottom:1px solid var(--border)">
+                        <td style="padding:8px 12px;color:var(--text-muted);white-space:nowrap"><?= date('d/m/Y H:i', strtotime($m['created_at'])) ?></td>
+                        <td style="padding:8px 12px;font-weight:600;color:<?= $mColor ?>"><i class="bi <?= $mIcon ?> me-1"></i><?= esc($mLabel) ?></td>
+                        <td style="padding:8px 12px"><?= (int) $m['delta'] === 0 ? '—' : ((int) $m['delta'] > 0 ? '+' : '') . (int) $m['delta'] ?></td>
+                        <td style="padding:8px 12px;color:var(--text-muted)"><?= esc($detail) ?></td>
+                        <td style="padding:8px 12px;color:var(--text-muted)"><?= esc($m['actor_name'] ?? 'Sistema') ?></td>
                     </tr>
                     <?php endforeach; ?>
                     </tbody>

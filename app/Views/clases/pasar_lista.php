@@ -164,7 +164,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                             <span class="bono-remaining-<?= $uid ?> pl-bono-num <?= $remaining <= 1 ? 'is-low' : 'is-ok' ?>"><?= $remaining ?></span>
                             <span style="font-size:11px;color:var(--text-muted)"><?= esc($bono['bono_name'] ?? '') ?></span>
                             <?php elseif (!$deducted): ?>
-                            <span class="pl-bono-empty" style="font-size:12px;color:var(--text-muted)">Sin bono activo</span>
+                            <span class="pl-bono-empty" style="font-size:12px;color:var(--text-muted);text-align:center" title="Si viene sin bono, la clase queda apuntada en Bonos > Clases sin bono y se descuenta sola del próximo bono.">Sin bono activo<br><span style="font-size:11px;color:#b91c1c">Si viene, quedará apuntada como clase sin bono</span></span>
                             <?php endif; ?>
 
                             <span class="pl-bono-action" data-uid="<?= $uid ?>">

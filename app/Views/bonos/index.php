@@ -17,7 +17,13 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 <!-- Cabecera -->
 <div class="page-header">
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-secondary" style="text-decoration:none">
+            <i class="bi bi-receipt"></i> Clases sin bono
+            <?php if (!empty($debtCount)): ?>
+            <span class="badge-status inactive" style="font-size:10px;margin-left:4px"><?= (int) $debtCount ?></span>
+            <?php endif; ?>
+        </a>
         <button class="btn-jp btn-jp-secondary" onclick="openModalTipos()">
             <i class="bi bi-grid-fill"></i> Tipos de bono
         </button>
@@ -216,10 +222,10 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
                     <div class="col-12">
                         <label class="form-label">Tipo de bono <span style="color:var(--danger)">*</span></label>
-                        <select name="bono_type_id" class="form-control-jp" required>
+                        <select name="bono_type_id" id="selectBonoType" class="form-control-jp" required onchange="renderAvisoDeudas()">
                             <option value="">— Selecciona un tipo —</option>
                             <?php foreach ($bonoTypes as $bt): ?>
-                            <option value="<?= $bt['id'] ?>">
+                            <option value="<?= $bt['id'] ?>" data-sessions="<?= (int) $bt['sessions'] ?>">
                                 <?= esc($bt['name']) ?> — <?= $bt['sessions'] ?> sesiones
                             </option>
                             <?php endforeach; ?>
@@ -248,6 +254,10 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                             <strong>Este jugador ya tiene un bono activo.</strong>
                             <span id="alertaBonoDetalles"></span>
                             <br><small>El nuevo bono quedará <strong>encolado</strong> y se activará automáticamente cuando el actual se agote o caduque.</small>
+                        </div>
+                        <div id="alertaDeudas" style="display:none;margin-top:8px;padding:10px 12px;background:#fee2e2;border-radius:6px;font-size:13px;color:#7f1d1d;border:1px solid #fca5a5">
+                            <i class="bi bi-receipt me-2"></i><strong id="alertaDeudasTitulo"></strong>
+                            <div id="alertaDeudasCuerpo" style="margin-top:4px"></div>
                         </div>
                     </div>
 
@@ -607,10 +617,44 @@ document.addEventListener('keydown', e => {
     closeModalEmitir();
 });
 
+// Clases ya dadas sin bono del jugador elegido (se rellena en checkBonoActivo)
+let deudasJugador = [];
+
+function renderAvisoDeudas() {
+    const box   = document.getElementById('alertaDeudas');
+    const btn   = document.getElementById('btnEmitir');
+    const opt   = document.getElementById('selectBonoType').selectedOptions[0];
+    const total = parseInt(opt && opt.dataset.sessions ? opt.dataset.sessions : '0', 10);
+    const n     = deudasJugador.length;
+
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear bono';
+    if (!n) { box.style.display = 'none'; return; }
+
+    const aSaldar = total > 0 ? Math.min(n, total) : n;
+    const quedan  = total > 0 ? Math.max(0, total - aSaldar) : null;
+    const lista   = deudasJugador.slice(0, 5).map(d => d.title + ' (' + d.date.split('-').reverse().join('/') + ')').join(', ')
+                  + (n > 5 ? '…' : '');
+
+    document.getElementById('alertaDeudasTitulo').textContent =
+        'Este jugador tiene ' + n + ' clase' + (n === 1 ? '' : 's') + ' dada' + (n === 1 ? '' : 's') + ' sin bono.';
+    document.getElementById('alertaDeudasCuerpo').innerHTML =
+        'Al crear el bono se <strong>descontará 1 sesión por cada clase</strong> (no el bono entero) y quedarán saldadas: <em>' + lista + '</em>.'
+        + (total > 0
+            ? '<br>Ejemplo: bono de ' + total + ' sesiones − ' + aSaldar + ' clase' + (aSaldar === 1 ? '' : 's') + ' pendiente' + (aSaldar === 1 ? '' : 's')
+              + ' = le quedarán <strong>' + quedan + '</strong>.'
+              + (n > total ? '<br>Como son más clases que sesiones, quedarán ' + (n - total) + ' pendientes.' : '')
+            : '<br>Elige un tipo de bono para ver cuántas sesiones le quedarán.');
+    box.style.display = 'block';
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear bono y saldar ' + aSaldar + ' clase' + (aSaldar === 1 ? '' : 's');
+}
+
 async function checkBonoActivo(playerId) {
     const alertEl   = document.getElementById('alertaBonoActivo');
     const detalles  = document.getElementById('alertaBonoDetalles');
     const btnEmitir = document.getElementById('btnEmitir');
+
+    deudasJugador = [];
+    renderAvisoDeudas();
 
     if (!playerId) {
         alertEl.style.display = 'none';
@@ -625,6 +669,8 @@ async function checkBonoActivo(playerId) {
     try {
         const res  = await fetch('<?= base_url('bonos/check-active') ?>', { method:'POST', body:fd });
         const data = await res.json();
+        deudasJugador = Array.isArray(data.debts) ? data.debts : [];
+        renderAvisoDeudas();
         if (data.has_active && data.bono) {
             const b = data.bono;
             detalles.textContent = ` (${b.bono_name ?? ''}: ${b.sessions_remaining} sesiones restantes)`;

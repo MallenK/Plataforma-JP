@@ -212,11 +212,24 @@ class ClasesService
         if (empty(trim($data['title'] ?? ''))) {
             return ['success' => false, 'error' => 'El título es obligatorio.'];
         }
-        if (empty($days) || empty($data['recurrence_start']) || empty($data['recurrence_end'])) {
-            return ['success' => false, 'error' => 'Faltan datos de recurrencia (días, inicio o fin).'];
+        // Fechas de la serie: por patrón (días + inicio + nº de clases y/o fecha
+        // límite) o, si el admin desmarcó "mismo día y hora", por calendario
+        // clase a clase (`custom_schedule`). Misma función que la vista previa.
+        $series = self::resolveSeriesDates($data);
+        if (!$series['ok']) {
+            return ['success' => false, 'error' => $series['error']];
         }
-        if (strtotime((string) $data['recurrence_end']) < strtotime((string) $data['recurrence_start'])) {
-            return ['success' => false, 'error' => 'La fecha "hasta" debe ser posterior a la fecha "desde".'];
+        $days     = $series['days'];
+        $schedule = $series['schedule'];
+        $data['recurrence_start'] = $series['schedule'] ? $series['start'] : $data['recurrence_start'];
+        $data['recurrence_end']   = $series['end'];
+        if ($schedule && empty($data['start_time'])) {
+            $data['start_time'] = $schedule[0]['start'];
+            $data['end_time']   = $schedule[0]['end'];
+        }
+        $timeByDate = [];
+        foreach ($schedule ?? [] as $it) {
+            $timeByDate[$it['date']] = ['start_time' => $it['start'], 'end_time' => $it['end']];
         }
 
         $times = $this->resolveTimes($data);
@@ -225,6 +238,20 @@ class ClasesService
         }
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
+
+        // TICKET-013: la serie no se genera a ciegas — se cruza con el saldo de
+        // bono de cada alumno ANTES de crear nada (ni siquiera la plantilla).
+        $dates    = $series['dates'];
+        $playerIds = array_values(array_unique(array_filter(array_map('intval', (array) ($data['player_ids'] ?? [])))));
+        $plan = $this->planSeriesCoverage($playerIds, $dates, $data);
+        if (!$plan['success']) {
+            return $plan;
+        }
+        $dates    = $plan['dates'];
+        $coverage = $plan['coverage'];
+        if (empty($dates) && !empty($playerIds)) {
+            return ['success' => false, 'error' => 'Con el saldo de bono actual no se puede crear ninguna sesión de la serie.', 'coverage' => $plan['payload']];
+        }
 
         // Guardar plantilla
         $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
@@ -256,34 +283,278 @@ class ClasesService
             return ['success' => false, 'error' => $msg];
         }
 
-        // Generar sesiones
-        $start   = new \DateTime($data['recurrence_start']);
-        $end     = new \DateTime($data['recurrence_end']);
-        $current = clone $start;
-        $ids     = [];
+        // Generar sesiones (solo las fechas que el plan de cobertura deja pasar)
+        $ids = [];
+        foreach ($dates as $date) {
+            $sessionPlayers = $plan['players_by_date'][$date] ?? $playerIds;
 
-        while ($current <= $end) {
-            $dow = (int)$current->format('N'); // 1=Lun … 7=Dom
-            if (in_array($dow, $days)) {
-                $sid = $this->insertSingle(array_merge($data, [
-                    'session_date' => $current->format('Y-m-d'),
-                ]), $userId, $classId);
+            $sid = $this->insertSingle(array_merge($data, [
+                'session_date' => $date,
+            ], $timeByDate[$date] ?? []), $userId, $classId);
 
-                if ($sid) {
-                    $ids[] = $sid;
-                    $this->syncCoaches($sid, $data['coach_ids'] ?? []);
-                    $this->syncPlayers($sid, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
+            if ($sid) {
+                $ids[] = $sid;
+                $this->syncCoaches($sid, $data['coach_ids'] ?? []);
+                $this->syncPlayers($sid, $sessionPlayers, $data['player_coach_map'] ?? [], false);
+                foreach ($sessionPlayers as $pid) {
+                    $status = $coverage[$pid]['allocation'][$date]['status'] ?? null;
+                    if ($status !== null) {
+                        $this->db->table('class_session_players')
+                            ->where('session_id', $sid)->where('user_id', $pid)
+                            ->update(['bono_coverage' => $status]);
+                    }
                 }
             }
-            $current->modify('+1 day');
         }
+
+        $this->notifySeriesCoverage($coverage, $plan['mode'], count($ids), (string) $data['title'], (int) ($ids[0] ?? 0), $userId);
 
         return [
             'success'  => true,
             'id'       => $ids[0] ?? null,
             'class_id' => $classId,
             'count'    => count($ids),
+            'skipped'  => $plan['skipped'],
+            'coverage' => $plan['payload'],
         ];
+    }
+
+    /**
+     * Fechas (y horas) de una serie a partir de lo que llega del formulario.
+     * ÚNICA fuente de verdad: la usan createRecurring() y la vista previa de
+     * cobertura, así lo que se previsualiza es exactamente lo que se crea.
+     *
+     * Dos formas de pedirla:
+     *  - Patrón: `recurrence_days[]` + `recurrence_start` + `recurrence_count`
+     *    y/o `recurrence_end` (fecha límite). Vale el primer límite que se cumpla.
+     *  - Calendario clase a clase: `custom_schedule` (JSON [{date,start,end}]),
+     *    para cuando no todas las clases son el mismo día/hora.
+     *
+     * @return array{ok:bool,error?:string,dates?:string[],schedule?:?array,days?:int[],start?:string,end?:string}
+     */
+    public static function resolveSeriesDates(array $in): array
+    {
+        $days = array_values(array_unique(array_filter(array_map('intval', (array) ($in['recurrence_days'] ?? [])))));
+        sort($days);
+
+        $raw = trim((string) ($in['custom_schedule'] ?? ''));
+        if ($raw !== '') {
+            $p = self::parseCustomSchedule($raw);
+            if (!$p['ok']) {
+                return ['ok' => false, 'error' => $p['error']];
+            }
+            $items = $p['items'];
+            $dates = array_column($items, 'date');
+            if (empty($days)) {
+                foreach ($dates as $d) {
+                    $days[] = (int) date('N', strtotime($d));
+                }
+                $days = array_values(array_unique($days));
+                sort($days);
+            }
+            return ['ok' => true, 'dates' => $dates, 'schedule' => $items, 'days' => $days, 'start' => $dates[0], 'end' => end($dates)];
+        }
+
+        $start = (string) ($in['recurrence_start'] ?? '');
+        $end   = (string) ($in['recurrence_end'] ?? '');
+        $count = (int) ($in['recurrence_count'] ?? 0);
+
+        if (empty($days) || $start === '' || strtotime($start) === false) {
+            return ['ok' => false, 'error' => 'Elige los días de la semana y la fecha de inicio de la serie.'];
+        }
+        if ($count <= 0 && $end === '') {
+            return ['ok' => false, 'error' => 'Indica cuántas clases quieres o hasta qué fecha (o las dos cosas).'];
+        }
+        if ($count > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['ok' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+        if ($end !== '' && (strtotime($end) === false || strtotime($end) < strtotime($start))) {
+            return ['ok' => false, 'error' => 'La fecha límite no puede ser anterior a la fecha de inicio.'];
+        }
+
+        $dates = BonoCoverageService::recurrenceDatesLimited($days, $start, $count, $end !== '' ? $end : null);
+        if (empty($dates)) {
+            return ['ok' => false, 'error' => 'Con esos días y fechas no sale ninguna clase. Revisa el inicio, la fecha límite y los días.'];
+        }
+
+        return ['ok' => true, 'dates' => $dates, 'schedule' => null, 'days' => $days, 'start' => $start, 'end' => end($dates)];
+    }
+
+    /**
+     * Valida el calendario clase a clase (`custom_schedule`, JSON).
+     * Cada clase: fecha Y-m-d, hora de inicio HH:MM y hora de fin opcional
+     * (= inicio + 1 h). Máx. 60 clases, sin dos clases el mismo día.
+     *
+     * @return array{ok:bool,error?:string,items?:array<int,array{date:string,start:string,end:string}>}
+     */
+    public static function parseCustomSchedule(string $json): array
+    {
+        $rows = json_decode($json, true);
+        if (!is_array($rows) || empty($rows)) {
+            return ['ok' => false, 'error' => 'El calendario de la serie está vacío. Añade al menos una clase.'];
+        }
+        if (count($rows) > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['ok' => false, 'error' => 'Una serie puede tener como máximo ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+
+        $items = [];
+        $seen  = [];
+        foreach (array_values($rows) as $i => $r) {
+            $n    = $i + 1;
+            $date = (string) ($r['date'] ?? '');
+            $ts   = $date !== '' ? strtotime($date) : false;
+            if ($ts === false || date('Y-m-d', $ts) !== $date) {
+                return ['ok' => false, 'error' => "La clase {$n} no tiene una fecha válida."];
+            }
+            if (isset($seen[$date])) {
+                return ['ok' => false, 'error' => 'Hay dos clases el mismo día (' . date('d/m/Y', $ts) . '). Cambia una de las dos.'];
+            }
+            $seen[$date] = true;
+
+            $start = self::normalizeTime($r['start'] ?? null);
+            if ($start === null) {
+                return ['ok' => false, 'error' => "La clase {$n} (" . date('d/m', $ts) . ") no tiene una hora de inicio válida."];
+            }
+            $endRaw = $r['end'] ?? null;
+            $end    = ($endRaw === null || $endRaw === '') ? date('H:i', strtotime($start) + 3600) : self::normalizeTime($endRaw);
+            if ($end === null || ($end <= $start && $end !== '00:00')) {
+                return ['ok' => false, 'error' => "En la clase {$n} (" . date('d/m', $ts) . ") la hora de fin debe ser posterior a la de inicio."];
+            }
+            $items[] = ['date' => $date, 'start' => $start, 'end' => $end];
+        }
+
+        usort($items, fn($a, $b) => [$a['date'], $a['start']] <=> [$b['date'], $b['start']]);
+        return ['ok' => true, 'items' => $items];
+    }
+
+    /**
+     * Cruza las fechas de una serie con el saldo de bono de sus alumnos
+     * (TICKET-013) y decide qué sesiones se generan.
+     *
+     * Modo (`coverage_mode` en $data):
+     *  - 'limit': cada alumno solo entra en las sesiones que su bono cubre.
+     *  - 'all'  : se crean todas; las no cubiertas quedan "pendientes de bono".
+     *             Solo si `_can_force` (admin/superadmin), con aviso a admins y alumno.
+     *  - sin modo: si algún alumno con bono se queda corto, NO se crea nada y se
+     *             devuelve `needs_decision` + la cobertura para que el admin elija.
+     *
+     * Un alumno que nunca ha tenido bono no se limita (puede pagar fuera de
+     * bono): sus plazas quedan marcadas "sin cubrir" y, si asiste, abrirán deuda.
+     *
+     * @return array{success:bool,...}
+     */
+    private function planSeriesCoverage(array $playerIds, array $dates, array $data): array
+    {
+        $empty = [
+            'success' => true, 'dates' => $dates, 'coverage' => [], 'players_by_date' => [],
+            'mode' => null, 'skipped' => 0, 'payload' => [],
+        ];
+        if (empty($playerIds) || empty($dates)) {
+            return $empty;
+        }
+
+        $coverage = (new BonoCoverageService($this->db))->analyze($playerIds, $dates);
+        $payload  = BonoCoverageService::payload($coverage);
+
+        $short = array_filter($coverage, fn($c) => !$c['never_had_bono'] && $c['summary']['uncovered'] > 0);
+
+        $mode = $data['coverage_mode'] ?? null;
+        $mode = in_array($mode, ['limit', 'all'], true) ? $mode : null;
+
+        if ($mode === 'all' && empty($data['_can_force'])) {
+            return ['success' => false, 'error' => 'Solo un administrador puede crear sesiones sin cobertura de bono.', 'coverage' => $payload];
+        }
+
+        if (!empty($short) && $mode === null) {
+            $names = implode(', ', array_map(fn($c) => $c['name'], $short));
+            return [
+                'success'        => false,
+                'needs_decision' => true,
+                'error'          => 'El saldo de bono no cubre toda la serie (' . $names . '). Elige cómo continuar.',
+                'coverage'       => $payload,
+            ];
+        }
+
+        $playersByDate = [];
+        $keepDates     = [];
+        foreach ($dates as $date) {
+            $in = [];
+            foreach ($playerIds as $pid) {
+                $c      = $coverage[$pid];
+                $status = $c['allocation'][$date]['status'] ?? BonoCoverageService::UNCOVERED;
+                if ($mode === 'limit' && $status === BonoCoverageService::UNCOVERED && !$c['never_had_bono']) {
+                    continue;
+                }
+                $in[] = $pid;
+            }
+            if (empty($in)) {
+                continue; // nadie cubierto: no se crea la sesión
+            }
+            $keepDates[]            = $date;
+            $playersByDate[$date]   = $in;
+        }
+
+        return [
+            'success'         => true,
+            'dates'           => $keepDates,
+            'coverage'        => $coverage,
+            'players_by_date' => $playersByDate,
+            'mode'            => $mode,
+            'skipped'         => count($dates) - count($keepDates),
+            'payload'         => $payload,
+        ];
+    }
+
+    /**
+     * Avisa (notificación interna) al alumno y a los admins cuando una serie
+     * se crea con sesiones sin cobertura de bono forzadas por el admin.
+     */
+    private function notifySeriesCoverage(array $coverage, ?string $mode, int $created, string $title, int $firstSessionId, int $actorId): void
+    {
+        if ($mode !== 'all' || $firstSessionId <= 0) {
+            return;
+        }
+        try {
+            $userModel = new UserModel();
+            $admins    = array_map('intval', array_column(
+                $userModel->select('id')->whereIn('role', ['admin', 'superadmin'])->where('status', 'active')->findAll(),
+                'id'
+            ));
+            $notif = new NotificationModel();
+
+            foreach ($coverage as $pid => $c) {
+                $gap = $c['summary']['uncovered'];
+                if ($gap <= 0) {
+                    continue;
+                }
+                $adminBody  = "Se han creado {$gap} clase(s) de \"{$title}\" para {$c['name']} sin bono que las cubra. "
+                            . "Si viene, quedarán apuntadas como clases sin bono hasta que tenga uno nuevo.";
+                $playerBody = "Tienes {$gap} clase(s) de \"{$title}\" sin bono que las cubra. "
+                            . "Habla con la academia para renovar tu bono.";
+
+                $notif->createWithRecipients([
+                    'sender_id'   => $actorId,
+                    'type'        => 'group',
+                    'title'       => "🎟️ Clases creadas sin bono: {$c['name']}",
+                    'body'        => $adminBody,
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'source_type' => NotificationModel::SOURCE_CLASS,
+                    'source_id'   => $firstSessionId,
+                ], $admins);
+
+                $notif->createWithRecipients([
+                    'sender_id'   => $actorId,
+                    'type'        => 'individual',
+                    'title'       => '🎟️ Clases sin bono programadas',
+                    'body'        => $playerBody,
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'source_type' => NotificationModel::SOURCE_CLASS,
+                    'source_id'   => $firstSessionId,
+                ], [(int) $pid]);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'notifySeriesCoverage falló: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -308,6 +579,8 @@ class ClasesService
                 'id'       => $result['id'],
                 'count'    => $result['count'] ?? 1,
                 'class_id' => $result['class_id'] ?? null,
+                'skipped'  => $result['skipped'] ?? 0,
+                'coverage' => $result['coverage'] ?? [],
             ];
         }
 
@@ -454,7 +727,7 @@ class ClasesService
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end   = date('Y-m-t', strtotime($start));
 
-        $select = 'cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_type';
+        $select = 'cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_type, cs.lista_pasada_at';
 
         if ($isPlayer) {
             $sessions = $this->db->table('class_sessions cs')
@@ -473,7 +746,6 @@ class ClasesService
                 ->select($select)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->where('NOT EXISTS (SELECT 1 FROM class_session_coaches csc WHERE csc.session_id = cs.id)', null, false)
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
@@ -487,7 +759,6 @@ class ClasesService
                 ->where('csc.user_id', (int) $responsableFilter)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -500,7 +771,6 @@ class ClasesService
                 ->where('csc.user_id', $userId)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -508,7 +778,7 @@ class ClasesService
             $sessions = $this->sessionModel->getForMonth($year, $month);
         }
 
-        return $this->attachResponsable($sessions);
+        return $this->attachResponsable($sessions, !$isPlayer);
     }
 
     /**
@@ -516,7 +786,7 @@ class ClasesService
      * consulta extra (máx. 1 responsable por sesión — ver syncCoaches()) y
      * da forma final al evento para el calendario.
      */
-    private function attachResponsable(array $sessions): array
+    private function attachResponsable(array $sessions, bool $withAlerts = false): array
     {
         $ids = array_map(fn($s) => (int) $s['id'], $sessions);
 
@@ -549,10 +819,22 @@ class ClasesService
             }
         }
 
-        return array_map(function ($s) use ($coachMap, $playerNamesMap) {
+        $alertData = $withAlerts ? $this->loadAlertData($ids) : [];
+
+        return array_map(function ($s) use ($coachMap, $playerNamesMap, $withAlerts, $alertData) {
             $sid   = (int) $s['id'];
             $c     = $coachMap[$sid] ?? null;
             $playerLabel = self::playerLabel($playerNamesMap[$sid] ?? []);
+
+            // Alumno: color clásico por estado. Resto de roles: nivel de alerta.
+            $alert = $withAlerts ? self::alertLevel([
+                'status'      => $s['status'],
+                'date'        => $s['session_date'],
+                'end_time'    => $s['end_time'],
+                'has_coach'   => $c !== null,
+                'list_taken'  => !empty($s['lista_pasada_at']),
+                'attendances' => $alertData[$sid]['attendances'] ?? [],
+            ]) : null;
 
             return [
                 'id'               => $sid,
@@ -561,7 +843,9 @@ class ClasesService
                 'start'            => substr($s['start_time'], 0, 5),
                 'end'              => substr($s['end_time'], 0, 5),
                 'status'           => $s['status'],
-                'color'            => $this->statusColor($s['status']),
+                'color'            => $alert ? self::ALERT_COLORS[$alert['level']] : $this->statusColor($s['status']),
+                'alert_level'      => $alert['level'] ?? null,
+                'alert_reason'     => $alert['reason'] ?? null,
                 'session_type'     => $s['session_type'] ?? 'coach',
                 'responsable_id'   => $c['id'] ?? null,
                 'responsable_name' => $c['name'] ?? null,
@@ -1111,6 +1395,8 @@ class ClasesService
         $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
         $bonoName  = $typeRow['name'] ?? null;
 
+        BonoLedgerService::log($playerId, BonoLedgerService::DEDUCTED, -1, (int) $bono['id'], $sessionId, null);
+
         return [
             'success'            => true,
             'sessions_remaining' => $remaining,
@@ -1171,6 +1457,9 @@ class ClasesService
             'bono_deducted_at'      => null,
             'bono_deducted_from_id' => null,
         ]);
+
+        BonoLedgerService::log((int) $player['user_id'], BonoLedgerService::REFUNDED, $creditedId ? 1 : 0, $creditedId, (int) $player['session_id'],
+            $creditedId ? null : 'Sin bono destino: la sesión no se pudo acreditar');
 
         return ['refunded' => true, 'bono_id' => $creditedId];
     }
@@ -1866,7 +2155,9 @@ class ClasesService
             'updated_at' => $now,
         ]);
 
-        return ['success' => true];
+        $coverage = $this->markCoverage($sessionId, [$userId])[$userId] ?? null;
+
+        return ['success' => true, 'coverage' => $coverage];
     }
 
     public function removePlayer(int $sessionId, int $userId): bool
@@ -2392,8 +2683,9 @@ class ClasesService
      * alumnos que siguen; solo inserta los nuevos y elimina los que se quitan
      * (devolviéndoles el bono si se les había descontado).
      */
-    private function syncPlayers(int $sessionId, array $userIds, array $coachMap): void
+    private function syncPlayers(int $sessionId, array $userIds, array $coachMap, bool $mark = true): void
     {
+        $inserted = [];
         $wanted = array_values(array_unique(array_filter(array_map('intval', (array)$userIds))));
 
         $existing = $this->db->table('class_session_players')
@@ -2436,14 +2728,156 @@ class ClasesService
             ]);
             if ($this->db->affectedRows() === 0) {
                 log_message('error', 'syncPlayers: insert failed for session=' . $sessionId . ' user=' . $uid . ' | ' . $this->db->error()['message']);
+            } else {
+                $inserted[] = $uid;
             }
         }
+
+        // TICKET-013: marca de cobertura de los alumnos recién añadidos (las
+        // series ya la marcan ellas con su plan, por eso createRecurring pasa false).
+        if ($mark && $inserted) {
+            $this->markCoverage($sessionId, $inserted);
+        }
+    }
+
+    /**
+     * Marca `bono_coverage` de unos alumnos en una sesión concreta según su
+     * saldo. Solo informativa: nunca bloquea ni falla la operación.
+     *
+     * @return array<int,string> estado por alumno (covered|at_risk|uncovered)
+     */
+    private function markCoverage(int $sessionId, array $userIds): array
+    {
+        $out = [];
+        try {
+            $s = $this->sessionModel->find($sessionId);
+            if (!$s || ($s['status'] ?? '') !== 'scheduled') {
+                return $out;
+            }
+            $cov = (new BonoCoverageService($this->db))->analyze($userIds, [$s['session_date']], [$sessionId]);
+            foreach ($cov as $pid => $c) {
+                $status = $c['allocation'][$s['session_date']]['status'] ?? BonoCoverageService::UNCOVERED;
+                $this->db->table('class_session_players')
+                    ->where('session_id', $sessionId)->where('user_id', $pid)
+                    ->update(['bono_coverage' => $status]);
+                $out[(int) $pid] = $status;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'markCoverage falló (sesión ' . $sessionId . '): ' . $e->getMessage());
+        }
+        return $out;
     }
 
     private function nextPlayerRowId(): int
     {
         $row = $this->db->query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM class_session_players')->getRowArray();
         return (int)($row['next_id'] ?? 1);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Nivel de alerta del calendario (azul / verde / naranja / rojo / gris)
+    //  Solo ASISTENCIA y estado de la clase. Los bonos se ven en la ficha de
+    //  la clase y en la página de bonos, no aquí.
+    // ────────────────────────────────────────────────────────────────
+
+    public const ALERT_PENDING   = 'pending';
+    public const ALERT_OK        = 'ok';
+    public const ALERT_WARN      = 'warn';
+    public const ALERT_DANGER    = 'danger';
+    public const ALERT_CANCELLED = 'cancelled';
+
+    /** Rojo deliberadamente suave: avisa sin gritar. */
+    public const ALERT_COLORS = [
+        self::ALERT_PENDING   => '#3b82f6',
+        self::ALERT_OK        => '#10b981',
+        self::ALERT_WARN      => '#f59e0b',
+        self::ALERT_DANGER    => '#d9706a',
+        self::ALERT_CANCELLED => '#6b7280',
+    ];
+
+    /**
+     * Calcula el nivel de alerta de una sesión (lógica pura, sin BD).
+     * El peor caso gana: danger > warn. Sin nada que señalar:
+     * clase aún no realizada → pending (azul); ya con lista/cerrada → ok (verde).
+     *
+     * @param array{status:string,date:string,end_time?:?string,has_coach:bool,
+     *              list_taken:bool,attendances?:string[]} $in
+     * @param int|null $now Timestamp "ahora" (inyectable para tests).
+     * @return array{level:string,reason:string}
+     */
+    public static function alertLevel(array $in, ?int $now = null): array
+    {
+        $now    = $now ?? time();
+        $status = $in['status'] ?? '';
+
+        if ($status === 'cancelled') {
+            return ['level' => self::ALERT_CANCELLED, 'reason' => 'Clase cancelada'];
+        }
+
+        $danger = [];
+        $warn   = [];
+
+        // Asistencia registrada (solo cuenta si ya se pasó lista).
+        $listTaken   = !empty($in['list_taken']) || $status === 'completed';
+        $attendances = $listTaken ? ($in['attendances'] ?? []) : [];
+        if (in_array('unjustified', $attendances, true)) {
+            $danger[] = 'Ausencia no justificada de algún alumno';
+        }
+        if (in_array('absent', $attendances, true)) {
+            $warn[] = 'Ausencia justificada de algún alumno';
+        }
+
+        if (empty($in['has_coach'])) {
+            $warn[] = 'Sin entrenador asignado';
+        }
+
+        $past = false;
+        if ($status === 'scheduled') {
+            $end   = ($in['date'] ?? '') . ' ' . substr((string) ($in['end_time'] ?: '23:59'), 0, 5) . ':00';
+            $endTs = strtotime($end);
+            $past  = $endTs !== false && $endTs < $now;
+            if ($past && !$listTaken) {
+                if ($now - $endTs > 86400) {
+                    $danger[] = 'Hace más de 24 h que terminó y no se ha pasado lista';
+                } else {
+                    $warn[] = 'La clase ya terminó y falta pasar lista';
+                }
+            }
+        }
+
+        if ($danger) {
+            return ['level' => self::ALERT_DANGER, 'reason' => implode('. ', array_merge($danger, $warn))];
+        }
+        if ($warn) {
+            return ['level' => self::ALERT_WARN, 'reason' => implode('. ', $warn)];
+        }
+        if ($status === 'scheduled' && !$listTaken) {
+            return ['level' => self::ALERT_PENDING, 'reason' => 'Pendiente de realizar'];
+        }
+        return ['level' => self::ALERT_OK, 'reason' => 'Asistencia en orden'];
+    }
+
+    /**
+     * Asistencia de los alumnos por sesión para el calendario (1 consulta para todo el mes).
+     *
+     * @param int[] $ids
+     * @return array<int,array{attendances:string[]}>
+     */
+    private function loadAlertData(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        $out  = [];
+        $rows = $this->db->table('class_session_players')
+            ->select('session_id, attendance')
+            ->whereIn('session_id', $ids)
+            ->where('attendance IS NOT NULL', null, false)
+            ->get()->getResultArray();
+        foreach ($rows as $r) {
+            $out[(int) $r['session_id']]['attendances'][] = $r['attendance'];
+        }
+        return $out;
     }
 
     private function statusColor(string $status): string

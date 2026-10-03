@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Models\PlayerBonoModel;
 use App\Models\BonoTypeModel;
 use App\Models\UserModel;
+use App\Services\BonoControlService;
+use App\Services\BonoCoverageService;
+use App\Services\BonoLedgerService;
 
 class BonosController extends BaseController
 {
@@ -50,6 +53,7 @@ class BonosController extends BaseController
             'allBonoTypes' => $this->typeModel->orderBy('active', 'DESC')->orderBy('name', 'ASC')->findAll(),
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
             'filtro'       => $filter,
+            'debtCount'    => count((new BonoControlService())->openDebts()),
         ]);
     }
 
@@ -92,6 +96,15 @@ class BonosController extends BaseController
             'notes'              => $notes,
             'created_by'         => $this->currentUserId(),
         ]);
+        $newBonoId = (int) $this->bonoModel->getInsertID();
+
+        // TICKET-013: libro de movimientos + saldar automáticamente las deudas
+        // (sesiones dadas sin bono) con este bono nuevo.
+        $settledMsg = '';
+        if ($playerId) {
+            BonoLedgerService::log($playerId, BonoLedgerService::GRANTED, (int)$type['sessions'], $newBonoId, null, $type['name'] ?? null);
+            $settledMsg = $this->settleDebtsMessage($playerId);
+        }
 
         if (!$playerId) {
             $msg = 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
@@ -101,7 +114,7 @@ class BonosController extends BaseController
             $msg = 'Bono emitido correctamente.';
         }
 
-        session()->setFlashdata('success', $msg);
+        session()->setFlashdata('success', $msg . $settledMsg);
         return redirect()->to('/bonos');
     }
 
@@ -120,10 +133,16 @@ class BonosController extends BaseController
             ? $this->bonoModel->getBonosForPlayer((int)$bono['player_id'])
             : [];
 
+        $control   = new BonoControlService();
+        $movements = !empty($bono['player_id']) ? (new BonoLedgerService())->forPlayer((int)$bono['player_id'], 60) : [];
+        $debts     = !empty($bono['player_id']) ? $control->openDebts((int)$bono['player_id']) : [];
+
         return view('bonos/show', [
-            'title'   => 'Bono — JP Preparation',
-            'bono'    => $bono,
-            'history' => $history,
+            'title'     => 'Bono — JP Preparation',
+            'bono'      => $bono,
+            'movements' => $movements,
+            'debts'     => $debts,
+            'history'   => $history,
             'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
         ]);
     }
@@ -154,12 +173,14 @@ class BonosController extends BaseController
         $willBeQueued = $this->bonoModel->hasActiveBono($playerId);
 
         $this->bonoModel->update($id, ['player_id' => $playerId]);
+        BonoLedgerService::log($playerId, BonoLedgerService::ASSIGNED, (int)$bono['sessions_remaining'], $id, null, 'Bono sin dueño asignado al alumno');
+        $settledMsg = $this->settleDebtsMessage($playerId);
 
         $msg = $willBeQueued
             ? 'Jugador asignado. El bono queda encolado tras el activo actual del alumno.'
             : 'Jugador asignado al bono correctamente.';
 
-        session()->setFlashdata('success', $msg);
+        session()->setFlashdata('success', $msg . $settledMsg);
         return redirect()->to('/bonos/' . $id);
     }
 
@@ -189,6 +210,26 @@ class BonosController extends BaseController
 
         if (!empty($data)) {
             $this->bonoModel->update($id, $data);
+
+            // TICKET-013: toda edición manual del saldo o la fecha queda en el libro.
+            if (!empty($bono['player_id'])) {
+                $notes = [];
+                if (isset($data['sessions_remaining']) && (int)$data['sessions_remaining'] !== (int)$bono['sessions_remaining']) {
+                    $notes[] = 'sesiones ' . (int)$bono['sessions_remaining'] . ' → ' . (int)$data['sessions_remaining'];
+                }
+                if (array_key_exists('expires_at', $data) && ($data['expires_at'] ?? null) !== ($bono['expires_at'] ?? null)) {
+                    $notes[] = 'caducidad ' . ($bono['expires_at'] ? date('d/m/Y', strtotime($bono['expires_at'])) : '—')
+                        . ' → ' . ($data['expires_at'] ? date('d/m/Y', strtotime($data['expires_at'])) : '—');
+                }
+                if ($notes) {
+                    BonoLedgerService::log((int)$bono['player_id'], BonoLedgerService::ADJUSTED,
+                        isset($data['sessions_remaining']) ? (int)$data['sessions_remaining'] - (int)$bono['sessions_remaining'] : 0,
+                        $id, null, 'Edición manual: ' . implode('; ', $notes));
+                    if (isset($data['sessions_remaining']) && (int)$data['sessions_remaining'] > (int)$bono['sessions_remaining']) {
+                        $this->settleDebtsMessage((int)$bono['player_id']);
+                    }
+                }
+            }
         }
 
         session()->setFlashdata('success', 'Bono actualizado.');
@@ -207,6 +248,75 @@ class BonosController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  Ampliar caducidad (TICKET-013): 15 / 30 / 60 días o fecha personalizada
+    // ────────────────────────────────────────────────────────────────
+
+    public function extend(int $id)
+    {
+        $mode = (string) $this->request->getPost('mode');
+        $res  = (new BonoControlService())->extendBono(
+            $id,
+            $mode === 'custom' ? 'custom' : (int) $mode,
+            $this->request->getPost('custom_date') ?: null,
+            (int) $this->currentUserId()
+        );
+
+        session()->setFlashdata(
+            $res['success'] ? 'success' : 'error',
+            $res['success'] ? 'Caducidad ampliada hasta el ' . date('d/m/Y', strtotime($res['date'])) . '.' : $res['error']
+        );
+        return redirect()->to('/bonos/' . $id);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Deudas de sesión y sesiones "no reflejadas" (TICKET-013)
+    // ────────────────────────────────────────────────────────────────
+
+    public function deudas()
+    {
+        $control = new BonoControlService();
+
+        return view('bonos/deudas', [
+            'title'        => 'Deudas de sesión — JP Preparation',
+            'pageTitle'    => 'Deudas de sesión',
+            'pageSubtitle' => 'Clases dadas sin bono y sesiones anteriores al control',
+            'debts'        => $control->openDebts(),
+            'unreflected'  => $control->unreflected(),
+            'since'        => (new BonoCoverageService())->controlSince(),
+        ]);
+    }
+
+    public function resolveDebt(int $cspId)
+    {
+        $res = (new BonoControlService())->resolveDebt(
+            $cspId,
+            (string) $this->request->getPost('resolution'),
+            (int) $this->currentUserId(),
+            trim((string) $this->request->getPost('note')) ?: null
+        );
+
+        session()->setFlashdata(
+            $res['success'] ? 'success' : 'error',
+            $res['success'] ? 'Deuda resuelta y registrada.' : $res['error']
+        );
+        return redirect()->to('/bonos/deudas');
+    }
+
+    /** Salda deudas con el bono recién emitido/asignado y devuelve el texto para el flash. */
+    private function settleDebtsMessage(int $playerId): string
+    {
+        $r = (new BonoControlService())->settleWithBono($playerId, (int) $this->currentUserId());
+        if ($r['settled'] > 0) {
+            return ' Se han saldado automáticamente ' . $r['settled'] . ' sesión(es) dadas sin bono'
+                . ($r['remaining_debts'] > 0 ? ' (quedan ' . $r['remaining_debts'] . ' pendientes por falta de saldo).' : '.');
+        }
+        if ($r['remaining_debts'] > 0) {
+            return ' El alumno tiene ' . $r['remaining_debts'] . ' sesión(es) dadas sin bono pendientes.';
+        }
+        return '';
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  AJAX: comprobar si el jugador ya tiene bono activo
     // ────────────────────────────────────────────────────────────────
 
@@ -219,9 +329,17 @@ class BonosController extends BaseController
 
         $bono = $this->bonoModel->getActiveBono($playerId);
 
+        // TICKET-013: clases ya dadas sin bono. Al emitir un bono se descuenta
+        // 1 sesión por cada una, así que se avisa ANTES de crearlo.
+        $debts = array_map(
+            fn($d) => ['title' => $d['title'], 'date' => $d['session_date']],
+            (new BonoControlService())->openDebts($playerId)
+        );
+
         return $this->response->setJSON([
             'has_active' => $bono !== null,
             'bono'       => $bono,
+            'debts'      => $debts,
         ]);
     }
 

@@ -24,6 +24,14 @@
     const selectedDays    = new Set();
 
     let currentType = 'single';
+    let cov = null; // BonoCoverage (TICKET-013)
+
+    function refreshCov() { if (cov) cov.refresh(); }
+
+    let sb = null; // SeriesBuilder (primera clase, nº de clases, fecha límite, clase a clase)
+    function curTimes() {
+        return { start: $('cm-start-h').value + ':' + $('cm-start-m').value, end: $('cm-end-h').value + ':' + $('cm-end-m').value };
+    }
 
     // ── DOM helpers ─────────────────────────────────────────────
     function $(id)  { return document.getElementById(id); }
@@ -68,6 +76,8 @@
                 pill.classList.toggle('active', cb.checked);
                 if (cb.checked) selectedDays.add(parseInt(cb.value));
                 else            selectedDays.delete(parseInt(cb.value));
+                if (sb) sb.refresh();
+                refreshCov();
             });
         });
 
@@ -91,11 +101,49 @@
             this.value = '';
             renderTags('cm-player-list', selectedPlayers);
             updateWarning();
+            refreshCov();
         });
 
         // Submit
         const submitBtn = overlay.querySelector('button[id$="submit"]') || $('cm-submit');
         submitBtn?.addEventListener('click', submit);
+
+        // Configuración de la serie (TICKET-013)
+        if (window.SeriesBuilder && $('cm-series-builder')) {
+            sb = SeriesBuilder.attach({
+                root:     $('cm-series-builder'),
+                simple:   true,                  // clase rápida: solo primera clase + nº de clases
+                moreUrl:  '/clases/nueva',       // lo avanzado, en el formulario completo
+                getDays:  () => Array.from(selectedDays),
+                getTimes: curTimes,
+                onChange: refreshCov
+            });
+            ['cm-start-h', 'cm-start-m', 'cm-end-h', 'cm-end-m'].forEach(id =>
+                $(id).addEventListener('change', () => { sb.refresh(); refreshCov(); }));
+        }
+
+        // Cobertura de bono (TICKET-013): solo para series recurrentes
+        if (window.BonoCoverage && $('cm-bono-cov')) {
+            cov = BonoCoverage.attach({
+                panel:     $('cm-bono-cov'),
+                modeInput: $('cm-bono-mode'),
+                csrfName:  opts.csrfName,
+                csrfHash:  opts.csrfHash,
+                collect: function () {
+                    if (currentType !== 'recurring' || !sb || sb.validate()) return null;
+                    if (!selectedPlayers.size || !selectedDays.size) return null;
+                    const fd = new FormData();
+                    selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+                    selectedDays.forEach(d => fd.append('recurrence_days[]', d));
+                    sb.appendTo(fd);
+                    return fd;
+                },
+                // "Ajustar al bono": la serie pasa a tantas clases como caben
+                onFit: function (fit) {
+                    if (fit && fit.count > 0 && sb) sb.setCount(fit.count);
+                }
+            });
+        }
 
         // Inicializar tipo
         setType('single');
@@ -146,6 +194,7 @@
             el.classList.toggle('d-none', currentType !== 'single'));
         document.querySelectorAll('.cm-block-recurring').forEach(el =>
             el.classList.toggle('d-none', currentType !== 'recurring'));
+        refreshCov();
     }
 
     // ── Render tags ────────────────────────────────────────────
@@ -161,6 +210,7 @@
                 map.delete(id);
                 renderTags(containerId, map);
                 updateWarning();
+                if (containerId === 'cm-player-list') refreshCov();
             });
             el.appendChild(tag);
         });
@@ -194,8 +244,6 @@
         $('cm-pre-notes').value = '';
         $('cm-location-custom').value = '';
         $('cm-location-id').value = '';
-        $('cm-rec-start').value = '';
-        $('cm-rec-end').value = '';
         selectedCoaches.clear();
         selectedPlayers.clear();
         selectedDays.clear();
@@ -219,9 +267,6 @@
         const today = new Date();
         const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         $('cm-date').value      = prefill.date     || fmt(today);
-        $('cm-rec-start').value = prefill.date     || fmt(today);
-        const oneMonth = new Date(today); oneMonth.setMonth(oneMonth.getMonth() + 1);
-        $('cm-rec-end').value   = prefill.recEnd   || fmt(oneMonth);
 
         if (prefill.time) {
             const [h, m] = prefill.time.split(':');
@@ -237,6 +282,8 @@
             $('cm-end-m').value   = '00';
         }
 
+        if (cov) cov.reset();
+        if (sb) sb.reset(prefill.date || fmt(today), 4);
         setType('single');
         $('modalCreateClass').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
@@ -280,11 +327,9 @@
             if (selectedDays.size === 0) {
                 errEl.textContent = 'Selecciona al menos un día de la semana.'; show(errEl); return;
             }
-            if (!$('cm-rec-start').value || !$('cm-rec-end').value) {
-                errEl.textContent = 'Selecciona el rango de fechas para la recurrencia.'; show(errEl); return;
-            }
-            if ($('cm-rec-end').value < $('cm-rec-start').value) {
-                errEl.textContent = 'La fecha "Hasta" debe ser posterior a "Desde".'; show(errEl); return;
+            const sbErr = sb ? sb.validate() : 'No se pudo cargar la configuración de la serie. Recarga la página.';
+            if (sbErr) {
+                errEl.textContent = sbErr; show(errEl); return;
             }
         }
 
@@ -310,13 +355,13 @@
         if (currentType === 'single') {
             fd.append('session_date', $('cm-date').value);
         } else {
-            fd.append('recurrence_start', $('cm-rec-start').value);
-            fd.append('recurrence_end',   $('cm-rec-end').value);
+            sb.appendTo(fd);
             selectedDays.forEach(d => fd.append('recurrence_days[]', d));
         }
 
         selectedCoaches.forEach((_, id) => fd.append('coach_ids[]', id));
         selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+        if (currentType === 'recurring' && cov && cov.state.mode) fd.append('coverage_mode', cov.state.mode);
 
         // Botón
         const btn = $('cm-submit');
@@ -335,6 +380,7 @@
             } else {
                 errEl.textContent = data.error || 'Error al crear la sesión.';
                 show(errEl);
+                if (data.needs_decision) refreshCov(); // el saldo cambió o no se había calculado
             }
         } catch (e) {
             errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';

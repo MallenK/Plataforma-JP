@@ -238,7 +238,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
         });
     });
 
-    // ── Polling cada 30 s ────────────────────────────────────
+    // ── Polling cada 60 s ────────────────────────────────────
     async function pollAll() {
         try {
             const res  = await fetch(BASE + 'notificaciones/latest', {
@@ -299,8 +299,11 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
     }
 
     // Carga inicial y polling
+    // Cada sondeo son 2-3 peticiones (= conexiones a BD): 60 s y solo con la pestaña
+    // visible, que además refresca al volver. Hosting compartido limita conexiones/hora.
     pollAll();
-    setInterval(pollAll, 30000);
+    setInterval(() => { if (!document.hidden) pollAll(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) pollAll(); });
 
     // ── Helpers ──────────────────────────────────────────────
     function timeAgoJS(dt) {

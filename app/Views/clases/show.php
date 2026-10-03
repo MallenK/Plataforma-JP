@@ -352,6 +352,22 @@ $statusHint   = [
                                     <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
                                     <div>
                                         <div class="td-name"><?php if ($profileUrl): ?><a href="<?= esc($profileUrl, 'attr') ?>" class="row-link-anchor"><?= esc($p['name']) ?></a><?php else: ?><?= esc($p['name']) ?><?php endif; ?></div>
+                                        <?php
+                                        // TICKET-013: estado de bono de la plaza (solo gestión).
+                                        if (in_array(session('role'), ['superadmin', 'admin'], true) && empty($p['bono_deducted_at'])):
+                                            $bcTag = null;
+                                            if (!empty($p['bono_resolution'])) {
+                                                $bcTag = ['#475569', '#f1f5f9', 'bi-check2-square', $p['bono_resolution'] === 'external' ? 'Pagada fuera de bono' : 'Condonada'];
+                                            } elseif ($session['status'] === 'completed' && \App\Services\ClasesService::attendanceConsumesBono($p['attendance'])) {
+                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-receipt', 'Clase dada sin bono'];
+                                            } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'uncovered') {
+                                                $bcTag = ['#b91c1c', '#fee2e2', 'bi-ticket-perforated', 'Pendiente de bono'];
+                                            } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'at_risk') {
+                                                $bcTag = ['#92400e', '#fef3c7', 'bi-hourglass-split', 'El bono caduca antes'];
+                                            }
+                                            if ($bcTag): ?>
+                                        <span style="display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:6px;color:<?= $bcTag[0] ?>;background:<?= $bcTag[1] ?>"><i class="bi <?= $bcTag[2] ?> me-1"></i><?= $bcTag[3] ?></span>
+                                        <?php endif; endif; ?>
                                     </div>
                                 </div>
                             </td>
@@ -1008,6 +1024,10 @@ $statusHint   = [
                     </div>
                 </div>
 
+                <!-- Cobertura de bono (TICKET-013): cruza la serie con el saldo de cada alumno -->
+                <div id="rn-bono-cov" class="d-none" style="margin-top:14px"></div>
+                <input type="hidden" name="coverage_mode" id="rn-bono-mode" value="">
+
                 <div class="d-flex gap-2 justify-content-end mt-3">
                     <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalRenewSeries')">Cancelar</button>
                     <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check-lg me-1"></i>Continuar clases</button>
@@ -1016,6 +1036,7 @@ $statusHint   = [
         </div>
     </div>
 </div>
+<script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script>
 // Filtra el select de responsable según Entrenador/Staff elegido, para no
 // dejar seleccionable a alguien del pool equivocado (mismas reglas que
@@ -1043,6 +1064,42 @@ $statusHint   = [
             chk.closest('.cm-day-pill')?.classList.toggle('active', chk.checked);
         });
     });
+
+    // Cobertura de bono (TICKET-013): la serie nueva copia los alumnos de la
+    // anterior, así que aquí es donde más se acumulaban sesiones sin bono.
+    var rnForm = document.getElementById('formRenewSeries');
+    if (window.BonoCoverage && rnForm) {
+        var rnCov = BonoCoverage.attach({
+            panel:     document.getElementById('rn-bono-cov'),
+            modeInput: document.getElementById('rn-bono-mode'),
+            csrfName:  <?= json_encode(csrf_token()) ?>,
+            csrfHash:  <?= json_encode(csrf_hash()) ?>,
+            collect: function () {
+                var players = rnForm.querySelectorAll('[name="player_ids[]"]');
+                var days    = rnForm.querySelectorAll('[name="recurrence_days[]"]:checked');
+                var start   = rnForm.querySelector('[name="recurrence_start"]').value;
+                var end     = rnForm.querySelector('[name="recurrence_end"]').value;
+                if (!players.length || !days.length || !start || !end || end < start) return null;
+                var fd = new FormData();
+                players.forEach(function (p) { fd.append('player_ids[]', p.value); });
+                days.forEach(function (d) { fd.append('recurrence_days[]', d.value); });
+                fd.append('recurrence_start', start);
+                fd.append('recurrence_end', end);
+                return fd;
+            },
+            // "Ajustar al bono": acorta la fecha de fin a la última clase que cabe
+            onFit: function (fit) {
+                if (!fit || !fit.end) return;
+                rnForm.querySelector('[name="recurrence_end"]').value = fit.end;
+                rnCov.refresh();
+            }
+        });
+        rnForm.addEventListener('change', function (e) {
+            var n = e.target && e.target.name;
+            if (n === 'recurrence_days[]' || n === 'recurrence_start' || n === 'recurrence_end') rnCov.refresh();
+        });
+        document.addEventListener('DOMContentLoaded', function () { rnCov.refresh(); });
+    }
 
     // El responsable es obligatorio al continuar una serie: dejarlo en
     // "Sin responsable asignado" y guardar no puede colar en silencio.

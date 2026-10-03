@@ -35,6 +35,12 @@ class DashboardController extends BaseController
 
         $clasesService   = new \App\Services\ClasesService();
         $isAdminRole     = in_array($role, ['superadmin', 'admin']);
+        if ($isAdminRole) {
+            // TICKET-013: sin cron en Hostinger, los avisos de "bono a punto de
+            // caducar" se disparan desde el uso normal (máx. 1 vez/hora, y un
+            // solo aviso por bono). Nunca debe tumbar el dashboard.
+            (new \App\Services\BonoControlService())->runExpiryAlerts();
+        }
         $showScopeToggle = $isAdminRole && $clasesService->hasOwnAssignedSessions($userId);
         // Selector "Ver calendario de…" (TICKET-011), igual que en /clases.
         $responsableOptions = $isAdminRole ? $clasesService->getResponsableFilterOptions() : ['coaches' => [], 'staff' => []];

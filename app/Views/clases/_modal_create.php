@@ -77,13 +77,9 @@ $btnId   = $btnId   ?? 'cm-submit';
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <div class="col-6 cm-block-recurring d-none">
-                    <label class="form-label">Desde <span style="color:var(--danger)">*</span></label>
-                    <input type="date" id="cm-rec-start" class="form-control-jp">
-                </div>
-                <div class="col-6 cm-block-recurring d-none">
-                    <label class="form-label">Hasta <span style="color:var(--danger)">*</span></label>
-                    <input type="date" id="cm-rec-end" class="form-control-jp">
+                <!-- Configuración de la serie (TICKET-013): lo pinta series-builder.js -->
+                <div class="col-12 cm-block-recurring d-none">
+                    <div id="cm-series-builder"></div>
                 </div>
 
                 <!-- Hora inicio (24h custom) -->
@@ -149,6 +145,10 @@ $btnId   = $btnId   ?? 'cm-submit';
                     <div id="cm-player-list" class="cm-tags mt-2"></div>
                 </div>
             </div>
+
+            <!-- Cobertura de bono (TICKET-013): solo series recurrentes con alumnos -->
+            <div id="cm-bono-cov" class="d-none" style="margin-top:12px"></div>
+            <input type="hidden" id="cm-bono-mode" value="">
 
             <div id="cm-warning" class="cm-warning d-none">
                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
