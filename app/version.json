@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.17.0",
+        "date": "2026-10-03 00:00:00",
+        "description": "Nueva forma de crear clases recurrentes: ahora indicas la primera clase, el número de clases y/o una fecha límite (se para en lo que ocurra antes), y puedes desmarcar «todas el mismo día y hora» para ajustar cada clase por separado. La clase rápida del calendario queda más simple (primera clase y número de clases) y enlaza al formulario completo para lo avanzado. Al crear un bono, si el jugador tiene clases dadas sin bono, la plataforma avisa antes de cuántas sesiones se descontarán (una por clase, no el bono entero). «Deudas de sesión» pasa a llamarse «Clases sin bono», con botones más claros («Ya está pagada» y «No cobrar»). Textos de bonos y avisos reescritos en lenguaje más sencillo con ejemplos, y los botones secundarios de toda la plataforma tienen ahora más contraste."
+    },
+    {
         "version": "1.16.0",
         "date": "2026-10-02 00:00:00",
         "description": "Las clases recurrentes ya están conectadas con los bonos. Al crear o continuar una serie, la plataforma comprueba el saldo de bono de cada alumno y muestra cuántas clases tiene cubiertas; si el bono no llega, el administrador decide entre crear solo las cubiertas (por defecto), ajustar la serie a lo que cubre el bono o crear todas dejándolas pendientes de bono. Una serie ahora puede terminar por número de clases (la fecha de fin se calcula sola) o por fecha. Las clases dadas sin bono quedan registradas como deuda de sesión y se saldan solas al asignar un bono nuevo (con aviso a los administradores); nueva pantalla Bonos > Deudas de sesión. Cada bono tiene su registro de movimientos y se puede ampliar su caducidad (+15, +30, +60 días o fecha personalizada); se avisa cuando un bono caduca en 7 días o menos."
