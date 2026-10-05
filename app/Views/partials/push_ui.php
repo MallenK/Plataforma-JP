@@ -38,6 +38,9 @@ $mode = $mode ?? 'card';
             <button type="button" class="btn btn-sm btn-outline-primary" data-act="install" hidden>
                 <i class="bi bi-download me-1"></i>Instalar la app
             </button>
+            <button type="button" class="btn btn-sm btn-primary" data-act="guide" hidden>
+                <i class="bi bi-phone me-1"></i>Cómo instalarla
+            </button>
         </div>
     </div>
 </div>
@@ -47,7 +50,8 @@ $mode = $mode ?? 'card';
 (function () {
     var MODE = <?= json_encode($mode) ?>;
     var DISMISS_KEY = 'jp_push_banner_dismissed';
-    var IOS_HELP = 'Para instalar la app en el iPhone/iPad: abre esta página en Safari, pulsa el botón Compartir (el cuadrado con la flecha hacia arriba), elige «Añadir a pantalla de inicio» y abre la app desde ese icono. Los avisos se activan después, desde la app instalada.';
+    var GUIDE_URL = <?= json_encode(base_url('configuracion/instalar')) ?>;
+    var IOS_HELP = 'En iPhone y iPad los avisos solo funcionan con la app instalada en la pantalla de inicio.';
 
     function store(op, k, v) { try { return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (_) { return null; } }
     function alertMsg(msg, type) {
@@ -63,14 +67,14 @@ $mode = $mode ?? 'card';
         var box = document.getElementById('push-banner');
         if (!box) return;
         // En el Centro de notificaciones ya hay una tarjeta con los mismos controles.
-        if (document.getElementById('push-card')) { box.hidden = true; return; }
+        if (document.getElementById('push-card') || document.getElementById('install-guide')) { box.hidden = true; return; }
         var dismissed = parseInt(store('get', DISMISS_KEY) || '0', 10);
         var snoozed = Date.now() - dismissed < 7 * 86400000;
         var text = '', action = '', handler = null;
 
         if (s.needsInstall) {
             // iPhone/iPad en el navegador: aquí no hay botón «Instalar», hay que explicarlo (con o sin push configurado)
-            text = IOS_HELP; action = '';
+            text = IOS_HELP; action = 'Ver cómo instalarla'; handler = function () { location.href = GUIDE_URL; };
         } else if (s.configured && s.supported && s.permission === 'default' && !s.subscribed) {
             text = 'Activa las notificaciones para enterarte al momento de mensajes, clases y avisos.';
             action = 'Activar'; handler = function () { return run(window.JPPwa.enable(), 'Notificaciones activadas en este dispositivo.'); };
@@ -100,6 +104,7 @@ $mode = $mode ?? 'card';
         show('test', s.subscribed);
         show('disable', s.subscribed);
         show('install', s.canInstall);
+        show('guide', s.needsInstall);
         card.hidden = false;
     }
 
@@ -122,6 +127,7 @@ $mode = $mode ?? 'card';
             if (b.dataset.act === 'disable') run(P.disable(), 'Notificaciones desactivadas en este dispositivo.');
             if (b.dataset.act === 'test')    run(P.test());
             if (b.dataset.act === 'install') run(P.install());
+            if (b.dataset.act === 'guide')   location.href = GUIDE_URL;
         });
     }
 
