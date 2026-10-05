@@ -90,7 +90,7 @@
                 subscribed: !!sub,
                 ios: isIOS,
                 standalone: isStandalone,
-                needsInstall: isIOS && !isStandalone && !supportsPush, // iOS Safari: push solo con la app instalada
+                needsInstall: isIOS && !isStandalone, // iOS no tiene botón de instalar: es manual (Compartir → Añadir a pantalla de inicio) y el push solo existe con la app instalada
                 canInstall: !!deferredInstall && !isStandalone
             };
         });

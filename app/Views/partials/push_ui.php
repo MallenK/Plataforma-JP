@@ -47,7 +47,7 @@ $mode = $mode ?? 'card';
 (function () {
     var MODE = <?= json_encode($mode) ?>;
     var DISMISS_KEY = 'jp_push_banner_dismissed';
-    var IOS_HELP = 'Para recibir avisos en el iPhone/iPad: pulsa Compartir y «Añadir a pantalla de inicio»; abre la app desde ahí y actívalos.';
+    var IOS_HELP = 'Para instalar la app en el iPhone/iPad: abre esta página en Safari, pulsa el botón Compartir (el cuadrado con la flecha hacia arriba), elige «Añadir a pantalla de inicio» y abre la app desde ese icono. Los avisos se activan después, desde la app instalada.';
 
     function store(op, k, v) { try { return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (_) { return null; } }
     function alertMsg(msg, type) {
@@ -68,11 +68,12 @@ $mode = $mode ?? 'card';
         var snoozed = Date.now() - dismissed < 7 * 86400000;
         var text = '', action = '', handler = null;
 
-        if (s.configured && s.supported && s.permission === 'default' && !s.subscribed) {
+        if (s.needsInstall) {
+            // iPhone/iPad en el navegador: aquí no hay botón «Instalar», hay que explicarlo (con o sin push configurado)
+            text = IOS_HELP; action = '';
+        } else if (s.configured && s.supported && s.permission === 'default' && !s.subscribed) {
             text = 'Activa las notificaciones para enterarte al momento de mensajes, clases y avisos.';
             action = 'Activar'; handler = function () { return run(window.JPPwa.enable(), 'Notificaciones activadas en este dispositivo.'); };
-        } else if (s.needsInstall && s.configured) {
-            text = IOS_HELP; action = '';
         }
         box.hidden = !text || snoozed || s.subscribed;
         document.getElementById('push-banner-text').textContent = text;
@@ -87,8 +88,8 @@ $mode = $mode ?? 'card';
         var show = function (act, on) { var b = card.querySelector('[data-act="' + act + '"]'); if (b) b.hidden = !on; };
         var msg;
 
-        if (!s.configured) msg = 'Las notificaciones push no están configuradas en el servidor.';
-        else if (s.needsInstall) msg = IOS_HELP;
+        if (s.needsInstall) msg = IOS_HELP;
+        else if (!s.configured) msg = 'Las notificaciones push no están configuradas en el servidor.';
         else if (!s.supported) msg = 'Este navegador no admite notificaciones push. Seguirás viéndolas en la campanita.';
         else if (s.permission === 'denied') msg = 'Las notificaciones están bloqueadas para este sitio. Permítelas desde los ajustes del navegador.';
         else if (s.subscribed) msg = 'Activadas: recibirás los avisos de la plataforma aunque no tengas la web abierta.';
