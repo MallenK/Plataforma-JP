@@ -7,6 +7,14 @@
 
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+    <!-- PWA: manifest, color de la barra y soporte iOS (Añadir a pantalla de inicio) -->
+    <link rel="manifest" href="<?= base_url('manifest.webmanifest') ?>">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="JP Prep">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="<?= base_url('assets/img/pwa/apple-touch-icon.png') ?>">
     <!-- Google Fonts — Montserrat + Oswald (titulares de las pantallas de acceso) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,6 +45,8 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <!-- App JS -->
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+<!-- PWA: service worker, instalación y notificaciones push -->
+<script src="<?= base_url('assets/js/pwa.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/pwa.js') ?: time() ?>" data-base="<?= base_url() ?>"></script>
 <!-- Reporte de problemas desde alertas de error / permiso -->
 <script src="<?= base_url('assets/js/error-report.js') ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->

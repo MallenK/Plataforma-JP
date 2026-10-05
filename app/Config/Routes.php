@@ -631,6 +631,22 @@ $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
     'filter' => 'auth',
 ]);
 
+// Destino de las notificaciones push (marca leída + salta al origen)
+$routes->get('notificaciones/(:num)/ir', 'NotificacionesController::go/$1', [
+    'filter' => 'auth',
+]);
+
+// ------------------------------------------------------------
+// PUSH (PWA) — suscripción de dispositivos a notificaciones push, todos los roles
+//
+//  POST /push/subscribe    → alta/renovación de la suscripción del navegador
+//  POST /push/unsubscribe  → baja del navegador
+//  POST /push/test         → notificación de prueba al propio usuario
+// ------------------------------------------------------------
+$routes->post('push/subscribe', 'PushController::subscribe', ['filter' => 'auth']);
+$routes->post('push/unsubscribe', 'PushController::unsubscribe', ['filter' => 'auth']);
+$routes->post('push/test', 'PushController::test', ['filter' => 'auth']);
+
 // Detalle: va DESPUÉS de las rutas literales (latest, read-all) por claridad;
 // (:num) ya no casa con ellas.
 $routes->get('notificaciones/(:num)', 'NotificacionesController::show/$1', [

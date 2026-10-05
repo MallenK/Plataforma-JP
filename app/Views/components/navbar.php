@@ -245,6 +245,8 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             const data = await res.json();
+            // Número en el icono de la app instalada (PWA)
+            if (data.unread !== undefined) window.JPPwa?.setBadge(data.unread);
             // Solo actualizar badge, no re-renderizar lista si está abierta
             if (!isOpen && data.unread !== undefined) {
                 if (data.unread > 0) {
@@ -304,6 +306,8 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
     pollAll();
     setInterval(() => { if (!document.hidden) pollAll(); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) pollAll(); });
+    // Push recibido con la pestaña abierta (service worker): refrescar campanita y mensajes al instante.
+    window.addEventListener('jp:push', () => { pollAll(); if (isOpen) fetchNotifications(); });
 
     // ── Helpers ──────────────────────────────────────────────
     function timeAgoJS(dt) {

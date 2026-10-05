@@ -56,6 +56,9 @@ class NotificationModel extends Model
             ], array_unique($recipientIds));
 
             $this->db->table('notification_recipients')->insertBatch($rows);
+
+            // Push real a los dispositivos suscritos (se envía tras la respuesta; no falla nunca).
+            \App\Services\PushService::queueForNotification($notifId, $data, $recipientIds);
         }
 
         return $notifId;
