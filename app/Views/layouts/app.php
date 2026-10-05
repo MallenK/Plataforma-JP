@@ -6,6 +6,17 @@
 <link rel="stylesheet" href="<?= base_url('assets/css/doc-preview.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/doc-preview.css') ?: time() ?>">
 
 <script>window.APP_BASE = '<?= rtrim(base_url(), '/') ?>';</script>
+<?php if (\App\Services\PushService::enabled()): ?>
+<script>
+window.JP_PUSH = <?= json_encode([
+    'key'           => \App\Services\PushService::publicKey(),
+    'csrfName'      => csrf_token(),
+    'csrfHash'      => csrf_hash(),
+    // Sin esto, tras un login nuevo en el mismo navegador la suscripción seguiría ligada al usuario anterior.
+    'sessionHasSub' => (bool) session('push_endpoint_hash'),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+</script>
+<?php endif; ?>
 
 <div class="app-layout">
 
@@ -25,6 +36,7 @@
                 </a>
             </div>
             <?php endif; ?>
+            <?= view('partials/push_ui', ['mode' => 'banner']) ?>
             <?= $this->renderSection('page_content') ?>
         </div>
 

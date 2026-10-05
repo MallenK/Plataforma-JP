@@ -177,6 +177,15 @@ class AuthController extends BaseController
         }
         (new \App\Services\AuthGuardService())->record('logout', $email, $uid ? (int) $uid : null);
 
+        // Este navegador deja de recibir los push de este usuario (otro usuario puede entrar después).
+        if ($uid && ($pushHash = session()->get('push_endpoint_hash'))) {
+            try {
+                (new \App\Services\PushService())->unsubscribeByHash((string) $pushHash, (int) $uid);
+            } catch (\Throwable $e) {
+                log_message('warning', '[logout] push unsubscribe: ' . $e->getMessage());
+            }
+        }
+
         session()->destroy();
         return redirect()->to('/login');
     }

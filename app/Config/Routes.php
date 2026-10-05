@@ -496,6 +496,14 @@ $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionControlle
 //  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 
+// Preferencias de notificación: personales, TODOS los roles (el resto de /configuracion es solo admin)
+$routes->get('configuracion/notificaciones', 'AjustesNotificacionesController::index', [
+    'filter' => 'auth',
+]);
+$routes->post('configuracion/notificaciones/save', 'AjustesNotificacionesController::save', [
+    'filter' => 'auth',
+]);
+
 $routes->get('configuracion', 'ConfiguracionController::index', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
@@ -630,6 +638,22 @@ $routes->get('notificaciones/(:num)/download', 'NotificacionesController::downlo
 $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
     'filter' => 'auth',
 ]);
+
+// Destino de las notificaciones push (marca leída + salta al origen)
+$routes->get('notificaciones/(:num)/ir', 'NotificacionesController::go/$1', [
+    'filter' => 'auth',
+]);
+
+// ------------------------------------------------------------
+// PUSH (PWA) — suscripción de dispositivos a notificaciones push, todos los roles
+//
+//  POST /push/subscribe    → alta/renovación de la suscripción del navegador
+//  POST /push/unsubscribe  → baja del navegador
+//  POST /push/test         → notificación de prueba al propio usuario
+// ------------------------------------------------------------
+$routes->post('push/subscribe', 'PushController::subscribe', ['filter' => 'auth']);
+$routes->post('push/unsubscribe', 'PushController::unsubscribe', ['filter' => 'auth']);
+$routes->post('push/test', 'PushController::test', ['filter' => 'auth']);
 
 // Detalle: va DESPUÉS de las rutas literales (latest, read-all) por claridad;
 // (:num) ya no casa con ellas.

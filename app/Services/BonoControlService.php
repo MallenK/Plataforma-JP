@@ -242,6 +242,7 @@ class BonoControlService
                     'type'      => 'individual',
                     'title'     => '🎟️ Tu bono se ha ampliado',
                     'body'      => 'La caducidad de tu bono se ha ampliado hasta el ' . date('d/m/Y', strtotime($calc['date'])) . '.',
+                    'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
                 ], [$playerId]);
             } catch (\Throwable $e) {
                 log_message('error', 'extendBono: notificación falló: ' . $e->getMessage());
@@ -318,6 +319,7 @@ class BonoControlService
                     'type'      => 'individual',
                     'title'     => '⏳ Tu bono caduca pronto',
                     'body'      => "Tu bono \"{$r['bono_name']}\" caduca el {$when} y te quedan {$r['sessions_remaining']} sesión(es) sin usar. Si quieres más días o renovarlo, habla con la academia.",
+                    'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
                 ], [(int) $r['player_id']]);
 
                 BonoLedgerService::log((int) $r['player_id'], BonoLedgerService::EXPIRY_ALERT, 0, (int) $r['id'], null,
@@ -368,6 +370,7 @@ class BonoControlService
                 'type'      => 'group',
                 'title'     => $title,
                 'body'      => $body,
+                'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
             ], $admins);
         } catch (\Throwable $e) {
             log_message('error', 'BonoControlService::notifyAdmins falló: ' . $e->getMessage());

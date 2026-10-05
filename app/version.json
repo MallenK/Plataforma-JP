@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.0.0",
+        "date": "2026-10-05 00:00:00",
+        "description": "La plataforma ya se puede instalar como app en el móvil y el ordenador, y envía notificaciones reales al dispositivo (aunque no tengas la web abierta) en Chrome, Edge, Firefox y Safari; en iPhone/iPad hay que instalarla antes en la pantalla de inicio. Cada aviso de la campanita (mensajes, clases, bonos, tickets y avisos de la academia) llega también como notificación y, al pulsarla, te lleva directamente a su origen. Nueva sección Configuración → Notificaciones, disponible para todos los usuarios: activas o desactivas las notificaciones de cada dispositivo y eliges, por tipo, si quieres recibirlas en la plataforma y/o como aviso en el dispositivo. Si no tienes el permiso del navegador, la campanita funciona como siempre."
+    },
+    {
         "version": "1.18.0",
         "date": "2026-10-03 00:00:00",
         "description": "El calendario de clases ahora usa colores para ver de un vistazo cómo va cada clase: azul si aún no se ha realizado, verde si la asistencia está en orden, naranja si falta pasar lista el mismo día, hay una ausencia justificada o la clase no tiene entrenador, rojo suave si llevan más de 24 horas sin pasar lista o hay una ausencia no justificada, y gris si la clase está cancelada. Al pasar el ratón sale el motivo, las clases con aviso llevan un ⚠ y las canceladas se ven tachadas, y bajo el calendario hay una leyenda. Lo ven administradores, staff y entrenadores (los entrenadores ya pueden ver las clases que se les han cancelado); los alumnos siguen viendo los colores de siempre. Los bonos no influyen en estos colores: se siguen viendo en la ficha de la clase y en la página de bonos."

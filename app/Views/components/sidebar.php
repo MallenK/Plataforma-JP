@@ -152,6 +152,15 @@ if ($isAdmin) {
                     Configuración
                 </a>
             </li>
+            <?php else: ?>
+            <!-- Ajustes personales (solo notificaciones) — resto de roles -->
+            <li class="sidebar-nav-item">
+                <a href="<?= base_url('configuracion/notificaciones') ?>"
+                   class="sidebar-nav-link <?= sidebarActive('/configuracion', $currentUri) ?>">
+                    <i class="bi bi-gear-fill"></i>
+                    Configuración
+                </a>
+            </li>
             <?php endif; ?>
 
         </ul>

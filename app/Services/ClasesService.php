@@ -1255,6 +1255,7 @@ class ClasesService
             'type'      => 'group',
             'title'     => $title,
             'body'      => $body,
+            'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
         ], $recipients);
     }
 

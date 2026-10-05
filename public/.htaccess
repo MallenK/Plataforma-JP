@@ -63,3 +63,18 @@ ServerSignature Off
     php_value max_execution_time  300
     php_value max_input_time      300
 </IfModule>
+
+# ── PWA ──────────────────────────────────────────────────────────────
+# El service worker NUNCA debe cachearse (si no, un deploy tarda días en llegar al usuario).
+<IfModule mod_headers.c>
+    <FilesMatch "^(sw\.js|manifest\.webmanifest|offline\.html)$">
+        Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+    </FilesMatch>
+    <Files "sw.js">
+        Header set Service-Worker-Allowed "/"
+    </Files>
+</IfModule>
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType text/javascript .js
+</IfModule>
