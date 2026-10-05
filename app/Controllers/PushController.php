@@ -80,7 +80,7 @@ class PushController extends BaseController
             'title'     => 'Notificación de prueba',
             'body'      => 'Si ves esto, las notificaciones de este dispositivo funcionan.',
         ];
-        $id = (new \App\Models\NotificationModel())->createWithRecipients($data, [$userId]);
+        $id = (new \App\Models\NotificationModel())->createWithRecipients($data, [$userId], false); // la prueba ignora las preferencias
         if ($id <= 0) {
             return $this->json(['ok' => false, 'error' => 'No se pudo crear la prueba.'], 500);
         }

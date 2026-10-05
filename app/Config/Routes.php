@@ -496,6 +496,14 @@ $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionControlle
 //  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 
+// Preferencias de notificación: personales, TODOS los roles (el resto de /configuracion es solo admin)
+$routes->get('configuracion/notificaciones', 'AjustesNotificacionesController::index', [
+    'filter' => 'auth',
+]);
+$routes->post('configuracion/notificaciones/save', 'AjustesNotificacionesController::save', [
+    'filter' => 'auth',
+]);
+
 $routes->get('configuracion', 'ConfiguracionController::index', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

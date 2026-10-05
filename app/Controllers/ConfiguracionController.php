@@ -41,6 +41,8 @@ class ConfiguracionController extends BaseController
             'bonoTypes'      => $bonoTypes,
             'logs'           => $logs,
             'securityEvents' => $securityEvents,
+            'notifCategories' => \App\Models\NotificationPreferenceModel::categories(),
+            'notifPrefs'      => (new \App\Models\NotificationPreferenceModel())->forUser((int) $this->currentUserId()),
             'isAdmin'      => $isAdmin,
             'isSuperAdmin' => $isSuperAdmin,
             'currentUserId'=> $this->currentUserId(),

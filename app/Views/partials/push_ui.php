@@ -19,8 +19,8 @@ $mode = $mode ?? 'card';
     </div>
 </div>
 <?php else: ?>
-<div class="card mb-3" id="push-card" hidden>
-    <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+<div class="<?= !empty($embedded) ? '' : 'card mb-3' ?>" id="push-card" hidden>
+    <div class="<?= !empty($embedded) ? '' : 'card-body ' ?>d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
             <div class="fw-semibold"><i class="bi bi-phone-vibrate me-2"></i>Avisos en este dispositivo</div>
             <div class="text-muted" style="font-size:13px" id="push-card-status">Comprobando…</div>
