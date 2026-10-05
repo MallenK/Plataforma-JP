@@ -496,6 +496,10 @@ $routes->post('documentacion/folder/(:num)/permissions', 'DocumentacionControlle
 //  POST /configuracion/*        → solo admin y superadmin
 // ------------------------------------------------------------
 
+// Guía de instalación de la app (PWA). /instalar es PÚBLICA a propósito: se manda por WhatsApp a quien aún no tiene sesión.
+$routes->get('instalar', 'InstalarController::publico');
+$routes->get('configuracion/instalar', 'InstalarController::ajustes', ['filter' => 'auth']);
+
 // Preferencias de notificación: personales, TODOS los roles (el resto de /configuracion es solo admin)
 $routes->get('configuracion/notificaciones', 'AjustesNotificacionesController::index', [
     'filter' => 'auth',

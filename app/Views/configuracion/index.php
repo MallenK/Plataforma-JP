@@ -106,6 +106,12 @@ $sec  = $section;        // sección activa
                         </a>
                     </li>
                     <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'instalar' ? 'active' : '' ?>"
+                           data-section="instalar" style="color:var(--text-h)">
+                            <i class="bi bi-download me-2"></i>Instalar app
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
                         <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'web' ? 'active' : '' ?>"
                            data-section="web" style="color:var(--text-h)">
                             <i class="bi bi-globe2 me-2"></i>Web Pública
@@ -592,6 +598,13 @@ $sec  = $section;        // sección activa
         <div id="sec-notificaciones" class="cfg-section <?= $sec !== 'notificaciones' ? 'd-none' : '' ?>">
             <?= view('configuracion/_notificaciones', ['prefs' => $notifPrefs, 'categories' => $notifCategories, 'returnTo' => 'section']) ?>
         </div><!-- /sec-notificaciones -->
+
+        <!-- ────────────────────────────────────────────────────
+             6c. INSTALAR APP (guía por dispositivo + compartir enlace/QR)
+        ──────────────────────────────────────────────────── -->
+        <div id="sec-instalar" class="cfg-section <?= $sec !== 'instalar' ? 'd-none' : '' ?>">
+            <?= view('partials/install_guide', ['share' => true]) ?>
+        </div><!-- /sec-instalar -->
 
 
         <!-- ────────────────────────────────────────────────────
