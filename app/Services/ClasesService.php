@@ -746,6 +746,7 @@ class ClasesService
                 ->select($select)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
                 ->where('NOT EXISTS (SELECT 1 FROM class_session_coaches csc WHERE csc.session_id = cs.id)', null, false)
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
@@ -759,6 +760,7 @@ class ClasesService
                 ->where('csc.user_id', (int) $responsableFilter)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -771,6 +773,7 @@ class ClasesService
                 ->where('csc.user_id', $userId)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
+                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -2777,7 +2780,7 @@ class ClasesService
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Nivel de alerta del calendario (azul / verde / naranja / gris)
+    //  Nivel de alerta del calendario (azul / verde / naranja)
     //  Solo ASISTENCIA y estado de la clase. Los bonos se ven en la ficha de
     //  la clase y en la página de bonos, no aquí.
     // ────────────────────────────────────────────────────────────────
@@ -2785,18 +2788,15 @@ class ClasesService
     public const ALERT_PENDING   = 'pending';
     public const ALERT_OK        = 'ok';
     public const ALERT_WARN      = 'warn';
-    public const ALERT_CANCELLED = 'cancelled';
 
     public const ALERT_COLORS = [
         self::ALERT_PENDING   => '#3b82f6',
         self::ALERT_OK        => '#10b981',
         self::ALERT_WARN      => '#f59e0b',
-        self::ALERT_CANCELLED => '#6b7280',
     ];
 
     /**
      * Calcula el nivel de alerta de una sesión (lógica pura, sin BD).
-     *  - Gris: cancelada.
      *  - Naranja (aviso): el alumno avisó de que no asistirá, hay una ausencia
      *    registrada (justificada o no) o la clase no tiene entrenador.
      *  - Verde: lista pasada.
@@ -2809,10 +2809,6 @@ class ClasesService
     public static function alertLevel(array $in): array
     {
         $status = $in['status'] ?? '';
-
-        if ($status === 'cancelled') {
-            return ['level' => self::ALERT_CANCELLED, 'reason' => 'Clase cancelada'];
-        }
 
         $listTaken = !empty($in['list_taken']) || $status === 'completed';
         $warn      = [];

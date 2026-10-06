@@ -270,7 +270,6 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                     <span><i style="background:#3b82f6"></i>Asignada, sin pasar lista</span>
                     <span><i style="background:#10b981"></i>Lista pasada</span>
                     <span><i style="background:#f59e0b"></i>Aviso (ausencia del alumno, sin entrenador)</span>
-                    <span><i style="background:#6b7280"></i>Cancelada</span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -701,10 +700,10 @@ window.CalOverlap = (function () {
                 out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + (ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : '') + '" ' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + '' + '" ' +
                     'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + (ev.alert_reason ? ' &middot; ' + esc(ev.alert_reason) : '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    (ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn') ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
+                    (ev.alert_level === 'warn' ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
                     '</a>';
             });
         });
@@ -918,7 +917,7 @@ const DBCAL = {
                 const respFull  = ev.responsable_name ? ' · ' + CalOverlap.esc(ev.responsable_name) : '';
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
                 const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + (ev.end||'') + (ev.alert_reason ? ' · ' + CalOverlap.esc(ev.alert_reason) : '');
-                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44${ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : ''}" title="${tooltip}" onclick="event.stopPropagation()">${ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn') ? '&#9888; ' : ''}${ev.start} ${t}${respShort}</a>`;
+                html += `<a href="/clases/${ev.id}" class="cal-chip" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44" title="${tooltip}" onclick="event.stopPropagation()">${ev.alert_level === 'warn' ? '&#9888; ' : ''}${ev.start} ${t}${respShort}</a>`;
             });
             if (evts.length>2) html += `<button type="button" class="cal-more" onclick="event.stopPropagation();CalOverlap.openPopup('${ds}', null)">+${evts.length-2}</button>`;
             html += '</div>';
