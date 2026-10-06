@@ -834,6 +834,7 @@ class ClasesService
                 'has_coach'   => $c !== null,
                 'list_taken'  => !empty($s['lista_pasada_at']),
                 'attendances' => $alertData[$sid]['attendances'] ?? [],
+                'absence_notice' => !empty($alertData[$sid]['absence_notice']),
             ]) : null;
 
             return [
@@ -2776,7 +2777,7 @@ class ClasesService
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Nivel de alerta del calendario (azul / verde / naranja / rojo / gris)
+    //  Nivel de alerta del calendario (azul / verde / naranja / gris)
     //  Solo ASISTENCIA y estado de la clase. Los bonos se ven en la ficha de
     //  la clase y en la página de bonos, no aquí.
     // ────────────────────────────────────────────────────────────────
@@ -2784,85 +2785,68 @@ class ClasesService
     public const ALERT_PENDING   = 'pending';
     public const ALERT_OK        = 'ok';
     public const ALERT_WARN      = 'warn';
-    public const ALERT_DANGER    = 'danger';
     public const ALERT_CANCELLED = 'cancelled';
 
-    /** Rojo deliberadamente suave: avisa sin gritar. */
     public const ALERT_COLORS = [
         self::ALERT_PENDING   => '#3b82f6',
         self::ALERT_OK        => '#10b981',
         self::ALERT_WARN      => '#f59e0b',
-        self::ALERT_DANGER    => '#d9706a',
         self::ALERT_CANCELLED => '#6b7280',
     ];
 
     /**
      * Calcula el nivel de alerta de una sesión (lógica pura, sin BD).
-     * El peor caso gana: danger > warn. Sin nada que señalar:
-     * clase aún no realizada → pending (azul); ya con lista/cerrada → ok (verde).
+     *  - Gris: cancelada.
+     *  - Naranja (aviso): el alumno avisó de que no asistirá, hay una ausencia
+     *    registrada (justificada o no) o la clase no tiene entrenador.
+     *  - Verde: lista pasada.
+     *  - Azul: clase asignada y sin pasar lista (aunque ya haya terminado).
      *
-     * @param array{status:string,date:string,end_time?:?string,has_coach:bool,
-     *              list_taken:bool,attendances?:string[]} $in
-     * @param int|null $now Timestamp "ahora" (inyectable para tests).
+     * @param array{status:string,date?:string,end_time?:?string,has_coach:bool,
+     *              list_taken:bool,attendances?:string[],absence_notice?:bool} $in
      * @return array{level:string,reason:string}
      */
-    public static function alertLevel(array $in, ?int $now = null): array
+    public static function alertLevel(array $in): array
     {
-        $now    = $now ?? time();
         $status = $in['status'] ?? '';
 
         if ($status === 'cancelled') {
             return ['level' => self::ALERT_CANCELLED, 'reason' => 'Clase cancelada'];
         }
 
-        $danger = [];
-        $warn   = [];
+        $listTaken = !empty($in['list_taken']) || $status === 'completed';
+        $warn      = [];
 
-        // Asistencia registrada (solo cuenta si ya se pasó lista).
-        $listTaken   = !empty($in['list_taken']) || $status === 'completed';
-        $attendances = $listTaken ? ($in['attendances'] ?? []) : [];
-        if (in_array('unjustified', $attendances, true)) {
-            $danger[] = 'Ausencia no justificada de algún alumno';
+        if (!empty($in['absence_notice'])) {
+            $warn[] = 'Un alumno ha avisado de que no asistirá';
         }
-        if (in_array('absent', $attendances, true)) {
-            $warn[] = 'Ausencia justificada de algún alumno';
+        // Las ausencias registradas solo cuentan una vez pasada la lista.
+        if ($listTaken) {
+            $attendances = $in['attendances'] ?? [];
+            if (in_array('unjustified', $attendances, true)) {
+                $warn[] = 'Ausencia no justificada de algún alumno';
+            } elseif (in_array('absent', $attendances, true)) {
+                $warn[] = 'Ausencia justificada de algún alumno';
+            }
         }
-
         if (empty($in['has_coach'])) {
             $warn[] = 'Sin entrenador asignado';
         }
 
-        $past = false;
-        if ($status === 'scheduled') {
-            $end   = ($in['date'] ?? '') . ' ' . substr((string) ($in['end_time'] ?: '23:59'), 0, 5) . ':00';
-            $endTs = strtotime($end);
-            $past  = $endTs !== false && $endTs < $now;
-            if ($past && !$listTaken) {
-                if ($now - $endTs > 86400) {
-                    $danger[] = 'Hace más de 24 h que terminó y no se ha pasado lista';
-                } else {
-                    $warn[] = 'La clase ya terminó y falta pasar lista';
-                }
-            }
-        }
-
-        if ($danger) {
-            return ['level' => self::ALERT_DANGER, 'reason' => implode('. ', array_merge($danger, $warn))];
-        }
         if ($warn) {
             return ['level' => self::ALERT_WARN, 'reason' => implode('. ', $warn)];
         }
-        if ($status === 'scheduled' && !$listTaken) {
-            return ['level' => self::ALERT_PENDING, 'reason' => 'Pendiente de realizar'];
+        if ($listTaken) {
+            return ['level' => self::ALERT_OK, 'reason' => 'Lista pasada'];
         }
-        return ['level' => self::ALERT_OK, 'reason' => 'Asistencia en orden'];
+        return ['level' => self::ALERT_PENDING, 'reason' => 'Clase asignada, sin pasar lista'];
     }
 
     /**
-     * Asistencia de los alumnos por sesión para el calendario (1 consulta para todo el mes).
+     * Asistencia y avisos de ausencia por sesión para el calendario (1 consulta para todo el mes).
      *
      * @param int[] $ids
-     * @return array<int,array{attendances:string[]}>
+     * @return array<int,array{attendances?:string[],absence_notice?:bool}>
      */
     private function loadAlertData(array $ids): array
     {
@@ -2871,12 +2855,21 @@ class ClasesService
         }
         $out  = [];
         $rows = $this->db->table('class_session_players')
-            ->select('session_id, attendance')
+            ->select('session_id, attendance, student_noted_at')
             ->whereIn('session_id', $ids)
-            ->where('attendance IS NOT NULL', null, false)
+            ->groupStart()
+                ->where('attendance IS NOT NULL', null, false)
+                ->orWhere('student_noted_at IS NOT NULL', null, false)
+            ->groupEnd()
             ->get()->getResultArray();
         foreach ($rows as $r) {
-            $out[(int) $r['session_id']]['attendances'][] = $r['attendance'];
+            $sid = (int) $r['session_id'];
+            if ($r['attendance'] !== null) {
+                $out[$sid]['attendances'][] = $r['attendance'];
+            }
+            if (!empty($r['student_noted_at'])) {
+                $out[$sid]['absence_notice'] = true;
+            }
         }
         return $out;
     }
