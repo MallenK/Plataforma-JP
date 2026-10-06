@@ -30,9 +30,23 @@ class NotificationModel extends Model
      * Inserta una notificación y sus destinatarios en una sola operación.
      * Devuelve el ID de la notificación creada.
      */
-    public function createWithRecipients(array $data, array $recipientIds): int
+    public function createWithRecipients(array $data, array $recipientIds, bool $respectPreferences = true): int
     {
         $data['created_at'] = date('Y-m-d H:i:s');
+
+        // Preferencias de cada destinatario (Configuración → Notificaciones): quien apagó la
+        // categoría no recibe la notificación en el centro de notificaciones ni, por tanto, el push.
+        $pushRecipientIds = $recipientIds;
+        if ($respectPreferences && $recipientIds !== []) {
+            $muted = (new NotificationPreferenceModel())->mutedFor($recipientIds, NotificationPreferenceModel::categoryFor($data));
+            $recipientIds     = array_values(array_diff($recipientIds, $muted['in_app_off']));
+            $pushRecipientIds = array_values(array_diff($recipientIds, $muted['push_off']));
+
+            // Todos los destinatarios la tienen apagada: no se crea ni una notificación huérfana.
+            if ($recipientIds === []) {
+                return 0;
+            }
+        }
 
         if (isset($data['source_type'])) {
             $data = self::prepareSource($data, $this->db->fieldExists('source_type', $this->table));
@@ -56,6 +70,9 @@ class NotificationModel extends Model
             ], array_unique($recipientIds));
 
             $this->db->table('notification_recipients')->insertBatch($rows);
+
+            // Push real a los dispositivos suscritos (se envía tras la respuesta; no falla nunca).
+            \App\Services\PushService::queueForNotification($notifId, $data, $pushRecipientIds);
         }
 
         return $notifId;

@@ -92,6 +92,27 @@ class NotificacionesController extends BaseController
     }
 
     // ─────────────────────────────────────────────────────────
+    // Destino de las notificaciones push: la marca como leída y salta al
+    // origen (ticket/chat/clase/bono) o, si no tiene, a su detalle.
+    // ─────────────────────────────────────────────────────────
+
+    public function go(int $id): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $userId = (int) $this->currentUserId();
+        $notif  = $this->notifModel->findForViewer($id, $userId);
+        if ($notif === null) {
+            return redirect()->to(base_url('notificaciones'));
+        }
+
+        if ($notif['is_recipient'] && empty($notif['recipient_read_at'])) {
+            $this->notifModel->markRead($userId, $id);
+        }
+
+        $link = \App\Models\NotificationModel::sourceLink($notif);
+        return redirect()->to(base_url($link['path'] ?? 'notificaciones/' . $id));
+    }
+
+    // ─────────────────────────────────────────────────────────
     // AJAX: últimas N notificaciones (campana del navbar)
     // ─────────────────────────────────────────────────────────
 

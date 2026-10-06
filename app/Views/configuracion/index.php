@@ -100,6 +100,12 @@ $sec  = $section;        // sección activa
                         </a>
                     </li>
                     <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'notificaciones' ? 'active' : '' ?>"
+                           data-section="notificaciones" style="color:var(--text-h)">
+                            <i class="bi bi-bell-fill me-2"></i>Notificaciones
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
                         <a href="#" class="sidebar-nav-link cfg-tab <?= $sec === 'web' ? 'active' : '' ?>"
                            data-section="web" style="color:var(--text-h)">
                             <i class="bi bi-globe2 me-2"></i>Web Pública
@@ -578,6 +584,14 @@ $sec  = $section;        // sección activa
             </div>
 
         </div><!-- /sec-seguridad -->
+
+
+        <!-- ────────────────────────────────────────────────────
+             6b. NOTIFICACIONES (preferencias personales)
+        ──────────────────────────────────────────────────── -->
+        <div id="sec-notificaciones" class="cfg-section <?= $sec !== 'notificaciones' ? 'd-none' : '' ?>">
+            <?= view('configuracion/_notificaciones', ['prefs' => $notifPrefs, 'categories' => $notifCategories, 'returnTo' => 'section']) ?>
+        </div><!-- /sec-notificaciones -->
 
 
         <!-- ────────────────────────────────────────────────────

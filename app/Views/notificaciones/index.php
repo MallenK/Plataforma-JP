@@ -33,6 +33,8 @@ $sentNotifications = $sentNotifications ?? [];
     </div>
 </div>
 
+<?= view('partials/push_ui', ['mode' => 'card']) ?>
+
 <?php if ($canSeeSent): ?>
 <!-- Tabs recibidas / enviadas -->
 <ul class="nav nav-tabs mb-0" id="notif-tabs" role="tablist" style="border-bottom:none">
