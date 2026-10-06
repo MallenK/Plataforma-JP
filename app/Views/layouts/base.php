@@ -19,6 +19,8 @@
     <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet">
     <!-- App design system -->
     <link href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>" rel="stylesheet">
+    <!-- Subidas con aviso previo y progreso: DEBE cargarse antes del contenido (scripts inline lo usan) -->
+    <script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 
     <?= $this->renderSection('styles') ?>
 </head>
@@ -41,8 +43,7 @@
 <script src="<?= base_url('assets/js/error-report.js') ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
 <script src="<?= base_url('assets/js/radix-ui.js') ?>"></script>
-<!-- Subidas con aviso previo y progreso / borrado dinámico con animación -->
-<script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
+<!-- Borrado dinámico con animación (attach-upload.js se carga en <head>) -->
 <script src="<?= base_url('assets/js/ajax-delete.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/ajax-delete.js') ?: time() ?>"></script>
 
 <?= $this->renderSection('scripts') ?>

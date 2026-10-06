@@ -34,7 +34,7 @@
 
 <?= view('partials/tutorial_init') ?>
 
-<script src="<?= base_url('assets/js/doc-preview.js') ?>"></script>
+<script src="<?= base_url('assets/js/doc-preview.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/doc-preview.js') ?: time() ?>"></script>
 
 <?php
 /* Modal de reporte — disponible para todos los roles */

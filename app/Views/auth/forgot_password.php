@@ -41,5 +41,5 @@
 <script>
 const CSRF = { name: "<?= csrf_token() ?>", hash: "<?= csrf_hash() ?>" };
 </script>
-<script src="<?= base_url('assets/js/auth.js') ?>"></script>
+<script src="<?= base_url('assets/js/auth.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/auth.js') ?: time() ?>"></script>
 <?= $this->endSection() ?>
