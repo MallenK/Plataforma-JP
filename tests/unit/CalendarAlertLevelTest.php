@@ -5,7 +5,7 @@ use App\Services\ClasesService;
 
 /**
  * Nivel de alerta del calendario: azul (asignada, sin lista) / verde (lista pasada) /
- * naranja (aviso) / gris (cancelada). Solo asistencia y estado de la clase — NO bonos.
+ * naranja (aviso). Solo asistencia y estado de la clase — NO bonos.
  * Lógica pura: ClasesService::alertLevel() no toca la BD.
  */
 final class CalendarAlertLevelTest extends CIUnitTestCase
@@ -67,10 +67,5 @@ final class CalendarAlertLevelTest extends CIUnitTestCase
     public function testNoCoachIsOrange(): void
     {
         $this->assertSame('warn', $this->level(['has_coach' => false]));
-    }
-
-    public function testCancelledIsGreyEvenWithProblems(): void
-    {
-        $this->assertSame('cancelled', $this->level(['status' => 'cancelled', 'has_coach' => false, 'absence_notice' => true]));
     }
 }

@@ -28,6 +28,7 @@ class ClassSessionModel extends Model
 
         return $this->where('session_date >=', $start)
                     ->where('session_date <=', $end)
+                    ->where('status !=', 'cancelled')
                     ->orderBy('session_date', 'ASC')
                     ->orderBy('start_time', 'ASC')
                     ->findAll();
@@ -39,6 +40,7 @@ class ClassSessionModel extends Model
 
         return $this->where('session_date >=', $weekStart)
                     ->where('session_date <=', $end)
+                    ->where('status !=', 'cancelled')
                     ->orderBy('session_date', 'ASC')
                     ->orderBy('start_time', 'ASC')
                     ->findAll();

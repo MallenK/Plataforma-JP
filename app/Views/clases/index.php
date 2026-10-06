@@ -161,7 +161,6 @@
             <span><i style="background:#3b82f6"></i>Asignada, sin pasar lista</span>
             <span><i style="background:#10b981"></i>Lista pasada</span>
             <span><i style="background:#f59e0b"></i>Aviso (ausencia del alumno, sin entrenador)</span>
-            <span><i style="background:#6b7280"></i>Cancelada</span>
         </div>
         <?php endif; ?>
     </div>
@@ -444,10 +443,10 @@ window.CalOverlap = (function () {
                 out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + (ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : '') + '" ' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + '' + '" ' +
                     'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + (ev.alert_reason ? ' &middot; ' + esc(ev.alert_reason) : '') + '" ' +
                     'onclick="event.stopPropagation()">' +
-                    (ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn') ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
+                    (ev.alert_level === 'warn' ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
                     '</a>';
             });
         });
@@ -704,9 +703,9 @@ const CAL = {
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
                 const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + ev.end + (ev.alert_reason ? ' · ' + CalOverlap.esc(ev.alert_reason) : '');
                 html += `<a href="/clases/${ev.id}" class="cal-chip"
-                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44${ev.alert_level === 'cancelled' ? ';text-decoration:line-through' : ''}"
+                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
                             title="${tooltip}">
-                            ${ev.alert_level === 'cancelled' ? '&#10005; ' : (ev.alert_level === 'warn') ? '&#9888; ' : ''}${ev.start} ${t}${respShort}
+                            ${ev.alert_level === 'warn' ? '&#9888; ' : ''}${ev.start} ${t}${respShort}
                          </a>`;
             });
             if (dayEvts.length > 3) {
