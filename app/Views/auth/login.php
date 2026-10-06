@@ -85,7 +85,7 @@ $loginNext = is_safe_redirect_path($rawNext) ? $rawNext : '';
     const LOGIN_NEXT = "<?= esc($loginNext, 'js') ?>";
 </script>
 
-<script src="<?= base_url('assets/js/auth.js') ?>"></script>
+<script src="<?= base_url('assets/js/auth.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/auth.js') ?: time() ?>"></script>
 <?php if (service('request')->getGet('expired')): ?>
 <script>window.showAuthError('Tu sesión ha expirado por inactividad. Inicia sesión de nuevo.');</script>
 <?php endif; ?>
