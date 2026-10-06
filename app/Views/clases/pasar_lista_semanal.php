@@ -237,6 +237,8 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                             <span class="pl-player-name"><?= esc($p['name']) ?></span>
                             <?php if (!empty($p['student_note'])): ?>
                             <span class="pl-player-note"><i class="bi bi-chat-left-text-fill me-1"></i><?= esc($p['student_note']) ?></span>
+                            <?php elseif (!empty($p['student_noted_at'])): ?>
+                            <span class="pl-player-note"><i class="bi bi-chat-left-text-fill me-1"></i>Avisó que no asistirá (sin motivo)</span>
                             <?php endif; ?>
                         </div>
                         <span class="pl-badge" style="background:<?= $m['bg'] ?>;color:<?= $m['fg'] ?>">

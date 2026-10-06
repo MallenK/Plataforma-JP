@@ -342,6 +342,8 @@ $statusHint   = [
                     foreach ($session['players'] as $p):
                         [$aLabel, $aColor, $aIcon] = $attendanceMap[$p['attendance']] ?? $attendanceMap['pending'];
                         $hasNote = !empty($p['student_note']);
+                        // El aviso puede enviarse sin motivo: student_noted_at es lo que lo marca
+                        $hasNotice = $hasNote || !empty($p['student_noted_at']);
                         $profileUrl = $canOpenProfile ? base_url('alumnos/' . (int) $p['user_id']) : null;
                     ?>
                         <tr<?= $profileUrl ? ' class="row-link" data-href="' . esc($profileUrl, 'attr') . '" title="Ver perfil de ' . esc($p['name'], 'attr') . '"' : '' ?>>
@@ -370,11 +372,16 @@ $statusHint   = [
                                 </div>
                             </td>
                             <td style="font-size:12px;max-width:160px">
-                                <?php if ($hasNote): ?>
-                                <span title="<?= esc($p['student_note']) ?>"
+                                <?php if ($hasNotice): ?>
+                                <span title="<?= $hasNote ? esc($p['student_note']) : 'Avisó de que no asistirá, sin indicar motivo' ?>"
                                       style="display:inline-flex;align-items:center;gap:4px;color:#d97706;font-size:12px">
                                     <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <?php if ($hasNote): ?>
                                     <span style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= esc($p['student_note']) ?></span>
+                                    <?php else: ?>
+                                    <span style="font-weight:600">No asistirá</span>
+                                    <span style="font-style:italic;color:var(--text-muted)">(sin motivo)</span>
+                                    <?php endif; ?>
                                 </span>
                                 <div style="font-size:10px;color:var(--text-muted)">
                                     <?= !empty($p['student_noted_at']) ? date('d/m H:i', strtotime($p['student_noted_at'])) : '' ?>
@@ -623,7 +630,7 @@ $statusHint   = [
         $unjustified = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'unjustified'));
         $declined    = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'declined'));
         $pending     = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'pending'));
-        $withNote    = count(array_filter($session['players'], fn($p) => !empty($p['student_note'])));
+        $withNote    = count(array_filter($session['players'], fn($p) => !empty($p['student_note']) || !empty($p['student_noted_at'])));
         ?>
         <div class="card-jp mb-3">
             <div class="card-jp-header">
