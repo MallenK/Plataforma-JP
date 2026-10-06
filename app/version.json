@@ -1,8 +1,8 @@
 [
     {
-        "version": "1.28.1",
-        "date": "2026-10-06 00:00:00",
-        "description": "Nuevos colores del calendario de clases: azul si la clase está asignada y aún no se ha pasado lista, verde cuando la lista está pasada y naranja como aviso (el alumno avisa de que no asistirá, hay una ausencia registrada o la clase no tiene entrenador). Desaparecen el rojo y el gris: las clases canceladas ya no se muestran en el calendario. Incluye también la corrección del aviso de ausencia sin motivo."
+        "version": "1.18.2",
+        "date": "2026-10-07 00:00:00",
+        "description": "Nuevos colores del calendario de clases: azul si la clase está asignada y aún no se ha pasado lista, verde cuando la lista está pasada y naranja como aviso (el alumno avisa de que no asistirá, hay una ausencia registrada o la clase no tiene entrenador). Desaparecen el rojo y el gris: las clases canceladas ya no se muestran en el calendario. Incluye también la corrección del aviso de ausencia sin motivo y dos arreglos de scripts: el botón «Nueva clase» ya no falla por una versión antigua en la caché del navegador, y el formulario rápido de incidencias se carga correctamente."
     },
     {
         "version": "1.18.1",
