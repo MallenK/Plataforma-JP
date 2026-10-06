@@ -1,1 +1,1 @@
-<script src="<?= base_url('assets/js/dashboard.js') ?>"></script>
+<script src="<?= base_url('assets/js/dashboard.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/dashboard.js') ?: time() ?>"></script>

@@ -20,7 +20,7 @@ if (!in_array($tutorialRole, $validRoles)) {
 }
 ?>
 
-<script src="<?= base_url('assets/js/tutorial.js') ?>"></script>
+<script src="<?= base_url('assets/js/tutorial.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/tutorial.js') ?: time() ?>"></script>
 <script>
 (function () {
     const role = <?= json_encode($tutorialRole) ?>;
