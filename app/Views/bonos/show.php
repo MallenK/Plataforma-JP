@@ -164,6 +164,76 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         </div>
         <?php endif; ?>
 
+        <?php if (!$unassigned): ?>
+        <!-- Próximas clases del alumno: clic en una fila para abrirla -->
+        <?php
+        $upItems  = $upcoming['items'] ?? [];
+        $upTotal  = (int) ($upcoming['total'] ?? 0);
+        $dowShort = [1 => 'Lun', 2 => 'Mar', 3 => 'Mié', 4 => 'Jue', 5 => 'Vie', 6 => 'Sáb', 7 => 'Dom'];
+        $covChip  = [
+            'covered'   => ['Cubierta',        '#059669', '#d1fae5'],
+            'at_risk'   => ['Caduca antes',    '#92400e', '#fef3c7'],
+            'uncovered' => ['Sin bono',        '#b45309', '#ffedd5'],
+        ];
+        ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title"><i class="bi bi-calendar-event-fill me-2" style="color:var(--accent)"></i>Próximas clases<?= $upTotal ? ' (' . $upTotal . ')' : '' ?></span>
+            </div>
+            <?php if (empty($upItems)): ?>
+            <div class="card-jp-body">
+                <p style="color:var(--text-muted);font-size:13px;margin:0">Este alumno no tiene clases próximas programadas.</p>
+            </div>
+            <?php else: ?>
+            <div class="table-responsive">
+                <table class="table-jp" style="font-size:13px">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Clase</th>
+                            <th>Entrenador</th>
+                            <th>Bono</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($upItems as $c):
+                        $ts   = strtotime($c['session_date']);
+                        $chip = $covChip[$c['bono_coverage'] ?? ''] ?? null;
+                    ?>
+                    <tr class="row-link" data-href="<?= base_url('clases/' . (int) $c['id']) ?>" style="cursor:pointer">
+                        <td style="white-space:nowrap">
+                            <div style="font-weight:600;color:var(--text-h)"><?= $dowShort[(int) date('N', $ts)] ?> <?= date('d/m/Y', $ts) ?></div>
+                            <div style="font-size:11px;color:var(--text-muted)"><?= substr($c['start_time'], 0, 5) ?>–<?= substr($c['end_time'], 0, 5) ?></div>
+                        </td>
+                        <td>
+                            <a href="<?= base_url('clases/' . (int) $c['id']) ?>" class="row-link-anchor" style="font-weight:600"><?= esc($c['title']) ?></a>
+                            <div style="font-size:11px;color:var(--text-muted)">
+                                <?= ($c['class_format'] ?? '') === 'pareja' ? 'Pareja' : 'Individual' ?>
+                                <?php $place = $c['location_name'] ?: ($c['location_custom'] ?? ''); if ($place): ?> · <?= esc($place) ?><?php endif; ?>
+                            </div>
+                        </td>
+                        <td style="color:var(--text-body)"><?= !empty($c['coach_names']) ? esc($c['coach_names']) : '<span style="color:var(--text-muted)">Sin asignar</span>' ?></td>
+                        <td>
+                            <?php if ($chip): ?>
+                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:<?= $chip[1] ?>;background:<?= $chip[2] ?>"><?= $chip[0] ?></span>
+                            <?php else: ?>
+                            <span style="color:var(--text-muted)">—</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php if ($upTotal > count($upItems)): ?>
+            <div style="padding:10px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)">
+                Mostrando las próximas <?= count($upItems) ?> de <?= $upTotal ?> clases.
+            </div>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
         <?php if (!$unassigned && !empty($bono['expires_at'])): ?>
         <!-- Ampliar caducidad (TICKET-013) -->
         <?php $daysLeft = (int) floor((strtotime($bono['expires_at']) - strtotime($today)) / 86400); ?>
