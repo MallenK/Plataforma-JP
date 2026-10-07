@@ -8,6 +8,7 @@ use App\Models\UserModel;
 use App\Services\BonoControlService;
 use App\Services\BonoCoverageService;
 use App\Services\BonoLedgerService;
+use App\Services\ClasesService;
 
 class BonosController extends BaseController
 {
@@ -144,7 +145,12 @@ class BonosController extends BaseController
             ? ((new BonoCoverageService())->overbooked([(int) $bono['player_id']])[(int) $bono['player_id']] ?? null)
             : null;
 
+        $upcoming = !empty($bono['player_id'])
+            ? (new ClasesService())->getUpcomingSessionsForPlayer((int) $bono['player_id'], 10)
+            : ['items' => [], 'total' => 0];
+
         return view('bonos/show', [
+            'upcoming'   => $upcoming,
             'overbooked' => $overbooked,
             'title'     => 'Bono — JP Preparation',
             'bono'      => $bono,

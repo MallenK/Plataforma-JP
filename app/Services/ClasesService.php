@@ -525,6 +525,42 @@ class ClasesService
     // ────────────────────────────────────────────────────────────────
 
     /**
+     * Próximas clases (programadas, de hoy en adelante) en las que participa un
+     * alumno, con su estado de cobertura de bono. Para la ficha del bono.
+     *
+     * @return array{items:array<int,array>,total:int}
+     */
+    public function getUpcomingSessionsForPlayer(int $playerId, int $limit = 10, ?string $today = null): array
+    {
+        $today = $today ?: date('Y-m-d');
+
+        $base = fn() => $this->db->table('class_session_players csp')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->where('csp.user_id', $playerId)
+            ->where('cs.status', 'scheduled')
+            ->where('cs.session_date >=', $today);
+
+        $total = (int) $base()->countAllResults();
+        if ($total === 0) {
+            return ['items' => [], 'total' => 0];
+        }
+
+        $items = $base()
+            ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time, cs.class_format, cs.location_custom,'
+                . ' csp.attendance, csp.bono_coverage, csp.bono_deducted_at,'
+                . ' (SELECT l.name FROM locations l WHERE l.id = cs.location_id) AS location_name,'
+                . ' (SELECT GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ", ")'
+                . '    FROM class_session_coaches csc JOIN users u ON u.id = csc.user_id'
+                . '   WHERE csc.session_id = cs.id) AS coach_names', false)
+            ->orderBy('cs.session_date', 'ASC')
+            ->orderBy('cs.start_time', 'ASC')
+            ->limit($limit)
+            ->get()->getResultArray();
+
+        return ['items' => $items, 'total' => $total];
+    }
+
+    /**
      * Decide si el calendario debe filtrarse por "solo mis sesiones"
      * (join por class_session_coaches). Coach/staff lo aplican siempre;
      * admin/superadmin solo cuando piden explícitamente "Mis clases"
