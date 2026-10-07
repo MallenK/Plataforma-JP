@@ -48,6 +48,13 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 <?= avatar_html($bono['player_avatar'] ?? null, $bono['player_name'], 'profile-avatar-lg') ?>
                 <div style="font-size:16px;font-weight:700;color:var(--text-h);margin-top:12px"><a href="<?= base_url('alumnos/' . (int) $bono['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($bono['player_name']) ?></a></div>
                 <div style="font-size:13px;color:var(--text-muted)"><?= esc($bono['player_email']) ?></div>
+                <?php if (!empty($overbooked)): ?>
+                <div style="margin-top:8px;display:inline-block;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <?= (int) $overbooked['over'] ?> <?= $overbooked['over'] === 1 ? 'clase' : 'clases' ?> por encima del saldo
+                    <span style="font-weight:400">(<?= (int) $overbooked['scheduled'] ?> programadas<?= $overbooked['debts'] ? ' + ' . (int) $overbooked['debts'] . ' dadas sin bono' : '' ?>, saldo <?= (int) $overbooked['balance'] ?>)</span>
+                </div>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if ($unassigned): ?>

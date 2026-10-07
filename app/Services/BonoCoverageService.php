@@ -423,6 +423,57 @@ class BonoCoverageService
     }
 
     /**
+     * Clases programadas por ENCIMA del saldo de bono, por alumno (aviso simple
+     * en la pantalla de Bonos). over = clases futuras sin descontar + deudas −
+     * saldo vigente; solo se devuelven los alumnos con over > 0.
+     *
+     * @param int[] $playerIds
+     * @return array<int,array{scheduled:int,debts:int,balance:int,over:int}>
+     */
+    public function overbooked(array $playerIds, ?string $today = null): array
+    {
+        $playerIds = array_values(array_unique(array_filter(array_map('intval', $playerIds))));
+        if (empty($playerIds)) {
+            return [];
+        }
+        $today = $today ?: date('Y-m-d');
+
+        $balance = [];
+        foreach ($this->db->table('player_bonos')
+            ->select('player_id, SUM(sessions_remaining) AS n')
+            ->whereIn('player_id', $playerIds)->where('sessions_remaining >', 0)
+            ->groupStart()->where('expires_at IS NULL')->orWhere('expires_at >=', $today)->groupEnd()
+            ->groupBy('player_id')->get()->getResultArray() as $r) {
+            $balance[(int) $r['player_id']] = (int) $r['n'];
+        }
+
+        $scheduled = [];
+        foreach ($this->db->table('class_session_players csp')
+            ->select('csp.user_id, COUNT(*) AS n')
+            ->join('class_sessions cs', 'cs.id = csp.session_id')
+            ->whereIn('csp.user_id', $playerIds)
+            ->where('cs.status', 'scheduled')->where('cs.session_date >=', $today)
+            ->where('csp.bono_deducted_at IS NULL', null, false)
+            ->groupBy('csp.user_id')->get()->getResultArray() as $r) {
+            $scheduled[(int) $r['user_id']] = (int) $r['n'];
+        }
+
+        $debts = $this->debtCounts($playerIds);
+
+        $out = [];
+        foreach ($playerIds as $pid) {
+            $s = $scheduled[$pid] ?? 0;
+            $d = $debts[$pid] ?? 0;
+            $b = $balance[$pid] ?? 0;
+            $over = $s + $d - $b;
+            if ($over > 0) {
+                $out[$pid] = ['scheduled' => $s, 'debts' => $d, 'balance' => $b, 'over' => $over];
+            }
+        }
+        return $out;
+    }
+
+    /**
      * Deudas abiertas por alumno: sesiones ya dadas (cerradas, con asistencia
      * que consume bono) SIN descuento y sin resolver, posteriores al punto de
      * control. Las anteriores no son deuda: se informan aparte como "no reflejadas".

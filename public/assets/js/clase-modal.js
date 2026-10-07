@@ -122,27 +122,28 @@
                 $(id).addEventListener('change', () => { sb.refresh(); refreshCov(); }));
         }
 
-        // Cobertura de bono (TICKET-013): solo para series recurrentes
+        // Aviso de bono (TICKET-013): solo avisa, nunca bloquea
         if (window.BonoCoverage && $('cm-bono-cov')) {
             cov = BonoCoverage.attach({
                 panel:     $('cm-bono-cov'),
-                modeInput: $('cm-bono-mode'),
                 csrfName:  opts.csrfName,
                 csrfHash:  opts.csrfHash,
                 collect: function () {
-                    if (currentType !== 'recurring' || !sb || sb.validate()) return null;
-                    if (!selectedPlayers.size || !selectedDays.size) return null;
+                    if (!selectedPlayers.size) return null;
                     const fd = new FormData();
                     selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
-                    selectedDays.forEach(d => fd.append('recurrence_days[]', d));
-                    sb.appendTo(fd);
+                    if (currentType === 'recurring') {
+                        if (!sb || sb.validate() || !selectedDays.size) return null;
+                        selectedDays.forEach(d => fd.append('recurrence_days[]', d));
+                        sb.appendTo(fd);
+                    } else {
+                        if (!$('cm-date').value) return null;
+                        fd.append('session_date', $('cm-date').value);
+                    }
                     return fd;
-                },
-                // "Ajustar al bono": la serie pasa a tantas clases como caben
-                onFit: function (fit) {
-                    if (fit && fit.count > 0 && sb) sb.setCount(fit.count);
                 }
             });
+            $('cm-date').addEventListener('change', refreshCov);
         }
 
         // Inicializar tipo
@@ -361,7 +362,6 @@
 
         selectedCoaches.forEach((_, id) => fd.append('coach_ids[]', id));
         selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
-        if (currentType === 'recurring' && cov && cov.state.mode) fd.append('coverage_mode', cov.state.mode);
 
         // Botón
         const btn = $('cm-submit');
@@ -380,7 +380,6 @@
             } else {
                 errEl.textContent = data.error || 'Error al crear la sesión.';
                 show(errEl);
-                if (data.needs_decision) refreshCov(); // el saldo cambió o no se había calculado
             }
         } catch (e) {
             errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';

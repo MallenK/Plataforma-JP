@@ -130,6 +130,19 @@ $pageSubtitle = 'Gestión de bonos y membresías';
         <?php endif; ?>
     </div>
     <?php else: ?>
+    <div class="card-jp-body py-3" style="border-bottom:1px solid var(--border)">
+        <div class="search-bar">
+            <div class="input-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="bonos-search" placeholder="Buscar por nombre o email del alumno..." autocomplete="off">
+            </div>
+            <select class="form-control-jp" id="bonos-filter-status" style="width:auto;min-width:160px" aria-label="Estado del alumno">
+                <option value="">Todos los alumnos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos (de baja)</option>
+            </select>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table-jp" id="bonos-table" style="font-size:13px">
             <thead>
@@ -157,7 +170,9 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                 $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
                 $barColor    = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
             ?>
-            <tr>
+            <tr data-name="<?= mb_strtolower(esc($b['player_name'] ?? '')) ?>"
+                data-email="<?= mb_strtolower(esc($b['player_email'] ?? '')) ?>"
+                data-status="<?= esc($b['player_status'] ?? '') ?>">
                 <td style="padding:12px;vertical-align:middle">
                     <?php if ($unassigned): ?>
                     <div style="display:flex;align-items:center;gap:10px">
@@ -170,8 +185,14 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     <div style="display:flex;align-items:center;gap:10px">
                         <?= avatar_html($b['player_avatar'] ?? null, $b['player_name'], 'td-avatar') ?>
                         <div>
-                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><a href="<?= base_url('alumnos/' . (int) $b['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($b['player_name']) ?></a></div>
+                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><a href="<?= base_url('alumnos/' . (int) $b['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($b['player_name']) ?></a><?php if (($b['player_status'] ?? 'active') !== 'active'): ?> <span class="badge-status inactive" style="font-size:10px;margin-left:4px">De baja</span><?php endif; ?></div>
                             <div style="font-size:11px;color:var(--text-muted)"><?= esc($b['player_email']) ?></div>
+                            <?php if (!empty($overbooked[(int) $b['player_id']])): $ob = $overbooked[(int) $b['player_id']]; ?>
+                            <div style="margin-top:3px;font-size:11px;font-weight:600;color:#92400e" title="Clases programadas: <?= (int) $ob['scheduled'] ?><?= $ob['debts'] ? ' + ' . (int) $ob['debts'] . ' dadas sin bono' : '' ?> · saldo vigente: <?= (int) $ob['balance'] ?>">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <?= (int) $ob['over'] ?> <?= $ob['over'] === 1 ? 'clase' : 'clases' ?> por encima del saldo
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -397,7 +418,10 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script>JPList.init({ table: '#bonos-table', key: 'bonos' });</script>
+<script>JPList.init({
+    table: '#bonos-table', key: 'bonos', search: '#bonos-search', searchAttrs: ['name', 'email'],
+    filters: [{ el: '#bonos-filter-status', attr: 'status' }],
+});</script>
 <style>
 .bono-modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;
