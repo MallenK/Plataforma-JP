@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.30.0",
+        "date": "2026-10-07 00:00:00",
+        "description": "En la ficha de cada bono hay un nuevo módulo \"Próximas clases\" con las clases programadas del alumno (fecha, hora, clase, entrenador y si su bono las cubre). Al hacer clic en una fila se abre la ficha de la clase."
+    },
+    {
         "version": "1.29.0",
         "date": "2026-10-07 00:00:00",
         "description": "Crear clases ya no se bloquea por el bono: si las clases que vas a crear superan el saldo de un alumno, aparece una alerta sencilla y puedes crearlas igualmente (sirve para clases puntuales y recurrentes, en el formulario rápido y en el avanzado). Se eliminan los pasos de elegir qué hacer con las clases sin cubrir. En la pantalla de Bonos, el alumno con más clases programadas que saldo muestra un aviso \"N clases por encima del saldo\", y hay un nuevo buscador por nombre o email y un filtro de alumnos activos o inactivos (de baja). Corrige además un error por el que el aviso de bono no llegaba a mostrarse al crear una serie."
