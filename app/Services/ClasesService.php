@@ -243,15 +243,12 @@ class ClasesService
         // bono de cada alumno ANTES de crear nada (ni siquiera la plantilla).
         $dates    = $series['dates'];
         $playerIds = array_values(array_unique(array_filter(array_map('intval', (array) ($data['player_ids'] ?? [])))));
-        $plan = $this->planSeriesCoverage($playerIds, $dates, $data);
+        $plan = $this->planSeriesCoverage($playerIds, $dates);
         if (!$plan['success']) {
             return $plan;
         }
         $dates    = $plan['dates'];
         $coverage = $plan['coverage'];
-        if (empty($dates) && !empty($playerIds)) {
-            return ['success' => false, 'error' => 'Con el saldo de bono actual no se puede crear ninguna sesión de la serie.', 'coverage' => $plan['payload']];
-        }
 
         // Guardar plantilla
         $fmt = in_array($data['class_format'] ?? '', ['individual', 'pareja']) ? $data['class_format'] : 'individual';
@@ -306,8 +303,6 @@ class ClasesService
                 }
             }
         }
-
-        $this->notifySeriesCoverage($coverage, $plan['mode'], count($ids), (string) $data['title'], (int) ($ids[0] ?? 0), $userId);
 
         return [
             'success'  => true,
@@ -429,132 +424,31 @@ class ClasesService
 
     /**
      * Cruza las fechas de una serie con el saldo de bono de sus alumnos
-     * (TICKET-013) y decide qué sesiones se generan.
+     * (TICKET-013). Solo INFORMA: nunca bloquea ni recorta la serie. Se crean
+     * todas las sesiones; las que superan el saldo quedan marcadas
+     * "pendiente de bono" (`bono_coverage = uncovered`) y la pantalla avisa con
+     * una alerta simple antes de crear. Si el alumno asiste sin bono, abre deuda.
      *
-     * Modo (`coverage_mode` en $data):
-     *  - 'limit': cada alumno solo entra en las sesiones que su bono cubre.
-     *  - 'all'  : se crean todas; las no cubiertas quedan "pendientes de bono".
-     *             Solo si `_can_force` (admin/superadmin), con aviso a admins y alumno.
-     *  - sin modo: si algún alumno con bono se queda corto, NO se crea nada y se
-     *             devuelve `needs_decision` + la cobertura para que el admin elija.
-     *
-     * Un alumno que nunca ha tenido bono no se limita (puede pagar fuera de
-     * bono): sus plazas quedan marcadas "sin cubrir" y, si asiste, abrirán deuda.
-     *
-     * @return array{success:bool,...}
+     * @return array{success:bool,dates:string[],coverage:array,players_by_date:array,mode:null,skipped:int,payload:array}
      */
-    private function planSeriesCoverage(array $playerIds, array $dates, array $data): array
+    private function planSeriesCoverage(array $playerIds, array $dates): array
     {
-        $empty = [
+        $plan = [
             'success' => true, 'dates' => $dates, 'coverage' => [], 'players_by_date' => [],
             'mode' => null, 'skipped' => 0, 'payload' => [],
         ];
         if (empty($playerIds) || empty($dates)) {
-            return $empty;
+            return $plan;
         }
 
         $coverage = (new BonoCoverageService($this->db))->analyze($playerIds, $dates);
-        $payload  = BonoCoverageService::payload($coverage);
 
-        $short = array_filter($coverage, fn($c) => !$c['never_had_bono'] && $c['summary']['uncovered'] > 0);
-
-        $mode = $data['coverage_mode'] ?? null;
-        $mode = in_array($mode, ['limit', 'all'], true) ? $mode : null;
-
-        if ($mode === 'all' && empty($data['_can_force'])) {
-            return ['success' => false, 'error' => 'Solo un administrador puede crear sesiones sin cobertura de bono.', 'coverage' => $payload];
-        }
-
-        if (!empty($short) && $mode === null) {
-            $names = implode(', ', array_map(fn($c) => $c['name'], $short));
-            return [
-                'success'        => false,
-                'needs_decision' => true,
-                'error'          => 'El saldo de bono no cubre toda la serie (' . $names . '). Elige cómo continuar.',
-                'coverage'       => $payload,
-            ];
-        }
-
-        $playersByDate = [];
-        $keepDates     = [];
+        $plan['coverage'] = $coverage;
+        $plan['payload']  = BonoCoverageService::payload($coverage);
         foreach ($dates as $date) {
-            $in = [];
-            foreach ($playerIds as $pid) {
-                $c      = $coverage[$pid];
-                $status = $c['allocation'][$date]['status'] ?? BonoCoverageService::UNCOVERED;
-                if ($mode === 'limit' && $status === BonoCoverageService::UNCOVERED && !$c['never_had_bono']) {
-                    continue;
-                }
-                $in[] = $pid;
-            }
-            if (empty($in)) {
-                continue; // nadie cubierto: no se crea la sesión
-            }
-            $keepDates[]            = $date;
-            $playersByDate[$date]   = $in;
+            $plan['players_by_date'][$date] = $playerIds;
         }
-
-        return [
-            'success'         => true,
-            'dates'           => $keepDates,
-            'coverage'        => $coverage,
-            'players_by_date' => $playersByDate,
-            'mode'            => $mode,
-            'skipped'         => count($dates) - count($keepDates),
-            'payload'         => $payload,
-        ];
-    }
-
-    /**
-     * Avisa (notificación interna) al alumno y a los admins cuando una serie
-     * se crea con sesiones sin cobertura de bono forzadas por el admin.
-     */
-    private function notifySeriesCoverage(array $coverage, ?string $mode, int $created, string $title, int $firstSessionId, int $actorId): void
-    {
-        if ($mode !== 'all' || $firstSessionId <= 0) {
-            return;
-        }
-        try {
-            $userModel = new UserModel();
-            $admins    = array_map('intval', array_column(
-                $userModel->select('id')->whereIn('role', ['admin', 'superadmin'])->where('status', 'active')->findAll(),
-                'id'
-            ));
-            $notif = new NotificationModel();
-
-            foreach ($coverage as $pid => $c) {
-                $gap = $c['summary']['uncovered'];
-                if ($gap <= 0) {
-                    continue;
-                }
-                $adminBody  = "Se han creado {$gap} clase(s) de \"{$title}\" para {$c['name']} sin bono que las cubra. "
-                            . "Si viene, quedarán apuntadas como clases sin bono hasta que tenga uno nuevo.";
-                $playerBody = "Tienes {$gap} clase(s) de \"{$title}\" sin bono que las cubra. "
-                            . "Habla con la academia para renovar tu bono.";
-
-                $notif->createWithRecipients([
-                    'sender_id'   => $actorId,
-                    'type'        => 'group',
-                    'title'       => "🎟️ Clases creadas sin bono: {$c['name']}",
-                    'body'        => $adminBody,
-                    'created_at'  => date('Y-m-d H:i:s'),
-                    'source_type' => NotificationModel::SOURCE_CLASS,
-                    'source_id'   => $firstSessionId,
-                ], $admins);
-
-                $notif->createWithRecipients([
-                    'sender_id'   => $actorId,
-                    'type'        => 'individual',
-                    'title'       => '🎟️ Clases sin bono programadas',
-                    'body'        => $playerBody,
-                    'created_at'  => date('Y-m-d H:i:s'),
-                    'source_type' => NotificationModel::SOURCE_CLASS,
-                    'source_id'   => $firstSessionId,
-                ], [(int) $pid]);
-            }
-        } catch (\Throwable $e) {
-            log_message('error', 'notifySeriesCoverage falló: ' . $e->getMessage());
-        }
+        return $plan;
     }
 
     /**

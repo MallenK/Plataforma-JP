@@ -1026,7 +1026,6 @@ $statusHint   = [
 
                 <!-- Cobertura de bono (TICKET-013): cruza la serie con el saldo de cada alumno -->
                 <div id="rn-bono-cov" class="d-none" style="margin-top:14px"></div>
-                <input type="hidden" name="coverage_mode" id="rn-bono-mode" value="">
 
                 <div class="d-flex gap-2 justify-content-end mt-3">
                     <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalRenewSeries')">Cancelar</button>
@@ -1071,7 +1070,6 @@ $statusHint   = [
     if (window.BonoCoverage && rnForm) {
         var rnCov = BonoCoverage.attach({
             panel:     document.getElementById('rn-bono-cov'),
-            modeInput: document.getElementById('rn-bono-mode'),
             csrfName:  <?= json_encode(csrf_token()) ?>,
             csrfHash:  <?= json_encode(csrf_hash()) ?>,
             collect: function () {
@@ -1086,12 +1084,6 @@ $statusHint   = [
                 fd.append('recurrence_start', start);
                 fd.append('recurrence_end', end);
                 return fd;
-            },
-            // "Ajustar al bono": acorta la fecha de fin a la última clase que cabe
-            onFit: function (fit) {
-                if (!fit || !fit.end) return;
-                rnForm.querySelector('[name="recurrence_end"]').value = fit.end;
-                rnCov.refresh();
             }
         });
         rnForm.addEventListener('change', function (e) {
