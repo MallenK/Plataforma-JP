@@ -43,7 +43,10 @@ class BonosController extends BaseController
             default         => $this->bonoModel->getActiveBonosWithDetails(),
         };
 
+        $playerIds = array_values(array_unique(array_filter(array_map(fn($b) => (int) ($b['player_id'] ?? 0), $bonos))));
+
         return view('bonos/index', [
+            'overbooked'   => (new BonoCoverageService())->overbooked($playerIds),
             'title'        => 'Bonos — JP Preparation',
             'pageTitle'    => 'Bonos',
             'pageSubtitle' => 'Membresías y bonos de entrenamiento',
@@ -137,7 +140,12 @@ class BonosController extends BaseController
         $movements = !empty($bono['player_id']) ? (new BonoLedgerService())->forPlayer((int)$bono['player_id'], 60) : [];
         $debts     = !empty($bono['player_id']) ? $control->openDebts((int)$bono['player_id']) : [];
 
+        $overbooked = !empty($bono['player_id'])
+            ? ((new BonoCoverageService())->overbooked([(int) $bono['player_id']])[(int) $bono['player_id']] ?? null)
+            : null;
+
         return view('bonos/show', [
+            'overbooked' => $overbooked,
             'title'     => 'Bono — JP Preparation',
             'bono'      => $bono,
             'movements' => $movements,
@@ -435,7 +443,7 @@ class BonosController extends BaseController
         $db    = \Config\Database::connect();
 
         return $db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('users u',       'u.id = pb.player_id', 'left')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->groupStart()
@@ -451,7 +459,7 @@ class BonosController extends BaseController
         $db = \Config\Database::connect();
 
         return $db->table('player_bonos pb')
-            ->select('pb.*, NULL AS player_name, NULL AS player_email, NULL AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, NULL AS player_name, NULL AS player_email, NULL AS player_avatar, NULL AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.player_id IS NULL')
             ->orderBy('pb.created_at', 'DESC')
@@ -466,7 +474,7 @@ class BonosController extends BaseController
         $db = \Config\Database::connect();
 
         return $db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('users u',       'u.id = pb.player_id')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.sessions_remaining', 0)
@@ -483,7 +491,7 @@ class BonosController extends BaseController
         $db    = \Config\Database::connect();
 
         return $db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('users u',       'u.id = pb.player_id')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.sessions_remaining', 1)
@@ -499,7 +507,7 @@ class BonosController extends BaseController
     {
         $db  = \Config\Database::connect();
         $row = $db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original, bt.price AS bono_price, u2.name AS created_by_name')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original, bt.price AS bono_price, u2.name AS created_by_name')
             ->join('users u',       'u.id = pb.player_id', 'left')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->join('users u2',      'u2.id = pb.created_by', 'left')

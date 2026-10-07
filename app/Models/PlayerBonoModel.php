@@ -126,7 +126,7 @@ class PlayerBonoModel extends Model
     public function getAllWithDetails(): array
     {
         return $this->db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('users u',       'u.id = pb.player_id', 'left')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->orderBy('pb.created_at', 'DESC')
@@ -141,7 +141,7 @@ class PlayerBonoModel extends Model
         $today = date('Y-m-d');
 
         return $this->db->table('player_bonos pb')
-            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
             ->join('users u',       'u.id = pb.player_id', 'left')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.sessions_remaining >', 0)

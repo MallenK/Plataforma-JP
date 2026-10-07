@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.29.0",
+        "date": "2026-10-07 00:00:00",
+        "description": "Crear clases ya no se bloquea por el bono: si las clases que vas a crear superan el saldo de un alumno, aparece una alerta sencilla y puedes crearlas igualmente (sirve para clases puntuales y recurrentes, en el formulario rápido y en el avanzado). Se eliminan los pasos de elegir qué hacer con las clases sin cubrir. En la pantalla de Bonos, el alumno con más clases programadas que saldo muestra un aviso \"N clases por encima del saldo\", y hay un nuevo buscador por nombre o email y un filtro de alumnos activos o inactivos (de baja). Corrige además un error por el que el aviso de bono no llegaba a mostrarse al crear una serie."
+    },
+    {
         "version": "1.28.1",
         "date": "2026-10-06 00:00:00",
         "description": "Nuevos colores del calendario de clases: azul si la clase está asignada y aún no se ha pasado lista, verde cuando la lista está pasada y naranja como aviso (el alumno avisa de que no asistirá, hay una ausencia registrada o la clase no tiene entrenador). Desaparecen el rojo y el gris: las clases canceladas ya no se muestran en el calendario."

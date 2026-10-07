@@ -289,7 +289,6 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
             <div class="card-jp mb-3 d-none" id="bono-cov-card">
                 <div class="card-jp-body">
                     <div id="bono-cov"></div>
-                    <input type="hidden" name="coverage_mode" id="bono-cov-mode" value="">
                 </div>
             </div>
             <?php endif; ?>
@@ -561,8 +560,8 @@ function toggleType(v) {
     }
 }
 // ── Cobertura de bono (TICKET-013) ────────────────────────────
-// Solo al crear una serie: cruza alumnos × fechas con su saldo y deja
-// elegir qué hacer con las sesiones sin cobertura antes de guardar.
+// Cruza alumnos × fechas con su saldo y AVISA si se superará el bono.
+// Solo informa: la clase se puede crear igualmente.
 let bonoCov = null;
 let seriesBuilder = null;
 
@@ -586,7 +585,6 @@ seriesBuilder = SeriesBuilder.attach({
 });
 bonoCov = BonoCoverage.attach({
     panel:     document.getElementById('bono-cov'),
-    modeInput: document.getElementById('bono-cov-mode'),
     csrfName:  <?= json_encode(csrf_token()) ?>,
     csrfHash:  <?= json_encode(csrf_hash()) ?>,
     onChange:  function () {
@@ -595,24 +593,27 @@ bonoCov = BonoCoverage.attach({
     },
     collect: function () {
         const form = document.getElementById('claseForm');
-        if ((form.querySelector('[name="type"]:checked')?.value || 'single') !== 'recurring') return null;
         const players = form.querySelectorAll('[name="player_ids[]"]');
-        const days    = recurDays();
-        if (!players.length || !days.length || seriesBuilder.validate()) return null;
+        if (!players.length) return null;
         const fd = new FormData();
         players.forEach(p => fd.append('player_ids[]', p.value));
-        days.forEach(d => fd.append('recurrence_days[]', d));
-        seriesBuilder.appendTo(fd);
+        if ((form.querySelector('[name="type"]:checked')?.value || 'single') === 'recurring') {
+            const days = recurDays();
+            if (!days.length || seriesBuilder.validate()) return null;
+            days.forEach(d => fd.append('recurrence_days[]', d));
+            seriesBuilder.appendTo(fd);
+        } else {
+            const date = form.querySelector('#block-single [name="session_date"]')?.value;
+            if (!date) return null;
+            fd.append('session_date', date);
+        }
         return fd;
-    },
-    // "Ajustar al bono": la serie pasa a tantas clases como caben
-    onFit: function (fit) {
-        if (fit && fit.count > 0) seriesBuilder.setCount(fit.count);
     }
 });
 document.getElementById('claseForm').addEventListener('change', function (e) {
     const n = e.target && e.target.name;
     if (n === 'recurrence_days[]' || n === 'start_time' || n === 'end_time') { seriesBuilder.refresh(); bonoCov.refresh(); }
+    if (n === 'session_date') bonoCov.refresh();
     if (n === 'type') { seriesBuilder.syncDisabled(); bonoCov.refresh(); }
 });
 <?php endif; ?>

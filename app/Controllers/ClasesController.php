@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Services\BonoCoverageService;
 use App\Services\ClasesService;
 
 class ClasesController extends BaseController
@@ -127,19 +128,6 @@ class ClasesController extends BaseController
     }
 
     /**
-     * POST + flag de si quien crea puede forzar sesiones sin cobertura de
-     * bono (TICKET-013). Solo admin/superadmin; staff/coach quedan limitados
-     * al saldo. El flag se calcula aquí, nunca viene del formulario.
-     */
-    private function postWithCoverageFlags(): array
-    {
-        $post = (array) $this->request->getPost();
-        unset($post['_can_force']);
-        $post['_can_force'] = in_array(session('role'), ['superadmin', 'admin'], true);
-        return $post;
-    }
-
-    /**
      * AJAX: vista previa de cobertura de bono para una serie/sesión
      * (TICKET-013). Cruza alumnos × fechas con su saldo, sin crear nada.
      */
@@ -164,36 +152,18 @@ class ClasesController extends BaseController
 
         $coverage = (new BonoCoverageService())->analyze($playerIds, $dates);
 
-        // "Ajustar al bono": nº de clases que caben para TODOS los alumnos con bono
-        // (el que menos saldo libre tiene manda) y la fecha de la última.
-        $fit = null;
-        $withBono = array_filter($coverage, fn($c) => !$c['never_had_bono']);
-        // (no tiene sentido con calendario clase a clase: ahí cada fecha la pone el admin)
-        if (!empty($withBono) && $series['ok'] && empty($series['schedule'])) {
-            $n = min(array_map(fn($c) => $c['free_slots'], $withBono));
-            $n = min($n, BonoCoverageService::MAX_SERIES_SESSIONS);
-            if ($n > 0) {
-                $fitDates = BonoCoverageService::recurrenceDatesByCount((array) $post['recurrence_days'], (string) $post['recurrence_start'], $n);
-                $fit = ['count' => count($fitDates), 'end' => end($fitDates) ?: null];
-            } else {
-                $fit = ['count' => 0, 'end' => null];
-            }
-        }
-
         return $this->response->setJSON([
-            'success'   => true,
-            'dates'     => $dates,
-            'fit'       => $fit,
-            'players'   => BonoCoverageService::payload($coverage),
-            'can_force' => in_array(session('role'), ['superadmin', 'admin'], true),
-            'csrf'      => csrf_hash(),
+            'success' => true,
+            'dates'   => $dates,
+            'players' => BonoCoverageService::payload($coverage),
+            'csrf'    => csrf_hash(),
         ]);
     }
 
     public function store()
     {
         $result = $this->clasesService->createSession(
-            $this->postWithCoverageFlags(),
+            (array) $this->request->getPost(),
             $this->currentUserId()
         );
 
@@ -218,7 +188,7 @@ class ClasesController extends BaseController
     public function quickCreate()
     {
         $result = $this->clasesService->quickCreate(
-            $this->postWithCoverageFlags(),
+            (array) $this->request->getPost(),
             $this->currentUserId()
         );
 
@@ -483,7 +453,7 @@ class ClasesController extends BaseController
      */
     public function renewSeries(int $classId)
     {
-        $result = $this->clasesService->renewRecurringClass($classId, $this->postWithCoverageFlags(), $this->currentUserId());
+        $result = $this->clasesService->renewRecurringClass($classId, (array) $this->request->getPost(), $this->currentUserId());
 
         if (!$result['success']) {
             session()->setFlashdata('error', $result['error'] ?? 'No se pudo continuar la clase recurrente.');
