@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.31.1",
+        "date": "2026-10-09 00:00:00",
+        "description": "Clases recurrentes: nuevo módulo «Clase recurrente» en la columna derecha de la clase para añadir N clases más con el mismo formato (misma hora, lugar, responsable y alumnos), que se encadenan tras la última de la serie. Al eliminar una clase de una serie puedes elegir entre eliminar solo esa clase o toda la serie (se devuelven los bonos ya descontados). Columna derecha reordenada: responsable, añadir alumno, campo, resumen de asistencia y clase recurrente."
+    },
+    {
         "version": "1.31.0",
         "date": "2026-10-08 00:00:00",
         "description": "Un alumno puede tener varios bonos con saldo a la vez y ahora eliges tú siempre de cuál se descuenta cada sesión (nada se descuenta solo). En Pasar lista, administración ve todos los bonos del alumno y un botón por bono («Descontar de…»); si te equivocas, «Pasar a otro bono» mueve la sesión sin devolverla. Coach y staff ya no ven ni mueven bonos. Las clases dadas sin bono dejan de saldarse solas: se saldan a mano, con confirmación, con el bono que elijas (desde la ficha del bono o clase a clase en «Clases sin bono»). La pantalla de Bonos muestra una fila por alumno con todos sus bonos y un filtro de un solo bono / varios; la ficha del alumno y el panel del alumno muestran el saldo total y cada bono (desaparece el concepto de bono activo o en cola). Nuevo Informe de bonos por alumno (saldo, importes emitidos y pendientes, clases programadas, clases sin bono y alertas). Avisos de bono bajo por bono y, con varios bonos, también por alumno cuando el saldo total llega a 1 o 0. La validez por defecto de un tipo de bono nuevo pasa a 365 días."
