@@ -24,6 +24,9 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <span class="badge-status inactive" style="font-size:10px;margin-left:4px"><?= (int) $debtCount ?></span>
             <?php endif; ?>
         </a>
+        <a href="<?= base_url('bonos/informe') ?>" class="btn-jp btn-jp-secondary" style="text-decoration:none">
+            <i class="bi bi-bar-chart-line-fill"></i> Informe
+        </a>
         <button class="btn-jp btn-jp-secondary" onclick="openModalTipos()">
             <i class="bi bi-grid-fill"></i> Tipos de bono
         </button>
@@ -96,7 +99,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
     <div class="card-jp-header">
         <span class="card-jp-title">
             <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>
-            Bonos emitidos
+            Bonos por alumno
         </span>
         <div class="calendar-view-tabs">
             <a href="?filtro=activos"       class="calendar-view-tab <?= ($filtro ?? 'activos') === 'activos'       ? 'active' : '' ?>" style="text-decoration:none">Activos</a>
@@ -141,6 +144,11 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                 <option value="active">Activos</option>
                 <option value="inactive">Inactivos (de baja)</option>
             </select>
+            <select class="form-control-jp" id="bonos-filter-multi" style="width:auto;min-width:170px" aria-label="Número de bonos">
+                <option value="">Todos (1 o varios bonos)</option>
+                <option value="single">Un solo bono</option>
+                <option value="multi">Varios bonos con saldo</option>
+            </select>
         </div>
     </div>
     <div class="table-responsive">
@@ -148,10 +156,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <thead>
                 <tr>
                     <th>Jugador</th>
-                    <th>Tipo de bono</th>
-                    <th>Sesiones</th>
-                    <th>Inicio</th>
-                    <th>Caduca</th>
+                    <th>Bonos</th>
+                    <th>Saldo total</th>
                     <th>Estado</th>
                     <th class="no-sort no-label">Acciones</th>
                 </tr>
@@ -159,20 +165,41 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <tbody>
             <?php
             $today = date('Y-m-d');
-            foreach ($bonos as $b):
-                $remaining   = (int)$b['sessions_remaining'];
-                $total       = (int)$b['sessions_total'];
-                $pct         = $total > 0 ? round(($remaining / $total) * 100) : 0;
-                $expired     = !empty($b['expires_at']) && $b['expires_at'] < $today;
-                $isActive    = $remaining > 0 && !$expired;
-                $unassigned  = empty($b['player_id']);
-                $statusCls   = $isActive ? 'active' : 'inactive';
-                $statusLbl   = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
-                $barColor    = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
+
+            // Una fila por ALUMNO con todos sus bonos dentro; los bonos sin
+            // dueño van cada uno en su fila.
+            $rows = [];
+            foreach ($bonos as $b) {
+                $key = !empty($b['player_id']) ? 'p' . (int) $b['player_id'] : 'u' . (int) $b['id'];
+                $rows[$key] ??= ['first' => $b, 'bonos' => []];
+                $rows[$key]['bonos'][] = $b;
+            }
+
+            foreach ($rows as $row):
+                $first      = $row['first'];
+                $unassigned = empty($first['player_id']);
+                $usable     = 0;     // bonos con saldo y vigentes
+                $saldo      = 0;     // sesiones disponibles entre todos ellos
+                $lastExp    = null;
+                foreach ($row['bonos'] as $b) {
+                    $rem = (int) $b['sessions_remaining'];
+                    $exp = !empty($b['expires_at']) && $b['expires_at'] < $today;
+                    if ($rem > 0 && !$exp) { $usable++; $saldo += $rem; }
+                }
+                $multi = $usable >= 2;
+                if ($unassigned) {
+                    $statusLbl = 'Sin asignar';
+                } elseif ($usable > 0) {
+                    $statusLbl = $multi ? $usable . ' bonos con saldo' : 'Con saldo';
+                } else {
+                    $allEmpty  = array_sum(array_map(fn($b) => (int) $b['sessions_remaining'], $row['bonos'])) === 0;
+                    $statusLbl = $allEmpty ? 'Agotado' : 'Vencido';
+                }
             ?>
-            <tr data-name="<?= mb_strtolower(esc($b['player_name'] ?? '')) ?>"
-                data-email="<?= mb_strtolower(esc($b['player_email'] ?? '')) ?>"
-                data-status="<?= esc($b['player_status'] ?? '') ?>">
+            <tr data-name="<?= mb_strtolower(esc($first['player_name'] ?? '')) ?>"
+                data-email="<?= mb_strtolower(esc($first['player_email'] ?? '')) ?>"
+                data-status="<?= esc($first['player_status'] ?? '') ?>"
+                data-multi="<?= $multi ? 'multi' : 'single' ?>">
                 <td style="padding:12px;vertical-align:middle">
                     <?php if ($unassigned): ?>
                     <div style="display:flex;align-items:center;gap:10px">
@@ -183,12 +210,12 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     </div>
                     <?php else: ?>
                     <div style="display:flex;align-items:center;gap:10px">
-                        <?= avatar_html($b['player_avatar'] ?? null, $b['player_name'], 'td-avatar') ?>
+                        <?= avatar_html($first['player_avatar'] ?? null, $first['player_name'], 'td-avatar') ?>
                         <div>
-                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><a href="<?= base_url('alumnos/' . (int) $b['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($b['player_name']) ?></a><?php if (($b['player_status'] ?? 'active') !== 'active'): ?> <span class="badge-status inactive" style="font-size:10px;margin-left:4px">De baja</span><?php endif; ?></div>
-                            <div style="font-size:11px;color:var(--text-muted)"><?= esc($b['player_email']) ?></div>
-                            <?php if (!empty($overbooked[(int) $b['player_id']])): $ob = $overbooked[(int) $b['player_id']]; ?>
-                            <div style="margin-top:3px;font-size:11px;font-weight:600;color:#92400e" title="Clases programadas: <?= (int) $ob['scheduled'] ?><?= $ob['debts'] ? ' + ' . (int) $ob['debts'] . ' dadas sin bono' : '' ?> · saldo vigente: <?= (int) $ob['balance'] ?>">
+                            <div style="font-weight:600;font-size:13px;color:var(--text-h)"><a href="<?= base_url('alumnos/' . (int) $first['player_id']) ?>" class="row-link-anchor" title="Ver perfil del alumno"><?= esc($first['player_name']) ?></a><?php if (($first['player_status'] ?? 'active') !== 'active'): ?> <span class="badge-status inactive" style="font-size:10px;margin-left:4px">De baja</span><?php endif; ?></div>
+                            <div style="font-size:11px;color:var(--text-muted)"><?= esc($first['player_email']) ?></div>
+                            <?php if (!empty($overbooked[(int) $first['player_id']])): $ob = $overbooked[(int) $first['player_id']]; ?>
+                            <div style="margin-top:3px;font-size:11px;font-weight:600;color:#92400e" title="Clases programadas: <?= (int) $ob['scheduled'] ?><?= $ob['debts'] ? ' + ' . (int) $ob['debts'] . ' dadas sin bono' : '' ?> · saldo vigente (todos sus bonos): <?= (int) $ob['balance'] ?>">
                                 <i class="bi bi-exclamation-triangle-fill"></i>
                                 <?= (int) $ob['over'] ?> <?= $ob['over'] === 1 ? 'clase' : 'clases' ?> por encima del saldo
                             </div>
@@ -197,28 +224,58 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     </div>
                     <?php endif; ?>
                 </td>
-                <td style="padding:12px;vertical-align:middle;font-weight:600"><?= esc($b['bono_name']) ?></td>
                 <td style="padding:12px;vertical-align:middle">
-                    <div style="font-weight:700;color:var(--text-h)"><?= $remaining ?> / <?= $total ?></div>
-                    <div style="margin-top:4px;height:5px;background:var(--border);border-radius:3px;width:80px">
-                        <div style="height:5px;border-radius:3px;background:<?= $barColor ?>;width:<?= $pct ?>%"></div>
-                    </div>
+                    <?php foreach ($row['bonos'] as $b):
+                        $remaining = (int) $b['sessions_remaining'];
+                        $total     = (int) $b['sessions_total'];
+                        $pct       = $total > 0 ? round(($remaining / $total) * 100) : 0;
+                        $expired   = !empty($b['expires_at']) && $b['expires_at'] < $today;
+                        $isUsable  = $remaining > 0 && !$expired;
+                        $barColor  = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
+                        $lineLbl   = $remaining === 0 ? 'Agotado' : ($expired ? 'Vencido' : null);
+                    ?>
+                    <a href="<?= base_url('bonos/' . (int) $b['id']) ?>" class="bono-mini" style="display:block;text-decoration:none;color:inherit;padding:6px 0;<?= count($row['bonos']) > 1 ? 'border-bottom:1px dashed var(--border);' : '' ?><?= $isUsable ? '' : 'opacity:.6' ?>" title="Ver este bono">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            <span style="font-weight:600;color:var(--text-h)"><?= esc($b['bono_name']) ?></span>
+                            <span style="font-weight:700;color:var(--text-h)"><?= $remaining ?>/<?= $total ?></span>
+                            <?php if ($lineLbl): ?><span class="badge-status inactive" style="font-size:10px"><?= $lineLbl ?></span><?php endif; ?>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+                            <div style="height:5px;background:var(--border);border-radius:3px;width:80px;flex-shrink:0">
+                                <div style="height:5px;border-radius:3px;background:<?= $barColor ?>;width:<?= $pct ?>%"></div>
+                            </div>
+                            <span style="font-size:11px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>">
+                                <?= !empty($b['expires_at']) ? 'caduca ' . date('d/m/Y', strtotime($b['expires_at'])) : 'sin caducidad' ?>
+                            </span>
+                        </div>
+                    </a>
+                    <?php endforeach; ?>
                 </td>
-                <td data-order="<?= esc($b['start_date']) ?>" style="padding:12px;vertical-align:middle;font-size:12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($b['start_date'])) ?></td>
-                <td data-order="<?= esc($b['expires_at'] ?? '') ?>" style="padding:12px;vertical-align:middle;font-size:12px;color:<?= $expired ? 'var(--danger)' : 'var(--text-muted)' ?>">
-                    <?= !empty($b['expires_at']) ? date('d/m/Y', strtotime($b['expires_at'])) : '—' ?>
+                <td data-order="<?= (int) $saldo ?>" style="padding:12px;vertical-align:middle">
+                    <?php if ($unassigned): ?>
+                    <span style="color:var(--text-muted)">—</span>
+                    <?php else: ?>
+                    <div style="font-weight:800;font-size:16px;color:<?= $saldo <= 1 ? 'var(--danger)' : 'var(--text-h)' ?>"><?= (int) $saldo ?></div>
+                    <div style="font-size:11px;color:var(--text-muted)">sesión<?= $saldo === 1 ? '' : 'es' ?> en total</div>
+                    <?php endif; ?>
                 </td>
                 <td style="padding:12px;vertical-align:middle">
                     <?php if ($unassigned): ?>
                     <span class="badge-status" style="background:#7c3aed22;color:#7c3aed;border:1px solid #7c3aed44"><?= $statusLbl ?></span>
                     <?php else: ?>
-                    <span class="badge-status <?= $statusCls ?>"><?= $statusLbl ?></span>
+                    <span class="badge-status <?= $usable > 0 ? 'active' : 'inactive' ?>"><?= $statusLbl ?></span>
                     <?php endif; ?>
                 </td>
                 <td style="padding:12px;vertical-align:middle">
-                    <a href="<?= base_url('bonos/' . $b['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
+                    <?php if ($unassigned || count($row['bonos']) === 1): ?>
+                    <a href="<?= base_url('bonos/' . (int) $first['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm" title="Ver bono">
                         <i class="bi bi-eye"></i>
                     </a>
+                    <?php else: ?>
+                    <a href="<?= base_url('alumnos/' . (int) $first['player_id']) ?>#bonos" class="btn-jp btn-jp-secondary btn-jp-sm" title="Ver todos los bonos del alumno">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </a>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -274,7 +331,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                             <i class="bi bi-info-circle-fill me-2"></i>
                             <strong>Este jugador ya tiene un bono activo.</strong>
                             <span id="alertaBonoDetalles"></span>
-                            <br><small>El nuevo bono quedará <strong>encolado</strong> y se activará automáticamente cuando el actual se agote o caduque.</small>
+                            <br><small>Podrá tener varios bonos a la vez: al pasar lista se <strong>elige a mano</strong> de cuál se descuenta cada sesión.</small>
                         </div>
                         <div id="alertaDeudas" style="display:none;margin-top:8px;padding:10px 12px;background:#fee2e2;border-radius:6px;font-size:13px;color:#7f1d1d;border:1px solid #fca5a5">
                             <i class="bi bi-receipt me-2"></i><strong id="alertaDeudasTitulo"></strong>
@@ -402,7 +459,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                 </div>
                 <div class="col-12" id="tipoFieldValidity">
                     <label class="form-label">Validez (días) <span style="color:var(--danger)">*</span></label>
-                    <input type="number" id="tipoFormValidity" class="form-control-jp" min="1" value="90">
+                    <input type="number" id="tipoFormValidity" class="form-control-jp" min="1" value="365">
                 </div>
             </div>
         </div>
@@ -420,7 +477,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <?= $this->section('scripts') ?>
 <script>JPList.init({
     table: '#bonos-table', key: 'bonos', search: '#bonos-search', searchAttrs: ['name', 'email'],
-    filters: [{ el: '#bonos-filter-status', attr: 'status' }],
+    filters: [{ el: '#bonos-filter-status', attr: 'status' }, { el: '#bonos-filter-multi', attr: 'multi' }],
 });</script>
 <style>
 .bono-modal-overlay {
@@ -448,6 +505,15 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <script>
 let BONOS_CSRF_NAME = '<?= csrf_token() ?>';
 let BONOS_CSRF_HASH = '<?= csrf_hash() ?>';
+
+// Desde la ficha del alumno ("Asignar bono"): abre el modal con el alumno ya elegido.
+document.addEventListener('DOMContentLoaded', function () {
+    var nuevo = new URLSearchParams(location.search).get('nuevo');
+    if (!nuevo) return;
+    openModalEmitir();
+    var sel = document.querySelector('#modalEmitirBono select[name="player_id"]');
+    if (sel) { sel.value = nuevo; sel.dispatchEvent(new Event('change')); }
+});
 
 function openModalEmitir() {
     document.getElementById('modalEmitirBono').classList.remove('d-none');
@@ -490,7 +556,7 @@ function openModalFormTipo(mode, id, name) {
     if (!isEdit) {
         document.getElementById('tipoFormSessions').value = '10';
         document.getElementById('tipoFormPrice').value    = '0.00';
-        document.getElementById('tipoFormValidity').value = '90';
+        document.getElementById('tipoFormValidity').value = '365';
     }
 
     document.getElementById('modalFormTipo').classList.remove('d-none');
@@ -696,8 +762,8 @@ async function checkBonoActivo(playerId) {
         deudasJugador = Array.isArray(data.debts) ? data.debts : [];
         renderAvisoDeudas();
         if (data.has_active && data.bono) {
-            const b = data.bono;
-            detalles.textContent = ` (${b.bono_name ?? ''}: ${b.sessions_remaining} sesiones restantes)`;
+            const lista = Array.isArray(data.bonos) && data.bonos.length ? data.bonos : [data.bono];
+            detalles.textContent = ' (' + lista.map(b => `${b.bono_name ?? ''}: ${b.sessions_remaining} sesiones`).join(' · ') + ')';
             alertEl.style.display = 'block';
             btnEmitir.disabled = false;
         } else {

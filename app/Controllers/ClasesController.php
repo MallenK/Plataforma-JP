@@ -825,6 +825,12 @@ class ClasesController extends BaseController
     //  Pasar Lista — por sesión individual (único punto de marcado)
     // ────────────────────────────────────────────────────────────────
 
+    /** ¿Puede el usuario actual ver y mover bonos? Solo admin y superadmin. */
+    protected function canManageBonos(): bool
+    {
+        return in_array($this->currentRole(), ['superadmin', 'admin'], true);
+    }
+
     public function pasarLista(int $id)
     {
         $session = $this->clasesService->getSession($id);
@@ -851,10 +857,24 @@ class ClasesController extends BaseController
                 ->get()->getRowArray();
 
             $p['active_bono'] = $activeBono ?: null;
+
+            // Todos los bonos que puede gastar (si hay varios, se elige a mano).
+            $p['usable_bonos'] = $bonoModel->getUsableBonos((int)$p['user_id']);
+
+            // Bono del que ya se descontó esta sesión (para mostrarlo / cambiarlo).
+            $p['deducted_bono'] = null;
+            if (!empty($p['bono_deducted_at']) && !empty($p['bono_deducted_from_id'])) {
+                $p['deducted_bono'] = $db->table('player_bonos pb')
+                    ->select('pb.id, bt.name AS bono_name')
+                    ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
+                    ->where('pb.id', (int)$p['bono_deducted_from_id'])
+                    ->get()->getRowArray() ?: null;
+            }
         }
         unset($p);
 
         return view('clases/pasar_lista', [
+            'canBonos'       => $this->canManageBonos(),
             'title'          => 'Pasar lista — ' . $session['title'],
             'pageTitle'      => 'Pasar lista',
             'pageSubtitle'   => $session['title'],
@@ -905,7 +925,7 @@ class ClasesController extends BaseController
         }
 
         $msg = 'Asistencia guardada' . $cierre . '.';
-        if ($devueltos > 0) {
+        if ($devueltos > 0 && $this->canManageBonos()) {
             $msg .= " Se {$this->plural($devueltos, 'ha devuelto', 'han devuelto')} {$devueltos} "
                   . $this->plural($devueltos, 'bono', 'bonos')
                   . " al cambiar la asistencia de {$this->plural($devueltos, 'un alumno', 'varios alumnos')}.";
@@ -924,9 +944,27 @@ class ClasesController extends BaseController
         // cuerpo: descontar bono también la registra.
         $want = $this->request->getJsonVar('attendance')
             ?? $this->request->getPost('attendance');
+        // Bono elegido a mano (obligatorio si el alumno tiene varios).
+        $bonoId = (int) ($this->request->getJsonVar('bono_id') ?? $this->request->getPost('bono_id'));
 
         return $this->response->setJSON(
-            $this->clasesService->deductBonoForPlayer($id, $playerId, $want ? (string) $want : null)
+            $this->clasesService->deductBonoForPlayer($id, $playerId, $want ? (string) $want : null, $bonoId ?: null)
+        );
+    }
+
+    /** Cambiar el bono del que se descontó la sesión de un alumno. */
+    public function changeBono(int $id, int $playerId)
+    {
+        if ($resp = $this->guardBonoAction($id)) {
+            return $resp;
+        }
+        $bonoId = (int) ($this->request->getJsonVar('bono_id') ?? $this->request->getPost('bono_id'));
+        if ($bonoId <= 0) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Elige el bono al que quieres pasar la sesión.']);
+        }
+
+        return $this->response->setJSON(
+            $this->clasesService->changeBonoForPlayer($id, $playerId, $bonoId)
         );
     }
 
@@ -947,6 +985,12 @@ class ClasesController extends BaseController
      */
     private function guardBonoAction(int $sessionId)
     {
+        // Los bonos los gestiona solo la administración: coach y staff pasan lista
+        // (asistencia) pero no ven ni mueven bonos.
+        if (!$this->canManageBonos()) {
+            return $this->response->setStatusCode(403)
+                ->setJSON(['success' => false, 'error' => 'Solo administración puede gestionar los bonos.']);
+        }
         $session = $this->clasesService->getSession($sessionId);
         if (!$session) {
             return $this->response->setStatusCode(404)

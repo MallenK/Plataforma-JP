@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.31.0",
+        "date": "2026-10-08 00:00:00",
+        "description": "Un alumno puede tener varios bonos con saldo a la vez y ahora eliges tú siempre de cuál se descuenta cada sesión (nada se descuenta solo). En Pasar lista, administración ve todos los bonos del alumno y un botón por bono («Descontar de…»); si te equivocas, «Pasar a otro bono» mueve la sesión sin devolverla. Coach y staff ya no ven ni mueven bonos. Las clases dadas sin bono dejan de saldarse solas: se saldan a mano, con confirmación, con el bono que elijas (desde la ficha del bono o clase a clase en «Clases sin bono»). La pantalla de Bonos muestra una fila por alumno con todos sus bonos y un filtro de un solo bono / varios; la ficha del alumno y el panel del alumno muestran el saldo total y cada bono (desaparece el concepto de bono activo o en cola). Nuevo Informe de bonos por alumno (saldo, importes emitidos y pendientes, clases programadas, clases sin bono y alertas). Avisos de bono bajo por bono y, con varios bonos, también por alumno cuando el saldo total llega a 1 o 0. La validez por defecto de un tipo de bono nuevo pasa a 365 días."
+    },
+    {
         "version": "1.30.0",
         "date": "2026-10-07 00:00:00",
         "description": "En la ficha de cada bono hay un nuevo módulo \"Próximas clases\" con las clases programadas del alumno (fecha, hora, clase, entrenador y si su bono las cubre). Al hacer clic en una fila se abre la ficha de la clase."

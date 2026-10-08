@@ -822,7 +822,7 @@ $sec  = $section;        // sección activa
                     </div>
                     <div class="col-4">
                         <label class="form-label">Validez (días) <span style="color:var(--danger)">*</span></label>
-                        <input type="number" name="validity_days" id="bonoValidez" class="form-control-jp" required min="1" placeholder="90">
+                        <input type="number" name="validity_days" id="bonoValidez" class="form-control-jp" required min="1" value="365" placeholder="365">
                     </div>
                     <div class="col-12">
                         <label class="form-label">Estado</label>

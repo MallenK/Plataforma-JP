@@ -73,9 +73,9 @@ final class ClasesAlertasTest extends CIUnitTestCase
 
         $this->assertStringContainsString('function askConfirm(opts)', $v);
         $this->assertStringContainsString('RadixUI.confirm(opts)', $v);
-        // los 3 puntos que antes eran confirm() nativo
-        $this->assertSame(3, substr_count($v, 'askConfirm({'),
-            'descontar bono, devolver bono y "guardar y cerrar" usan askConfirm');
+        // los puntos que antes eran confirm() nativo
+        $this->assertSame(4, substr_count($v, 'askConfirm({'),
+            'descontar bono, cambiar bono, devolver bono y "guardar y cerrar" usan askConfirm');
         // "guardar y cerrar": cuando hay avisos, se bloquea el envío y se
         // re-envía sólo si el usuario confirma.
         $this->assertStringContainsString('e.preventDefault();', $v);

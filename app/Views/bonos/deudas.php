@@ -25,8 +25,9 @@ $th = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:u
         <strong><i class="bi bi-info-circle me-1" style="color:var(--accent)"></i>¿Qué es esto?</strong>
         <p style="margin:8px 0 6px">Aquí aparecen las clases que un alumno <strong>ya ha dado sin tener bono</strong>. Cada una se llama «deuda de sesión».</p>
         <p style="margin:0 0 8px"><strong>Ejemplo:</strong> Ana viene a su clase del martes y no tiene bono. La clase queda apuntada aquí.
-            Cuando le asignes un bono de 10 sesiones, el sistema descuenta <strong>1 sesión por cada clase pendiente</strong> (le quedan 9) y te avisa.</p>
+            Cuando le asignes un bono, <strong>no se descuenta nada solo</strong>: tú decides con qué bono saldar cada clase (1 sesión por clase). Si Ana tiene varios bonos, eliges con cuál.</p>
         <ul style="margin:0;padding-left:18px">
+            <li><strong>Saldar con un bono:</strong> descuenta 1 sesión del bono que elijas, pide confirmación y queda registrado.</li>
             <li><strong>Ya está pagada:</strong> esa clase se cobró de otra forma (efectivo, Bizum…). No se descuenta ningún bono.</li>
             <li><strong>No cobrar:</strong> no se le va a cobrar (clase de prueba, regalo, error…).</li>
             <li>Siempre queda anotado quién lo hizo y cuándo. No se borra nada.</li>
@@ -55,6 +56,24 @@ $th = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:u
                 <td style="padding:8px 12px"><a href="<?= base_url('clases/' . (int) $d['session_id']) ?>" class="row-link-anchor"><?= esc($d['title']) ?></a></td>
                 <td style="padding:8px 12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($d['session_date'])) ?></td>
                 <td style="padding:8px 12px">
+                    <?php if (!empty($d['usable_bonos'])): ?>
+                    <div class="d-flex gap-1 flex-wrap mb-2">
+                        <?php foreach ($d['usable_bonos'] as $ub): ?>
+                        <form action="<?= base_url('bonos/deudas/' . (int) $d['csp_id'] . '/saldar') ?>" method="post" style="margin:0"
+                              data-ru-confirm="¿Saldar esta clase con «<?= esc($ub['bono_name'] ?? 'este bono', 'attr') ?>»?"
+                              data-ru-confirm-desc="Se descuenta 1 sesión de ese bono (le quedan <?= (int) $ub['sessions_remaining'] - 1 ?>). Queda registrado."
+                              data-ru-confirm-label="Saldar">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="bono_id" value="<?= (int) $ub['id'] ?>">
+                            <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
+                                <i class="bi bi-ticket-perforated-fill me-1"></i>Saldar con «<?= esc($ub['bono_name'] ?? 'Bono') ?>» (<?= (int) $ub['sessions_remaining'] ?>)
+                            </button>
+                        </form>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Sin bono con saldo: asígnale uno para poder saldarla.</div>
+                    <?php endif; ?>
                     <form action="<?= base_url('bonos/deudas/' . (int) $d['csp_id'] . '/resolver') ?>" method="post" class="d-flex gap-1 flex-wrap">
                         <?= csrf_field() ?>
                         <input type="text" name="note" class="form-control-jp" placeholder="Nota (opcional)" style="width:150px;padding:4px 8px;font-size:12px" maxlength="120">

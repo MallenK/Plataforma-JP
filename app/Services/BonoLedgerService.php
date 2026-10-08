@@ -56,8 +56,9 @@ class BonoLedgerService
      *
      * @param int         $delta variación de sesiones del bono (+/-); 0 si no cambia el saldo
      * @param int|null    $actor null = usuario de la sesión actual
+     * @param int|null    $relatedBonoId el otro bono implicado (p. ej. en un cambio de bono)
      */
-    public static function log(int $playerId, string $type, int $delta = 0, ?int $bonoId = null, ?int $sessionId = null, ?string $note = null, ?int $actor = null): void
+    public static function log(int $playerId, string $type, int $delta = 0, ?int $bonoId = null, ?int $sessionId = null, ?string $note = null, ?int $actor = null, ?int $relatedBonoId = null): void
     {
         if ($playerId <= 0) {
             return;
@@ -66,6 +67,7 @@ class BonoLedgerService
             \Config\Database::connect()->table('bono_movements')->insert([
                 'player_id'  => $playerId,
                 'bono_id'    => $bonoId ?: null,
+                'related_bono_id' => $relatedBonoId ?: null,
                 'session_id' => $sessionId ?: null,
                 'type'       => $type,
                 'delta'      => $delta,
@@ -87,8 +89,10 @@ class BonoLedgerService
     {
         try {
             return \Config\Database::connect()->table('bono_movements bm')
-                ->select('bm.*, u.name AS actor_name, cs.title AS session_title, cs.session_date')
+                ->select('bm.*, u.name AS actor_name, cs.title AS session_title, cs.session_date, bt.name AS bono_name')
                 ->join('users u', 'u.id = bm.actor_id', 'left')
+                ->join('player_bonos pb', 'pb.id = bm.bono_id', 'left')
+                ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
                 ->join('class_sessions cs', 'cs.id = bm.session_id', 'left')
                 ->where('bm.player_id', $playerId)
                 ->orderBy('bm.id', 'DESC')
