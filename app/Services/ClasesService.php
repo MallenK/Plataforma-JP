@@ -2063,6 +2063,128 @@ class ClasesService
     }
 
     /**
+     * Amplía una clase recurrente con N sesiones más IDÉNTICAS a la última
+     * (misma hora, lugar, objetivo, formato, responsable y alumnos), siguiendo
+     * los mismos días de la semana a partir del día siguiente a la última
+     * sesión. Se quedan dentro de la misma serie (mismo `class_id`).
+     *
+     * @return array{success:bool,error?:string,count?:int,id?:int,class_id?:int,coverage?:array}
+     */
+    public function addSessionsToSeries(int $classId, int $count, int $userId): array
+    {
+        $class = $this->classModel->find($classId);
+        if (!$class || ($class['type'] ?? '') !== 'recurring') {
+            return ['success' => false, 'error' => 'La clase no es una serie recurrente.'];
+        }
+        if ($count < 1 || $count > BonoCoverageService::MAX_SERIES_SESSIONS) {
+            return ['success' => false, 'error' => 'Indica entre 1 y ' . BonoCoverageService::MAX_SERIES_SESSIONS . ' clases.'];
+        }
+
+        // Plantilla = última sesión de la serie (la más reciente no cancelada;
+        // si todas están canceladas, la más reciente sin más).
+        $ref = $this->db->table('class_sessions')
+            ->where('class_id', $classId)->where('status !=', 'cancelled')
+            ->orderBy('session_date', 'DESC')->orderBy('id', 'DESC')->get(1)->getRowArray()
+            ?? $this->db->table('class_sessions')
+                ->where('class_id', $classId)
+                ->orderBy('session_date', 'DESC')->orderBy('id', 'DESC')->get(1)->getRowArray();
+        if (!$ref) {
+            return ['success' => false, 'error' => 'La serie no tiene ninguna sesión que copiar.'];
+        }
+        $last = $this->db->table('class_sessions')->selectMax('session_date', 'd')
+            ->where('class_id', $classId)->get()->getRowArray();
+        $lastDate = (string) ($last['d'] ?? $ref['session_date']);
+
+        $days = json_decode((string) $class['recurrence_days'], true);
+        $days = is_array($days) ? array_values(array_filter(array_map('intval', $days))) : [];
+        if (empty($days)) {
+            $days = [(int) date('N', strtotime($ref['session_date']))];
+        }
+
+        $from  = (new \DateTime($lastDate))->modify('+1 day')->format('Y-m-d');
+        $dates = BonoCoverageService::recurrenceDatesLimited($days, $from, $count, null);
+        if (empty($dates)) {
+            return ['success' => false, 'error' => 'No se han podido calcular las fechas de las nuevas clases.'];
+        }
+
+        $coachIds  = array_map('intval', array_column($this->getCoachesForSession((int) $ref['id']), 'user_id'));
+        $playerRows = $this->getPlayersForSession((int) $ref['id']);
+        $playerIds = array_map('intval', array_column($playerRows, 'user_id'));
+        $coachMap  = [];
+        foreach ($playerRows as $pr) {
+            if (!empty($pr['coach_id'])) {
+                $coachMap[(int) $pr['user_id']] = (int) $pr['coach_id'];
+            }
+        }
+
+        $plan = $this->planSeriesCoverage($playerIds, $dates);
+        $coverage = $plan['coverage'];
+
+        $ids = [];
+        foreach ($dates as $date) {
+            $sid = $this->insertSingle([
+                'title'           => $ref['title'],
+                'session_date'    => $date,
+                'start_time'      => substr((string) $ref['start_time'], 0, 5),
+                'end_time'        => substr((string) $ref['end_time'], 0, 5),
+                'location_id'     => $ref['location_id'],
+                'location_custom' => $ref['location_custom'],
+                'focus'           => $ref['focus'],
+                'class_format'    => $ref['class_format'],
+                'session_type'    => $ref['session_type'],
+            ], $userId, $classId);
+            if (!$sid) {
+                continue;
+            }
+            $ids[] = $sid;
+            $this->syncCoaches($sid, $coachIds);
+            $this->syncPlayers($sid, $playerIds, $coachMap, false);
+            foreach ($playerIds as $pid) {
+                $status = $coverage[$pid]['allocation'][$date]['status'] ?? null;
+                if ($status !== null) {
+                    $this->db->table('class_session_players')
+                        ->where('session_id', $sid)->where('user_id', $pid)
+                        ->update(['bono_coverage' => $status]);
+                }
+            }
+        }
+
+        if (empty($ids)) {
+            return ['success' => false, 'error' => 'No se pudo crear ninguna clase.'];
+        }
+
+        // La serie ahora llega hasta la última fecha creada.
+        $this->classModel->update($classId, ['recurrence_end' => end($dates)]);
+
+        return ['success' => true, 'count' => count($ids), 'id' => $ids[0], 'class_id' => $classId, 'coverage' => $plan['payload']];
+    }
+
+    /**
+     * Elimina TODA la serie recurrente: sesiones de la clase (devolviendo los
+     * bonos ya descontados), plantilla y enlaces de renovación.
+     *
+     * @return array{sessions:int,refunded:int}
+     */
+    public function deleteSeries(int $classId): array
+    {
+        $ids = array_map('intval', array_column(
+            $this->db->table('class_sessions')->select('id')->where('class_id', $classId)->get()->getResultArray(),
+            'id'
+        ));
+        $refunded = 0;
+        foreach ($ids as $sid) {
+            $refunded += $this->countDeductedBonos($sid);
+            $this->deleteSession($sid);
+        }
+        // Desenlazar renovaciones que apuntaran a esta plantilla.
+        $this->db->table('classes')->where('renewed_to_class_id', $classId)->update(['renewed_to_class_id' => null]);
+        $this->db->table('classes')->where('renewed_from_class_id', $classId)->update(['renewed_from_class_id' => null]);
+        $this->classModel->delete($classId);
+
+        return ['sessions' => count($ids), 'refunded' => $refunded];
+    }
+
+    /**
      * Cambia el responsable (entrenador o staff) de una sesión y, si se
      * pide, de las siguientes sesiones programadas de la misma clase
      * recurrente (TICKET-011 — "controlar el calendario de los

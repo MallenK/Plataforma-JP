@@ -249,7 +249,7 @@ class ClasesController extends BaseController
         $renewalDefaults = null;
         if ($canRenewSeries && !empty($session['class_id'])) {
             $seriesRenewal = $this->clasesService->getRecurringSeriesStatus((int) $session['class_id']);
-            if ($seriesRenewal !== null && $seriesRenewal['is_last'] && !$seriesRenewal['already_renewed']) {
+            if ($seriesRenewal !== null && !$seriesRenewal['already_renewed']) {
                 $renewalDefaults = $this->clasesService->getRenewalDefaults((int) $session['class_id']);
             }
         }
@@ -377,6 +377,36 @@ class ClasesController extends BaseController
         return redirect()->to('/clases');
     }
 
+    /**
+     * Elimina TODA la serie recurrente a la que pertenece la sesión $id
+     * (sesiones + plantilla), devolviendo los bonos ya descontados.
+     */
+    public function destroySeries(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para eliminar esta serie.');
+            return redirect()->to('/clases');
+        }
+        if (empty($session['class_id'])) {
+            session()->setFlashdata('error', 'Esta clase no pertenece a una serie recurrente.');
+            return redirect()->to('/clases/' . $id);
+        }
+
+        $r = $this->clasesService->deleteSeries((int) $session['class_id']);
+
+        $msg = "Serie eliminada: {$r['sessions']} " . $this->plural($r['sessions'], 'sesión', 'sesiones') . '.';
+        if ($r['refunded'] > 0) {
+            $msg .= " Se {$this->plural($r['refunded'], 'ha devuelto', 'han devuelto')} {$r['refunded']} "
+                  . $this->plural($r['refunded'], 'bono ya descontado', 'bonos ya descontados') . '.';
+        }
+        session()->setFlashdata('success', $msg);
+        return redirect()->to('/clases');
+    }
+
     /** Ayudante mínimo de plural para los mensajes flash. */
     protected function plural(int $n, string $one, string $many): string
     {
@@ -465,6 +495,29 @@ class ClasesController extends BaseController
             $result['count'] === 1 ? 'ha creado' : 'han creado',
             $result['count'],
             $result['count'] === 1 ? '' : 'es'
+        ));
+        return redirect()->to('/clases/' . $result['id']);
+    }
+
+    /**
+     * Añade N clases idénticas a la última de la serie (mismos días, hora,
+     * lugar, responsable y alumnos). $classId es classes.id.
+     */
+    public function extendSeries(int $classId)
+    {
+        $count  = (int) $this->request->getPost('count');
+        $result = $this->clasesService->addSessionsToSeries($classId, $count, $this->currentUserId());
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se pudieron añadir las clases.');
+            return redirect()->back();
+        }
+
+        session()->setFlashdata('success', sprintf(
+            'Se %s %d clase%s más a la serie.',
+            $result['count'] === 1 ? 'ha añadido' : 'han añadido',
+            $result['count'],
+            $result['count'] === 1 ? '' : 's'
         ));
         return redirect()->to('/clases/' . $result['id']);
     }

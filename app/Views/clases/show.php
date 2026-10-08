@@ -91,15 +91,27 @@ $statusHint   = [
         </form>
         <?php endif; ?>
         <?php if ($isAdminRole): ?>
+        <?php $inSeries = !empty($session['class_id']); ?>
         <form action="/clases/<?= $session['id'] ?>/eliminar" method="POST" style="margin:0"
-              data-ru-confirm="¿Eliminar esta sesión permanentemente?"
-              data-ru-confirm-desc="No se puede deshacer: se borra la sesión con toda su asistencia y observaciones."
+              data-ru-confirm="<?= $inSeries ? '¿Eliminar solo esta clase?' : '¿Eliminar esta sesión permanentemente?' ?>"
+              data-ru-confirm-desc="<?= $inSeries ? 'Solo se borra esta clase (con su asistencia y observaciones); el resto de la serie no se toca.' : 'No se puede deshacer: se borra la sesión con toda su asistencia y observaciones.' ?>"
               data-ru-confirm-label="Eliminar" data-ru-confirm-danger>
             <?= csrf_field() ?>
             <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">
-                <i class="bi bi-trash3-fill me-1"></i>Eliminar
+                <i class="bi bi-trash3-fill me-1"></i><?= $inSeries ? 'Eliminar esta clase' : 'Eliminar' ?>
             </button>
         </form>
+        <?php if ($inSeries): ?>
+        <form action="/clases/<?= $session['id'] ?>/eliminar-serie" method="POST" style="margin:0"
+              data-ru-confirm="¿Eliminar TODA la serie recurrente?"
+              data-ru-confirm-desc="No se puede deshacer: se borran todas las clases de la serie (pasadas y futuras) con su asistencia y observaciones. Los bonos ya descontados se devuelven."
+              data-ru-confirm-label="Eliminar serie" data-ru-confirm-danger>
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">
+                <i class="bi bi-trash3-fill me-1"></i>Eliminar toda la serie
+            </button>
+        </form>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
     <?php endif; ?>
@@ -112,8 +124,8 @@ $statusHint   = [
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
 <?php endif; ?>
 
-<!-- ── Continuar clase recurrente (serie a punto de terminar / terminada) ── -->
-<?php if (!empty($renewalDefaults)): ?>
+<!-- ── Ampliar / continuar clase recurrente ── -->
+<?php if (!empty($seriesRenewal) && !$seriesRenewal['already_renewed'] || !empty($renewalDefaults)): ?>
 <div class="card-jp mb-3" style="border-left:3px solid #7c3aed">
     <div class="card-jp-body d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
@@ -121,15 +133,26 @@ $statusHint   = [
                 <i class="bi bi-arrow-repeat me-2" style="color:#7c3aed"></i>
                 <?= $seriesRenewal['scheduled_remaining'] === 0
                     ? 'Esta clase recurrente ha terminado'
-                    : 'Última sesión programada de esta clase recurrente' ?>
+                    : 'Clase recurrente · quedan ' . (int) $seriesRenewal['scheduled_remaining'] . ' programada' . ($seriesRenewal['scheduled_remaining'] === 1 ? '' : 's') ?>
             </div>
             <div style="font-size:13px;color:var(--text-muted)">
-                ¿Quieres continuar con las mismas sesiones el mes que viene? Podrás editarlo todo antes de confirmar.
+                Añade más clases con el mismo formato (misma hora, lugar, responsable y alumnos).
             </div>
         </div>
-        <button type="button" class="btn-jp btn-jp-primary btn-jp-sm" onclick="openModal('modalRenewSeries')">
-            <i class="bi bi-arrow-repeat me-1"></i>Continuar clases recurrentes
-        </button>
+        <form action="/clases/plantilla/<?= (int) $session['class_id'] ?>/ampliar" method="POST" class="d-flex align-items-center gap-2 flex-wrap" style="margin:0">
+            <?= csrf_field() ?>
+            <label for="extend-count" style="font-size:13px;margin:0">Añadir</label>
+            <input type="number" id="extend-count" name="count" class="form-control-jp" value="4" min="1" max="60" style="width:80px" required>
+            <span style="font-size:13px">clases</span>
+            <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
+                <i class="bi bi-plus-circle me-1"></i>Añadir
+            </button>
+            <?php if (!empty($renewalDefaults)): ?>
+            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalRenewSeries')">
+                <i class="bi bi-sliders me-1"></i>Continuar con otros datos
+            </button>
+            <?php endif; ?>
+        </form>
     </div>
 </div>
 <?php endif; ?>
