@@ -211,6 +211,11 @@ $routes->post('clases/plantilla/(:num)/renovar', 'ClasesController::renewSeries/
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+// Ampliar la serie con N clases idénticas a la última (admin/superadmin).
+$routes->post('clases/plantilla/(:num)/ampliar', 'ClasesController::extendSeries/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 // ── Quick-create (AJAX, desde Dashboard / Torneos) ─────────
 $routes->post('clases/rapida', 'ClasesController::quickCreate', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
@@ -237,6 +242,10 @@ $routes->post('clases/(:num)/cancelar', 'ClasesController::cancel/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/eliminar', 'ClasesController::destroy/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff'],
+]);
+
+$routes->post('clases/(:num)/eliminar-serie', 'ClasesController::destroySeries/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
 
