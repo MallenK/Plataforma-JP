@@ -56,11 +56,12 @@ final class ClasesAlertasTest extends CIUnitTestCase
     {
         $v = file_get_contents(APPPATH . 'Views/clases/show.php');
 
-        // Los 5 formularios sensibles llevan data-ru-confirm (cancelar,
-        // reabrir, reactivar, eliminar sesión, quitar entrenador/staff).
-        $this->assertSame(5, substr_count($v, 'data-ru-confirm='),
-            'deben ser 5 formularios con data-ru-confirm en show.php');
-        $this->assertStringContainsString('data-ru-confirm="¿Eliminar esta sesión permanentemente?"', $v);
+        // Los 6 formularios sensibles llevan data-ru-confirm (cancelar,
+        // reabrir, reactivar, eliminar sesión, eliminar serie, quitar entrenador/staff).
+        $this->assertSame(6, substr_count($v, 'data-ru-confirm='),
+            'deben ser 6 formularios con data-ru-confirm en show.php');
+        $this->assertStringContainsString('¿Eliminar esta sesión permanentemente?', $v);
+        $this->assertStringContainsString('¿Eliminar TODA la serie recurrente?', $v);
         $this->assertStringContainsString('data-ru-confirm-danger', $v);
         $this->assertStringContainsString('data-ru-confirm-label="Reabrir"', $v);
         // acción destructiva = botón danger + confirmación danger
