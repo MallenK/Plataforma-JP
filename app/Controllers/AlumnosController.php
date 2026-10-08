@@ -168,7 +168,13 @@ class AlumnosController extends BaseController
         $role  = $this->currentRole();
         $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
 
+        // Bonos: los ven administración y el propio alumno; el libro de movimientos, solo administración.
+        $isAdmin = in_array($role, ['superadmin', 'admin'], true);
+
         return view('alumnos/show', [
+            'canSeeBonos'   => $isAdmin || ($role === 'player' && (int) $this->currentUserId() === $id),
+            'canManageBonos' => $isAdmin,
+            'bonoMovements' => $isAdmin ? (new \App\Services\BonoLedgerService())->forPlayer($id, 8) : [],
             'title'       => $alumno['name'] . ' — JP Preparation',
             'alumno'      => $alumno,
             'annotations' => $annotationModel->getForPlayer($id, $types),

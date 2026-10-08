@@ -313,9 +313,13 @@ final class ClasesServiceTest extends CIUnitTestCase
     {
         $m = new \ReflectionMethod(ClasesService::class, 'deductBonoForPlayer');
         $params = $m->getParameters();
-        $this->assertCount(3, $params);
+        $this->assertCount(4, $params);
         $this->assertSame('wantAttendance', $params[2]->getName());
         $this->assertTrue($params[2]->isOptional());
         $this->assertTrue($params[2]->allowsNull());
+        // Bono elegido a mano: opcional con un solo bono, obligatorio de facto con varios.
+        $this->assertSame('bonoId', $params[3]->getName());
+        $this->assertTrue($params[3]->isOptional());
+        $this->assertTrue($params[3]->allowsNull());
     }
 }

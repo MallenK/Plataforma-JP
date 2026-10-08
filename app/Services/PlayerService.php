@@ -235,9 +235,6 @@ class PlayerService
             ->orderBy('pb.created_at', 'DESC')
             ->get()->getResultArray();
 
-        // ID del bono activo (oldest FIFO con sesiones y no caducado).
-        $activeBono = (new \App\Models\PlayerBonoModel())->getActiveBono($id);
-        $user['active_bono_id'] = $activeBono['id'] ?? null;
 
         // Métricas — últimas 5 desde player_metrics (tabla ya existente,
         // ver app/Models/PlayerMetricModel.php para la plantilla del JSON).
@@ -245,10 +242,13 @@ class PlayerService
 
         // Asistencia reciente: clases COMPLETADAS donde el alumno tiene fila en class_session_players
         $user['attendance'] = $db->table('class_session_players csp')
-            ->select('csp.attendance, csp.post_obs, cs.id AS session_id, cs.title AS session_title,
+            ->select('csp.attendance, csp.post_obs, csp.bono_deducted_at, csp.bono_deducted_from_id, btd.name AS bono_name,
+                      cs.id AS session_id, cs.title AS session_title,
                       cs.session_date, cs.start_time, cs.end_time, l.name AS location_name, cs.location_custom')
             ->join('class_sessions cs', 'cs.id = csp.session_id')
             ->join('locations l', 'l.id = cs.location_id', 'left')
+            ->join('player_bonos pbd', 'pbd.id = csp.bono_deducted_from_id', 'left')
+            ->join('bono_types btd', 'btd.id = pbd.bono_type_id', 'left')
             ->where('csp.user_id', $id)
             ->where('cs.status', 'completed')
             ->orderBy('cs.session_date', 'DESC')

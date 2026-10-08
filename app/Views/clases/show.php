@@ -687,7 +687,7 @@ $statusHint   = [
                         <strong><?= $pending ?></strong>
                     </div>
                     <?php endif; ?>
-                    <?php if ($bonoDeducted): ?>
+                    <?php if ($bonoDeducted && in_array(session('role'), ['superadmin', 'admin'], true)): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;margin-top:2px">
                         <span style="color:var(--text-muted)"><i class="bi bi-ticket-perforated-fill me-1"></i>Bono descontado</span>
                         <strong style="color:var(--text-h)"><?= $bonoDeducted ?></strong>

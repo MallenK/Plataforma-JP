@@ -330,7 +330,7 @@ class ConfiguracionService
             'name'          => $data['name'],
             'sessions'      => (int)($data['sessions']      ?? 10),
             'price'         => (float)($data['price']       ?? 0),
-            'validity_days' => (int)($data['validity_days'] ?? 90),
+            'validity_days' => (int)($data['validity_days'] ?? 365),
             'active'        => isset($data['active']) ? (int)$data['active'] : 1,
         ]);
 
@@ -347,7 +347,7 @@ class ConfiguracionService
             'name'          => $data['name'],
             'sessions'      => (int)($data['sessions']      ?? 10),
             'price'         => (float)($data['price']       ?? 0),
-            'validity_days' => (int)($data['validity_days'] ?? 90),
+            'validity_days' => (int)($data['validity_days'] ?? 365),
             'active'        => isset($data['active']) ? (int)$data['active'] : 1,
         ]);
     }

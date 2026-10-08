@@ -78,7 +78,7 @@ class BonosController extends BaseController
             return redirect()->to('/bonos');
         }
 
-        $willBeQueued = $playerId && $this->bonoModel->hasActiveBono($playerId);
+        $hadOtherBonos = $playerId && count($this->bonoModel->getUsableBonos($playerId)) > 0;
 
         $type = $this->typeModel->find($bonoTypeId);
         if (!$type) {
@@ -102,18 +102,18 @@ class BonosController extends BaseController
         ]);
         $newBonoId = (int) $this->bonoModel->getInsertID();
 
-        // TICKET-013: libro de movimientos + saldar automáticamente las deudas
-        // (sesiones dadas sin bono) con este bono nuevo.
+        // TICKET-013: libro de movimientos. Las clases dadas sin bono NO se saldan
+        // solas: se avisa y se saldan a mano desde la ficha del bono.
         $settledMsg = '';
         if ($playerId) {
             BonoLedgerService::log($playerId, BonoLedgerService::GRANTED, (int)$type['sessions'], $newBonoId, null, $type['name'] ?? null);
-            $settledMsg = $this->settleDebtsMessage($playerId);
+            $settledMsg = $this->pendingDebtsHint($playerId);
         }
 
         if (!$playerId) {
             $msg = 'Bono creado sin jugador asignado. Puedes asignarlo desde el detalle.';
-        } elseif ($willBeQueued) {
-            $msg = 'Bono creado y encolado: se activará automáticamente cuando el alumno agote o caduque su bono actual.';
+        } elseif ($hadOtherBonos) {
+            $msg = 'Bono creado. El alumno tiene varios bonos con saldo: al pasar lista se elige de cuál se descuenta cada sesión.';
         } else {
             $msg = 'Bono emitido correctamente.';
         }
@@ -184,14 +184,14 @@ class BonosController extends BaseController
             return redirect()->to('/bonos/' . $id);
         }
 
-        $willBeQueued = $this->bonoModel->hasActiveBono($playerId);
+        $hadOtherBonos = count($this->bonoModel->getUsableBonos($playerId)) > 0;
 
         $this->bonoModel->update($id, ['player_id' => $playerId]);
         BonoLedgerService::log($playerId, BonoLedgerService::ASSIGNED, (int)$bono['sessions_remaining'], $id, null, 'Bono sin dueño asignado al alumno');
-        $settledMsg = $this->settleDebtsMessage($playerId);
+        $settledMsg = $this->pendingDebtsHint($playerId);
 
-        $msg = $willBeQueued
-            ? 'Jugador asignado. El bono queda encolado tras el activo actual del alumno.'
+        $msg = $hadOtherBonos
+            ? 'Jugador asignado. El alumno ya tenía otro bono con saldo: al pasar lista se elige de cuál se descuenta cada sesión.'
             : 'Jugador asignado al bono correctamente.';
 
         session()->setFlashdata('success', $msg . $settledMsg);
@@ -239,9 +239,6 @@ class BonosController extends BaseController
                     BonoLedgerService::log((int)$bono['player_id'], BonoLedgerService::ADJUSTED,
                         isset($data['sessions_remaining']) ? (int)$data['sessions_remaining'] - (int)$bono['sessions_remaining'] : 0,
                         $id, null, 'Edición manual: ' . implode('; ', $notes));
-                    if (isset($data['sessions_remaining']) && (int)$data['sessions_remaining'] > (int)$bono['sessions_remaining']) {
-                        $this->settleDebtsMessage((int)$bono['player_id']);
-                    }
                 }
             }
         }
@@ -286,15 +283,34 @@ class BonosController extends BaseController
     //  Deudas de sesión y sesiones "no reflejadas" (TICKET-013)
     // ────────────────────────────────────────────────────────────────
 
+    /** GET /bonos/informe — informe por alumno (saldo, importes, alertas). Solo administración. */
+    public function informe()
+    {
+        return view('bonos/informe', [
+            'title'  => 'Informe de bonos — JP Preparation',
+            'report' => (new \App\Services\BonoReportService())->build(),
+        ]);
+    }
+
     public function deudas()
     {
         $control = new BonoControlService();
+
+        // Bonos con saldo de cada alumno con deudas: se elige con cuál saldar cada clase.
+        $debts   = $control->openDebts();
+        $usables = [];
+        foreach ($debts as &$d) {
+            $uid = (int) $d['user_id'];
+            $usables[$uid] ??= $this->bonoModel->getUsableBonos($uid);
+            $d['usable_bonos'] = $usables[$uid];
+        }
+        unset($d);
 
         return view('bonos/deudas', [
             'title'        => 'Deudas de sesión — JP Preparation',
             'pageTitle'    => 'Deudas de sesión',
             'pageSubtitle' => 'Clases dadas sin bono y sesiones anteriores al control',
-            'debts'        => $control->openDebts(),
+            'debts'        => $debts,
             'unreflected'  => $control->unreflected(),
             'since'        => (new BonoCoverageService())->controlSince(),
         ]);
@@ -316,18 +332,52 @@ class BonosController extends BaseController
         return redirect()->to('/bonos/deudas');
     }
 
-    /** Salda deudas con el bono recién emitido/asignado y devuelve el texto para el flash. */
-    private function settleDebtsMessage(int $playerId): string
+    /**
+     * Aviso (NO acción) para el flash: el alumno tiene clases dadas sin bono.
+     * Saldarlas es una decisión manual, con confirmación, desde la ficha del bono.
+     */
+    private function pendingDebtsHint(int $playerId): string
     {
-        $r = (new BonoControlService())->settleWithBono($playerId, (int) $this->currentUserId());
+        $n = count((new BonoControlService())->openDebts($playerId));
+        return $n > 0
+            ? ' El alumno tiene ' . $n . ' clase(s) dadas sin bono: puedes saldarlas con un bono desde su ficha (no se descuentan solas).'
+            : '';
+    }
+
+    /** POST /bonos/:id/saldar-deudas — salda con ESTE bono las clases sin bono del alumno (tras confirmar). */
+    public function saldarDeudas(int $id)
+    {
+        $bono = $this->bonoModel->find($id);
+        if (!$bono || empty($bono['player_id'])) {
+            session()->setFlashdata('error', 'Bono no encontrado o sin alumno asignado.');
+            return redirect()->to('/bonos');
+        }
+
+        $r = (new BonoControlService())->settleWithBono((int) $bono['player_id'], (int) $this->currentUserId(), $id);
         if ($r['settled'] > 0) {
-            return ' Se han saldado automáticamente ' . $r['settled'] . ' sesión(es) dadas sin bono'
-                . ($r['remaining_debts'] > 0 ? ' (quedan ' . $r['remaining_debts'] . ' pendientes por falta de saldo).' : '.');
+            session()->setFlashdata('success', 'Se han saldado ' . $r['settled'] . ' clase(s) sin bono con este bono'
+                . ($r['remaining_debts'] > 0 ? ' (quedan ' . $r['remaining_debts'] . ' pendientes).' : '.'));
+        } else {
+            session()->setFlashdata('error', $r['remaining_debts'] > 0
+                ? 'No se pudo saldar ninguna clase: el bono no tiene saldo o está caducado.'
+                : 'El alumno no tiene clases sin bono pendientes.');
         }
-        if ($r['remaining_debts'] > 0) {
-            return ' El alumno tiene ' . $r['remaining_debts'] . ' sesión(es) dadas sin bono pendientes.';
-        }
-        return '';
+        return redirect()->to('/bonos/' . $id);
+    }
+
+    /** POST /bonos/deudas/:csp/saldar — salda UNA clase con el bono elegido (tras confirmar). */
+    public function settleDebt(int $cspId)
+    {
+        $bonoId = (int) $this->request->getPost('bono_id');
+        $res = $bonoId > 0
+            ? (new BonoControlService())->settleOne($cspId, $bonoId, (int) $this->currentUserId())
+            : ['success' => false, 'error' => 'Elige con qué bono saldar la clase.'];
+
+        session()->setFlashdata(
+            $res['success'] ? 'success' : 'error',
+            $res['success'] ? 'Clase saldada con el bono elegido.' : $res['error']
+        );
+        return redirect()->to('/bonos/deudas');
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -341,7 +391,8 @@ class BonosController extends BaseController
             return $this->response->setJSON(['has_active' => false, 'bono' => null]);
         }
 
-        $bono = $this->bonoModel->getActiveBono($playerId);
+        $bono   = $this->bonoModel->getActiveBono($playerId);
+        $usable = $this->bonoModel->getUsableBonos($playerId);
 
         // TICKET-013: clases ya dadas sin bono. Al emitir un bono se descuenta
         // 1 sesión por cada una, así que se avisa ANTES de crearlo.
@@ -353,6 +404,7 @@ class BonosController extends BaseController
         return $this->response->setJSON([
             'has_active' => $bono !== null,
             'bono'       => $bono,
+            'bonos'      => $usable,
             'debts'      => $debts,
         ]);
     }
