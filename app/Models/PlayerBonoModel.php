@@ -37,9 +37,10 @@ class PlayerBonoModel extends Model
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Bono activo de un jugador: el bono MÁS ANTIGUO con sesiones
-     * restantes > 0 y no caducado. La cola es FIFO — los bonos más
-     * recientes esperan a que el actual se agote o caduque.
+     * El bono más antiguo con saldo y vigente. Un alumno puede tener VARIOS
+     * bonos con saldo a la vez y el descuento se elige siempre a mano: esto
+     * solo se usa para el caso de UN único bono, la comprobación "¿tiene
+     * algún bono?" y como último recurso al devolver una sesión.
      */
     public function getActiveBono(int $playerId): ?array
     {
@@ -56,7 +57,7 @@ class PlayerBonoModel extends Model
     }
 
     /**
-     * Comprueba si un jugador tiene algún bono activo.
+     * Comprueba si un jugador tiene algún bono con saldo y vigente.
      */
     public function hasActiveBono(int $playerId): bool
     {
@@ -64,28 +65,23 @@ class PlayerBonoModel extends Model
     }
 
     /**
-     * Bonos en cola de un jugador: tienen sesiones restantes y no han
-     * caducado, pero NO son el activo (el activo es el más antiguo).
-     * Devuelve cero o más bonos ordenados por fecha de creación
-     * (próximo a activarse primero).
+     * Todos los bonos que se pueden gastar hoy (saldo > 0 y no caducados), con
+     * el nombre del tipo, del más antiguo al más nuevo. Si hay más de uno, el
+     * descuento NO es automático: hay que elegir de cuál.
      */
-    public function getQueuedBonos(int $playerId): array
+    public function getUsableBonos(int $playerId): array
     {
-        $today  = date('Y-m-d');
-        $active = $this->getActiveBono($playerId);
-        if (!$active) {
-            return [];
-        }
-
-        return $this->where('player_id', $playerId)
-            ->where('id !=', (int)$active['id'])
-            ->where('sessions_remaining >', 0)
+        return $this->db->table('player_bonos pb')
+            ->select('pb.id, pb.bono_type_id, pb.sessions_total, pb.sessions_remaining, pb.expires_at, bt.name AS bono_name')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
+            ->where('pb.player_id', $playerId)
+            ->where('pb.sessions_remaining >', 0)
             ->groupStart()
-                ->where('expires_at IS NULL')
-                ->orWhere('expires_at >=', $today)
+                ->where('pb.expires_at IS NULL')
+                ->orWhere('pb.expires_at >=', date('Y-m-d'))
             ->groupEnd()
-            ->orderBy('created_at', 'ASC')
-            ->findAll();
+            ->orderBy('pb.created_at', 'ASC')->orderBy('pb.id', 'ASC')
+            ->get()->getResultArray();
     }
 
     /**
@@ -99,14 +95,25 @@ class PlayerBonoModel extends Model
 
     /**
      * Versión detallada de deductSession: descuenta 1 sesión y devuelve
-     * el bono resultante (con `sessions_remaining` actualizado y la
-     * info necesaria para emitir notificaciones).
+     * el bono tal como quedó (sessions_remaining ya decrementado).
      *
-     * @return array|null  null si no había bono activo
+     * Con $bonoId descuenta de ESE bono, que debe ser del alumno, tener saldo
+     * y no estar caducado (si no, devuelve null). Sin $bonoId usa el más
+     * antiguo (la elección manual la exige quien llama cuando hay varios).
      */
-    public function deductSessionDetailed(int $playerId): ?array
+    public function deductSessionDetailed(int $playerId, ?int $bonoId = null): ?array
     {
-        $bono = $this->getActiveBono($playerId);
+        if ($bonoId !== null) {
+            $bono = null;
+            foreach ($this->getUsableBonos($playerId) as $b) {
+                if ((int) $b['id'] === $bonoId) {
+                    $bono = $this->find($bonoId);
+                    break;
+                }
+            }
+        } else {
+            $bono = $this->getActiveBono($playerId);
+        }
         if (!$bono) {
             return null;
         }

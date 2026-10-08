@@ -1193,6 +1193,71 @@ class ClasesService
     }
 
     /**
+     * Aviso por alumno cuando el saldo TOTAL de todos sus bonos vigentes llega a
+     * 1 o 0. Solo tiene sentido con varios bonos vigentes: con uno solo, el aviso
+     * del propio bono (1 o 0 sesiones) ya dice lo mismo.
+     */
+    private function emitPlayerLowTotalNotification(int $playerId): void
+    {
+        $bonos = $this->db->table('player_bonos pb')
+            ->select('pb.sessions_remaining, bt.name AS bono_name')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
+            ->where('pb.player_id', $playerId)
+            ->groupStart()->where('pb.expires_at IS NULL')->orWhere('pb.expires_at >=', date('Y-m-d'))->groupEnd()
+            ->orderBy('pb.created_at', 'ASC')->orderBy('pb.id', 'ASC')
+            ->get()->getResultArray();
+
+        if (count($bonos) < 2) {
+            return;
+        }
+        $total = 0;
+        $parts = [];
+        foreach ($bonos as $b) {
+            $total  += (int) $b['sessions_remaining'];
+            $parts[] = ($b['bono_name'] ?? 'Bono') . ': ' . (int) $b['sessions_remaining'];
+        }
+        if ($total > 1) {
+            return;
+        }
+
+        $userModel  = new UserModel();
+        $player     = $userModel->find($playerId);
+        $playerName = $player['name'] ?? 'Alumno';
+
+        if ($total === 0) {
+            $title = "🎟️ Sin saldo en ningún bono: {$playerName}";
+            $body  = "{$playerName} se ha quedado sin sesiones en todos sus bonos (" . implode(' · ', $parts) . "). "
+                   . "Si va a continuar entrenando, asígnale un nuevo bono.";
+        } else {
+            $title = "⚠️ Última sesión entre todos sus bonos: {$playerName}";
+            $body  = "A {$playerName} le queda 1 sesión en total entre todos sus bonos (" . implode(' · ', $parts) . "). "
+                   . "Considera renovar o asignar un nuevo bono.";
+        }
+
+        $admins     = $userModel->select('id, role')->whereIn('role', ['admin', 'superadmin'])->where('status', 'active')->findAll();
+        $recipients = array_values(array_unique(array_merge([$playerId], array_map(fn($a) => (int) $a['id'], $admins))));
+        $sender     = 0;
+        foreach ($admins as $a) {
+            if ($a['role'] === 'superadmin') {
+                $sender = (int) $a['id'];
+                break;
+            }
+        }
+        $sender = $sender ?: (int) ($admins[0]['id'] ?? 0);
+        if ($sender <= 0) {
+            return;
+        }
+
+        (new NotificationModel())->createWithRecipients([
+            'sender_id' => $sender,
+            'type'      => 'group',
+            'title'     => $title,
+            'body'      => $body,
+            'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+        ], $recipients);
+    }
+
+    /**
      * Estados de asistencia que "consumen" una sesión del bono. Un jugador en
      * cualquier otro estado (absent, declined, pending) NO debe tener bono
      * descontado: si lo tenía y pasa a uno de estos, se le devuelve.
@@ -1251,8 +1316,12 @@ class ClasesService
      *
      * Guarda de qué bono se descontó (`bono_deducted_from_id`) para devolverlo
      * con exactitud.
+     *
+     * Si el alumno tiene MÁS DE UN bono usable, hay que indicar de cuál con
+     * $bonoId: no se elige solo (respuesta `needs_choice`). Con uno solo, se
+     * usa ese. Las llamadas internas (saldar deudas) pasan el bono explícito.
      */
-    public function deductBonoForPlayer(int $sessionId, int $playerId, ?string $wantAttendance = null): array
+    public function deductBonoForPlayer(int $sessionId, int $playerId, ?string $wantAttendance = null, ?int $bonoId = null): array
     {
         $player = $this->playerModel
             ->where('session_id', $sessionId)
@@ -1275,13 +1344,24 @@ class ClasesService
 
         $bonoModel = new PlayerBonoModel();
 
+        $usable = $bonoModel->getUsableBonos($playerId);
+        if ($bonoId === null) {
+            if (count($usable) > 1) {
+                return ['success' => false, 'needs_choice' => true,
+                        'error' => 'El alumno tiene varios bonos activos: elige de cuál descontar la sesión.'];
+            }
+            $bonoId = $usable ? (int) $usable[0]['id'] : null;
+        }
+
         $this->db->transBegin();
         try {
-            $bono = $bonoModel->deductSessionDetailed($playerId);
+            $bono = $bonoId !== null ? $bonoModel->deductSessionDetailed($playerId, $bonoId) : null;
 
             if ($bono === null) {
                 $this->db->transRollback();
-                return ['success' => false, 'error' => 'El jugador no tiene bono activo.'];
+                return ['success' => false, 'error' => $bonoId !== null && $usable
+                    ? 'Ese bono no está disponible (sin saldo, caducado o de otro alumno).'
+                    : 'El jugador no tiene bono activo.'];
             }
 
             $update = [
@@ -1326,6 +1406,14 @@ class ClasesService
             }
         }
 
+        // Aviso por ALUMNO: con varios bonos, además del aviso de cada bono, se avisa
+        // cuando el saldo TOTAL entre todos ellos se queda en 1 o 0.
+        try {
+            $this->emitPlayerLowTotalNotification($playerId);
+        } catch (\Throwable $e) {
+            log_message('error', 'emitPlayerLowTotalNotification falló tras descontar bono: ' . $e->getMessage());
+        }
+
         $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
         $bonoName  = $typeRow['name'] ?? null;
 
@@ -1334,8 +1422,82 @@ class ClasesService
         return [
             'success'            => true,
             'sessions_remaining' => $remaining,
+            'bono_id'            => (int) $bono['id'],
             'bono_name'          => $bonoName,
             'deducted'           => true,
+        ];
+    }
+
+    /**
+     * Corrige de qué bono se descontó una sesión: devuelve la sesión al bono de
+     * origen y la descuenta del bono elegido, todo en una transacción. No cambia
+     * la asistencia ni vuelve a avisar de bono bajo.
+     *
+     * @return array{success:bool,error?:string,from?:array,to?:array}
+     */
+    public function changeBonoForPlayer(int $sessionId, int $playerId, int $newBonoId): array
+    {
+        $player = $this->playerModel
+            ->where('session_id', $sessionId)
+            ->where('user_id', $playerId)
+            ->first();
+
+        if (!$player) {
+            return ['success' => false, 'error' => 'Alumno no asignado a esta sesión.'];
+        }
+        if (empty($player['bono_deducted_at'])) {
+            return ['success' => false, 'error' => 'Esta sesión no tiene bono descontado: usa "Descontar bono".'];
+        }
+
+        $fromId = (int) ($player['bono_deducted_from_id'] ?? 0);
+        if ($fromId === $newBonoId) {
+            return ['success' => false, 'error' => 'La sesión ya está descontada de ese bono.'];
+        }
+
+        $bonoModel = new PlayerBonoModel();
+        $origin    = $fromId ? $bonoModel->find($fromId) : null;
+
+        $this->db->transBegin();
+        try {
+            // Primero el nuevo (valida pertenencia, saldo y caducidad).
+            $to = $bonoModel->deductSessionDetailed($playerId, $newBonoId);
+            if ($to === null) {
+                $this->db->transRollback();
+                return ['success' => false, 'error' => 'Ese bono no está disponible (sin saldo, caducado o de otro alumno).'];
+            }
+
+            $from = null;
+            if ($origin) {
+                $cap = (int) ($origin['sessions_total'] ?? 0);
+                $new = (int) $origin['sessions_remaining'] + 1;
+                if ($cap > 0 && $new > $cap) {
+                    $new = $cap;
+                }
+                $bonoModel->update($origin['id'], ['sessions_remaining' => $new]);
+                $from = ['id' => (int) $origin['id'], 'sessions_remaining' => $new];
+            }
+
+            $this->db->table('class_session_players')
+                ->where('id', $player['id'])
+                ->update(['bono_deducted_from_id' => $newBonoId]);
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+
+        if ($from) {
+            BonoLedgerService::log($playerId, BonoLedgerService::REFUNDED, 1, $from['id'], $sessionId, 'Cambio de bono', null, $newBonoId);
+        }
+        BonoLedgerService::log($playerId, BonoLedgerService::DEDUCTED, -1, $newBonoId, $sessionId, 'Cambio de bono', null, $from['id'] ?? null);
+
+        $typeRow = $this->db->table('bono_types')->select('name')->where('id', $to['bono_type_id'])->get()->getRowArray();
+
+        return [
+            'success' => true,
+            'from'    => $from,
+            'to'      => ['id' => $newBonoId, 'sessions_remaining' => (int) $to['sessions_remaining'], 'bono_name' => $typeRow['name'] ?? null],
         ];
     }
 
@@ -1455,6 +1617,7 @@ class ClasesService
         return [
             'success'            => true,
             'sessions_remaining' => $bono ? (int)$bono['sessions_remaining'] : 0,
+            'bono_id'            => $credited ?: null,
             'bono_name'          => $bono['bono_name'] ?? null,
         ];
     }

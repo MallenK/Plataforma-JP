@@ -303,10 +303,13 @@ $routes->post('clases/(:num)/reabrir', 'ClasesController::reabrirSesion/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 $routes->post('clases/(:num)/jugadores/(:num)/descontar-bono', 'ClasesController::deductBono/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->post('clases/(:num)/jugadores/(:num)/devolver-bono', 'ClasesController::refundBono/$1/$2', [
-    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('clases/(:num)/jugadores/(:num)/cambiar-bono', 'ClasesController::changeBono/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
 
@@ -327,10 +330,19 @@ $routes->post('bonos/check-active', 'BonosController::checkActive', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->get('bonos/informe', 'BonosController::informe', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 $routes->get('bonos/deudas', 'BonosController::deudas', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+$routes->post('bonos/deudas/(:num)/saldar', 'BonosController::settleDebt/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('bonos/(:num)/saldar-deudas', 'BonosController::saldarDeudas/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 $routes->post('bonos/deudas/(:num)/resolver', 'BonosController::resolveDebt/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

@@ -355,16 +355,38 @@ $formatTime = static function (?string $hms): string {
             </div>
         </div>
 
-        <!-- Planes / Bonos -->
-        <div class="card-jp">
+        <!-- Planes / Bonos: administración y el propio alumno (coach y staff no ven bonos) -->
+        <?php if (!empty($canSeeBonos)): ?>
+        <?php
+        $plans   = $alumno['plans'] ?? [];
+        $usables = array_filter($plans, fn($b) => (int) ($b['sessions_remaining'] ?? 0) > 0 && (empty($b['expires_at']) || $b['expires_at'] >= $today));
+        $saldoTotal = array_sum(array_map(fn($b) => (int) $b['sessions_remaining'], $usables));
+        ?>
+        <div class="card-jp" id="bonos">
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>
-                    Planes / Bonos
+                    Bonos
                 </span>
-                <span style="font-size:12px;color:var(--text-muted)"><?= count($alumno['plans'] ?? []) ?> registrado(s)</span>
+                <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:var(--text-muted)"><?= count($plans) ?> registrado(s)</span>
+                    <?php if (!empty($canManageBonos)): ?>
+                    <a href="<?= base_url('bonos?nuevo=' . (int) $alumno['id']) ?>" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none">
+                        <i class="bi bi-plus-lg"></i> Asignar bono
+                    </a>
+                    <?php endif; ?>
+                </span>
             </div>
-            <?php if (!empty($alumno['plans'])): ?>
+            <?php if (!empty($plans)): ?>
+            <div class="card-jp-body" style="padding-bottom:0">
+                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+                    <span style="font-size:28px;font-weight:800;color:<?= $saldoTotal <= 1 ? 'var(--danger)' : 'var(--text-h)' ?>"><?= (int) $saldoTotal ?></span>
+                    <span style="font-size:13px;color:var(--text-muted)">
+                        sesión<?= $saldoTotal === 1 ? '' : 'es' ?> disponible<?= $saldoTotal === 1 ? '' : 's' ?>
+                        <?= count($usables) > 1 ? 'entre ' . count($usables) . ' bonos' : (count($usables) === 1 ? 'en 1 bono' : '') ?>
+                    </span>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table-jp">
                     <thead>
@@ -376,31 +398,28 @@ $formatTime = static function (?string $hms): string {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($alumno['plans'] as $bono): ?>
+                        <?php foreach ($plans as $bono): ?>
                         <?php
                             $remaining = (int)($bono['sessions_remaining'] ?? 0);
                             $total     = (int)($bono['sessions_total']     ?? 0);
                             $expired   = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
-                            $usable    = $remaining > 0 && !$expired;
-                            $isActive  = $usable && (int)$bono['id'] === (int)($alumno['active_bono_id'] ?? 0);
-                            $isQueued  = $usable && !$isActive;
 
-                            if ($expired)             { $statusLbl = 'Vencido';  $statusCls = 'inactive'; }
-                            elseif ($remaining === 0) { $statusLbl = 'Agotado';  $statusCls = 'inactive'; }
-                            elseif ($isActive)        { $statusLbl = 'Activo';   $statusCls = 'active'; }
-                            elseif ($isQueued)        { $statusLbl = 'En cola';  $statusCls = 'inactive'; }
-                            else                      { $statusLbl = '—';        $statusCls = 'inactive'; }
+                            if ($expired)             { $statusLbl = 'Vencido';   $statusCls = 'inactive'; }
+                            elseif ($remaining === 0) { $statusLbl = 'Agotado';   $statusCls = 'inactive'; }
+                            else                      { $statusLbl = 'Con saldo'; $statusCls = 'active'; }
 
                             $pct = $total > 0 ? max(0, min(100, round(($remaining / $total) * 100))) : 0;
                         ?>
-                        <tr>
+                        <tr<?= $statusCls === 'inactive' ? ' style="opacity:.65"' : '' ?>>
                             <td>
+                                <?php if (!empty($canManageBonos)): ?>
                                 <a href="<?= base_url('bonos/' . (int)$bono['id']) ?>" style="color:inherit;text-decoration:none">
+                                <?php else: ?><span><?php endif; ?>
                                     <div style="font-weight:600;color:var(--text-h)"><?= esc($bono['bono_name']) ?></div>
                                     <?php if (!empty($bono['price'])): ?>
                                     <div style="font-size:12px;color:var(--text-muted)"><?= number_format((float)$bono['price'], 2) ?> €</div>
                                     <?php endif; ?>
-                                </a>
+                                <?= !empty($canManageBonos) ? '</a>' : '</span>' ?>
                             </td>
                             <td style="min-width:140px">
                                 <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
@@ -424,12 +443,26 @@ $formatTime = static function (?string $hms): string {
                     </tbody>
                 </table>
             </div>
+            <?php if (!empty($bonoMovements)): ?>
+            <div class="card-jp-body" style="border-top:1px solid var(--border)">
+                <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Últimos movimientos</div>
+                <?php foreach ($bonoMovements as $m):
+                    [$mLabel, $mIcon, $mTone] = \App\Services\BonoLedgerService::label($m['type']);
+                ?>
+                <div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+                    <span><i class="bi <?= $mIcon ?> me-1"></i><?= esc($mLabel) ?><?= !empty($m['bono_name']) ? ' · ' . esc($m['bono_name']) : '' ?><?= !empty($m['session_title']) ? ' · ' . esc($m['session_title']) : '' ?></span>
+                    <span style="color:var(--text-muted);white-space:nowrap"><?= (int) $m['delta'] !== 0 ? (((int) $m['delta'] > 0 ? '+' : '') . (int) $m['delta'] . ' · ') : '' ?><?= date('d/m/Y', strtotime($m['created_at'])) ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
             <?php else: ?>
             <div class="card-jp-body">
                 <p style="font-size:13px;color:var(--text-muted);margin:0">Sin bonos asignados.</p>
             </div>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
 
         <!-- Métricas recientes -->
         <div class="card-jp">
@@ -605,6 +638,9 @@ $formatTime = static function (?string $hms): string {
                                 <a href="<?= base_url('clases/' . (int)$att['session_id']) ?>" style="color:inherit;text-decoration:none">
                                     <?= esc($att['session_title'] ?? '—') ?>
                                 </a>
+                                <?php if (!empty($canSeeBonos) && !empty($att['bono_deducted_at'])): ?>
+                                <div style="font-size:11px;font-weight:400;color:var(--text-muted)"><i class="bi bi-ticket-perforated me-1"></i>Descontada<?= !empty($att['bono_name']) ? ' de «' . esc($att['bono_name']) . '»' : '' ?></div>
+                                <?php endif; ?>
                             </td>
                             <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">
                                 <?= !empty($att['session_date']) ? date('d/m/Y', strtotime($att['session_date'])) : '—' ?>

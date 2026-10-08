@@ -420,15 +420,30 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
             <?php endforeach; ?>
         </div>
 
-        <!-- Planes / Bonos -->
-        <?php if (!empty($pfp['plans'])): ?>
+        <!-- Planes / Bonos: el propio alumno y administración (coach y staff no ven bonos) -->
+        <?php $perfSeesBonos = !empty($isSelf) || in_array(session('role'), ['superadmin', 'admin'], true); ?>
+        <?php if ($perfSeesBonos && !empty($pfp['plans'])): ?>
+        <?php
+        $perfUsable = array_filter($pfp['plans'], fn($pl) => (int) ($pl['sessions_remaining'] ?? 0) > 0 && (empty($pl['expires_at']) || $pl['expires_at'] >= $today));
+        $perfSaldo  = array_sum(array_map(fn($pl) => (int) $pl['sessions_remaining'], $perfUsable));
+        $perfUsed   = array_values(array_filter($pfp['attendance'] ?? [], fn($a) => !empty($a['bono_deducted_at'])));
+        ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>
-                    Planes / Bonos
+                    Mis bonos
                 </span>
                 <span style="font-size:12px;color:var(--text-muted)"><?= count($pfp['plans']) ?> registrado(s)</span>
+            </div>
+            <div class="card-jp-body" style="padding-bottom:0">
+                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+                    <span style="font-size:28px;font-weight:800;color:<?= $perfSaldo <= 1 ? 'var(--danger)' : 'var(--text-h)' ?>"><?= (int) $perfSaldo ?></span>
+                    <span style="font-size:13px;color:var(--text-muted)">
+                        sesión<?= $perfSaldo === 1 ? '' : 'es' ?> disponible<?= $perfSaldo === 1 ? '' : 's' ?>
+                        <?= count($perfUsable) > 1 ? 'entre ' . count($perfUsable) . ' bonos' : (count($perfUsable) === 1 ? 'en 1 bono' : '') ?>
+                    </span>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table-jp" data-jp-list="perfil-bonos">
@@ -448,16 +463,12 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         $expired   = !empty($plan['expires_at']) && $plan['expires_at'] < $today;
                         $active    = !$expired && $remaining > 0;
                         $badgeClass = $expired ? 'badge-status inactive' : ($active ? 'badge-status active' : 'badge-status inactive');
-                        $badgeLabel = $expired ? 'Vencido' : ($active ? 'Activo' : 'Agotado');
-                        $isActiveBono = isset($pfp['active_bono_id']) && (int)$plan['id'] === (int)$pfp['active_bono_id'];
+                        $badgeLabel = $expired ? 'Vencido' : ($active ? 'Con saldo' : 'Agotado');
                     ?>
                     <tr>
                         <td>
                             <div style="font-weight:600;color:var(--text-h);font-size:13px">
                                 <?= esc($plan['bono_name'] ?? '—') ?>
-                                <?php if ($isActiveBono): ?>
-                                    <span style="font-size:10px;background:var(--accent);color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">ACTIVO</span>
-                                <?php endif; ?>
                             </div>
                             <div style="font-size:11px;color:var(--text-muted)"><?= number_format((float)($plan['price'] ?? 0), 2) ?> €</div>
                         </td>
@@ -482,6 +493,17 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                     </tbody>
                 </table>
             </div>
+            <?php if (!empty($perfUsed)): ?>
+            <div class="card-jp-body" style="border-top:1px solid var(--border)">
+                <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Últimas clases descontadas</div>
+                <?php foreach (array_slice($perfUsed, 0, 5) as $u): ?>
+                <div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+                    <span><?= esc($u['session_title'] ?? 'Clase') ?><?= !empty($u['bono_name']) ? ' · <span style="color:var(--text-muted)">' . esc($u['bono_name']) . '</span>' : '' ?></span>
+                    <span style="color:var(--text-muted);white-space:nowrap"><?= !empty($u['session_date']) ? date('d/m/Y', strtotime($u['session_date'])) : '' ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

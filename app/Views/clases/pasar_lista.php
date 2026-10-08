@@ -52,7 +52,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
                     <ul>
                         <li><b>Ausente</b> — falta avisada o justificada.</li>
                         <li><b>No justificado</b> — no se presentó y no avisó. Permite descontar el bono como falta.</li>
-                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible con el alumno <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b> (no hace falta guardar antes: al descontar se registra también esa asistencia). Consume 1 sesión del bono activo y queda registrado.</li>
+                        <li><b>Descontar bono</b> — es <b>manual</b>: solo se descuenta si pulsas el botón. Disponible con el alumno <b>Presente</b>, <b>Confirmado</b> o <b>No justificado</b> (no hace falta guardar antes: al descontar se registra también esa asistencia). Si el alumno tiene <b>varios bonos</b>, hay un botón por bono y eliges de cuál se descuenta (no hay ninguno por defecto). Queda registrado y puedes devolverlo o <b>cambiarlo de bono</b>.</li>
                         <li><b>Devolver bono</b> — deshace un descuento. También se devuelve solo si cambias la asistencia a Ausente, Avisó o Pendiente.</li>
                     </ul>
                 </div>
@@ -106,11 +106,13 @@ $listaSaved = !empty($session['lista_pasada_at']);
             <table class="table-jp" id="pl-table" style="min-width:720px">
                 <thead>
                     <tr>
-                        <th style="width:26%">Alumno</th>
-                        <th style="width:19%">Asistencia</th>
-                        <th style="width:17%">Razón ausencia</th>
-                        <th style="width:20%">Nota adicional</th>
+                        <th style="width:<?= $canBonos ? 26 : 32 ?>%">Alumno</th>
+                        <th style="width:<?= $canBonos ? 19 : 24 ?>%">Asistencia</th>
+                        <th style="width:<?= $canBonos ? 17 : 21 ?>%">Razón ausencia</th>
+                        <th style="width:<?= $canBonos ? 20 : 23 ?>%">Nota adicional</th>
+                        <?php if ($canBonos): ?>
                         <th style="width:18%;text-align:center">Bono</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,6 +127,8 @@ $listaSaved = !empty($session['lista_pasada_at']);
                     $absLike   = \App\Services\ClasesService::attendanceIsAbsence($att);
                     $canDeduct = \App\Services\ClasesService::attendanceConsumesBono($att);
                     $remaining = $bono ? (int)$bono['sessions_remaining'] : null;
+                    $usableBonos = $p['usable_bonos'] ?? [];
+                    $dedBono     = $p['deducted_bono'] ?? null;
                 ?>
                 <tr data-uid="<?= $uid ?>" data-name="<?= esc($p['name'] ?? '', 'attr') ?>" data-email="<?= esc($p['email'] ?? '', 'attr') ?>">
                     <td>
@@ -158,36 +162,30 @@ $listaSaved = !empty($session['lista_pasada_at']);
                         <input type="text" name="absence_notes[<?= $uid ?>]" class="form-control-jp"
                                placeholder="Nota opcional…" value="<?= esc($notes) ?>" style="width:100%" <?= $isClosed ? 'disabled' : '' ?>>
                     </td>
+                    <?php if ($canBonos): ?>
                     <td style="text-align:center">
                         <div class="bono-cell-<?= $uid ?>" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                            <?php if ($bono): ?>
-                            <span class="bono-remaining-<?= $uid ?> pl-bono-num <?= $remaining <= 1 ? 'is-low' : 'is-ok' ?>"><?= $remaining ?></span>
-                            <span style="font-size:11px;color:var(--text-muted)"><?= esc($bono['bono_name'] ?? '') ?></span>
-                            <?php elseif (!$deducted): ?>
-                            <span class="pl-bono-empty" style="font-size:12px;color:var(--text-muted);text-align:center" title="Si viene sin bono, la clase queda apuntada en Bonos > Clases sin bono y se descuenta sola del próximo bono.">Sin bono activo<br><span style="font-size:11px;color:#b91c1c">Si viene, quedará apuntada como clase sin bono</span></span>
+                            <?php foreach ($usableBonos as $ub): $ubRem = (int)$ub['sessions_remaining']; ?>
+                            <div class="pl-bono-line" data-bono="<?= (int)$ub['id'] ?>" data-name="<?= esc($ub['bono_name'] ?? '', 'attr') ?>"
+                                 data-exp="<?= !empty($ub['expires_at']) ? date('d/m/Y', strtotime($ub['expires_at'])) : '' ?>" data-rem="<?= $ubRem ?>"
+                                 style="display:flex;align-items:center;gap:6px">
+                                <span class="bono-remaining-<?= $uid ?> pl-bono-num <?= $ubRem <= 1 ? 'is-low' : 'is-ok' ?>"><?= $ubRem ?></span>
+                                <span class="pl-bono-name" style="font-size:11px;color:var(--text-muted)"><?= esc($ub['bono_name'] ?? '') ?><?= !empty($ub['expires_at']) ? ' · caduca ' . date('d/m/Y', strtotime($ub['expires_at'])) : '' ?></span>
+                            </div>
+                            <?php endforeach; ?>
+                            <?php if (!$usableBonos && !$deducted): ?>
+                            <span class="pl-bono-empty" style="font-size:12px;color:var(--text-muted);text-align:center" title="Si viene sin bono, la clase queda apuntada en Bonos > Clases sin bono. No se descuenta sola: se salda a mano con el bono que elijas.">Sin bono con saldo<br><span style="font-size:11px;color:#b91c1c">Si viene, quedará apuntada como clase sin bono</span></span>
                             <?php endif; ?>
 
-                            <span class="pl-bono-action" data-uid="<?= $uid ?>">
-                            <?php if ($deducted): ?>
-                                <span class="pl-bono-done" title="Bono descontado el <?= date('d/m/Y \a \l\a\s H:i', strtotime($p['bono_deducted_at'])) ?>"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>
-                                <?php if (!$isClosed): ?>
-                                <button type="button" class="btn-jp btn-jp-sm pl-refund"
-                                        data-session="<?= $session['id'] ?>" data-player="<?= $uid ?>">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Devolver bono
-                                </button>
-                                <span class="pl-row-hint" <?= $canDeduct ? 'hidden' : '' ?>>Al guardar se le devolverá el bono (asistencia sin clase).</span>
-                                <?php endif; ?>
-                            <?php elseif ($bono && !$isClosed): ?>
-                                <button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct"
-                                        data-session="<?= $session['id'] ?>" data-player="<?= $uid ?>"
-                                        style="<?= $canDeduct ? '' : 'display:none' ?>">
-                                    <i class="bi bi-dash-circle-fill me-1"></i>Descontar bono
-                                </button>
-                                <span class="pl-deduct-hint" style="font-size:11px;color:var(--text-muted);<?= $canDeduct ? 'display:none' : '' ?>">Marcar presente / no justif.</span>
-                            <?php endif; ?>
-                            </span>
+                            <?php /* Los botones los pinta renderAction() (JS) a partir de estos datos */ ?>
+                            <span class="pl-bono-action" data-uid="<?= $uid ?>" data-session="<?= (int)$session['id'] ?>"
+                                  data-state="<?= $deducted ? 'deducted' : 'open' ?>" data-closed="<?= $isClosed ? '1' : '0' ?>"
+                                  data-from="<?= (int)($dedBono['id'] ?? 0) ?>" data-from-name="<?= esc($dedBono['bono_name'] ?? '', 'attr') ?>"
+                                  data-done-title="<?= $deducted ? esc('Bono descontado el ' . date('d/m/Y \a \l\a\s H:i', strtotime($p['bono_deducted_at'])), 'attr') : '' ?>"
+                                  style="display:flex;flex-direction:column;align-items:center;gap:4px;width:100%"></span>
                         </div>
                     </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -340,6 +338,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
             if (rowHint) rowHint.hidden = canDeduct;   // aviso "se devolverá el bono"
         }
         sel.dataset.state = sel.value;
+        renderAction(uid);
     }
 
     plAll('.att-select').forEach(function(sel) {
@@ -379,45 +378,97 @@ $listaSaved = !empty($session['lista_pasada_at']);
     // ── Bono: descontar / devolver (delegación: los botones se re-generan) ──
     var CSRF_NAME = <?= json_encode(csrf_token()) ?>;
 
-    function setRemaining(playerId, n) {
+    function escHtml(t) {
+        return String(t == null ? '' : t).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    // Una línea por bono del alumno en la celda. El DOM es la fuente de verdad
+    // del saldo mostrado: el selector de bono se rellena a partir de ellas.
+    function bonoLines(uid) {
+        var cell = plOne(uid, '.bono-cell-' + uid);
+        return cell ? Array.prototype.slice.call(cell.querySelectorAll('.pl-bono-line')) : [];
+    }
+    function usableLines(uid) {
+        return bonoLines(uid).filter(function(l) { return parseInt(l.dataset.rem, 10) > 0; });
+    }
+    function lineLabel(l) {
+        return (l.dataset.name || 'Bono') + ' · quedan ' + l.dataset.rem + (l.dataset.exp ? ' · caduca ' + l.dataset.exp : '');
+    }
+
+    function setRemaining(playerId, n, bonoId, bonoName) {
         var cell = plOne(playerId, '.bono-cell-' + playerId);
         if (!cell || n === null || n === undefined) return;
-        var remEl = cell.querySelector('.bono-remaining-' + playerId);
-        if (!remEl) {
-            // el bono estaba agotado (sin contador en pantalla) y ahora tiene
-            // saldo tras la devolución: creamos el contador.
+        var line = bonoId
+            ? cell.querySelector('.pl-bono-line[data-bono="' + bonoId + '"]')
+            : cell.querySelector('.pl-bono-line');
+        if (!line) {
+            // el bono estaba agotado (sin línea en pantalla) y ahora tiene
+            // saldo tras la devolución: creamos la línea.
             var empty = cell.querySelector('.pl-bono-empty');
-            remEl = document.createElement('span');
-            remEl.className = 'bono-remaining-' + playerId + ' pl-bono-num';
-            cell.insertBefore(remEl, empty || cell.firstChild);
+            line = document.createElement('div');
+            line.className = 'pl-bono-line';
+            line.style.cssText = 'display:flex;align-items:center;gap:6px';
+            line.dataset.bono = bonoId || '';
+            line.dataset.name = bonoName || '';
+            line.dataset.exp  = '';
+            line.innerHTML = '<span class="bono-remaining-' + playerId + ' pl-bono-num"></span>' +
+                '<span class="pl-bono-name" style="font-size:11px;color:var(--text-muted)">' + escHtml(bonoName || '') + '</span>';
+            cell.insertBefore(line, empty || cell.firstChild);
             if (empty) empty.remove();
         }
+        var remEl = line.querySelector('.pl-bono-num');
+        line.dataset.rem = n;
         remEl.textContent = n;
         remEl.classList.toggle('is-low', n <= 1);
         remEl.classList.toggle('is-ok',  n > 1);
+        renderAction(playerId);
     }
 
-    function renderDeducted(uid, sessionId) {
+    // Botones de bono de la fila. Con VARIOS bonos con saldo hay un botón por
+    // bono ("Descontar de «X»"): no hay ninguno por defecto, siempre se elige.
+    // Con uno solo, el botón de siempre. Todo sale del estado de la fila
+    // (data-* de .pl-bono-action) y de las líneas de bono de la celda.
+    function renderAction(uid) {
         var act = plOne(uid, '.pl-bono-action[data-uid="' + uid + '"]');
         if (!act) return;
-        var sel = plOne(uid, '.att-select');
-        var can = sel && canDeductFor(sel.value);
-        act.innerHTML =
-            '<span class="pl-bono-done" title="Bono descontado ahora"><i class="bi bi-check-circle-fill me-1"></i>Descontado</span>' +
-            '<button type="button" class="btn-jp btn-jp-sm pl-refund" data-session="' + sessionId + '" data-player="' + uid + '">' +
-            '<i class="bi bi-arrow-counterclockwise me-1"></i>Devolver bono</button>' +
-            '<span class="pl-row-hint"' + (can ? ' hidden' : '') + '>Al guardar se le devolverá el bono (asistencia sin clase).</span>';
-    }
+        var sid    = act.dataset.session;
+        var closed = act.dataset.closed === '1';
+        var sel    = plOne(uid, '.att-select');
+        var can    = sel && canDeductFor(sel.value);
+        var lines  = usableLines(uid);
+        var html   = '';
 
-    function renderDeductable(uid, sessionId) {
-        var act = plOne(uid, '.pl-bono-action[data-uid="' + uid + '"]');
-        if (!act) return;
-        var sel = plOne(uid, '.att-select');
-        var can = sel && canDeductFor(sel.value);
-        act.innerHTML =
-            '<button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct" data-session="' + sessionId + '" data-player="' + uid + '"' +
-            ' style="' + (can ? '' : 'display:none') + '"><i class="bi bi-dash-circle-fill me-1"></i>Descontar bono</button>' +
-            '<span class="pl-deduct-hint" style="font-size:11px;color:var(--text-muted);' + (can ? 'display:none' : '') + '">Marcar presente / no justif.</span>';
+        if (act.dataset.state === 'deducted') {
+            html += '<span class="pl-bono-done" title="' + escHtml(act.dataset.doneTitle || 'Bono descontado') + '"><i class="bi bi-check-circle-fill me-1"></i>Descontado' +
+                (act.dataset.fromName ? ' · ' + escHtml(act.dataset.fromName) : '') + '</span>';
+            if (!closed) {
+                var others = lines.filter(function(l) { return l.dataset.bono !== act.dataset.from; });
+                if (others.length) {
+                    html += '<span class="pl-bono-btns"><span class="pl-bono-btns-label">Pasar a otro bono:</span>' + others.map(function(l) {
+                        return '<button type="button" class="btn-jp btn-jp-sm pl-change" data-session="' + sid + '" data-player="' + uid + '" data-bono="' + escHtml(l.dataset.bono) + '">' +
+                            '<i class="bi bi-arrow-left-right me-1"></i>' + escHtml(lineLabel(l)) + '</button>';
+                    }).join('') + '</span>';
+                }
+                html += '<button type="button" class="btn-jp btn-jp-sm pl-refund" data-session="' + sid + '" data-player="' + uid + '">' +
+                    '<i class="bi bi-arrow-counterclockwise me-1"></i>Devolver bono</button>' +
+                    '<span class="pl-row-hint"' + (can ? ' hidden' : '') + '>Al guardar se le devolverá el bono (asistencia sin clase).</span>';
+            }
+        } else if (!closed && lines.length) {
+            if (!can) {
+                html += '<span class="pl-deduct-hint" style="font-size:11px;color:var(--text-muted)">Marcar presente / no justif.</span>';
+            } else if (lines.length === 1) {
+                html += '<button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct" data-session="' + sid + '" data-player="' + uid + '" data-bono="' + escHtml(lines[0].dataset.bono) + '">' +
+                    '<i class="bi bi-dash-circle-fill me-1"></i>Descontar bono</button>';
+            } else {
+                html += '<span class="pl-bono-btns"><span class="pl-bono-btns-label">Descontar de:</span>' + lines.map(function(l) {
+                    return '<button type="button" class="btn-jp btn-jp-sm btn-deduct pl-deduct" data-session="' + sid + '" data-player="' + uid + '" data-bono="' + escHtml(l.dataset.bono) + '">' +
+                        '<i class="bi bi-dash-circle-fill me-1"></i>' + escHtml(lineLabel(l)) + '</button>';
+                }).join('') + '</span>';
+            }
+        }
+        act.innerHTML = html;
     }
 
     function bonoRequest(url, btn, labelBusy, labelIdle, onOk, extraBody) {
@@ -452,26 +503,58 @@ $listaSaved = !empty($session['lista_pasada_at']);
     form.addEventListener('click', function(ev) {
         var dBtn = ev.target.closest('.pl-deduct');
         var rBtn = ev.target.closest('.pl-refund');
+        var cBtn = ev.target.closest('.pl-change');
+
+        function lineOf(pid, bonoId) {
+            var cell = plOne(pid, '.bono-cell-' + pid);
+            return cell ? cell.querySelector('.pl-bono-line[data-bono="' + bonoId + '"]') : null;
+        }
+        function setRowState(pid, state, fromId, fromName) {
+            var act = plOne(pid, '.pl-bono-action[data-uid="' + pid + '"]');
+            if (!act) return;
+            act.dataset.state    = state;
+            act.dataset.from     = fromId || '';
+            act.dataset.fromName = fromName || '';
+            act.dataset.doneTitle = state === 'deducted' ? 'Bono descontado ahora' : '';
+        }
 
         if (dBtn) {
-            var sid = dBtn.dataset.session, pid = dBtn.dataset.player;
+            var sid = dBtn.dataset.session, pid = dBtn.dataset.player, chosenId = dBtn.dataset.bono || '';
             var sel = plOne(pid, '.att-select');
             var isUnj = sel && sel.value === 'unjustified';
+            var chosenLine = chosenId ? lineOf(pid, chosenId) : null;
+            var bonoTxt = chosenLine ? 'del bono «' + (chosenLine.dataset.name || '') + '»' : 'de su bono';
             askConfirm({
-                title: isUnj ? '¿Descontar bono por falta no justificada?' : '¿Descontar 1 sesión del bono?',
+                title: isUnj ? '¿Descontar bono por falta no justificada?' : '¿Descontar 1 sesión ' + bonoTxt + '?',
                 description: isUnj
-                    ? 'Se consume 1 sesión del bono activo del alumno y la falta queda registrada. Podrás devolverla si te equivocas.'
-                    : 'Se consume 1 sesión del bono activo del alumno. Podrás devolverla si te equivocas.',
+                    ? 'Se consume 1 sesión ' + bonoTxt + ' y la falta queda registrada. Podrás devolverla o cambiarla de bono si te equivocas.'
+                    : 'Se consume 1 sesión ' + bonoTxt + '. Podrás devolverla o cambiarla de bono si te equivocas.',
                 confirmLabel: 'Descontar'
             }).then(function(ok) {
                 if (!ok) return;
                 // Enviamos la asistencia elegida: descontar bono también la
                 // registra (no hace falta "Guardar" antes).
                 bonoRequest('/clases/' + sid + '/jugadores/' + pid + '/descontar-bono', dBtn, 'Descontando…', null, function(data) {
-                    setRemaining(pid, data.sessions_remaining);
-                    renderDeducted(pid, sid);
+                    setRowState(pid, 'deducted', data.bono_id, data.bono_name);
+                    setRemaining(pid, data.sessions_remaining, data.bono_id, data.bono_name);
                     if (sel) { sel.dataset.saved = sel.value; recomputeDirty(); }
-                }, { attendance: sel ? sel.value : '' });
+                }, { attendance: sel ? sel.value : '', bono_id: chosenId });
+            });
+        } else if (cBtn) {
+            var sid3 = cBtn.dataset.session, pid3 = cBtn.dataset.player, toId = cBtn.dataset.bono;
+            var toLine = lineOf(pid3, toId);
+            askConfirm({
+                title: '¿Cambiar de bono?',
+                description: 'La sesión se devuelve al bono actual y se descuenta de «' + (toLine ? toLine.dataset.name : '') + '».',
+                confirmLabel: 'Cambiar bono'
+            }).then(function(ok) {
+                if (!ok) return;
+                bonoRequest('/clases/' + sid3 + '/jugadores/' + pid3 + '/cambiar-bono', cBtn, 'Cambiando…', null, function(data) {
+                    setRowState(pid3, 'deducted', data.to.id, data.to.bono_name);
+                    if (data.from) setRemaining(pid3, data.from.sessions_remaining, data.from.id);
+                    setRemaining(pid3, data.to.sessions_remaining, data.to.id, data.to.bono_name);
+                    if (window.showAlert) showAlert('Sesión pasada a «' + (data.to.bono_name || 'otro bono') + '».', 'success');
+                }, { bono_id: toId });
             });
         } else if (rBtn) {
             var sid2 = rBtn.dataset.session, pid2 = rBtn.dataset.player;
@@ -482,8 +565,8 @@ $listaSaved = !empty($session['lista_pasada_at']);
             }).then(function(ok) {
                 if (!ok) return;
                 bonoRequest('/clases/' + sid2 + '/jugadores/' + pid2 + '/devolver-bono', rBtn, 'Devolviendo…', null, function(data) {
-                    setRemaining(pid2, data.sessions_remaining);
-                    renderDeductable(pid2, sid2);
+                    setRowState(pid2, 'open', '', '');
+                    setRemaining(pid2, data.sessions_remaining, data.bono_id, data.bono_name);
                     if (window.showAlert) showAlert('Bono devuelto.', 'success');
                 });
             });

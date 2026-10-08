@@ -41,10 +41,13 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
             $r,
             'Falta la ruta POST .../devolver-bono'
         );
-        // Ambas con filtro de rol (no rutas abiertas).
-        foreach (['reabrir', 'devolver-bono'] as $frag) {
+        // Ambas con filtro de rol (no rutas abiertas). Reabrir sigue abierto a coach/staff;
+        // los bonos (descontar, devolver, cambiar) son solo de administración.
+        $slice = substr($r, strpos($r, 'reabrir'), 220);
+        $this->assertStringContainsString('role:superadmin,admin,staff,coach', $slice, 'Ruta reabrir sin filtro de rol');
+        foreach (['descontar-bono', 'devolver-bono', 'cambiar-bono'] as $frag) {
             $slice = substr($r, strpos($r, $frag), 220);
-            $this->assertStringContainsString('role:superadmin,admin,staff,coach', $slice, "Ruta {$frag} sin filtro de rol");
+            $this->assertStringContainsString("'role:superadmin,admin'", $slice, "Ruta {$frag} debe ser solo admin/superadmin");
         }
     }
 
@@ -202,7 +205,7 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
         $this->assertStringContainsString('$this->db->transRollback();', $upd);
 
         // deductBonoForPlayer: reclamo atómico condicional contra la carrera.
-        $ded = substr($s, strpos($s, 'public function deductBonoForPlayer'), 2600);
+        $ded = substr($s, strpos($s, 'public function deductBonoForPlayer'), 3800);
         $this->assertStringContainsString("->where('bono_deducted_at', null)", $ded);
         $this->assertStringContainsString('$this->db->affectedRows() < 1', $ded);
         $this->assertStringContainsString('$this->db->transRollback();', $ded);

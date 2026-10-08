@@ -10,22 +10,16 @@
 <?php
 $dbPfp = $playerFullProfile;
 $dbToday = date('Y-m-d');
-// Bono activo FIFO
-$dbActiveBono = null;
+// Todos sus bonos con saldo y vigentes: puede tener varios a la vez y el bono
+// de cada clase lo elige administración al descontar, así que se muestra el total.
+$dbUsable = [];
 foreach ($dbPfp['plans'] ?? [] as $p) {
     if ((int)$p['sessions_remaining'] > 0 && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)) {
-        if ((int)$p['id'] === (int)($dbPfp['active_bono_id'] ?? 0)) { $dbActiveBono = $p; break; }
+        $dbUsable[] = $p;
     }
 }
-if (!$dbActiveBono) {
-    foreach ($dbPfp['plans'] ?? [] as $p) {
-        if ((int)$p['sessions_remaining'] > 0 && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)) {
-            $dbActiveBono = $p; break;
-        }
-    }
-}
-$dbActiveRem   = (int)($dbActiveBono['sessions_remaining'] ?? 0);
-$dbActiveTotal = (int)($dbActiveBono['sessions_total']     ?? 0);
+$dbActiveRem   = array_sum(array_map(fn($p) => (int)$p['sessions_remaining'], $dbUsable));
+$dbActiveTotal = array_sum(array_map(fn($p) => (int)$p['sessions_total'], $dbUsable));
 $dbCatLabel = match($dbPfp['category'] ?? '') {
     'prebenjamin' => 'Prebenjamín', 'benjamin' => 'Benjamín', 'alevin' => 'Alevín',
     'infantil' => 'Infantil', 'cadete' => 'Cadete', 'juvenil' => 'Juvenil',
@@ -71,9 +65,9 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                 <span class="metric-label">Sesiones bono</span>
                 <div class="metric-icon orange"><i class="bi bi-ticket-perforated-fill"></i></div>
             </div>
-            <div class="metric-value" style="color:<?= $dbRemColor ?>"><?= $dbActiveBono ? $dbActiveRem : '—' ?></div>
+            <div class="metric-value" style="color:<?= $dbRemColor ?>"><?= $dbUsable ? $dbActiveRem : '—' ?></div>
             <div class="metric-footer">
-                <span class="metric-footer-label"><?= $dbActiveBono ? 'de ' . $dbActiveTotal . ' restantes' : 'sin bono activo' ?></span>
+                <span class="metric-footer-label"><?= $dbUsable ? 'de ' . $dbActiveTotal . ' en total' : 'sin bono con saldo' ?></span>
             </div>
             <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= $dbRemPct ?>%;background:<?= $dbRemColor ?>"></div></div>
         </div>
@@ -81,12 +75,12 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
     <div class="col-6 col-sm-3">
         <div class="metric-card">
             <div class="metric-card-header">
-                <span class="metric-label">Bonos activos</span>
+                <span class="metric-label">Bonos con saldo</span>
                 <div class="metric-icon" style="background:rgba(139,92,246,.15);color:#8b5cf6"><i class="bi bi-collection-fill"></i></div>
             </div>
-            <div class="metric-value"><?= (int)($dbPfp['active_bonos'] ?? 0) ?></div>
+            <div class="metric-value"><?= count($dbUsable) ?></div>
             <div class="metric-footer"><span class="metric-footer-label">con sesiones</span></div>
-            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, (int)($dbPfp['active_bonos'] ?? 0) * 25) ?>%;background:#8b5cf6"></div></div>
+            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, count($dbUsable) * 25) ?>%;background:#8b5cf6"></div></div>
         </div>
     </div>
 </div>
@@ -382,97 +376,56 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
             </div>
         </div>
 
-        <!-- ── Bono activo destacado ───────────────────── -->
-        <?php if ($dbActiveBono): ?>
-        <?php
-        $dbExpDays = null;
-        if (!empty($dbActiveBono['expires_at'])) {
-            $dbExpDays = (int)(new \DateTime())->diff(new \DateTime($dbActiveBono['expires_at']))->days;
-            if ($dbActiveBono['expires_at'] < $dbToday) $dbExpDays = -1;
-        }
-        ?>
+        <!-- ── Mis bonos: saldo total y cada bono ───────────────── -->
+        <?php if ($dbUsable): ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
-                    <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>Bono activo
+                    <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>Mis bonos
                 </span>
                 <a href="<?= base_url('perfil') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todos</a>
             </div>
             <div class="card-jp-body">
-                <div style="font-size:13px;font-weight:700;color:var(--text-h);margin-bottom:8px"><?= esc($dbActiveBono['bono_name'] ?? '—') ?></div>
-
-                <!-- Sesiones grandes -->
-                <div class="d-flex align-items-end gap-2 mb-2">
+                <div class="d-flex align-items-end gap-2 mb-3">
                     <span style="font-size:40px;font-weight:800;line-height:1;color:<?= $dbRemColor ?>"><?= $dbActiveRem ?></span>
-                    <span style="font-size:14px;color:var(--text-muted);padding-bottom:4px">/ <?= $dbActiveTotal ?> sesiones</span>
-                </div>
-
-                <!-- Barra de progreso gruesa -->
-                <div style="height:10px;background:var(--border);border-radius:5px;margin-bottom:8px">
-                    <div style="height:10px;border-radius:5px;background:<?= $dbRemColor ?>;width:<?= $dbRemPct ?>%;transition:width .4s"></div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center" style="font-size:12px">
-                    <?php if (!empty($dbActiveBono['start_date'])): ?>
-                    <span style="color:var(--text-muted)">Desde <?= date('d/m/Y', strtotime($dbActiveBono['start_date'])) ?></span>
-                    <?php endif; ?>
-                    <?php if (!empty($dbActiveBono['expires_at'])): ?>
-                    <span style="color:<?= ($dbExpDays !== null && $dbExpDays <= 7) ? 'var(--danger)' : 'var(--text-muted)' ?>;font-weight:<?= ($dbExpDays !== null && $dbExpDays <= 7) ? '700' : '400' ?>">
-                        <?php if ($dbExpDays !== null && $dbExpDays <= 7 && $dbExpDays >= 0): ?>
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Vence en <?= $dbExpDays ?> días
-                        <?php else: ?>
-                            Vence <?= date('d/m/Y', strtotime($dbActiveBono['expires_at'])) ?>
-                        <?php endif; ?>
+                    <span style="font-size:14px;color:var(--text-muted);padding-bottom:4px">
+                        sesiones disponibles<?= count($dbUsable) > 1 ? ' en ' . count($dbUsable) . ' bonos' : '' ?>
                     </span>
-                    <?php endif; ?>
                 </div>
 
-                <?php if ($dbRemPct <= 25 && $dbActiveRem > 0): ?>
-                <div style="margin-top:8px;padding:6px 10px;background:rgba(239,68,68,.08);border-radius:6px;font-size:12px;color:var(--danger);font-weight:600">
-                    <i class="bi bi-exclamation-circle-fill me-1"></i>Quedan pocas sesiones. Renueva tu bono pronto.
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Otros bonos activos -->
-        <?php
-        $dbOtherActive = array_filter($dbPfp['plans'] ?? [], function($p) use ($dbToday, $dbActiveBono) {
-            return (int)$p['sessions_remaining'] > 0
-                && (empty($p['expires_at']) || $p['expires_at'] >= $dbToday)
-                && (int)$p['id'] !== (int)($dbActiveBono['id'] ?? 0);
-        });
-        ?>
-        <?php if (!empty($dbOtherActive)): ?>
-        <div class="card-jp">
-            <div class="card-jp-header">
-                <span class="card-jp-title" style="font-size:13px">
-                    <i class="bi bi-collection-fill me-2" style="color:#8b5cf6"></i>Otros bonos
-                </span>
-            </div>
-            <div class="card-jp-body d-flex flex-column gap-3">
-                <?php foreach (array_slice($dbOtherActive, 0, 3) as $dbPlan):
+                <div class="d-flex flex-column gap-3">
+                <?php foreach ($dbUsable as $dbPlan):
                     $dbPRem   = (int)($dbPlan['sessions_remaining'] ?? 0);
                     $dbPTotal = (int)($dbPlan['sessions_total']     ?? 0);
                     $dbPPct   = $dbPTotal > 0 ? min(100, round($dbPRem / $dbPTotal * 100)) : 0;
                     $dbPColor = $dbPPct <= 25 ? 'var(--danger)' : ($dbPPct <= 50 ? '#f97316' : 'var(--accent)');
+                    $dbPDays  = !empty($dbPlan['expires_at']) ? (int)(new \DateTime($dbToday))->diff(new \DateTime($dbPlan['expires_at']))->format('%r%a') : null;
                 ?>
                 <div>
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span style="font-size:12px;font-weight:600;color:var(--text-h)"><?= esc($dbPlan['bono_name'] ?? '—') ?></span>
-                        <span style="font-size:12px;font-weight:700;color:<?= $dbPColor ?>"><?= $dbPRem ?>/<?= $dbPTotal ?></span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($dbPlan['bono_name'] ?? '—') ?></span>
+                        <span style="font-size:13px;font-weight:700;color:<?= $dbPColor ?>"><?= $dbPRem ?>/<?= $dbPTotal ?></span>
                     </div>
-                    <div style="height:5px;background:var(--border);border-radius:3px">
-                        <div style="height:5px;border-radius:3px;background:<?= $dbPColor ?>;width:<?= $dbPPct ?>%"></div>
+                    <div style="height:8px;background:var(--border);border-radius:4px">
+                        <div style="height:8px;border-radius:4px;background:<?= $dbPColor ?>;width:<?= $dbPPct ?>%;transition:width .4s"></div>
                     </div>
                     <?php if (!empty($dbPlan['expires_at'])): ?>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Vence: <?= date('d/m/Y', strtotime($dbPlan['expires_at'])) ?></div>
+                    <div style="font-size:11px;margin-top:2px;color:<?= ($dbPDays !== null && $dbPDays <= 7) ? 'var(--danger)' : 'var(--text-muted)' ?>;font-weight:<?= ($dbPDays !== null && $dbPDays <= 7) ? '700' : '400' ?>">
+                        <?php if ($dbPDays !== null && $dbPDays <= 7): ?><i class="bi bi-exclamation-triangle-fill me-1"></i>Vence en <?= $dbPDays ?> día<?= $dbPDays === 1 ? '' : 's' ?>
+                        <?php else: ?>Vence: <?= date('d/m/Y', strtotime($dbPlan['expires_at'])) ?><?php endif; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
                 <?php endforeach; ?>
+                </div>
+
+                <?php if ($dbActiveRem <= 2): ?>
+                <div style="margin-top:12px;padding:6px 10px;background:rgba(239,68,68,.08);border-radius:6px;font-size:12px;color:var(--danger);font-weight:600">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>Te quedan pocas sesiones. Renueva tu bono pronto.
+                </div>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
         <?php endif; ?>
 
         <!-- ── Próximas clases del player ─────────────── -->

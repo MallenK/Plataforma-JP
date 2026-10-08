@@ -12,7 +12,7 @@ $pct        = $total > 0 ? round(($remaining / $total) * 100) : 0;
 $expired    = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
 $isActive   = $remaining > 0 && !$expired;
 $unassigned = empty($bono['player_id']);
-$statusLbl  = $unassigned ? 'Sin asignar' : ($isActive ? 'Activo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
+$statusLbl  = $unassigned ? 'Sin asignar' : ($isActive ? 'Con saldo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
 $statusCls  = $unassigned ? '' : ($isActive ? 'active' : 'inactive');
 $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
 ?>
@@ -157,9 +157,19 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                     <span style="color:var(--text-muted)"><?= date('d/m/Y', strtotime($d['session_date'])) ?></span>
                 </div>
                 <?php endforeach; ?>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:8px">
-                    Se cubrirán solas con el siguiente bono: se descuenta 1 sesión por clase, empezando por la más antigua, y se avisa a los administradores.
+                <div style="font-size:12px;color:var(--text-muted);margin:8px 0 10px">
+                    No se descuentan solas: tú decides con qué bono saldarlas. Si el alumno tiene varios bonos, hazlo desde el que quieras (también puedes elegir clase a clase en «Gestionar»).
                 </div>
+                <?php $canSettle = $isActive; $nSettle = min(count($debts), $remaining); ?>
+                <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/saldar-deudas') ?>" method="post" style="margin:0"
+                      data-ru-confirm="¿Saldar <?= (int) $nSettle ?> clase(s) con este bono?"
+                      data-ru-confirm-desc="Se descuenta 1 sesión de «<?= esc($bono['bono_name'], 'attr') ?>» por cada clase, empezando por la más antigua. Queda registrado y puedes devolver la sesión después."
+                      data-ru-confirm-label="Saldar con este bono">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" <?= $canSettle ? '' : 'disabled title="Este bono no tiene saldo o está caducado"' ?>>
+                        <i class="bi bi-ticket-perforated-fill me-1"></i>Saldar <?= (int) $nSettle ?> clase(s) con este bono
+                    </button>
+                </form>
             </div>
         </div>
         <?php endif; ?>
@@ -178,7 +188,8 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         ?>
         <div class="card-jp">
             <div class="card-jp-header">
-                <span class="card-jp-title"><i class="bi bi-calendar-event-fill me-2" style="color:var(--accent)"></i>Próximas clases<?= $upTotal ? ' (' . $upTotal . ')' : '' ?></span>
+                <span class="card-jp-title"><i class="bi bi-calendar-event-fill me-2" style="color:var(--accent)"></i>Próximas clases del alumno<?= $upTotal ? ' (' . $upTotal . ')' : '' ?></span>
+                <span style="font-size:11px;color:var(--text-muted)">con todos sus bonos · el bono se elige al pasar lista</span>
             </div>
             <?php if (empty($upItems)): ?>
             <div class="card-jp-body">
@@ -303,7 +314,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         <?php if (!$unassigned): ?>
         <div class="card-jp">
             <div class="card-jp-header">
-                <span class="card-jp-title"><i class="bi bi-clock-history me-2" style="color:var(--text-muted)"></i>Historial de bonos</span>
+                <span class="card-jp-title"><i class="bi bi-clock-history me-2" style="color:var(--text-muted)"></i>Todos los bonos del alumno (<?= count($history) ?>)</span>
             </div>
             <?php if (empty($history)): ?>
             <div class="card-jp-body">
@@ -325,11 +336,14 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                         $hExpired = !empty($h['expires_at']) && $h['expires_at'] < $today;
                         $hActive  = (int)$h['sessions_remaining'] > 0 && !$hExpired;
                         $hCls     = $hActive ? 'active' : 'inactive';
-                        $hLbl     = $hActive ? 'Activo' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido');
+                        $hLbl     = $hActive ? 'Con saldo' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido');
                         $isCurrent = (int)$h['id'] === (int)$bono['id'];
                     ?>
                     <tr style="border-bottom:1px solid var(--border);<?= $isCurrent ? 'background:var(--accent-light)' : '' ?>">
-                        <td style="padding:8px 12px;font-weight:<?= $isCurrent ? '700' : '500' ?>"><?= esc($h['bono_name']) ?></td>
+                        <td style="padding:8px 12px;font-weight:<?= $isCurrent ? '700' : '500' ?>">
+                            <?php if ($isCurrent): ?><?= esc($h['bono_name']) ?> <span style="font-size:10px;color:var(--text-muted)">(este)</span>
+                            <?php else: ?><a href="<?= base_url('bonos/' . (int) $h['id']) ?>" class="row-link-anchor"><?= esc($h['bono_name']) ?></a><?php endif; ?>
+                        </td>
                         <td style="padding:8px 12px"><?= (int)$h['sessions_remaining'] ?> / <?= (int)$h['sessions_total'] ?></td>
                         <td style="padding:8px 12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($h['start_date'])) ?></td>
                         <td style="padding:8px 12px"><span class="badge-status <?= $hCls ?>" style="font-size:10px"><?= $hLbl ?></span></td>
@@ -357,7 +371,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 <table style="width:100%;border-collapse:collapse;font-size:12px">
                     <thead>
                         <tr>
-                            <?php foreach (['Fecha', 'Movimiento', 'Sesiones', 'Detalle', 'Por'] as $th): ?>
+                            <?php foreach (['Fecha', 'Movimiento', 'Bono', 'Sesiones', 'Detalle', 'Por'] as $th): ?>
                             <th style="padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:left"><?= $th ?></th>
                             <?php endforeach; ?>
                         </tr>
@@ -371,6 +385,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                     <tr style="border-bottom:1px solid var(--border)">
                         <td style="padding:8px 12px;color:var(--text-muted);white-space:nowrap"><?= date('d/m/Y H:i', strtotime($m['created_at'])) ?></td>
                         <td style="padding:8px 12px;font-weight:600;color:<?= $mColor ?>"><i class="bi <?= $mIcon ?> me-1"></i><?= esc($mLabel) ?></td>
+                        <td style="padding:8px 12px;color:var(--text-muted)"><?= !empty($m['bono_name']) ? esc($m['bono_name']) . ' #' . (int) $m['bono_id'] : '—' ?><?= !empty($m['related_bono_id']) ? ' <span title="Bono relacionado" style="font-size:10px">↔ #' . (int) $m['related_bono_id'] . '</span>' : '' ?></td>
                         <td style="padding:8px 12px"><?= (int) $m['delta'] === 0 ? '—' : ((int) $m['delta'] > 0 ? '+' : '') . (int) $m['delta'] ?></td>
                         <td style="padding:8px 12px;color:var(--text-muted)"><?= esc($detail) ?></td>
                         <td style="padding:8px 12px;color:var(--text-muted)"><?= esc($m['actor_name'] ?? 'Sistema') ?></td>

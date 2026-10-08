@@ -83,29 +83,34 @@ class BonoControlService
     }
 
     /**
-     * Salda con el bono vigente del alumno las deudas abiertas, de la más
-     * antigua a la más reciente, hasta que se acabe el saldo. Automático al
-     * emitir/asignar/ampliar un bono. Avisa al admin de lo que ha hecho.
+     * Salda con UN bono concreto las deudas abiertas del alumno, de la más
+     * antigua a la más reciente, hasta que se acabe el saldo de ese bono.
      *
-     * @return array{settled:int,remaining_debts:int,bono_id:?int}
+     * SIEMPRE manual: lo dispara un admin tras confirmar ("Saldar con este
+     * bono"); nunca ocurre solo al emitir o asignar un bono. Avisa a los admins.
+     *
+     * @param int|null $limit máximo de clases a saldar (null = todas las que quepan)
+     * @return array{settled:int,remaining_debts:int,bono_id:int}
      */
-    public function settleWithBono(int $playerId, ?int $actorId = null): array
+    public function settleWithBono(int $playerId, ?int $actorId, int $bonoId, ?int $limit = null): array
     {
         $settled = 0;
-        $bonoId  = null;
         $names   = [];
 
         try {
             $svc = new ClasesService();
             foreach ($this->openDebts($playerId) as $debt) {
-                $res = $svc->deductBonoForPlayer((int) $debt['session_id'], $playerId);
+                if ($limit !== null && $settled >= $limit) {
+                    break;
+                }
+                $res = $svc->deductBonoForPlayer((int) $debt['session_id'], $playerId, null, $bonoId);
                 if (empty($res['success'])) {
                     break; // sin saldo (u otro motivo): se para, no se fuerza
                 }
                 $settled++;
                 $names[] = date('d/m', strtotime($debt['session_date']));
-                BonoLedgerService::log($playerId, BonoLedgerService::DEBT_SETTLED, 0, null, (int) $debt['session_id'],
-                    'Saldada automáticamente con un bono nuevo', $actorId);
+                BonoLedgerService::log($playerId, BonoLedgerService::DEBT_SETTLED, 0, $bonoId, (int) $debt['session_id'],
+                    'Saldada a mano con el bono elegido', $actorId);
             }
         } catch (\Throwable $e) {
             log_message('error', 'BonoControlService::settleWithBono falló: ' . $e->getMessage());
@@ -114,12 +119,13 @@ class BonoControlService
         $remaining = count($this->openDebts($playerId));
 
         if ($settled > 0) {
+            $bonoName = $this->bonoName($bonoId);
             $this->notifyAdmins(
                 $playerId,
-                '🎟️ Clases sin bono cubiertas con el bono nuevo',
-                sprintf('%s había dado %d clase(s) sin bono (%s). Se ha descontado 1 sesión del bono nuevo por cada una.%s Si algo no cuadra, puedes devolver la sesión desde la propia clase.',
-                    $this->playerName($playerId), $settled, implode(', ', $names),
-                    $remaining > 0 ? " Quedan {$remaining} clase(s) sin cubrir porque no había más sesiones." : ''),
+                '🎟️ Clases sin bono saldadas con un bono',
+                sprintf('%s: se han saldado %d clase(s) dadas sin bono (%s) con el bono "%s", 1 sesión por cada una.%s Si algo no cuadra, puedes devolver la sesión desde la propia clase.',
+                    $this->playerName($playerId), $settled, implode(', ', $names), $bonoName,
+                    $remaining > 0 ? " Quedan {$remaining} clase(s) sin saldar." : ''),
                 $actorId
             );
         }
@@ -347,6 +353,45 @@ class BonoControlService
     {
         $ids = $this->adminIds();
         return (int) ($ids[0] ?? 0);
+    }
+
+    /**
+     * Salda UNA deuda (una clase concreta) con el bono elegido.
+     *
+     * @return array{success:bool,error?:string}
+     */
+    public function settleOne(int $cspId, int $bonoId, ?int $actorId = null): array
+    {
+        $debt = null;
+        foreach ($this->openDebts() as $d) {
+            if ((int) $d['csp_id'] === $cspId) {
+                $debt = $d;
+                break;
+            }
+        }
+        if (!$debt) {
+            return ['success' => false, 'error' => 'Esa clase ya no figura como pendiente.'];
+        }
+
+        $playerId = (int) ($debt['player_id'] ?? $debt['user_id'] ?? 0);
+        $res = (new ClasesService())->deductBonoForPlayer((int) $debt['session_id'], $playerId, null, $bonoId);
+        if (empty($res['success'])) {
+            return ['success' => false, 'error' => $res['error'] ?? 'No se pudo descontar del bono.'];
+        }
+
+        BonoLedgerService::log($playerId, BonoLedgerService::DEBT_SETTLED, 0, $bonoId, (int) $debt['session_id'],
+            'Saldada a mano con el bono elegido', $actorId);
+        (new BonoCoverageService($this->db))->refreshMarks($playerId);
+
+        return ['success' => true];
+    }
+
+    private function bonoName(int $bonoId): string
+    {
+        $row = $this->db->table('player_bonos pb')->select('bt.name')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
+            ->where('pb.id', $bonoId)->get()->getRowArray();
+        return $row['name'] ?? 'Bono';
     }
 
     private function playerName(int $playerId): string
