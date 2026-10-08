@@ -124,39 +124,6 @@ $statusHint   = [
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
 <?php endif; ?>
 
-<!-- ── Ampliar / continuar clase recurrente ── -->
-<?php if (!empty($seriesRenewal) && !$seriesRenewal['already_renewed'] || !empty($renewalDefaults)): ?>
-<div class="card-jp mb-3" style="border-left:3px solid #7c3aed">
-    <div class="card-jp-body d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div>
-            <div style="font-weight:700;color:var(--text-h);margin-bottom:4px">
-                <i class="bi bi-arrow-repeat me-2" style="color:#7c3aed"></i>
-                <?= $seriesRenewal['scheduled_remaining'] === 0
-                    ? 'Esta clase recurrente ha terminado'
-                    : 'Clase recurrente · quedan ' . (int) $seriesRenewal['scheduled_remaining'] . ' programada' . ($seriesRenewal['scheduled_remaining'] === 1 ? '' : 's') ?>
-            </div>
-            <div style="font-size:13px;color:var(--text-muted)">
-                Añade más clases con el mismo formato (misma hora, lugar, responsable y alumnos).
-            </div>
-        </div>
-        <form action="/clases/plantilla/<?= (int) $session['class_id'] ?>/ampliar" method="POST" class="d-flex align-items-center gap-2 flex-wrap" style="margin:0">
-            <?= csrf_field() ?>
-            <label for="extend-count" style="font-size:13px;margin:0">Añadir</label>
-            <input type="number" id="extend-count" name="count" class="form-control-jp" value="4" min="1" max="60" style="width:80px" required>
-            <span style="font-size:13px">clases</span>
-            <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
-                <i class="bi bi-plus-circle me-1"></i>Añadir
-            </button>
-            <?php if (!empty($renewalDefaults)): ?>
-            <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalRenewSeries')">
-                <i class="bi bi-sliders me-1"></i>Continuar con otros datos
-            </button>
-            <?php endif; ?>
-        </form>
-    </div>
-</div>
-<?php endif; ?>
-
 <div class="row g-3">
 
     <!-- ── Columna principal ──────────────────────────────── -->
@@ -542,6 +509,59 @@ $statusHint   = [
             </div>
         </div>
 
+        <!-- Añadir alumno (solo admin/staff) — límite según class_format -->
+        <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
+        <?php
+            $playerCount = count($session['players']);
+            $fmt = $session['class_format'] ?? 'individual';
+            $maxPlayers = $fmt === 'pareja' ? 2 : 1;
+            $fmtLabel   = $fmt === 'pareja' ? 'Pareja' : 'Individual';
+        ?>
+        <div class="card-jp mb-3">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-person-plus-fill me-2" style="color:var(--accent)"></i>
+                    Añadir alumno
+                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px">(<?= $playerCount ?>/<?= $maxPlayers ?> · <?= $fmtLabel ?>)</span>
+                </span>
+            </div>
+            <div class="card-jp-body">
+                <?php if ($playerCount >= $maxPlayers): ?>
+                <p style="font-size:13px;color:var(--text-muted);margin:0;text-align:center">
+                    <i class="bi bi-lock-fill me-1"></i>Sesión completa — máximo <?= $maxPlayers ?> alumno<?= $maxPlayers > 1 ? 's' : '' ?> (<?= $fmtLabel ?>).
+                </p>
+                <?php else: ?>
+                <form action="/clases/<?= $session['id'] ?>/jugadores/add" method="POST">
+                    <?= csrf_field() ?>
+                    <select name="user_id" class="form-control-jp mb-2" required>
+                        <option value="">Seleccionar jugador…</option>
+                        <?php foreach ($playerOptions as $p): ?>
+                            <?php $isAssigned = false;
+                            foreach ($session['players'] as $sp) {
+                                if ((int)$sp['user_id'] === (int)$p['id']) { $isAssigned = true; break; }
+                            } ?>
+                            <?php if (!$isAssigned): ?>
+                            <option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </select>
+                    <select name="coach_id" class="form-control-jp mb-2">
+                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin entrenador asignado' ?></option>
+                        <?php
+                        $responsiblePool = $isStaffSession ? $staffOptions : $coachOptions;
+                        foreach ($responsiblePool as $c): ?>
+                            <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
+                        <i class="bi bi-plus-lg me-1"></i>Añadir alumno
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Campo / instalación -->
         <div class="card-jp mb-3">
             <div class="card-jp-header">
@@ -721,54 +741,37 @@ $statusHint   = [
         </div>
         <?php endif; ?>
 
-        <!-- Añadir alumno (solo admin/staff) — límite según class_format -->
-        <?php if ($isAdminRole && $session['status'] === 'scheduled'): ?>
-        <?php
-            $playerCount = count($session['players']);
-            $fmt = $session['class_format'] ?? 'individual';
-            $maxPlayers = $fmt === 'pareja' ? 2 : 1;
-            $fmtLabel   = $fmt === 'pareja' ? 'Pareja' : 'Individual';
-        ?>
-        <div class="card-jp">
+        <!-- Ampliar / continuar clase recurrente (solo admin/superadmin) -->
+        <?php if (!empty($seriesRenewal) && !$seriesRenewal['already_renewed'] || !empty($renewalDefaults)): ?>
+        <div class="card-jp mb-3" style="border-left:3px solid #7c3aed">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
-                    <i class="bi bi-person-plus-fill me-2" style="color:var(--accent)"></i>
-                    Añadir alumno
-                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px">(<?= $playerCount ?>/<?= $maxPlayers ?> · <?= $fmtLabel ?>)</span>
+                    <i class="bi bi-arrow-repeat me-2" style="color:#7c3aed"></i>
+                    Clase recurrente
+                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px">
+                        <?= $seriesRenewal['scheduled_remaining'] === 0
+                            ? '· terminada'
+                            : '· quedan ' . (int) $seriesRenewal['scheduled_remaining'] . ' programada' . ($seriesRenewal['scheduled_remaining'] === 1 ? '' : 's') ?>
+                    </span>
                 </span>
             </div>
             <div class="card-jp-body">
-                <?php if ($playerCount >= $maxPlayers): ?>
-                <p style="font-size:13px;color:var(--text-muted);margin:0;text-align:center">
-                    <i class="bi bi-lock-fill me-1"></i>Sesión completa — máximo <?= $maxPlayers ?> alumno<?= $maxPlayers > 1 ? 's' : '' ?> (<?= $fmtLabel ?>).
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
+                    Añade más clases con el mismo formato (misma hora, lugar, responsable y alumnos).
                 </p>
-                <?php else: ?>
-                <form action="/clases/<?= $session['id'] ?>/jugadores/add" method="POST">
+                <form action="/clases/plantilla/<?= (int) $session['class_id'] ?>/ampliar" method="POST" class="d-flex align-items-center gap-2 flex-wrap" style="margin:0">
                     <?= csrf_field() ?>
-                    <select name="user_id" class="form-control-jp mb-2" required>
-                        <option value="">Seleccionar jugador…</option>
-                        <?php foreach ($playerOptions as $p): ?>
-                            <?php $isAssigned = false;
-                            foreach ($session['players'] as $sp) {
-                                if ((int)$sp['user_id'] === (int)$p['id']) { $isAssigned = true; break; }
-                            } ?>
-                            <?php if (!$isAssigned): ?>
-                            <option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                    </select>
-                    <select name="coach_id" class="form-control-jp mb-2">
-                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin entrenador asignado' ?></option>
-                        <?php
-                        $responsiblePool = $isStaffSession ? $staffOptions : $coachOptions;
-                        foreach ($responsiblePool as $c): ?>
-                            <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
-                        <i class="bi bi-plus-lg me-1"></i>Añadir alumno
+                    <label for="extend-count" style="font-size:13px;margin:0">Añadir</label>
+                    <input type="number" id="extend-count" name="count" class="form-control-jp" value="4" min="1" max="60" style="width:80px" required>
+                    <span style="font-size:13px">clases</span>
+                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Añadir
                     </button>
                 </form>
+                <?php if (!empty($renewalDefaults)): ?>
+                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm w-100 mt-2" onclick="openModal('modalRenewSeries')">
+                    <i class="bi bi-sliders me-1"></i>Continuar con otros datos
+                </button>
                 <?php endif; ?>
             </div>
         </div>
