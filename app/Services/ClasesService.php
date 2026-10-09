@@ -3028,7 +3028,9 @@ class ClasesService
         $listTaken = !empty($in['list_taken']) || $status === 'completed';
         $warn      = [];
 
-        if (!empty($in['absence_notice'])) {
+        // Aviso del alumno (formulario) o estado "Avisó ausencia" marcado por el
+        // equipo: ambos cuentan igual, también antes de pasar lista.
+        if (!empty($in['absence_notice']) || in_array('declined', $in['attendances'] ?? [], true)) {
             $warn[] = 'Un alumno ha avisado de que no asistirá';
         }
         // Las ausencias registradas solo cuentan una vez pasada la lista.
