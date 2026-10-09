@@ -878,10 +878,14 @@ class ClasesController extends BaseController
     //  Pasar Lista — por sesión individual (único punto de marcado)
     // ────────────────────────────────────────────────────────────────
 
-    /** ¿Puede el usuario actual ver y mover bonos? Solo admin y superadmin. */
+    /**
+     * ¿Puede el usuario actual ver y mover bonos desde Pasar lista?
+     * Admin, superadmin y coach (este último solo en sesiones donde es entrenador,
+     * lo comprueba guardBonoAction()). Staff sigue sin ver bonos.
+     */
     protected function canManageBonos(): bool
     {
-        return in_array($this->currentRole(), ['superadmin', 'admin'], true);
+        return in_array($this->currentRole(), ['superadmin', 'admin', 'coach'], true);
     }
 
     public function pasarLista(int $id)
@@ -1038,11 +1042,10 @@ class ClasesController extends BaseController
      */
     private function guardBonoAction(int $sessionId)
     {
-        // Los bonos los gestiona solo la administración: coach y staff pasan lista
-        // (asistencia) pero no ven ni mueven bonos.
+        // Admin y coach mueven bonos; staff pasa lista pero no ve ni mueve bonos.
         if (!$this->canManageBonos()) {
             return $this->response->setStatusCode(403)
-                ->setJSON(['success' => false, 'error' => 'Solo administración puede gestionar los bonos.']);
+                ->setJSON(['success' => false, 'error' => 'No tienes permiso para gestionar los bonos.']);
         }
         $session = $this->clasesService->getSession($sessionId);
         if (!$session) {
