@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.32.0",
+        "date": "2026-10-09 00:00:00",
+        "description": "En la ficha del alumno, cada bono con notas muestra un desplegable «Ver notas» con lo que se escribió al crearlo. En el calendario, una clase con un alumno en estado «Avisó ausencia» se marca en naranja aunque aún no se haya pasado lista."
+    },
+    {
         "version": "1.31.1",
         "date": "2026-10-09 00:00:00",
         "description": "Clases recurrentes: nuevo módulo «Clase recurrente» en la columna derecha de la clase para añadir N clases más con el mismo formato (misma hora, lugar, responsable y alumnos), que se encadenan tras la última de la serie. Al eliminar una clase de una serie puedes elegir entre eliminar solo esa clase o toda la serie (se devuelven los bonos ya descontados). Columna derecha reordenada: responsable, añadir alumno, campo, resumen de asistencia y clase recurrente."

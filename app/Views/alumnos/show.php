@@ -420,6 +420,12 @@ $formatTime = static function (?string $hms): string {
                                     <div style="font-size:12px;color:var(--text-muted)"><?= number_format((float)$bono['price'], 2) ?> €</div>
                                     <?php endif; ?>
                                 <?= !empty($canManageBonos) ? '</a>' : '</span>' ?>
+                                <?php if (trim((string)($bono['notes'] ?? '')) !== ''): ?>
+                                <details style="margin-top:4px;font-size:12px">
+                                    <summary style="cursor:pointer;color:var(--accent)"><i class="bi bi-chat-left-text me-1"></i>Ver notas</summary>
+                                    <div style="margin-top:4px;padding:6px 8px;background:var(--bg-subtle,#f8fafc);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);white-space:normal"><?= nl2br(esc($bono['notes'])) ?></div>
+                                </details>
+                                <?php endif; ?>
                             </td>
                             <td style="min-width:140px">
                                 <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
