@@ -53,6 +53,13 @@ final class CalendarAlertLevelTest extends CIUnitTestCase
         $this->assertStringContainsString('avisado', $r['reason']);
     }
 
+    public function testDeclinedStatusIsOrangeBeforeList(): void
+    {
+        $r = $this->alert(['attendances' => ['declined']]);
+        $this->assertSame('warn', $r['level']);
+        $this->assertStringContainsString('avisado', $r['reason']);
+    }
+
     public function testRecordedAbsencesAreOrangeAfterList(): void
     {
         $this->assertSame('warn', $this->level(['list_taken' => true, 'attendances' => ['present', 'absent']]));
