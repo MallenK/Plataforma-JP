@@ -42,12 +42,12 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
             'Falta la ruta POST .../devolver-bono'
         );
         // Ambas con filtro de rol (no rutas abiertas). Reabrir sigue abierto a coach/staff;
-        // los bonos (descontar, devolver, cambiar) son solo de administración.
+        // los bonos (descontar, devolver, cambiar) son de admin y coach (no staff).
         $slice = substr($r, strpos($r, 'reabrir'), 220);
         $this->assertStringContainsString('role:superadmin,admin,staff,coach', $slice, 'Ruta reabrir sin filtro de rol');
         foreach (['descontar-bono', 'devolver-bono', 'cambiar-bono'] as $frag) {
             $slice = substr($r, strpos($r, $frag), 220);
-            $this->assertStringContainsString("'role:superadmin,admin'", $slice, "Ruta {$frag} debe ser solo admin/superadmin");
+            $this->assertStringContainsString("'role:superadmin,admin,coach'", $slice, "Ruta {$frag} debe ser admin/superadmin/coach");
         }
     }
 
