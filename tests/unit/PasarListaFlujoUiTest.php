@@ -199,7 +199,8 @@ final class PasarListaFlujoUiTest extends CIUnitTestCase
         $s = file_get_contents(APPPATH . 'Services/ClasesService.php');
 
         // updateAttendance: el bucle va dentro de una transacción manual.
-        $upd = substr($s, strpos($s, 'public function updateAttendance'), 2000);
+        // (ventana amplia: desde Finanzas 2.0 la función prepara además el descuento automático)
+        $upd = substr($s, strpos($s, 'public function updateAttendance'), 4000);
         $this->assertStringContainsString('$this->db->transBegin();', $upd);
         $this->assertStringContainsString('$this->db->transCommit();', $upd);
         $this->assertStringContainsString('$this->db->transRollback();', $upd);

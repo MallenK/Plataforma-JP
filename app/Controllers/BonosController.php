@@ -7,6 +7,8 @@ use App\Models\BonoTypeModel;
 use App\Models\UserModel;
 use App\Services\AuditService;
 use App\Services\BonoControlService;
+use App\Services\FinanceService;
+use App\Services\RevisionService;
 use App\Services\BonoCoverageService;
 use App\Services\BonoLedgerService;
 use App\Services\ClasesService;
@@ -60,6 +62,7 @@ class BonosController extends BaseController
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
             'filtro'       => $filter,
             'debtCount'    => count((new BonoControlService())->openDebts()),
+            'finMethods'   => (new FinanceService())->methods(),
         ]);
     }
 
@@ -102,9 +105,30 @@ class BonosController extends BaseController
             'notes'              => $notes,
             'created_by'         => $this->currentUserId(),
         ] + BonoControlService::priceSnapshot($type);   // v1.33.0: precio congelado
+
+        // Finanzas 2.0: descuento opcional → el precio congelado es el final (la tarifa queda en price_list_cents).
+        $discount = FinanceService::parseDiscount($this->request->getPost('discount'), (int) $row['price_list_cents']);
+        $row['price_cents'] = (int) $row['price_list_cents'] - $discount;
+
         $this->bonoModel->insert($row);
         $newBonoId = (int) $this->bonoModel->getInsertID();
         AuditService::record('player_bono', $newBonoId, AuditService::CREATE, null, $row, null, (int) $this->currentUserId());
+
+        // Finanzas 2.0: cargo al alumno y, opcionalmente, cobro en el mismo paso.
+        $payMsg = '';
+        if ($playerId) {
+            $fin      = new FinanceService();
+            $chargeId = $fin->chargeForBono($newBonoId, (int) $this->currentUserId(),
+                $discount > 0 ? (trim((string) $this->request->getPost('discount_reason')) ?: 'Descuento') : null);
+            if ($this->request->getPost('pay_now')) {
+                $payCents = RevisionService::parseEuroToCents($this->request->getPost('pay_amount'));
+                $pay = $fin->registerPayment($playerId, (int) $payCents, (int) $this->request->getPost('pay_method_id') ?: null,
+                    date('Y-m-d'), $chargeId, null, 'Cobrado al vender el bono', (int) $this->currentUserId());
+                $payMsg = $pay['success'] ? ' Cobro registrado.' : ' No se registró el cobro: ' . $pay['error'];
+            } else {
+                $payMsg = $row['price_cents'] > 0 ? ' Queda pendiente de cobro en Finanzas.' : '';
+            }
+        }
 
         // TICKET-013: libro de movimientos. Las clases dadas sin bono NO se saldan
         // solas: se avisa y se saldan a mano desde la ficha del bono.
@@ -122,7 +146,7 @@ class BonosController extends BaseController
             $msg = 'Bono emitido correctamente.';
         }
 
-        session()->setFlashdata('success', $msg . $settledMsg);
+        session()->setFlashdata('success', $msg . $payMsg . $settledMsg);
         return redirect()->to('/bonos');
     }
 
@@ -197,6 +221,7 @@ class BonosController extends BaseController
 
         $this->bonoModel->update($id, ['player_id' => $playerId]);
         BonoLedgerService::log($playerId, BonoLedgerService::ASSIGNED, (int)$bono['sessions_remaining'], $id, null, 'Bono sin dueño asignado al alumno');
+        (new FinanceService())->chargeForBono($id, (int) $this->currentUserId());   // Finanzas 2.0: se le carga al alumno
         $settledMsg = $this->pendingDebtsHint($playerId);
 
         $msg = $hadOtherBonos
