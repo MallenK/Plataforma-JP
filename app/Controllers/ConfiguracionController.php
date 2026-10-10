@@ -136,12 +136,16 @@ class ConfiguracionController extends BaseController
     {
         $result = $this->cfgService->deleteStaffUser($id, (int)$this->currentUserId());
 
-        session()->setFlashdata(
-            $result['success'] ? 'success' : 'error',
-            $result['success']
-                ? 'El usuario "' . $result['name'] . '" ha sido eliminado permanentemente.'
-                : ($result['error'] ?? 'No se pudo eliminar el usuario.')
-        );
+        if ($result['success'] && !empty($result['archived'])) {
+            $msg = 'El usuario "' . $result['name'] . '" tiene histórico en la plataforma ('
+                 . \App\Services\ConfiguracionService::historySummary($result['history'] ?? [])
+                 . '), así que no se elimina: se ha dado de baja. Puedes reactivarlo cuando quieras.';
+        } elseif ($result['success']) {
+            $msg = 'El usuario "' . $result['name'] . '" no tenía ningún histórico y se ha eliminado.';
+        } else {
+            $msg = $result['error'] ?? 'No se pudo eliminar el usuario.';
+        }
+        session()->setFlashdata($result['success'] ? 'success' : 'error', $msg);
 
         return redirect()->to('/configuracion?section=staff');
     }
@@ -182,7 +186,7 @@ class ConfiguracionController extends BaseController
 
         session()->setFlashdata(
             $ok ? 'success' : 'error',
-            $ok ? 'Sede eliminada correctamente.' : 'No se pudo eliminar la sede.'
+            $ok ? 'Sede archivada. Ya no aparece en las listas, pero las sesiones que la usaron la conservan.' : 'No se pudo archivar la sede.'
         );
 
         return redirect()->to('/configuracion?section=sedes');
@@ -224,7 +228,7 @@ class ConfiguracionController extends BaseController
 
         session()->setFlashdata(
             $ok ? 'success' : 'error',
-            $ok ? 'Tipo de bono eliminado correctamente.' : 'No se pudo eliminar el tipo de bono.'
+            $ok ? 'Tipo de bono archivado. Los bonos ya vendidos de este tipo se conservan.' : 'No se pudo archivar el tipo de bono.'
         );
 
         return redirect()->to('/configuracion?section=facturacion');

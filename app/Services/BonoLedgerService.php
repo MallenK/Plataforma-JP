@@ -21,6 +21,7 @@ class BonoLedgerService
     public const ADJUSTED      = 'adjusted';       // edición manual de saldo/fecha
     public const EXPIRY_ALERT  = 'expiry_alert';   // aviso de caducidad enviado
     public const ASSIGNED      = 'assigned';       // bono sin dueño asignado a un alumno
+    public const VOIDED        = 'voided';         // bono anulado (v1.33.0): se cancela el saldo que quedaba
 
     private const LABELS = [
         self::GRANTED       => ['Bono emitido',          'bi-ticket-perforated-fill', 'ok'],
@@ -32,6 +33,7 @@ class BonoLedgerService
         self::ADJUSTED      => ['Ajuste manual',         'bi-pencil-fill',            'neutral'],
         self::EXPIRY_ALERT  => ['Aviso de caducidad',    'bi-hourglass-split',        'risk'],
         self::ASSIGNED      => ['Bono asignado',         'bi-person-check-fill',      'ok'],
+        self::VOIDED        => ['Bono anulado',          'bi-x-octagon-fill',         'risk'],
     ];
 
     /** @return array{0:string,1:string,2:string} [etiqueta, icono, tono] */

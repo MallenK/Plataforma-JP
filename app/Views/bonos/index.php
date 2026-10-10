@@ -107,6 +107,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <a href="?filtro=agotados"      class="calendar-view-tab <?= ($filtro ?? '') === 'agotados'      ? 'active' : '' ?>" style="text-decoration:none">Agotados</a>
             <a href="?filtro=sin-asignar"   class="calendar-view-tab <?= ($filtro ?? '') === 'sin-asignar'   ? 'active' : '' ?>" style="text-decoration:none">Sin asignar</a>
             <a href="?filtro=vencidos"      class="calendar-view-tab <?= ($filtro ?? '') === 'vencidos'      ? 'active' : '' ?>" style="text-decoration:none">Vencidos</a>
+            <a href="?filtro=anulados"      class="calendar-view-tab <?= ($filtro ?? '') === 'anulados'      ? 'active' : '' ?>" style="text-decoration:none">Anulados</a>
             <a href="?filtro=todos"         class="calendar-view-tab <?= ($filtro ?? '') === 'todos'         ? 'active' : '' ?>" style="text-decoration:none">Todos</a>
         </div>
         <?= view('partials/list_view_toggle', ['key' => 'bonos']) ?>
@@ -120,6 +121,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <?php
             echo match($filtro ?? 'activos') {
                 'vencidos'    => 'vencidos',
+                'anulados'    => 'anulados',
                 'sin-asignar' => 'sin asignar',
                 'todos'       => 'registrados',
                 default       => 'activos',
@@ -191,6 +193,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     $statusLbl = 'Sin asignar';
                 } elseif ($usable > 0) {
                     $statusLbl = $multi ? $usable . ' bonos con saldo' : 'Con saldo';
+                } elseif (count(array_filter($row['bonos'], fn($b) => empty($b['voided_at']))) === 0) {
+                    $statusLbl = 'Anulado';
                 } else {
                     $allEmpty  = array_sum(array_map(fn($b) => (int) $b['sessions_remaining'], $row['bonos'])) === 0;
                     $statusLbl = $allEmpty ? 'Agotado' : 'Vencido';
@@ -232,7 +236,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         $expired   = !empty($b['expires_at']) && $b['expires_at'] < $today;
                         $isUsable  = $remaining > 0 && !$expired;
                         $barColor  = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
-                        $lineLbl   = $remaining === 0 ? 'Agotado' : ($expired ? 'Vencido' : null);
+                        $lineLbl   = !empty($b['voided_at']) ? 'Anulado' : ($remaining === 0 ? 'Agotado' : ($expired ? 'Vencido' : null));
                     ?>
                     <a href="<?= base_url('bonos/' . (int) $b['id']) ?>" class="bono-mini" style="display:block;text-decoration:none;color:inherit;padding:6px 0;<?= count($row['bonos']) > 1 ? 'border-bottom:1px dashed var(--border);' : '' ?><?= $isUsable ? '' : 'opacity:.6' ?>" title="Ver este bono">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">

@@ -212,6 +212,21 @@ class ConfiguracionService
         if ($user['role'] === 'superadmin')   return ['success' => false, 'error' => 'No se puede eliminar un superadmin.'];
 
         $db = \Config\Database::connect();
+
+        // v1.33.0 «Nada se borra»: con histórico (clases impartidas, bonos
+        // emitidos, movimientos, mensajes…) NO se borra: se da de baja.
+        $history = $this->userHistory($userId);
+        if ($history) {
+            $db->table('users')->where('id', $userId)->update(['status' => 'inactive']);
+            AuditService::record('user', $userId, AuditService::ARCHIVE,
+                ['status' => $user['status']], ['status' => 'inactive'],
+                'Eliminar bloqueado por histórico (' . self::historySummary($history) . '); dado de baja', $byUserId);
+            return ['success' => true, 'name' => $user['name'], 'archived' => true, 'history' => $history];
+        }
+
+        AuditService::record('user', $userId, AuditService::DELETE, AuditService::sanitize($user), null,
+            'Sin ningún histórico en la plataforma', $byUserId);
+
         $db->transStart();
 
         // FK RESTRICT nullable → SET NULL para no bloquear el DELETE del usuario
@@ -241,6 +256,62 @@ class ConfiguracionService
         return ['success' => true, 'name' => $user['name']];
     }
 
+    /** Dónde aparece un usuario (tabla.columna => nº filas). */
+    private const HISTORY_REFS = [
+        'class_session_coaches.user_id'   => 'clases impartidas',
+        'class_session_players.user_id'   => 'clases como alumno',
+        'class_session_players.coach_id'  => 'alumnos a cargo',
+        'class_sessions.created_by'       => 'sesiones creadas',
+        'classes.created_by'              => 'clases creadas',
+        'player_bonos.player_id'          => 'bonos',
+        'player_bonos.created_by'         => 'bonos emitidos',
+        'bono_movements.actor_id'         => 'movimientos de bono',
+        'messages.sender_id'              => 'mensajes',
+        'notifications.sender_id'         => 'avisos enviados',
+        'tickets.user_id'                 => 'tickets',
+        'ticket_replies.user_id'          => 'respuestas a tickets',
+        'player_annotations.author_id'    => 'anotaciones',
+        'documents.uploader_id'           => 'documentos subidos',
+    ];
+
+    /**
+     * Histórico de un usuario en la plataforma. Vacío = nunca hizo nada y se
+     * puede borrar de verdad; si no, solo se da de baja.
+     *
+     * @return array<string,int> etiqueta => nº de filas (solo las que tienen alguna)
+     */
+    public function userHistory(int $userId): array
+    {
+        $db  = \Config\Database::connect();
+        $out = [];
+        foreach (self::HISTORY_REFS as $ref => $label) {
+            [$table, $col] = explode('.', $ref);
+            try {
+                if (!$db->tableExists($table) || !$db->fieldExists($col, $table)) {
+                    continue;
+                }
+                $n = (int) $db->table($table)->where($col, $userId)->countAllResults();
+                if ($n > 0) {
+                    $out[$label] = ($out[$label] ?? 0) + $n;
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'userHistory(' . $ref . '): ' . $e->getMessage());
+                $out['(no comprobable)'] = 1;   // ante la duda, no se borra
+            }
+        }
+        return $out;
+    }
+
+    /** "3 clases impartidas, 12 mensajes" (pura). */
+    public static function historySummary(array $history): string
+    {
+        $parts = [];
+        foreach ($history as $label => $n) {
+            $parts[] = $n . ' ' . $label;
+        }
+        return implode(', ', $parts);
+    }
+
     /**
      * Reactiva un usuario de staff previamente desactivado.
      */
@@ -264,7 +335,7 @@ class ConfiguracionService
 
     public function getLocations(): array
     {
-        return $this->locations->orderBy('name', 'ASC')->findAll();
+        return $this->locations->where('archived_at IS NULL')->orderBy('name', 'ASC')->findAll();
     }
 
     public function getLocation(int $id): ?array
@@ -307,9 +378,23 @@ class ConfiguracionService
         ]);
     }
 
+    /**
+     * v1.33.0 «Nada se borra»: la sede se ARCHIVA (desaparece de listas y
+     * selectores, pero las sesiones que la usaron la siguen mostrando).
+     */
     public function deleteLocation(int $id): bool
     {
-        return (bool) $this->locations->delete($id);
+        $loc = $this->locations->find($id);
+        if (!$loc || !empty($loc['archived_at'])) {
+            return false;
+        }
+        $data = ['active' => 0, 'archived_at' => date('Y-m-d H:i:s')];
+        $ok   = (bool) \Config\Database::connect()->table('locations')->where('id', $id)->update($data);
+        if ($ok) {
+            AuditService::record('location', $id, AuditService::ARCHIVE,
+                ['active' => $loc['active'], 'archived_at' => null], $data, 'Sede archivada desde Configuración');
+        }
+        return $ok;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -318,7 +403,7 @@ class ConfiguracionService
 
     public function getBonoTypes(): array
     {
-        return $this->bonoTypes->orderBy('name', 'ASC')->findAll();
+        return $this->bonoTypes->where('archived_at IS NULL')->orderBy('name', 'ASC')->findAll();
     }
 
     /**
@@ -338,23 +423,52 @@ class ConfiguracionService
             return ['success' => false, 'errors' => $this->bonoTypes->errors()];
         }
 
+        AuditService::record('bono_type', (int) $id, AuditService::CREATE, null, $this->bonoTypes->find($id));
         return ['success' => true, 'id' => $id];
     }
 
+    /**
+     * Cambiar el precio de un tipo NO cambia lo que costaron los bonos ya
+     * vendidos (precio congelado en `player_bonos`, v1.33.0). El cambio queda
+     * en la auditoría con el valor anterior.
+     */
     public function updateBonoType(int $id, array $data): bool
     {
-        return (bool) $this->bonoTypes->update($id, [
+        $before = $this->bonoTypes->find($id);
+        $row = [
             'name'          => $data['name'],
             'sessions'      => (int)($data['sessions']      ?? 10),
             'price'         => (float)($data['price']       ?? 0),
             'validity_days' => (int)($data['validity_days'] ?? 365),
             'active'        => isset($data['active']) ? (int)$data['active'] : 1,
-        ]);
+        ];
+        $ok = (bool) $this->bonoTypes->update($id, $row);
+        if ($ok && $before) {
+            [$b, $a] = AuditService::changes($before, $row);
+            if ($a) {
+                AuditService::record('bono_type', $id, AuditService::UPDATE, $b, $a);
+            }
+        }
+        return $ok;
     }
 
+    /**
+     * v1.33.0 «Nada se borra»: el tipo de bono se ARCHIVA (desactivado y fuera
+     * de las listas). Sus bonos siguen existiendo y mostrando su tipo.
+     */
     public function deleteBonoType(int $id): bool
     {
-        return (bool) $this->bonoTypes->delete($id);
+        $type = $this->bonoTypes->find($id);
+        if (!$type || !empty($type['archived_at'])) {
+            return false;
+        }
+        $data = ['active' => 0, 'archived_at' => date('Y-m-d H:i:s')];
+        $ok   = (bool) \Config\Database::connect()->table('bono_types')->where('id', $id)->update($data);
+        if ($ok) {
+            AuditService::record('bono_type', $id, AuditService::ARCHIVE,
+                ['active' => $type['active'], 'archived_at' => null], $data, 'Tipo de bono archivado');
+        }
+        return $ok;
     }
 
     // ════════════════════════════════════════════════════════════════

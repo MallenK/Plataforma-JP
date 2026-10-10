@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\PlayerBonoModel;
 use App\Models\BonoTypeModel;
 use App\Models\UserModel;
+use App\Services\AuditService;
 use App\Services\BonoControlService;
 use App\Services\BonoCoverageService;
 use App\Services\BonoLedgerService;
@@ -40,6 +41,7 @@ class BonosController extends BaseController
             'vencidos'      => $this->getExpiredBonos(),
             'sin-asignar'   => $this->getUnassignedBonos(),
             'agotados'      => $this->getDepletedBonos(),
+            'anulados'      => $this->getVoidedBonos(),
             'casi-agotados' => $this->getLowSessionBonos(),
             default         => $this->bonoModel->getActiveBonosWithDetails(),
         };
@@ -54,7 +56,7 @@ class BonosController extends BaseController
             'bonos'        => $bonos,
             'stats'        => $this->bonoModel->getStats(),
             'bonoTypes'    => $this->typeModel->getActive(),
-            'allBonoTypes' => $this->typeModel->orderBy('active', 'DESC')->orderBy('name', 'ASC')->findAll(),
+            'allBonoTypes' => $this->typeModel->where('archived_at IS NULL')->orderBy('active', 'DESC')->orderBy('name', 'ASC')->findAll(),
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
             'filtro'       => $filter,
             'debtCount'    => count((new BonoControlService())->openDebts()),
@@ -90,7 +92,7 @@ class BonosController extends BaseController
             ? date('Y-m-d', strtotime($startDate . ' +' . $type['validity_days'] . ' days'))
             : null;
 
-        $this->bonoModel->insert([
+        $row = [
             'player_id'          => $playerId,
             'bono_type_id'       => $bonoTypeId,
             'sessions_total'     => (int)$type['sessions'],
@@ -99,8 +101,10 @@ class BonosController extends BaseController
             'expires_at'         => $expiresAt,
             'notes'              => $notes,
             'created_by'         => $this->currentUserId(),
-        ]);
+        ] + BonoControlService::priceSnapshot($type);   // v1.33.0: precio congelado
+        $this->bonoModel->insert($row);
         $newBonoId = (int) $this->bonoModel->getInsertID();
+        AuditService::record('player_bono', $newBonoId, AuditService::CREATE, null, $row, null, (int) $this->currentUserId());
 
         // TICKET-013: libro de movimientos. Las clases dadas sin bono NO se saldan
         // solas: se avisa y se saldan a mano desde la ficha del bono.
@@ -173,6 +177,11 @@ class BonosController extends BaseController
             return redirect()->to('/bonos');
         }
 
+        if (!empty($bono['voided_at'])) {
+            session()->setFlashdata('error', 'Este bono está anulado y no se puede asignar.');
+            return redirect()->to('/bonos/' . $id);
+        }
+
         if (!empty($bono['player_id'])) {
             session()->setFlashdata('error', 'Este bono ya tiene un jugador asignado.');
             return redirect()->to('/bonos/' . $id);
@@ -204,58 +213,42 @@ class BonosController extends BaseController
 
     public function update(int $id)
     {
-        $bono = $this->bonoModel->find($id);
-        if (!$bono) {
-            session()->setFlashdata('error', 'Bono no encontrado.');
-            return redirect()->to('/bonos');
-        }
+        // v1.33.0: cambiar saldo o caducidad exige motivo y queda en el libro y en auditoría.
+        $res = (new BonoControlService())->updateBono($id, [
+            'notes'              => $this->request->getPost('notes'),
+            'sessions_remaining' => $this->request->getPost('sessions_remaining'),
+            'expires_at'         => $this->request->getPost('expires_at'),
+        ], $this->request->getPost('reason'), (int) $this->currentUserId());
 
-        $data = [];
-
-        if ($this->request->getPost('notes') !== null) {
-            $data['notes'] = $this->request->getPost('notes') ?: null;
+        if (!$res['success']) {
+            session()->setFlashdata('error', $res['error']);
+        } else {
+            session()->setFlashdata('success', ($res['changed'] ?? 0) > 0 ? 'Bono actualizado.' : 'No había cambios que guardar.');
         }
-        if ($this->request->getPost('sessions_remaining') !== null) {
-            $data['sessions_remaining'] = max(0, (int)$this->request->getPost('sessions_remaining'));
-        }
-        if ($this->request->getPost('expires_at') !== null) {
-            $data['expires_at'] = $this->request->getPost('expires_at') ?: null;
-        }
-
-        if (!empty($data)) {
-            $this->bonoModel->update($id, $data);
-
-            // TICKET-013: toda edición manual del saldo o la fecha queda en el libro.
-            if (!empty($bono['player_id'])) {
-                $notes = [];
-                if (isset($data['sessions_remaining']) && (int)$data['sessions_remaining'] !== (int)$bono['sessions_remaining']) {
-                    $notes[] = 'sesiones ' . (int)$bono['sessions_remaining'] . ' → ' . (int)$data['sessions_remaining'];
-                }
-                if (array_key_exists('expires_at', $data) && ($data['expires_at'] ?? null) !== ($bono['expires_at'] ?? null)) {
-                    $notes[] = 'caducidad ' . ($bono['expires_at'] ? date('d/m/Y', strtotime($bono['expires_at'])) : '—')
-                        . ' → ' . ($data['expires_at'] ? date('d/m/Y', strtotime($data['expires_at'])) : '—');
-                }
-                if ($notes) {
-                    BonoLedgerService::log((int)$bono['player_id'], BonoLedgerService::ADJUSTED,
-                        isset($data['sessions_remaining']) ? (int)$data['sessions_remaining'] - (int)$bono['sessions_remaining'] : 0,
-                        $id, null, 'Edición manual: ' . implode('; ', $notes));
-                }
-            }
-        }
-
-        session()->setFlashdata('success', 'Bono actualizado.');
         return redirect()->to('/bonos/' . $id);
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Eliminar bono
+    //  Anular bono (v1.33.0 «Nada se borra»: ya no se elimina)
     // ────────────────────────────────────────────────────────────────
 
+    public function void(int $id)
+    {
+        $res = (new BonoControlService())->voidBono($id, $this->request->getPost('reason'), (int) $this->currentUserId());
+
+        if (!$res['success']) {
+            session()->setFlashdata('error', $res['error']);
+        } else {
+            $n = (int) ($res['cancelled'] ?? 0);
+            session()->setFlashdata('success', 'Bono anulado.' . ($n > 0 ? " Se han cancelado las {$n} sesiones que quedaban." : '') . ' Su historial se conserva.');
+        }
+        return redirect()->to('/bonos/' . $id);
+    }
+
+    /** Ruta antigua `bonos/:id/delete` (pestañas abiertas de antes): ahora anula, con motivo. */
     public function destroy(int $id)
     {
-        $this->bonoModel->delete($id);
-        session()->setFlashdata('success', 'Bono eliminado.');
-        return redirect()->to('/bonos');
+        return $this->void($id);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -439,6 +432,8 @@ class BonosController extends BaseController
         if (!$id) {
             return $this->response->setJSON(['ok' => false, 'error' => 'Error al crear el tipo de bono.']);
         }
+        AuditService::record('bono_type', (int) $id, AuditService::CREATE, null,
+            ['name' => $name, 'sessions' => $sessions, 'price' => max(0.0, $price), 'validity_days' => $validityDays]);
 
         return $this->response->setJSON([
             'ok'        => true,
@@ -468,6 +463,9 @@ class BonosController extends BaseController
         }
 
         $this->typeModel->update($id, ['name' => $name]);
+        if ($name !== $tipo['name']) {
+            AuditService::record('bono_type', $id, AuditService::UPDATE, ['name' => $tipo['name']], ['name' => $name]);
+        }
 
         return $this->response->setJSON([
             'ok'        => true,
@@ -486,6 +484,7 @@ class BonosController extends BaseController
 
         $newState = $tipo['active'] ? 0 : 1;
         $this->typeModel->update($id, ['active' => $newState]);
+        AuditService::record('bono_type', $id, AuditService::UPDATE, ['active' => (int) $tipo['active']], ['active' => $newState]);
 
         return $this->response->setJSON([
             'ok'        => true,
@@ -508,6 +507,7 @@ class BonosController extends BaseController
                 ->where('pb.sessions_remaining', 0)
                 ->orWhere('pb.expires_at <', $today)
             ->groupEnd()
+            ->where('pb.voided_at IS NULL')
             ->orderBy('pb.created_at', 'DESC')
             ->get()->getResultArray();
     }
@@ -536,7 +536,20 @@ class BonosController extends BaseController
             ->join('users u',       'u.id = pb.player_id')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id')
             ->where('pb.sessions_remaining', 0)
+            ->where('pb.voided_at IS NULL')
             ->orderBy('pb.updated_at', 'DESC')
+            ->get()->getResultArray();
+    }
+
+    /** Bonos anulados (v1.33.0): siguen existiendo con su histórico. */
+    private function getVoidedBonos(): array
+    {
+        return \Config\Database::connect()->table('player_bonos pb')
+            ->select('pb.*, u.name AS player_name, u.email AS player_email, u.avatar AS player_avatar, u.status AS player_status, bt.name AS bono_name, bt.sessions AS bono_sessions_original')
+            ->join('users u',       'u.id = pb.player_id', 'left')
+            ->join('bono_types bt', 'bt.id = pb.bono_type_id')
+            ->where('pb.voided_at IS NOT NULL')
+            ->orderBy('pb.voided_at', 'DESC')
             ->get()->getResultArray();
     }
 

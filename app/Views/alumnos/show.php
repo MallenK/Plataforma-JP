@@ -404,7 +404,8 @@ $formatTime = static function (?string $hms): string {
                             $total     = (int)($bono['sessions_total']     ?? 0);
                             $expired   = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
 
-                            if ($expired)             { $statusLbl = 'Vencido';   $statusCls = 'inactive'; }
+                            if (!empty($bono['voided_at'])) { $statusLbl = 'Anulado'; $statusCls = 'inactive'; }
+                            elseif ($expired)         { $statusLbl = 'Vencido';   $statusCls = 'inactive'; }
                             elseif ($remaining === 0) { $statusLbl = 'Agotado';   $statusCls = 'inactive'; }
                             else                      { $statusLbl = 'Con saldo'; $statusCls = 'active'; }
 

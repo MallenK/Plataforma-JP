@@ -463,7 +463,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         $expired   = !empty($plan['expires_at']) && $plan['expires_at'] < $today;
                         $active    = !$expired && $remaining > 0;
                         $badgeClass = $expired ? 'badge-status inactive' : ($active ? 'badge-status active' : 'badge-status inactive');
-                        $badgeLabel = $expired ? 'Vencido' : ($active ? 'Con saldo' : 'Agotado');
+                        $badgeLabel = !empty($plan['voided_at']) ? 'Anulado' : ($expired ? 'Vencido' : ($active ? 'Con saldo' : 'Agotado'));
                     ?>
                     <tr>
                         <td>

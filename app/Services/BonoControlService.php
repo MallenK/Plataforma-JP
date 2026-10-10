@@ -229,6 +229,10 @@ class BonoControlService
             return ['success' => false, 'error' => 'Bono no encontrado.'];
         }
 
+        if (!empty($bono['voided_at'])) {
+            return ['success' => false, 'error' => 'Este bono está anulado y no se puede ampliar.'];
+        }
+
         $calc = self::computeExtension($bono['expires_at'] ?? null, $mode, $customDate, date('Y-m-d'));
         if (!$calc['ok']) {
             return ['success' => false, 'error' => $calc['error']];
@@ -258,6 +262,199 @@ class BonoControlService
         }
 
         return ['success' => true, 'date' => $calc['date']];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  «Nada se borra» (v1.33.0): precio congelado, editar con motivo, anular
+    // ────────────────────────────────────────────────────────────────
+
+    /** Longitud mínima del motivo de una corrección o anulación. */
+    public const MIN_REASON = 3;
+
+    /**
+     * Precio congelado al vender un bono (céntimos). Cambiar después la tarifa
+     * del tipo no reescribe lo que costó este bono.
+     *
+     * @return array{price_list_cents:int,price_cents:int,price_estimated:int}
+     */
+    public static function priceSnapshot(array $type): array
+    {
+        $cents = (int) round(((float) ($type['price'] ?? 0)) * 100);
+        return ['price_list_cents' => $cents, 'price_cents' => $cents, 'price_estimated' => 0];
+    }
+
+    /** ¿El motivo es suficiente? (no vacío, mínimo MIN_REASON caracteres) */
+    public static function validReason(?string $reason): bool
+    {
+        return mb_strlen(trim((string) $reason)) >= self::MIN_REASON;
+    }
+
+    /**
+     * Normaliza la edición de un bono a partir del formulario. Pura.
+     * Cambiar el saldo o la caducidad exige motivo; las notas no.
+     *
+     * @param array $input claves opcionales: notes, sessions_remaining, expires_at
+     * @return array{ok:bool,data?:array,needsReason?:bool,error?:string}
+     */
+    public static function buildBonoEdit(array $bono, array $input): array
+    {
+        if (!empty($bono['voided_at'])) {
+            return ['ok' => false, 'error' => 'Este bono está anulado y ya no se puede editar.'];
+        }
+        $data = [];
+        if (array_key_exists('notes', $input) && $input['notes'] !== null) {
+            $data['notes'] = trim((string) $input['notes']) !== '' ? (string) $input['notes'] : null;
+        }
+        if (array_key_exists('sessions_remaining', $input) && $input['sessions_remaining'] !== null && $input['sessions_remaining'] !== '') {
+            $n = (int) $input['sessions_remaining'];
+            if ($n < 0 || $n > (int) $bono['sessions_total']) {
+                return ['ok' => false, 'error' => 'Las sesiones restantes deben estar entre 0 y ' . (int) $bono['sessions_total'] . '.'];
+            }
+            $data['sessions_remaining'] = $n;
+        }
+        if (array_key_exists('expires_at', $input) && $input['expires_at'] !== null) {
+            $d = trim((string) $input['expires_at']);
+            if ($d !== '' && strtotime($d) === false) {
+                return ['ok' => false, 'error' => 'La fecha de caducidad no es válida.'];
+            }
+            $data['expires_at'] = $d !== '' ? date('Y-m-d', strtotime($d)) : null;
+        }
+
+        [, $changed] = AuditService::changes($bono, $data);
+        $needsReason = array_key_exists('sessions_remaining', $changed) || array_key_exists('expires_at', $changed);
+
+        return ['ok' => true, 'data' => $changed, 'needsReason' => $needsReason];
+    }
+
+    /**
+     * Edita un bono dejando registro: libro del bono (si cambia saldo o fecha)
+     * y auditoría (antes / después / motivo).
+     *
+     * @return array{success:bool,changed?:int,error?:string}
+     */
+    public function updateBono(int $bonoId, array $input, ?string $reason, int $actorId): array
+    {
+        $bonoModel = new PlayerBonoModel();
+        $bono      = $bonoModel->find($bonoId);
+        if (!$bono) {
+            return ['success' => false, 'error' => 'Bono no encontrado.'];
+        }
+
+        $edit = self::buildBonoEdit($bono, $input);
+        if (!$edit['ok']) {
+            return ['success' => false, 'error' => $edit['error']];
+        }
+        $data = $edit['data'];
+        if (!$data) {
+            return ['success' => true, 'changed' => 0];
+        }
+        if ($edit['needsReason'] && !self::validReason($reason)) {
+            return ['success' => false, 'error' => 'Indica el motivo del cambio de saldo o de caducidad (queda registrado).'];
+        }
+
+        $bonoModel->update($bonoId, $data);
+        [$before, $after] = AuditService::changes($bono, $data);
+        AuditService::record('player_bono', $bonoId, AuditService::UPDATE, $before, $after, $reason, $actorId);
+
+        $playerId = (int) ($bono['player_id'] ?? 0);
+        if ($playerId > 0 && $edit['needsReason']) {
+            $notes = [];
+            if (array_key_exists('sessions_remaining', $data)) {
+                $notes[] = 'sesiones ' . (int) $bono['sessions_remaining'] . ' → ' . (int) $data['sessions_remaining'];
+            }
+            if (array_key_exists('expires_at', $data)) {
+                $notes[] = 'caducidad ' . ($bono['expires_at'] ? date('d/m/Y', strtotime($bono['expires_at'])) : '—')
+                    . ' → ' . ($data['expires_at'] ? date('d/m/Y', strtotime($data['expires_at'])) : '—');
+            }
+            BonoLedgerService::log($playerId, BonoLedgerService::ADJUSTED,
+                array_key_exists('sessions_remaining', $data) ? (int) $data['sessions_remaining'] - (int) $bono['sessions_remaining'] : 0,
+                $bonoId, null, implode('; ', $notes) . ' · Motivo: ' . trim((string) $reason), $actorId);
+            (new BonoCoverageService($this->db))->refreshMarks($playerId);
+        }
+
+        return ['success' => true, 'changed' => count($data)];
+    }
+
+    /**
+     * Anula un bono (sustituye al antiguo «Eliminar»). El bono sigue existiendo
+     * con todo su histórico: las sesiones ya descontadas quedan ligadas a él y
+     * el saldo que quedaba se cancela (pasa a 0 y queda en el libro). Ya no se
+     * puede usar ni editar. Exige motivo.
+     *
+     * @return array{success:bool,cancelled?:int,error?:string}
+     */
+    public function voidBono(int $bonoId, ?string $reason, int $actorId): array
+    {
+        if (!self::validReason($reason)) {
+            return ['success' => false, 'error' => 'Indica el motivo de la anulación (queda registrado).'];
+        }
+        $bonoModel = new PlayerBonoModel();
+        $bono      = $bonoModel->find($bonoId);
+        if (!$bono) {
+            return ['success' => false, 'error' => 'Bono no encontrado.'];
+        }
+        if (!empty($bono['voided_at'])) {
+            return ['success' => false, 'error' => 'Este bono ya estaba anulado.'];
+        }
+
+        $remaining = (int) $bono['sessions_remaining'];
+        $data = [
+            'voided_at'          => date('Y-m-d H:i:s'),
+            'voided_by'          => $actorId,
+            'void_reason'        => mb_substr(trim((string) $reason), 0, 255),
+            'sessions_remaining' => 0,
+        ];
+        $bonoModel->update($bonoId, $data);
+
+        [$before, $after] = AuditService::changes($bono, $data);
+        AuditService::record('player_bono', $bonoId, AuditService::VOID, $before, $after, $reason, $actorId);
+
+        $playerId = (int) ($bono['player_id'] ?? 0);
+        if ($playerId > 0) {
+            BonoLedgerService::log($playerId, BonoLedgerService::VOIDED, -$remaining, $bonoId, null,
+                'Motivo: ' . trim((string) $reason), $actorId);
+            (new BonoCoverageService($this->db))->refreshMarks($playerId);
+        }
+
+        return ['success' => true, 'cancelled' => $remaining];
+    }
+
+    /**
+     * Confirma el precio REAL pagado por un bono cuyo precio era estimado
+     * (bonos anteriores a v1.33.0) o lo corrige. Queda en auditoría.
+     *
+     * @param string|null $priceRaw importe en euros tal como lo escribe el admin ("225", "225,50")
+     * @return array{success:bool,error?:string}
+     */
+    public function confirmPrice(int $bonoId, ?string $priceRaw, ?string $reason, int $actorId): array
+    {
+        $cents = RevisionService::parseEuroToCents($priceRaw);
+        if ($cents === null) {
+            return ['success' => false, 'error' => 'Indica un importe válido en euros (por ejemplo 225 o 225,50).'];
+        }
+        if ($cents > 10000000) {
+            return ['success' => false, 'error' => 'El importe es demasiado alto.'];
+        }
+        $bonoModel = new PlayerBonoModel();
+        $bono      = $bonoModel->find($bonoId);
+        if (!$bono) {
+            return ['success' => false, 'error' => 'Bono no encontrado.'];
+        }
+        if (!empty($bono['voided_at'])) {
+            return ['success' => false, 'error' => 'Este bono está anulado.'];
+        }
+        $wasEstimated = !empty($bono['price_estimated']);
+        if (!$wasEstimated && !self::validReason($reason)) {
+            return ['success' => false, 'error' => 'Para corregir un precio ya confirmado indica el motivo.'];
+        }
+
+        $data = ['price_cents' => $cents, 'price_estimated' => 0];
+        $bonoModel->update($bonoId, $data);
+        [$b, $a] = AuditService::changes($bono, $data);
+        AuditService::record('player_bono', $bonoId, AuditService::UPDATE, $b, $a,
+            $reason ?: ($wasEstimated ? 'Precio real confirmado' : null), $actorId);
+
+        return ['success' => true];
     }
 
     // ────────────────────────────────────────────────────────────────

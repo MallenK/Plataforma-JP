@@ -1860,14 +1860,94 @@ class ClasesService
     //  Eliminar
     // ────────────────────────────────────────────────────────────────
 
-    public function deleteSession(int $id): bool
+    /**
+     * Estados de asistencia que ya son histórico: si un alumno tiene uno de
+     * estos (o un bono descontado), su fila no se puede borrar (v1.33.0).
+     * `pending` y `confirmed` son planificación y sí se pueden quitar.
+     */
+    public const HISTORY_ATTENDANCE = ['present', 'absent', 'unjustified', 'declined'];
+
+    /** ¿La fila de un alumno en una sesión ya es histórico? Pura. */
+    public static function playerRowHasHistory(?array $row): bool
     {
-        // Antes de borrar las filas: devolver los bonos descontados (si no,
-        // se perdería el saldo y el rastro para siempre).
+        return $row !== null && (
+            in_array($row['attendance'] ?? 'pending', self::HISTORY_ATTENDANCE, true)
+            || !empty($row['bono_deducted_at'])
+        );
+    }
+
+    /**
+     * Motivo por el que NO se puede borrar una sesión, o null si se puede.
+     * Solo se borran sesiones futuras, programadas y sin nada registrado; el
+     * resto se cancela (v1.33.0 «Nada se borra»). Pura.
+     *
+     * @param array<int,array> $players filas de class_session_players
+     */
+    public static function sessionDeletionBlocker(array $session, array $players, string $today): ?string
+    {
+        if (($session['status'] ?? 'scheduled') !== 'scheduled') {
+            return 'La sesión ya está cerrada o cancelada: forma parte del histórico y no se puede eliminar.';
+        }
+        if (($session['session_date'] ?? '') < $today) {
+            return 'La sesión ya pasó: cancélala si no se llegó a dar, pero no se elimina.';
+        }
+        if (!empty($session['lista_pasada_at'])) {
+            return 'Ya se pasó lista en esta sesión: cancélala en lugar de eliminarla.';
+        }
+        foreach ($players as $p) {
+            if (self::playerRowHasHistory($p)) {
+                return 'Algún alumno ya tiene asistencia, aviso de ausencia o bono registrado: cancela la sesión en lugar de eliminarla.';
+            }
+        }
+        return null;
+    }
+
+    /** Motivo por el que NO se puede quitar a un alumno de una sesión, o null. Pura. */
+    public static function playerRemovalBlocker(array $session, ?array $row, string $today): ?string
+    {
+        if ($row === null) {
+            return null;
+        }
+        if (($session['status'] ?? 'scheduled') !== 'scheduled' || ($session['session_date'] ?? '') < $today) {
+            return 'La sesión ya pasó o está cerrada: marca su ausencia en lugar de quitarlo.';
+        }
+        if (self::playerRowHasHistory($row)) {
+            return 'Ya tiene asistencia, aviso de ausencia o bono registrado en esta sesión: marca su ausencia en lugar de quitarlo.';
+        }
+        return null;
+    }
+
+    /**
+     * Elimina una sesión solo si no tiene histórico (ver sessionDeletionBlocker).
+     * Deja en auditoría una foto de la sesión y su lista antes de borrarla.
+     *
+     * @return array{success:bool,error?:string}
+     */
+    public function deleteSession(int $id): array
+    {
+        $session = $this->sessionModel->find($id);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
+        }
+        $players = $this->db->table('class_session_players')->where('session_id', $id)->get()->getResultArray();
+        $coaches = $this->db->table('class_session_coaches')->where('session_id', $id)->get()->getResultArray();
+
+        $blocker = self::sessionDeletionBlocker($session, $players, date('Y-m-d'));
+        if ($blocker !== null) {
+            AuditService::record('class_session', $id, AuditService::BLOCKED, null, null, $blocker);
+            return ['success' => false, 'error' => $blocker];
+        }
+
+        AuditService::record('class_session', $id, AuditService::DELETE,
+            ['session' => $session, 'players' => $players, 'coaches' => $coaches], null,
+            'Sesión futura sin histórico');
+
+        // Por seguridad (no debería haber ninguno si pasó el bloqueo).
         $this->refundAllDeductedForSession($id);
         $this->db->table('class_session_coaches')->where('session_id', $id)->delete();
         $this->db->table('class_session_players')->where('session_id', $id)->delete();
-        return (bool)$this->sessionModel->delete($id);
+        $this->sessionModel->delete($id);
+        return ['success' => true];
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -2162,10 +2242,12 @@ class ClasesService
     }
 
     /**
-     * Elimina TODA la serie recurrente: sesiones de la clase (devolviendo los
-     * bonos ya descontados), plantilla y enlaces de renovación.
+     * Elimina la serie recurrente: borra las sesiones SIN histórico (futuras,
+     * programadas, sin asistencia ni bonos) y CONSERVA el resto (v1.33.0).
+     * La plantilla y sus enlaces de renovación solo se eliminan si no queda
+     * ninguna sesión.
      *
-     * @return array{sessions:int,refunded:int}
+     * @return array{sessions:int,kept:int,refunded:int,template_deleted:bool}
      */
     public function deleteSeries(int $classId): array
     {
@@ -2173,17 +2255,27 @@ class ClasesService
             $this->db->table('class_sessions')->select('id')->where('class_id', $classId)->get()->getResultArray(),
             'id'
         ));
-        $refunded = 0;
+        $deleted = 0;
+        $kept    = 0;
         foreach ($ids as $sid) {
-            $refunded += $this->countDeductedBonos($sid);
-            $this->deleteSession($sid);
+            $r = $this->deleteSession($sid);
+            $r['success'] ? $deleted++ : $kept++;
         }
-        // Desenlazar renovaciones que apuntaran a esta plantilla.
-        $this->db->table('classes')->where('renewed_to_class_id', $classId)->update(['renewed_to_class_id' => null]);
-        $this->db->table('classes')->where('renewed_from_class_id', $classId)->update(['renewed_from_class_id' => null]);
-        $this->classModel->delete($classId);
 
-        return ['sessions' => count($ids), 'refunded' => $refunded];
+        $templateDeleted = false;
+        if ($kept === 0) {
+            $template = $this->classModel->find($classId);
+            // Desenlazar renovaciones que apuntaran a esta plantilla.
+            $this->db->table('classes')->where('renewed_to_class_id', $classId)->update(['renewed_to_class_id' => null]);
+            $this->db->table('classes')->where('renewed_from_class_id', $classId)->update(['renewed_from_class_id' => null]);
+            if ($template) {
+                AuditService::record('class', $classId, AuditService::DELETE, $template, null, 'Serie sin sesiones con histórico');
+            }
+            $this->classModel->delete($classId);
+            $templateDeleted = true;
+        }
+
+        return ['sessions' => $deleted, 'kept' => $kept, 'refunded' => 0, 'template_deleted' => $templateDeleted];
     }
 
     /**
@@ -2380,14 +2472,44 @@ class ClasesService
         return ['success' => true, 'coverage' => $coverage];
     }
 
-    public function removePlayer(int $sessionId, int $userId): bool
+    /**
+     * Alumnos que NO se pudieron quitar al sincronizar la lista de una sesión
+     * por tener histórico (v1.33.0). El controller los lee con takeKeptPlayers().
+     *
+     * @var array<int,array{session_id:int,user_id:int,reason:string}>
+     */
+    protected array $keptPlayers = [];
+
+    /** @return array<int,array{session_id:int,user_id:int,reason:string}> y vacía la lista */
+    public function takeKeptPlayers(): array
     {
-        // Si al alumno se le había descontado un bono en esta sesión, se le
-        // devuelve antes de eliminar la fila (si no, se pierde el saldo).
+        $out = $this->keptPlayers;
+        $this->keptPlayers = [];
+        return $out;
+    }
+
+    /**
+     * Quita a un alumno de una sesión solo si su fila no es histórico (ver
+     * playerRemovalBlocker); si lo es, hay que marcar su ausencia.
+     *
+     * @return array{success:bool,error?:string}
+     */
+    public function removePlayer(int $sessionId, int $userId): array
+    {
         $row = $this->playerModel
             ->where('session_id', $sessionId)
             ->where('user_id', $userId)
             ->first();
+        if (!$row) {
+            return ['success' => true];
+        }
+        $session = $this->sessionModel->find($sessionId) ?? [];
+        $blocker = self::playerRemovalBlocker($session, $row, date('Y-m-d'));
+        if ($blocker !== null) {
+            AuditService::record('class_session_player', (int) $row['id'], AuditService::BLOCKED, null, null, $blocker);
+            return ['success' => false, 'error' => $blocker];
+        }
+        AuditService::record('class_session_player', (int) $row['id'], AuditService::DELETE, $row, null, 'Alumno quitado de una sesión futura sin histórico');
 
         $this->db->transBegin();
         try {
@@ -2403,7 +2525,7 @@ class ClasesService
             $this->db->transRollback();
             throw $e;
         }
-        return true;
+        return ['success' => true];
     }
 
     public function getPlayersForSession(int $sessionId): array
@@ -2918,10 +3040,14 @@ class ClasesService
             $existingByUser[(int)$r['user_id']] = (int)$r['id'];
         }
 
-        // Quitar los que ya no están: devolver bono + borrar fila.
+        // Quitar los que ya no están (v1.33.0: solo si su fila no es histórico;
+        // si lo es, se queda y se avisa con takeKeptPlayers()).
         foreach ($existingByUser as $uid => $rowId) {
             if (!in_array($uid, $wanted, true)) {
-                $this->removePlayer($sessionId, $uid);
+                $r = $this->removePlayer($sessionId, $uid);
+                if (!$r['success']) {
+                    $this->keptPlayers[] = ['session_id' => $sessionId, 'user_id' => $uid, 'reason' => $r['error']];
+                }
             }
         }
 

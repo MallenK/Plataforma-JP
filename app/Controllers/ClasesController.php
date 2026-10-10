@@ -345,7 +345,7 @@ class ClasesController extends BaseController
             return redirect()->back()->withInput();
         }
 
-        session()->setFlashdata('success', 'Sesión actualizada correctamente.');
+        session()->setFlashdata('success', 'Sesión actualizada correctamente.' . $this->keptPlayersNotice());
         return redirect()->to('/clases/' . $id);
     }
 
@@ -365,15 +365,13 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $refunded = $this->clasesService->countDeductedBonos($id);
-        $this->clasesService->deleteSession($id);
-
-        $msg = 'Sesión eliminada.';
-        if ($refunded > 0) {
-            $msg .= " Se {$this->plural($refunded, 'ha devuelto', 'han devuelto')} {$refunded} "
-                  . $this->plural($refunded, 'bono ya descontado', 'bonos ya descontados') . '.';
+        // v1.33.0 «Nada se borra»: solo se eliminan sesiones futuras sin histórico.
+        $r = $this->clasesService->deleteSession($id);
+        if (!$r['success']) {
+            session()->setFlashdata('error', $r['error']);
+            return redirect()->to('/clases/' . $id);
         }
-        session()->setFlashdata('success', $msg);
+        session()->setFlashdata('success', 'Sesión eliminada.');
         return redirect()->to('/clases');
     }
 
@@ -398,13 +396,15 @@ class ClasesController extends BaseController
 
         $r = $this->clasesService->deleteSeries((int) $session['class_id']);
 
-        $msg = "Serie eliminada: {$r['sessions']} " . $this->plural($r['sessions'], 'sesión', 'sesiones') . '.';
-        if ($r['refunded'] > 0) {
-            $msg .= " Se {$this->plural($r['refunded'], 'ha devuelto', 'han devuelto')} {$r['refunded']} "
-                  . $this->plural($r['refunded'], 'bono ya descontado', 'bonos ya descontados') . '.';
-        }
+        // v1.33.0: las sesiones con histórico (pasadas, con lista o bonos) se conservan.
+        $msg = $r['template_deleted']
+            ? "Serie eliminada: {$r['sessions']} " . $this->plural($r['sessions'], 'sesión', 'sesiones') . '.'
+            : "Se " . $this->plural($r['sessions'], 'ha eliminado', 'han eliminado') . " {$r['sessions']} "
+              . $this->plural($r['sessions'], 'sesión futura', 'sesiones futuras') . " de la serie. "
+              . "Se " . $this->plural($r['kept'], 'conserva', 'conservan') . " {$r['kept']} con histórico "
+              . "(ya dadas, con lista pasada, avisos o bonos); cancélalas si alguna no se va a dar.";
         session()->setFlashdata('success', $msg);
-        return redirect()->to('/clases');
+        return redirect()->to($r['template_deleted'] ? '/clases' : '/clases/' . $id);
     }
 
     /** Ayudante mínimo de plural para los mensajes flash. */
@@ -1177,8 +1177,25 @@ class ClasesController extends BaseController
 
     public function removePlayer(int $id, int $playerId)
     {
-        $this->clasesService->removePlayer($id, $playerId);
-        session()->setFlashdata('success', 'Jugador eliminado.');
+        // v1.33.0: no se quita a un alumno que ya tiene asistencia, aviso o bono en la sesión.
+        $r = $this->clasesService->removePlayer($id, $playerId);
+        session()->setFlashdata($r['success'] ? 'success' : 'error', $r['success'] ? 'Jugador quitado de la sesión.' : $r['error']);
         return redirect()->to('/clases/' . $id);
+    }
+
+    /**
+     * Aviso (texto) si al guardar la lista de alumnos alguno no se pudo quitar
+     * por tener histórico en esa sesión (v1.33.0). Vacío si no hubo ninguno.
+     */
+    protected function keptPlayersNotice(): string
+    {
+        $kept = $this->clasesService->takeKeptPlayers();
+        if (!$kept) {
+            return '';
+        }
+        $ids   = array_values(array_unique(array_column($kept, 'user_id')));
+        $names = array_column((new \App\Models\UserModel())->select('id, name')->whereIn('id', $ids)->findAll(), 'name');
+        return ' No se ' . $this->plural(count($names), 'ha quitado a', 'ha quitado a') . ' ' . implode(', ', $names)
+             . ': ya tiene asistencia, aviso de ausencia o bono registrado en alguna sesión (marca su ausencia en lugar de quitarlo).';
     }
 }
