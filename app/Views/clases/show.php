@@ -347,7 +347,7 @@ $statusHint   = [
                                         if (in_array(session('role'), ['superadmin', 'admin'], true) && empty($p['bono_deducted_at'])):
                                             $bcTag = null;
                                             if (!empty($p['bono_resolution'])) {
-                                                $bcTag = ['#475569', '#f1f5f9', 'bi-check2-square', $p['bono_resolution'] === 'external' ? 'Pagada fuera de bono' : 'Condonada'];
+                                                $bcTag = ['#475569', '#f1f5f9', 'bi-check2-square', \App\Services\BonoControlService::resolutionLabel($p['bono_resolution'])];
                                             } elseif ($session['status'] === 'completed' && \App\Services\ClasesService::attendanceConsumesBono($p['attendance'])) {
                                                 $bcTag = ['#b91c1c', '#fee2e2', 'bi-receipt', 'Clase dada sin bono'];
                                             } elseif ($session['status'] === 'scheduled' && ($p['bono_coverage'] ?? '') === 'uncovered') {

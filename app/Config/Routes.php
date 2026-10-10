@@ -384,6 +384,9 @@ $routes->get('finanzas', 'FinanzasController::index', [
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+$routes->post('finanzas/revision/cierre-inicial', 'FinanzasController::initialClose', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 $routes->get('pendientes', 'FinanzasController::legacyPendientes', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

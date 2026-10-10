@@ -13,7 +13,7 @@ $cards = [
     ['#sin-cerrar', 'Sesiones sin cerrar',       count($unclosed),                     'bi-calendar-x-fill',          '#b45309', '#ffedd5'],
     ['#sin-bono',   'Clases sin descontar',      count($debts) + count($preControl),   'bi-receipt',                  '#b91c1c', '#fee2e2'],
     ['#precios',    'Bonos con precio estimado', count($estimated),                    'bi-question-circle-fill',     '#92400e', '#fef3c7'],
-    ['#sin-usar',   'Caducados sin usar',        count($unused),                       'bi-hourglass-bottom',         '#6d28d9', '#ede9fe'],
+    ['#sin-usar',   'Caducados sin usar (aviso)', count($unused),                      'bi-hourglass-bottom',         '#6d28d9', '#ede9fe'],
 ];
 ?>
 
@@ -26,6 +26,28 @@ $cards = [
 <?php endif; ?>
 <?php if (session()->getFlashdata('error')): ?>
 <div class="alert-jp error mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error')) ?></div>
+<?php endif; ?>
+
+<?php $cp = $closePreview ?? ['sessions' => 0, 'debts' => 0, 'prices' => 0]; ?>
+<?php if ($cp['sessions'] + $cp['debts'] + $cp['prices'] > 0): ?>
+<div class="card-jp mb-3" style="border:2px solid #bfdbfe">
+    <div class="card-jp-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div style="font-size:13px;line-height:1.6;max-width:760px">
+            <strong style="font-size:14px;color:var(--text-h)"><i class="bi bi-check2-all me-1" style="color:var(--accent)"></i>Cierre de revisión inicial</strong><br>
+            Da por bueno lo anterior en un solo paso: se cierran las <strong><?= (int) $cp['sessions'] ?></strong> sesiones pasadas que ya tienen asistencia marcada,
+            se dan por buenas las <strong><?= (int) $cp['debts'] ?></strong> clases dadas sin descontar (el saldo de los bonos no cambia)
+            y se confirman los <strong><?= (int) $cp['prices'] ?></strong> precios estimados al precio de tarifa.
+            Solo quedarán por revisar las sesiones que nadie cerró. Todo queda registrado.
+        </div>
+        <form action="<?= base_url('finanzas/revision/cierre-inicial') ?>" method="post" style="margin:0"
+              data-ru-confirm="¿Dar por bueno lo anterior?"
+              data-ru-confirm-desc="Se cierran <?= (int) $cp['sessions'] ?> sesiones, se aceptan <?= (int) $cp['debts'] ?> clases sin descontar y se confirman <?= (int) $cp['prices'] ?> precios. Queda en el registro de auditoría."
+              data-ru-confirm-label="Cerrar revisión inicial">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check2-all me-1"></i>Cerrar revisión inicial</button>
+        </form>
+    </div>
+</div>
 <?php endif; ?>
 
 <div class="row g-3 mb-3">
@@ -145,7 +167,7 @@ $cards = [
         <?php if ($unusedTotal > 0): ?><span style="font-size:13px;font-weight:700;color:var(--text-h)"><?= $eur($unusedTotal) ?></span><?php endif; ?>
     </div>
     <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        El bono caducó y le quedaban sesiones. Ese importe <strong>se da por ganado</strong>, pero se señala aquí como <strong>«sin usar»</strong>.
+        <strong>Solo informativo, no es una tarea.</strong> El bono caducó y le quedaban sesiones: ese importe <strong>se da por ganado</strong> y se señala aquí como <strong>«sin usar»</strong>.
         Si se le quiere dar más tiempo al alumno, se amplía la caducidad desde la ficha del bono.
     </div>
     <?php if (empty($unused)): ?>

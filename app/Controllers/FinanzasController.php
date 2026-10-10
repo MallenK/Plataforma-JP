@@ -42,7 +42,19 @@ class FinanzasController extends BaseController
             'estimated'  => $rev->estimatedPriceBonos(),
             'unused'     => $rev->expiredUnused(),
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
+            'closePreview' => $rev->initialClose(false),
         ]);
+    }
+
+    /** Cierre de revisión inicial: da por bueno lo anterior en bloque (RevisionService::initialClose). */
+    public function initialClose()
+    {
+        $r = (new RevisionService())->initialClose(true, (int) $this->currentUserId());
+        session()->setFlashdata('success', sprintf(
+            'Revisión inicial cerrada: %d sesiones cerradas, %d clases dadas por buenas y %d precios confirmados. Queda registrado.',
+            $r['sessions'], $r['debts'], $r['prices']
+        ));
+        return redirect()->to('/finanzas/revision');
     }
 
     /** Confirma (o corrige con motivo) el precio real pagado de un bono. */

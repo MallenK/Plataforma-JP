@@ -19,6 +19,18 @@ class BonoControlService
 {
     public const RESOLUTION_EXTERNAL = 'external'; // pagada fuera de bono
     public const RESOLUTION_WAIVED   = 'waived';   // condonada
+    public const RESOLUTION_ACCEPTED = 'accepted'; // dada por buena en el cierre de revisión inicial (v1.33.0)
+
+    /** Etiqueta de una resolución de clase sin bono. */
+    public static function resolutionLabel(?string $resolution): string
+    {
+        return match ($resolution) {
+            self::RESOLUTION_EXTERNAL => 'Pagada fuera de bono',
+            self::RESOLUTION_WAIVED   => 'Condonada',
+            self::RESOLUTION_ACCEPTED => 'Dada por buena (cierre inicial)',
+            default                   => (string) $resolution,
+        };
+    }
 
     /** Ampliaciones rápidas (días). Además existe la fecha personalizada. */
     public const EXTEND_PRESETS = [15, 30, 60];

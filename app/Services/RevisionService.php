@@ -57,6 +57,114 @@ class RevisionService
         return (int) round(((float) $s) * 100);
     }
 
+    /**
+     * Cierre de revisión inicial (v1.33.0). Por decisión del responsable, lo
+     * anterior se da por bueno en bloque y solo queda por revisar lo que de
+     * verdad nadie cerró:
+     *
+     *  1. Sesiones pasadas «programadas» con ALGUNA asistencia marcada
+     *     (presente, ausencia, aviso…) → se cierran (igual que «Cerrar sesión»:
+     *     solo cambia el estado; no descuenta bonos ni avisa a nadie).
+     *  2. Clases dadas sin descontar (antes y después del control) → se dan por
+     *     buenas (`bono_resolution = accepted`). El saldo de los bonos no cambia.
+     *  3. Precios estimados → confirmados al precio de tarifa con el que se
+     *     rellenaron.
+     *
+     * Los bonos caducados con sesiones sin usar no se tocan: se señalan (no
+     * son una tarea). Idempotente: una segunda ejecución no encuentra nada.
+     * Todo queda en `audit_log` y en el libro del bono.
+     *
+     * @param bool $apply false = solo cuenta lo que haría (prueba en seco)
+     * @return array{sessions:int,debts:int,prices:int,applied:bool}
+     */
+    public function initialClose(bool $apply, ?int $actorId = null, ?string $today = null): array
+    {
+        $today = $today ?: date('Y-m-d');
+        $now   = date('Y-m-d H:i:s');
+
+        $sessionIds = array_map('intval', array_column($this->db->query(
+            "SELECT DISTINCT cs.id FROM class_sessions cs
+             JOIN class_session_players csp ON csp.session_id = cs.id AND csp.attendance <> 'pending'
+             WHERE cs.status = 'scheduled' AND cs.session_date < ?",
+            [$today]
+        )->getResultArray(), 'id'));
+
+        $priceIds = array_map('intval', array_column($this->db->table('player_bonos')
+            ->select('id')->where('voided_at IS NULL')->where('price_estimated', 1)
+            ->get()->getResultArray(), 'id'));
+
+        if (!$apply) {
+            // Las clases sin descontar se cuentan como quedarían DESPUÉS de cerrar las sesiones.
+            $debts = (int) $this->db->query(
+                "SELECT COUNT(*) AS n FROM class_session_players csp
+                 JOIN class_sessions cs ON cs.id = csp.session_id
+                 WHERE (cs.status = 'completed' OR cs.id IN (" . ($sessionIds ? implode(',', $sessionIds) : '0') . "))
+                   AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
+                   AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL"
+            )->getRow()->n;
+            return ['sessions' => count($sessionIds), 'debts' => $debts, 'prices' => count($priceIds), 'applied' => false];
+        }
+
+        $reason = 'Cierre de revisión inicial';
+        $hasBy  = $this->db->fieldExists('lista_pasada_by', 'class_sessions');
+
+        // 1. Sesiones con asistencia marcada → cerradas
+        foreach ($sessionIds as $sid) {
+            $s = $this->db->table('class_sessions')->select('status, lista_pasada_at')->where('id', $sid)->get()->getRowArray();
+            $upd = ['status' => 'completed', 'updated_at' => $now];
+            if (empty($s['lista_pasada_at'])) {
+                $upd['lista_pasada_at'] = $now;
+                if ($hasBy && $actorId) {
+                    $upd['lista_pasada_by'] = $actorId;
+                }
+            }
+            $this->db->table('class_sessions')->where('id', $sid)->where('status', 'scheduled')->update($upd);
+            AuditService::record('class_session', $sid, AuditService::UPDATE,
+                ['status' => $s['status'] ?? 'scheduled'], ['status' => 'completed'],
+                $reason . ': tenía asistencia marcada', $actorId);
+        }
+
+        // 2. Clases dadas sin descontar → dadas por buenas
+        $debtRows = $this->db->query(
+            "SELECT csp.id, csp.user_id, csp.session_id FROM class_session_players csp
+             JOIN class_sessions cs ON cs.id = csp.session_id
+             WHERE cs.status = 'completed'
+               AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
+               AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL"
+        )->getResultArray();
+        foreach ($debtRows as $d) {
+            $this->db->table('class_session_players')->where('id', (int) $d['id'])->where('bono_resolution IS NULL', null, false)->update([
+                'bono_resolution'  => BonoControlService::RESOLUTION_ACCEPTED,
+                'bono_resolved_at' => $now,
+                'bono_resolved_by' => $actorId,
+            ]);
+            BonoLedgerService::log((int) $d['user_id'], BonoLedgerService::DEBT_RESOLVED, 0, null, (int) $d['session_id'],
+                $reason . ': clase dada por buena sin descontar bono', $actorId);
+            AuditService::record('class_session_player', (int) $d['id'], AuditService::UPDATE,
+                ['bono_resolution' => null], ['bono_resolution' => BonoControlService::RESOLUTION_ACCEPTED], $reason, $actorId);
+        }
+
+        // 3. Precios estimados → confirmados (precio de tarifa)
+        foreach ($priceIds as $bid) {
+            $this->db->table('player_bonos')->where('id', $bid)->where('price_estimated', 1)->update(['price_estimated' => 0]);
+            AuditService::record('player_bono', $bid, AuditService::UPDATE,
+                ['price_estimated' => 1], ['price_estimated' => 0], $reason . ': precio de tarifa confirmado', $actorId);
+        }
+
+        // Marca de cuándo se hizo (informativo)
+        try {
+            $exists = $this->db->table('academy_settings')->where('setting_key', 'finanzas_cierre_inicial_at')->countAllResults();
+            $row = ['setting_value' => $now, 'updated_at' => $now];
+            $exists
+                ? $this->db->table('academy_settings')->where('setting_key', 'finanzas_cierre_inicial_at')->update($row)
+                : $this->db->table('academy_settings')->insert($row + ['setting_key' => 'finanzas_cierre_inicial_at', 'setting_type' => 'string']);
+        } catch (\Throwable $e) {
+            log_message('error', 'initialClose: no se pudo guardar la marca: ' . $e->getMessage());
+        }
+
+        return ['sessions' => count($sessionIds), 'debts' => count($debtRows), 'prices' => count($priceIds), 'applied' => true];
+    }
+
     /** Recuentos para el aviso del dashboard (consultas baratas). */
     public function counts(?string $today = null): array
     {
