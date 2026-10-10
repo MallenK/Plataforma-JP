@@ -987,6 +987,12 @@ class ClasesController extends BaseController
                   . $this->plural($devueltos, 'bono', 'bonos')
                   . " al cambiar la asistencia de {$this->plural($devueltos, 'un alumno', 'varios alumnos')}.";
         }
+        $auto = (int) ($res['bonos_auto'] ?? 0);
+        if ($auto > 0) {
+            $msg .= " Se {$this->plural($auto, 'ha descontado', 'han descontado')} {$auto} "
+                  . $this->plural($auto, 'sesión', 'sesiones')
+                  . ' automáticamente (falta sin justificar o aviso tardío). Se puede devolver desde esta misma lista.';
+        }
         session()->setFlashdata('success', $msg);
 
         return redirect()->to('/clases/' . $id . '/lista');

@@ -1055,7 +1055,7 @@ class ClasesService
             'lista_pasada_by' => $adminId,
         ]);
 
-        return ['success' => true, 'bonos_devueltos' => $refunded];
+        return ['success' => true, 'bonos_devueltos' => $refunded, 'bonos_auto' => $this->lastAutoDeducted];
     }
 
     /**
@@ -1285,6 +1285,125 @@ class ClasesService
 
     /** Todos los valores válidos de `class_session_players.attendance`. */
     public const ATTENDANCE_VALUES = ['present', 'absent', 'pending', 'confirmed', 'declined', 'unjustified'];
+
+    // ────────────────────────────────────────────────────────────────
+    //  Finanzas 2.0 — descuento automático (falta sin justificar o aviso tardío)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * ¿El aviso llegó con menos de $hours horas antes de empezar la clase?
+     * Sin hora de aviso (lo marcó el equipo, sin aviso registrado) cuenta como
+     * tardío: es reversible. Pura.
+     */
+    public static function isLateNotice(?string $notedAt, string $sessionDate, ?string $startTime, int $hours): bool
+    {
+        if ($notedAt === null || $notedAt === '') {
+            return true;
+        }
+        $start = strtotime($sessionDate . ' ' . ($startTime ?: '00:00:00'));
+        $noted = strtotime($notedAt);
+        if ($start === false || $noted === false) {
+            return true;
+        }
+        return ($start - $noted) < $hours * 3600;
+    }
+
+    /**
+     * Motivo del descuento automático para una fila de asistencia, o null si
+     * no toca. Regla de la academia: falta sin justificar, o «Avisó ausencia»
+     * con menos de N horas (por defecto 24). Pura.
+     */
+    public static function autoDeductReason(array $row, array $session, int $hours): ?string
+    {
+        $status = $row['attendance'] ?? 'pending';
+        if ($status === 'unjustified') {
+            return 'Falta sin justificar';
+        }
+        if ($status === 'declined') {
+            $noted = ($row['student_noted_at'] ?? null) ?: ($row['responded_at'] ?? null);
+            if (self::isLateNotice($noted, (string) ($session['session_date'] ?? ''), $session['start_time'] ?? null, $hours)) {
+                return 'Aviso con menos de ' . $hours . ' h';
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ¿Esta fila consume sesión? Las de siempre (presente, confirmada, falta
+     * sin justificar) y, con la regla nueva, el aviso tardío. Pura.
+     */
+    public static function rowConsumesBono(array $row, array $session, int $hours): bool
+    {
+        return self::attendanceConsumesBono($row['attendance'] ?? null)
+            || (($row['attendance'] ?? null) === 'declined' && self::autoDeductReason($row, $session, $hours) !== null);
+    }
+
+    /** Ajustes de la regla automática: [activa, horas]. */
+    private function autoDeductSettings(): array
+    {
+        $vals = [];
+        try {
+            foreach ($this->db->table('academy_settings')->whereIn('setting_key', ['fin_auto_deduct', 'fin_notice_hours'])->get()->getResultArray() as $s) {
+                $vals[$s['setting_key']] = $s['setting_value'];
+            }
+        } catch (\Throwable $e) {
+            // sin ajustes: regla apagada
+        }
+        return [($vals['fin_auto_deduct'] ?? '0') === '1', max(1, (int) ($vals['fin_notice_hours'] ?? 24))];
+    }
+
+    /**
+     * Descuenta automáticamente una sesión del bono que caduca antes. Mismo
+     * reclamo atómico que el descuento manual (no puede descontar dos veces).
+     * Se deshace como cualquier descuento («Devolver») desde Pasar lista.
+     */
+    private function autoDeduct(int $sessionId, array $row, string $reason): bool
+    {
+        $playerId = (int) $row['user_id'];
+        $bonoModel = new PlayerBonoModel();
+        $usable = $bonoModel->getUsableBonos($playerId);
+        if (!$usable) {
+            return false;   // sin saldo: queda como clase sin descontar (Revisión)
+        }
+        usort($usable, fn($a, $b) => [$a['expires_at'] ?? '9999-12-31', (int) $a['id']] <=> [$b['expires_at'] ?? '9999-12-31', (int) $b['id']]);
+        $bonoId = (int) $usable[0]['id'];
+
+        $this->db->transBegin();
+        try {
+            $bono = $bonoModel->deductSessionDetailed($playerId, $bonoId);
+            if ($bono === null) {
+                $this->db->transRollback();
+                return false;
+            }
+            $this->db->table('class_session_players')
+                ->where('id', (int) $row['id'])
+                ->where('bono_deducted_at', null)
+                ->update(['bono_deducted_at' => date('Y-m-d H:i:s'), 'bono_deducted_from_id' => (int) $bono['id']]);
+            if ($this->db->affectedRows() < 1) {
+                $this->db->transRollback();
+                return false;
+            }
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            log_message('error', 'autoDeduct falló: ' . $e->getMessage());
+            return false;
+        }
+
+        BonoLedgerService::log($playerId, BonoLedgerService::DEDUCTED, -1, (int) $bono['id'], $sessionId, 'Automático: ' . $reason);
+        AuditService::record('class_session_player', (int) $row['id'], AuditService::UPDATE,
+            ['bono_deducted_at' => null], ['bono_deducted_from_id' => (int) $bono['id']], 'Descuento automático: ' . $reason);
+        try {
+            $remaining = (int) $bono['sessions_remaining'];
+            if ($remaining === 1 || $remaining === 0) {
+                $this->emitBonoLowSessionsNotification($playerId, $bono);
+            }
+            $this->emitPlayerLowTotalNotification($playerId);
+        } catch (\Throwable $e) {
+            log_message('error', 'autoDeduct: aviso de saldo bajo falló: ' . $e->getMessage());
+        }
+        return true;
+    }
 
     /**
      * Resuelve el estado de asistencia efectivo para un "Descontar bono":
@@ -2780,9 +2899,16 @@ class ClasesService
      *
      * @return int  nº de bonos devueltos automáticamente por el cambio de estado
      */
+    /** Sesiones descontadas automáticamente en el último updateAttendance() (Finanzas 2.0). */
+    public int $lastAutoDeducted = 0;
+
     public function updateAttendance(int $sessionId, array $attendanceMap, array $absenceReasons = [], array $absenceNotes = []): int
     {
         $refunded = 0;
+        $this->lastAutoDeducted = 0;
+        [$autoOn, $hours] = $this->autoDeductSettings();
+        $session = $this->sessionModel->find($sessionId) ?? [];
+        $autoCandidates = [];
 
         // Todo el guardado de la lista es atómico: si falla a media lista, no
         // deja unos alumnos con la asistencia nueva y otros con la vieja.
@@ -2810,16 +2936,30 @@ class ClasesService
                 }
                 $this->playerModel->update($player['id'], $update);
 
+                // Finanzas 2.0: el aviso tardío también consume (si no, se devolvería solo al guardar).
+                $newRow = array_merge($player, $update);
                 if (!empty($player['bono_deducted_at'])
-                    && !self::attendanceConsumesBono($status)
+                    && !self::rowConsumesBono($newRow, $session, $hours)
                     && $this->doRefund($player)['refunded']) {
                     $refunded++;
+                }
+                if ($autoOn && empty($player['bono_deducted_at'])
+                    && ($reason = self::autoDeductReason($newRow, $session, $hours)) !== null) {
+                    $autoCandidates[] = [$newRow, $reason];
                 }
             }
             $this->db->transCommit();
         } catch (\Throwable $e) {
             $this->db->transRollback();
             throw $e;
+        }
+
+        // Descuentos automáticos DESPUÉS de guardar la lista: cada uno es atómico
+        // por sí mismo y un fallo (p. ej. sin saldo) no deshace la asistencia.
+        foreach ($autoCandidates as [$row, $reason]) {
+            if ($this->autoDeduct($sessionId, $row, $reason)) {
+                $this->lastAutoDeducted++;
+            }
         }
 
         return $refunded;

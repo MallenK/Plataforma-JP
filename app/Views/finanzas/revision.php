@@ -19,14 +19,7 @@ $cards = [
 
 <?= $this->section('page_content') ?>
 
-<?= view('finanzas/_tabs', ['tab' => $tab ?? 'revision']) ?>
-
-<?php if (session()->getFlashdata('success')): ?>
-<div class="alert-jp success mb-3"><i class="bi bi-check-circle-fill me-2"></i><?= esc(session()->getFlashdata('success')) ?></div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-<div class="alert-jp error mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif; ?>
+<?= view('finanzas/_tabs', ['tab' => $tab ?? 'revision', 'reviewCount' => $reviewCount ?? 0]) ?>
 
 <?php $cp = $closePreview ?? ['sessions' => 0, 'debts' => 0, 'prices' => 0]; ?>
 <?php if ($cp['sessions'] + $cp['debts'] + $cp['prices'] > 0): ?>
