@@ -24,6 +24,13 @@ class PlayerBonoModel extends Model
         'expires_at',
         'notes',
         'created_by',
+        // «Nada se borra» (v1.33.0): anulación y precio congelado
+        'voided_at',
+        'voided_by',
+        'void_reason',
+        'price_list_cents',
+        'price_cents',
+        'price_estimated',
     ];
 
     protected $validationRules = [
@@ -192,6 +199,7 @@ class PlayerBonoModel extends Model
 
         $issuedThisMonth = (int)$this->db->table('player_bonos')
             ->where('start_date >=', $thisMonth)
+            ->where('voided_at IS NULL')
             ->countAllResults();
 
         $expiringSoon = (int)$this->db->table('player_bonos')
@@ -210,6 +218,7 @@ class PlayerBonoModel extends Model
         $depleted = (int)$this->db->table('player_bonos')
             ->where('player_id IS NOT NULL')
             ->where('sessions_remaining', 0)
+            ->where('voided_at IS NULL')
             ->countAllResults();
 
         // Bonos asignados con exactamente 1 sesión restante (alerta).

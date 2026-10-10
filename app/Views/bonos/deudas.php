@@ -31,7 +31,7 @@ $th = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:u
             <li><strong>Ya está pagada:</strong> esa clase se cobró de otra forma (efectivo, Bizum…). No se descuenta ningún bono.</li>
             <li><strong>No cobrar:</strong> no se le va a cobrar (clase de prueba, regalo, error…).</li>
             <li>Siempre queda anotado quién lo hizo y cuándo. No se borra nada.</li>
-            <li><strong>Clases anteriores al <?= $since ? date('d/m/Y', strtotime($since)) : '—' ?>:</strong> se dieron antes de empezar este control. No cuentan como deuda; solo se muestran para que lo sepas.</li>
+            <li><strong>Clases anteriores al <?= $since ? date('d/m/Y', strtotime($since)) : '—' ?>:</strong> se dieron antes de empezar este control. Revísalas también y márcalas como pagadas o no cobradas para que el histórico cuadre.</li>
         </ul>
     </div>
 </div>
@@ -98,12 +98,12 @@ $th = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:u
     <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0">No hay clases anteriores sin descontar.</p></div>
     <?php else: ?>
     <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        Son clases que se dieron antes de empezar el control y no se descontaron de ningún bono. Solo es informativo: no se tocan ni se convierten en deuda.
+        Clases que se dieron antes de empezar el control y no se descontaron de ningún bono. No se convierten en deuda solas, pero hay que revisarlas: márcalas como <strong>ya pagada</strong> (se cobró de otra forma) o <strong>no cobrar</strong>. Queda registrado.
     </div>
     <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead><tr>
-                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Fecha</th>
+                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Revisión</th>
             </tr></thead>
             <tbody>
             <?php foreach ($unreflected as $d): ?>
@@ -111,6 +111,14 @@ $th = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:u
                 <td style="padding:8px 12px;font-weight:600"><?= esc($d['player_name']) ?></td>
                 <td style="padding:8px 12px"><a href="<?= base_url('clases/' . (int) $d['session_id']) ?>" class="row-link-anchor"><?= esc($d['title']) ?></a></td>
                 <td style="padding:8px 12px;color:var(--text-muted)"><?= date('d/m/Y', strtotime($d['session_date'])) ?></td>
+                <td style="padding:8px 12px">
+                    <form action="<?= base_url('bonos/deudas/' . (int) $d['csp_id'] . '/resolver') ?>" method="post" class="d-flex gap-1 flex-wrap" style="margin:0">
+                        <?= csrf_field() ?>
+                        <input type="text" name="note" class="form-control-jp" placeholder="Nota (opcional)" style="width:150px;padding:4px 8px;font-size:12px" maxlength="120" aria-label="Nota">
+                        <button type="submit" name="resolution" value="external" class="btn-jp btn-jp-secondary btn-jp-sm" title="Se cobró de otra forma (efectivo, Bizum…)">Ya está pagada</button>
+                        <button type="submit" name="resolution" value="waived" class="btn-jp btn-jp-secondary btn-jp-sm" title="No se le va a cobrar">No cobrar</button>
+                    </form>
+                </td>
             </tr>
             <?php endforeach; ?>
             </tbody>

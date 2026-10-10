@@ -406,10 +406,12 @@ $sec  = $section;        // sección activa
                                                 <i class="bi bi-pencil-fill"></i>
                                             </button>
                                             <form action="/configuracion/sedes/<?= $loc['id'] ?>/delete" method="POST" class="d-inline"
-                                                  onsubmit="return confirm('¿Eliminar la sede «<?= esc($loc['name']) ?>»?')">
+                                                  data-ru-confirm="¿Archivar la sede «<?= esc($loc['name'], 'attr') ?>»?"
+                                                  data-ru-confirm-desc="Deja de aparecer en las listas y al crear clases. Las sesiones que ya la usaron la siguen mostrando."
+                                                  data-ru-confirm-label="Archivar sede">
                                                 <?= csrf_field() ?>
-                                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Eliminar">
-                                                    <i class="bi bi-trash-fill"></i>
+                                                <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm btn-jp-icon" title="Archivar" aria-label="Archivar sede">
+                                                    <i class="bi bi-archive-fill"></i>
                                                 </button>
                                             </form>
                                         </div>
@@ -724,8 +726,8 @@ $sec  = $section;        // sección activa
                     ¿Eliminar a <span id="deleteStaffName" style="color:var(--danger)"></span>?
                 </p>
                 <p style="font-size:13px;color:var(--text-muted);margin-bottom:0">
-                    Esta acción es <strong>irreversible</strong>. El usuario será eliminado permanentemente de la plataforma junto con todos sus datos asociados.<br><br>
-                    <span style="color:var(--danger);font-weight:600">No se podrá recuperar.</span>
+                    Si el usuario tiene <strong>cualquier histórico</strong> (clases impartidas, bonos emitidos, mensajes…), no se borra: se <strong>da de baja</strong> y podrás reactivarlo. Todo su historial se conserva.<br><br>
+                    Solo se elimina de verdad si nunca ha hecho nada en la plataforma.
                 </p>
             </div>
         </div>
@@ -733,7 +735,7 @@ $sec  = $section;        // sección activa
             <?= csrf_field() ?>
             <div class="cfg-modal-footer" style="gap:8px">
                 <button type="button" class="btn-jp btn-jp-secondary" onclick="closeModal('modalDeleteStaff')">Cancelar</button>
-                <button type="submit" class="btn-jp btn-jp-danger"><i class="bi bi-trash3-fill me-1"></i>Eliminar definitivamente</button>
+                <button type="submit" class="btn-jp btn-jp-danger"><i class="bi bi-person-x-fill me-1"></i>Eliminar o dar de baja</button>
             </div>
         </form>
     </div>

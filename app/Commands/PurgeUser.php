@@ -21,6 +21,13 @@ use Config\Database;
  *   php spark user:purge 49 --dry-run           (solo enseña qué borraría)
  *   php spark user:purge 49 --force             (sin pedir confirmación)
  *
+ * v1.33.0 «Nada se borra»: si el usuario tiene histórico ECONÓMICO (bonos,
+ * movimientos de bono, sesiones descontadas) el comando se niega, salvo con
+ * --con-historico-economico. Ojo: la obligación legal de conservar registros
+ * contables/fiscales prevalece sobre el derecho de supresión para esos datos;
+ * consulta con el gestor antes de usarlo. Cada borrado deja una fila en
+ * `audit_log` SIN datos personales (solo id, rol y recuentos).
+ *
  * Descubre las relaciones (claves foráneas → users.id) en tiempo de
  * ejecución con information_schema, así funciona aunque el esquema cambie.
  */
@@ -29,12 +36,13 @@ class PurgeUser extends BaseCommand
     protected $group       = 'Mantenimiento';
     protected $name        = 'user:purge';
     protected $description  = 'Borra definitivamente usuarios y todas sus filas dependientes (irreversible).';
-    protected $usage        = 'user:purge <id|email> [<id|email> ...] [--dry-run] [--force]';
+    protected $usage        = 'user:purge <id|email> [<id|email> ...] [--dry-run] [--force] [--con-historico-economico]';
 
     public function run(array $params): void
     {
         $dryRun = in_array('--dry-run', $params, true) || array_key_exists('dry-run', $params);
         $force  = in_array('--force', $params, true)   || array_key_exists('force', $params);
+        $withFinance = in_array('--con-historico-economico', $params, true) || array_key_exists('con-historico-economico', $params);
 
         // Los argumentos posicionales llegan con clave entera; las opciones
         // (--dry-run, --force) con clave string → nos quedamos con los primeros.
@@ -110,6 +118,20 @@ class PurgeUser extends BaseCommand
         }
         CLI::newLine();
 
+        // v1.33.0: histórico económico → no se borra sin pedirlo expresamente.
+        $finance = self::financeHistory($db, $userIds);
+        if ($finance) {
+            CLI::write('Histórico ECONÓMICO de estos usuarios:', 'yellow');
+            foreach ($finance as $label => $n) {
+                CLI::write(sprintf('  %-34s %d', $label, $n), 'yellow');
+            }
+            if (! $withFinance) {
+                CLI::error('No se borra: tiene histórico económico. Dalo de baja desde la plataforma, o repite con --con-historico-economico si de verdad procede (consulta antes con el gestor).');
+                return;
+            }
+            CLI::newLine();
+        }
+
         if ($dryRun) {
             CLI::write('--dry-run: no se ha borrado nada.', 'green');
             return;
@@ -138,6 +160,36 @@ class PurgeUser extends BaseCommand
             return;
         }
 
+        foreach ($users as $u) {
+            // Sin datos personales: solo id, rol y qué se borró.
+            \App\Services\AuditService::record('user', (int) $u['id'], \App\Services\AuditService::DELETE,
+                ['id' => (int) $u['id'], 'role' => $u['role']], null,
+                'spark user:purge' . ($finance ? ' --con-historico-economico (' . json_encode($finance, JSON_UNESCAPED_UNICODE) . ')' : ''));
+        }
+
         CLI::write('Hecho. ' . count($users) . ' usuario(s) eliminados definitivamente.', 'green');
+    }
+
+    /** @return array<string,int> etiqueta => nº filas (solo las que tienen alguna) */
+    private static function financeHistory($db, array $userIds): array
+    {
+        $checks = [
+            'bonos'                => fn() => $db->table('player_bonos')->whereIn('player_id', $userIds)->countAllResults(),
+            'movimientos de bono'  => fn() => $db->table('bono_movements')->whereIn('player_id', $userIds)->countAllResults(),
+            'sesiones descontadas' => fn() => $db->table('class_session_players')->whereIn('user_id', $userIds)
+                                                 ->where('bono_deducted_at IS NOT NULL', null, false)->countAllResults(),
+        ];
+        $out = [];
+        foreach ($checks as $label => $fn) {
+            try {
+                $n = (int) $fn();
+                if ($n > 0) {
+                    $out[$label] = $n;
+                }
+            } catch (\Throwable $e) {
+                // tabla inexistente en este entorno → no cuenta
+            }
+        }
+        return $out;
     }
 }

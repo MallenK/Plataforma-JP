@@ -106,6 +106,14 @@ if ($isAdmin) {
                     Bonos
                 </a>
             </li>
+            <!-- Finanzas (v1.33.0: pestaña «Revisión») — admin, superadmin -->
+            <li class="sidebar-nav-item">
+                <a href="<?= base_url('finanzas') ?>"
+                   class="sidebar-nav-link <?= sidebarActive('/finanzas', $currentUri) ?>">
+                    <i class="bi bi-cash-coin"></i>
+                    Finanzas
+                </a>
+            </li>
             <?php endif; ?>
 
 

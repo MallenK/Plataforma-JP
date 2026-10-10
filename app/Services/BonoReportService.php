@@ -8,8 +8,10 @@ namespace App\Services;
  * clases programadas, deudas y alertas. Pensado para el control financiero:
  * todo sale de `player_bonos` (+ precio del tipo de bono) y del calendario.
  *
- * Importes: se calculan con el PRECIO ACTUAL del tipo de bono (el bono no guarda
- * el precio pagado). "Pendiente" = sesiones que quedan × (precio / sesiones).
+ * Importes: desde v1.33.0 con el precio CONGELADO de cada bono (`price_cents`);
+ * los bonos anteriores llevan el precio del tipo de entonces, marcado como
+ * estimado. Los bonos anulados no cuentan. "Pendiente" = sesiones que quedan
+ * × (precio / sesiones).
  *
  * `alertsFor()` es pura (sin BD) para poder probar las reglas.
  */
@@ -92,17 +94,19 @@ class BonoReportService
         $us    = $this->db->prefixTable('users');
 
         $usable = "(pb.sessions_remaining > 0 AND (pb.expires_at IS NULL OR pb.expires_at >= ?))";
+        // v1.33.0: precio congelado del bono; si es un bono antiguo sin él, el del tipo.
+        $price  = "COALESCE(pb.price_cents / 100, bt.price, 0)";
         $sql = "SELECT u.id, u.name, u.email, u.status,
                     COUNT(pb.id) AS bonos_total,
                     SUM(CASE WHEN {$usable} THEN 1 ELSE 0 END) AS bonos_usable,
                     SUM(CASE WHEN {$usable} THEN pb.sessions_remaining ELSE 0 END) AS saldo,
                     SUM(pb.sessions_total - pb.sessions_remaining) AS consumed,
-                    SUM(COALESCE(bt.price, 0)) AS issued_eur,
+                    SUM({$price}) AS issued_eur,
                     SUM(CASE WHEN {$usable} AND pb.sessions_total > 0
-                             THEN pb.sessions_remaining * COALESCE(bt.price, 0) / pb.sessions_total ELSE 0 END) AS pending_eur,
+                             THEN pb.sessions_remaining * {$price} / pb.sessions_total ELSE 0 END) AS pending_eur,
                     MIN(CASE WHEN {$usable} AND pb.expires_at IS NOT NULL THEN pb.expires_at ELSE NULL END) AS next_expiry
                 FROM {$us} u
-                JOIN {$pb} pb ON pb.player_id = u.id
+                JOIN {$pb} pb ON pb.player_id = u.id AND pb.voided_at IS NULL
                 LEFT JOIN {$bt} bt ON bt.id = pb.bono_type_id
                 WHERE u.role = 'player'
                 GROUP BY u.id, u.name, u.email, u.status

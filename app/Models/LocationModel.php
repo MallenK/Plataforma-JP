@@ -23,6 +23,7 @@ class LocationModel extends Model
         'capacity',
         'phone',
         'active',
+        'archived_at',   // v1.33.0: las sedes se archivan, no se borran
     ];
 
     protected $validationRules = [

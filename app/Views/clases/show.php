@@ -93,8 +93,8 @@ $statusHint   = [
         <?php if ($isAdminRole): ?>
         <?php $inSeries = !empty($session['class_id']); ?>
         <form action="/clases/<?= $session['id'] ?>/eliminar" method="POST" style="margin:0"
-              data-ru-confirm="<?= $inSeries ? '¿Eliminar solo esta clase?' : '¿Eliminar esta sesión permanentemente?' ?>"
-              data-ru-confirm-desc="<?= $inSeries ? 'Solo se borra esta clase (con su asistencia y observaciones); el resto de la serie no se toca.' : 'No se puede deshacer: se borra la sesión con toda su asistencia y observaciones.' ?>"
+              data-ru-confirm="<?= $inSeries ? '¿Eliminar solo esta clase?' : '¿Eliminar esta sesión?' ?>"
+              data-ru-confirm-desc="Solo se puede eliminar una clase futura sin nada registrado (ni lista, ni avisos, ni bonos). Si ya tiene histórico, cancélala en su lugar.<?= $inSeries ? ' El resto de la serie no se toca.' : '' ?>"
               data-ru-confirm-label="Eliminar" data-ru-confirm-danger>
             <?= csrf_field() ?>
             <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">
@@ -104,7 +104,7 @@ $statusHint   = [
         <?php if ($inSeries): ?>
         <form action="/clases/<?= $session['id'] ?>/eliminar-serie" method="POST" style="margin:0"
               data-ru-confirm="¿Eliminar TODA la serie recurrente?"
-              data-ru-confirm-desc="No se puede deshacer: se borran todas las clases de la serie (pasadas y futuras) con su asistencia y observaciones. Los bonos ya descontados se devuelven."
+              data-ru-confirm-desc="Se eliminan las clases futuras sin nada registrado. Las que ya se dieron o tienen lista, avisos o bonos se conservan como histórico (cancélalas si no se van a dar)."
               data-ru-confirm-label="Eliminar serie" data-ru-confirm-danger>
             <?= csrf_field() ?>
             <button type="submit" class="btn-jp btn-jp-danger btn-jp-sm">

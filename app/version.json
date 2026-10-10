@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.33.0",
+        "date": "2026-10-10 00:00:00",
+        "description": "Nada se borra: todo el histórico económico se conserva. Los bonos ya no se eliminan, se anulan con un motivo (las sesiones descontadas y su historial se quedan). Cambiar el saldo o la caducidad de un bono pide un motivo y queda registrado con el valor anterior. Cada bono guarda ahora el precio por el que se vendió: cambiar la tarifa de un tipo de bono ya no cambia lo que costaron los bonos vendidos (los anteriores aparecen como «precio estimado» y se pueden confirmar). Los tipos de bono y las sedes se archivan en vez de borrarse. Un entrenador o miembro del equipo con historial se da de baja en lugar de eliminarse. Las clases que ya se dieron, o que tienen lista, avisos o bonos, no se pueden eliminar (se cancelan), y no se puede quitar de una clase a un alumno con asistencia registrada (se marca su ausencia). Nueva sección «Finanzas» en el menú (solo administración), que empieza con la pestaña «Revisión»: sesiones pasadas sin cerrar, clases dadas sin descontar (también las anteriores al control), bonos con precio estimado y bonos caducados con sesiones sin usar. Todo cambio importante queda en un registro de auditoría (quién, cuándo, antes, después y por qué)."
+    },
+    {
         "version": "1.32.0",
         "date": "2026-10-09 00:00:00",
         "description": "En la ficha del alumno, cada bono con notas muestra un desplegable «Ver notas» con lo que se escribió al crearlo. En el calendario, una clase con un alumno en estado «Avisó ausencia» se marca en naranja aunque aún no se haya pasado lista."

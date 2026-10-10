@@ -12,8 +12,9 @@ $pct        = $total > 0 ? round(($remaining / $total) * 100) : 0;
 $expired    = !empty($bono['expires_at']) && $bono['expires_at'] < $today;
 $isActive   = $remaining > 0 && !$expired;
 $unassigned = empty($bono['player_id']);
-$statusLbl  = $unassigned ? 'Sin asignar' : ($isActive ? 'Con saldo' : ($remaining === 0 ? 'Agotado' : 'Vencido'));
-$statusCls  = $unassigned ? '' : ($isActive ? 'active' : 'inactive');
+$voided     = !empty($bono['voided_at']);   // v1.33.0: anulado (ya no se borra)
+$statusLbl  = $voided ? 'Anulado' : ($unassigned ? 'Sin asignar' : ($isActive ? 'Con saldo' : ($remaining === 0 ? 'Agotado' : 'Vencido')));
+$statusCls  = $voided ? 'inactive' : ($unassigned ? '' : ($isActive ? 'active' : 'inactive'));
 $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'var(--danger)');
 ?>
 
@@ -31,6 +32,15 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
+
+<?php if ($voided): ?>
+<div class="alert-jp error mb-3" role="status">
+    <i class="bi bi-x-octagon-fill me-2"></i>
+    <strong>Bono anulado</strong> el <?= date('d/m/Y H:i', strtotime($bono['voided_at'])) ?>.
+    Motivo: <?= esc($bono['void_reason'] ?? '—') ?>.
+    Su historial (sesiones descontadas, movimientos) se conserva; ya no se puede usar ni editar.
+</div>
+<?php endif; ?>
 
 <div class="row g-3">
 
@@ -97,6 +107,27 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($bono['created_by_name']) ?></span>
                     </div>
                     <?php endif; ?>
+                    <?php if (isset($bono['price_cents']) && $bono['price_cents'] !== null): ?>
+                    <div class="d-flex justify-content-between">
+                        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Precio</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-h)">
+                            <?= number_format(((int) $bono['price_cents']) / 100, 2, ',', '.') ?> €
+                            <?php if (!empty($bono['price_estimated'])): ?>
+                            <span title="Bono anterior a la v1.33.0: no se guardaba el precio pagado; es el precio del tipo de bono en ese momento." style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 6px;margin-left:4px">estimado</span>
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                    <?php if (!empty($bono['price_estimated']) && !$voided): ?>
+                    <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/precio') ?>" method="post" class="d-flex gap-1 align-items-center justify-content-end" style="margin:-6px 0 0">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="back" value="bono">
+                        <label for="bp-price" style="font-size:11px;color:var(--text-muted)">Pagó de verdad</label>
+                        <input type="text" id="bp-price" name="price" inputmode="decimal" class="form-control-jp" style="width:84px;padding:3px 6px;font-size:12px"
+                               value="<?= number_format(((int) $bono['price_cents']) / 100, 2, ',', '') ?>" required>
+                        <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" style="padding:3px 8px">Confirmar</button>
+                    </form>
+                    <?php endif; ?>
+                    <?php endif; ?>
                     <div class="d-flex justify-content-between">
                         <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Fecha emisión</span>
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= date('d/m/Y', strtotime($bono['created_at'])) ?></span>
@@ -110,7 +141,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
     <div class="col-12 col-lg-8 d-flex flex-column gap-3">
 
         <!-- Asignar jugador (solo si está sin asignar) -->
-        <?php if ($unassigned): ?>
+        <?php if ($unassigned && !$voided): ?>
         <div class="card-jp" style="border:2px solid #7c3aed44">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="color:#7c3aed">
@@ -245,7 +276,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         </div>
         <?php endif; ?>
 
-        <?php if (!$unassigned && !empty($bono['expires_at'])): ?>
+        <?php if (!$unassigned && !$voided && !empty($bono['expires_at'])): ?>
         <!-- Ampliar caducidad (TICKET-013) -->
         <?php $daysLeft = (int) floor((strtotime($bono['expires_at']) - strtotime($today)) / 86400); ?>
         <div class="card-jp" <?= ($daysLeft <= 7) ? 'style="border:1px solid #fde68a"' : '' ?>>
@@ -278,6 +309,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         <?php endif; ?>
 
         <!-- Editar bono -->
+        <?php if (!$voided): ?>
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title"><i class="bi bi-pencil-fill me-2" style="color:var(--accent)"></i>Editar bono</span>
@@ -287,18 +319,24 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 <div class="card-jp-body">
                     <div class="row g-3">
                         <div class="col-12 col-md-4">
-                            <label class="form-label">Sesiones restantes</label>
-                            <input type="number" name="sessions_remaining" class="form-control-jp"
+                            <label class="form-label" for="be-remaining">Sesiones restantes</label>
+                            <input type="number" id="be-remaining" name="sessions_remaining" class="form-control-jp"
                                    value="<?= $remaining ?>" min="0" max="<?= $total ?>">
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label">Fecha de caducidad</label>
-                            <input type="date" name="expires_at" class="form-control-jp"
+                            <label class="form-label" for="be-expires">Fecha de caducidad</label>
+                            <input type="date" id="be-expires" name="expires_at" class="form-control-jp"
                                    value="<?= esc($bono['expires_at'] ?? '') ?>">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Notas</label>
-                            <textarea name="notes" class="form-control-jp" rows="2"><?= esc($bono['notes'] ?? '') ?></textarea>
+                            <label class="form-label" for="be-notes">Notas</label>
+                            <textarea id="be-notes" name="notes" class="form-control-jp" rows="2"><?= esc($bono['notes'] ?? '') ?></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="be-reason">Motivo del cambio <span style="font-weight:400;color:var(--text-muted)">(obligatorio si cambias sesiones o caducidad)</span></label>
+                            <input type="text" id="be-reason" name="reason" class="form-control-jp" maxlength="255"
+                                   placeholder="Ej.: sesión regalada por lesión, error al emitir…">
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Queda registrado quién lo cambió, cuándo y el valor anterior.</div>
                         </div>
                     </div>
                 </div>
@@ -309,6 +347,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                 </div>
             </form>
         </div>
+        <?php endif; ?>
 
         <!-- Historial de bonos del jugador -->
         <?php if (!$unassigned): ?>
@@ -334,9 +373,10 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                     <tbody>
                     <?php foreach ($history as $h):
                         $hExpired = !empty($h['expires_at']) && $h['expires_at'] < $today;
-                        $hActive  = (int)$h['sessions_remaining'] > 0 && !$hExpired;
+                        $hVoided  = !empty($h['voided_at']);
+                        $hActive  = !$hVoided && (int)$h['sessions_remaining'] > 0 && !$hExpired;
                         $hCls     = $hActive ? 'active' : 'inactive';
-                        $hLbl     = $hActive ? 'Con saldo' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido');
+                        $hLbl     = $hVoided ? 'Anulado' : ($hActive ? 'Con saldo' : ((int)$h['sessions_remaining'] === 0 ? 'Agotado' : 'Vencido'));
                         $isCurrent = (int)$h['id'] === (int)$bono['id'];
                     ?>
                     <tr style="border-bottom:1px solid var(--border);<?= $isCurrent ? 'background:var(--accent-light)' : '' ?>">
@@ -398,29 +438,35 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         </div>
         <?php endif; ?>
 
-        <!-- Zona peligrosa -->
+        <!-- Anular bono (v1.33.0: ya no se elimina) -->
+        <?php if (!$voided): ?>
         <div class="card-jp" style="border:1px solid var(--danger-light)">
             <div class="card-jp-header">
-                <span class="card-jp-title" style="color:var(--danger)"><i class="bi bi-exclamation-triangle-fill me-2"></i>Zona peligrosa</span>
+                <span class="card-jp-title" style="color:var(--danger)"><i class="bi bi-x-octagon-fill me-2"></i>Anular bono</span>
             </div>
-            <div class="card-jp-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div style="font-size:13.5px;font-weight:600;color:var(--text-h)">Eliminar bono</div>
-                        <div style="font-size:12px;color:var(--text-muted)">Esta acción no se puede deshacer.</div>
-                    </div>
-                    <form action="<?= base_url('bonos/' . $bono['id'] . '/delete') ?>" method="post">
-                        <?= csrf_field() ?>
-                        <button type="submit"
-                                onclick="return confirm('¿Eliminar este bono definitivamente?')"
-                                class="btn-jp btn-jp-sm"
+            <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/anular') ?>" method="post"
+                  data-ru-confirm="¿Anular este bono?"
+                  data-ru-confirm-desc="Las <?= $remaining ?> sesiones que quedan se cancelan. Las ya descontadas y todo su historial se conservan. No se puede deshacer."
+                  data-ru-confirm-label="Anular bono">
+                <?= csrf_field() ?>
+                <div class="card-jp-body">
+                    <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px">
+                        Para un bono emitido por error o que no se va a usar. No se borra: queda marcado como anulado con su historial.
+                    </p>
+                    <label class="form-label" for="void-reason">Motivo de la anulación</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="text" id="void-reason" name="reason" class="form-control-jp" style="flex:1;min-width:min(240px,100%)"
+                               required minlength="<?= \App\Services\BonoControlService::MIN_REASON ?>" maxlength="255"
+                               placeholder="Ej.: emitido por error, duplicado, alumno no lo pagó…">
+                        <button type="submit" class="btn-jp btn-jp-sm"
                                 style="background:var(--danger-light);color:var(--danger);border:1px solid var(--danger)">
-                            <i class="bi bi-trash"></i> Eliminar
+                            <i class="bi bi-x-octagon"></i> Anular
                         </button>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
+        <?php endif; ?>
 
     </div>
 </div>

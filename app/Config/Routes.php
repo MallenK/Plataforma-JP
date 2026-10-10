@@ -11,7 +11,12 @@ use CodeIgniter\Router\RouteCollection;
 // ============================================================
 //
 //  superadmin → acceso total a todo
-//  admin      → gestión completa (alumnos, entrenadores, config, bonos)
+//  admin      → gestión completa (alumnos, entrenadores, config, bonos,
+//               Finanzas /finanzas — v1.33.0: pestaña «Revisión»)
+//
+//  v1.33.0 «Nada se borra»: las rutas que antes eliminaban (bonos, tipos de
+//  bono, sedes, staff, sesiones, quitar alumno) ahora anulan, archivan, dan de
+//  baja o se niegan si hay histórico. Todo queda en `audit_log`.
 //  coach      → sus grupos, alumnos asignados, organizador, clases
 //  alumno     → su propio perfil y documentación
 //  staff      → documentación
@@ -372,6 +377,25 @@ $routes->post('bonos/(:num)/update', 'BonosController::update/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+// Finanzas (v1.33.0: pestaña «Revisión»; el resto llega con la v2.0) — solo admin y superadmin.
+$routes->get('finanzas', 'FinanzasController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('finanzas/revision', 'FinanzasController::revision', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('pendientes', 'FinanzasController::legacyPendientes', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('bonos/(:num)/precio', 'FinanzasController::confirmPrice/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+// v1.33.0 «Nada se borra»: los bonos se anulan (con motivo), no se eliminan.
+$routes->post('bonos/(:num)/anular', 'BonosController::void/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+// Ruta antigua: ahora también anula (exige motivo).
 $routes->post('bonos/(:num)/delete', 'BonosController::destroy/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

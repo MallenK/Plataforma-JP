@@ -41,6 +41,16 @@ class DashboardController extends BaseController
             // solo aviso por bono). Nunca debe tumbar el dashboard.
             (new \App\Services\BonoControlService())->runExpiryAlerts();
         }
+        // v1.33.0: aviso «Pendiente de revisar» (sesiones sin cerrar, clases sin
+        // descontar, precios estimados, caducados sin usar). Nunca tumba el dashboard.
+        $pendingReview = null;
+        if ($isAdminRole) {
+            try {
+                $pendingReview = (new \App\Services\RevisionService())->counts();
+            } catch (\Throwable $e) {
+                log_message('error', 'Dashboard: RevisionService::counts falló: ' . $e->getMessage());
+            }
+        }
         $showScopeToggle = $isAdminRole && $clasesService->hasOwnAssignedSessions($userId);
         // Selector "Ver calendario de…" (TICKET-011), igual que en /clases.
         $responsableOptions = $isAdminRole ? $clasesService->getResponsableFilterOptions() : ['coaches' => [], 'staff' => []];
@@ -51,6 +61,7 @@ class DashboardController extends BaseController
             'playerFullProfile'  => $playerFullProfile,
             'showScopeToggle'    => $showScopeToggle,
             'responsableOptions' => $responsableOptions,
+            'pendingReview'      => $pendingReview,
         ]);
     }
 

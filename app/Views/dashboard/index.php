@@ -5,6 +5,27 @@
 
 <?php $role = session('role'); $isAdmin = in_array($role, ['superadmin', 'admin']); ?>
 
+<?php
+// v1.33.0 «Pendiente de revisar»: aviso para administración con enlace al panel.
+$prTotal = $isAdmin && !empty($pendingReview)
+    ? (int) $pendingReview['unclosed'] + (int) $pendingReview['debts'] + (int) $pendingReview['pre_control']
+      + (int) $pendingReview['estimated'] + (int) $pendingReview['unused']
+    : 0;
+?>
+<?php if ($prTotal > 0): ?>
+<a href="<?= base_url('finanzas/revision') ?>" class="alert-jp mb-3" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;text-decoration:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e">
+    <i class="bi bi-clipboard-check-fill" style="font-size:18px"></i>
+    <strong>Finanzas · pendiente de revisar:</strong>
+    <span style="font-size:13px">
+        <?= (int) $pendingReview['unclosed'] ?> sesiones sin cerrar ·
+        <?= (int) $pendingReview['debts'] + (int) $pendingReview['pre_control'] ?> clases sin descontar ·
+        <?= (int) $pendingReview['estimated'] ?> precios estimados ·
+        <?= (int) $pendingReview['unused'] ?> bonos caducados sin usar
+    </span>
+    <span style="margin-left:auto;font-weight:700;font-size:13px">Revisar <i class="bi bi-arrow-right"></i></span>
+</a>
+<?php endif; ?>
+
 <!-- ── Métricas ──────────────────────────────────────────── -->
 <?php if ($role === 'player' && !empty($playerFullProfile)): ?>
 <?php
