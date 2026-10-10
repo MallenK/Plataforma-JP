@@ -159,7 +159,13 @@ $shot = static function (string $file, string $caption) use ($img) {
     <li><strong>A la derecha:</strong> <em>Registrar cobro</em> (puedes elegir qué bono paga) y <em>Añadir cargo</em> para cobrar algo que no es un bono (una sesión suelta, material…).</li>
 </ul>
 <h3>Historial completo de un alumno</h3>
-<p>Desde la cuenta del alumno, el botón <span class="fm-btn">Historial completo</span> abre una página con <strong>absolutamente todo lo que ha pasado con ese alumno</strong> en la plataforma, de lo más reciente a lo más antiguo:</p>
+<p>Desde la cuenta del alumno, el botón <span class="fm-btn">Historial completo</span> abre una página con <strong>absolutamente todo lo que ha pasado con ese alumno</strong>, ordenada en cuatro bloques:</p>
+<ol>
+    <li><strong>Qué revisar:</strong> lo que la plataforma detecta sola. En rojo, los bonos cuyo saldo <em>no cuadra</em> con sus movimientos (y si puede ser un doble descuento). En naranja, clases dadas sin descontar, clases programadas sin saldo o pagos pendientes. En azul, sesiones que caducaron o que le sobrarán. Si todo está bien, sale en verde.</li>
+    <li><strong>Sus bonos, paso a paso:</strong> cada bono con su compra, su pago y cada sesión usada (qué clase, quién la descontó y cuándo, y cuántos días después de la clase). La columna <em>Quedan</em> dice el saldo tras cada paso, y la última fila lo compara con el saldo real de hoy.</li>
+    <li><strong>Próximas clases:</strong> las ya programadas y de qué bono saldrá cada una.</li>
+    <li><strong>Todo lo que ha pasado:</strong> la lista completa, donde cada clase y su descuento van en una sola fila y la columna <em>Saldo después</em> dice cuánto le quedaba en el bono o cuánto debía:</li>
+</ol>
 <ul>
     <li><strong>Económico:</strong> cada cargo y cada pago, también los anulados y su motivo.</li>
     <li><strong>Bonos:</strong> cuándo se emitieron, cada sesión descontada o devuelta, ampliaciones de fecha, ajustes y anulaciones.</li>

@@ -204,13 +204,21 @@ class FinanzasController extends BaseController
         $cat    = (string) $this->request->getGet('categoria');
         $cat    = array_key_exists($cat, \App\Services\StudentHistoryService::CATEGORIES) ? $cat : '';
 
-        $rows = (new \App\Services\StudentHistoryService())->timeline($playerId, $from, $to);
+        $asc       = $this->request->getGet('orden') === 'asc';
+        $showViews = $this->request->getGet('consultas') === '1';
+
+        $report = (new \App\Services\StudentHistoryService())->report($playerId, $from, $to);
+        // Las consultas del propio historial se ocultan salvo que se pidan (cada visita añade una)
+        $rows   = array_values(array_filter($report['rows'], fn($r) => $showViews || !$r['noise']));
         $counts = array_fill_keys(array_keys(\App\Services\StudentHistoryService::CATEGORIES), 0);
         foreach ($rows as $r) {
             $counts[$r['cat']]++;
         }
         if ($cat !== '') {
             $rows = array_values(array_filter($rows, fn($r) => $r['cat'] === $cat));
+        }
+        if ($asc) {
+            $rows = array_reverse($rows);
         }
 
         AuditService::record('user', $playerId, AuditService::VIEW, null, null,
@@ -223,8 +231,9 @@ class FinanzasController extends BaseController
         }
 
         return view('finanzas/historial', $this->base('alumnos', [
-            'player' => $player, 'rows' => $rows, 'counts' => $counts,
-            'from' => $from, 'to' => $to, 'cat' => $cat,
+            'player' => $player, 'rows' => array_values(array_filter($rows, fn($r) => !$r['future'])), 'counts' => $counts,
+            'from' => $from, 'to' => $to, 'cat' => $cat, 'asc' => $asc, 'showViews' => $showViews,
+            'bonos' => $report['bonos'], 'alerts' => $report['alerts'], 'upcoming' => $report['upcoming'], 'debt' => $report['debt'],
         ]));
     }
 
