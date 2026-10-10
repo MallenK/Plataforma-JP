@@ -3,6 +3,7 @@
 <?php
 $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Cobros: el dinero que entra, con su medio de pago';
+helper(['money', 'finhelp']);
 $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_cents'], $payments));
 ?>
 
@@ -16,7 +17,7 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
             <form action="<?= base_url('finanzas/cobros') ?>" method="post" class="card-jp-body d-flex flex-column gap-3">
                 <?= csrf_field() ?>
                 <div>
-                    <label class="form-label" for="pc-player">Alumno</label>
+                    <label class="form-label" for="pc-player">Alumno<?= fin_help('cobro_alumno') ?></label>
                     <select id="pc-player" name="player_id" class="form-control-jp" required>
                         <option value="">— Elige un alumno —</option>
                         <?php foreach ($players as $pl): ?>
@@ -26,7 +27,7 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
                 </div>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="form-label" for="pc-amount">Importe (€)</label>
+                        <label class="form-label" for="pc-amount">Importe (€)<?= fin_help('cobro_importe') ?></label>
                         <input id="pc-amount" name="amount" type="text" inputmode="decimal" class="form-control-jp" placeholder="0,00" required>
                     </div>
                     <div class="col-6">
@@ -35,7 +36,7 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
                     </div>
                 </div>
                 <fieldset style="border:0;margin:0;padding:0">
-                    <legend class="form-label" style="font-size:inherit">Medio de pago</legend>
+                    <legend class="form-label" style="font-size:inherit">Medio de pago<?= fin_help('cobro_medio') ?></legend>
                     <div class="d-flex flex-wrap gap-2">
                         <?php foreach ($methods as $i => $m): if ($m['code'] === 'sin_especificar') continue; ?>
                         <label style="display:flex;align-items:center;gap:6px;border:1px solid var(--border-dark);border-radius:8px;padding:8px 12px;min-height:40px;font-size:13px;font-weight:600;cursor:pointer">
@@ -46,7 +47,7 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
                 </fieldset>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="form-label" for="pc-ref">Referencia <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+                        <label class="form-label" for="pc-ref">Referencia<?= fin_help('cobro_ref') ?> <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
                         <input id="pc-ref" name="reference" type="text" class="form-control-jp" maxlength="120" placeholder="Nº Bizum, transferencia…">
                     </div>
                     <div class="col-6">
@@ -54,25 +55,25 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
                         <input id="pc-note" name="note" type="text" class="form-control-jp" maxlength="255" placeholder="Ej.: 1º de 2 plazos">
                     </div>
                 </div>
-                <p style="margin:0;font-size:12px;color:var(--text-muted)">Se aplica a lo que el alumno debe, de lo más antiguo a lo más reciente. Si sobra, queda a su favor para su próximo bono. Para elegir qué bono paga, hazlo desde su cuenta.</p>
+                <p style="margin:0;font-size:12px;color:var(--text-muted)"><?= fin_help('cobro_reparto') ?>Se aplica a lo que el alumno debe, de lo más antiguo a lo más reciente. Si sobra, queda a su favor para su próximo bono. Para elegir qué bono paga, hazlo desde su cuenta.</p>
                 <button type="submit" class="btn-jp btn-jp-primary">Guardar cobro</button>
             </form>
         </div>
     </div>
     <div class="col-12 col-xl-7">
         <div class="card-jp h-100">
-            <div class="card-jp-header"><span class="card-jp-title">Quién debe ahora (<?= count($debtors) ?>)</span></div>
+            <div class="card-jp-header"><span class="card-jp-title">Quién debe ahora (<?= count($debtors) ?>)<?= fin_help('quien_debe') ?></span></div>
             <?php if (empty($debtors)): ?>
             <div class="card-jp-body"><p style="margin:0;color:var(--text-muted);font-size:13px"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Nadie debe nada.</p></div>
             <?php else: ?>
-            <div class="table-responsive" style="max-height:360px;overflow-y:auto">
-                <table class="table-jp" style="font-size:13px">
-                    <thead><tr><th>Alumno</th><th style="text-align:right">Debe</th><th></th></tr></thead>
+            <div class="table-responsive">
+                <table class="table-jp" style="font-size:13px" data-fin-list="deudores" data-fin-page="10" data-fin-order='[[1,"desc"]]'>
+                    <thead><tr><th>Alumno</th><th style="text-align:right">Debe</th><th class="no-sort no-label"></th></tr></thead>
                     <tbody>
                     <?php foreach ($debtors as $d): ?>
                     <tr>
                         <td style="font-weight:600"><a href="<?= base_url('finanzas/alumnos/' . (int) $d['id']) ?>" class="row-link-anchor"><?= esc($d['name']) ?></a></td>
-                        <td style="text-align:right;font-weight:700;color:#9a3412"><?= eur((int) $d['due']) ?></td>
+                        <td data-order="<?= (int) $d['due'] ?>" style="text-align:right;font-weight:700;color:#9a3412"><?= eur((int) $d['due']) ?></td>
                         <td style="text-align:right"><a href="<?= base_url('finanzas/alumnos/' . (int) $d['id']) ?>#cobro" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none">Cobrar</a></td>
                     </tr>
                     <?php endforeach; ?>
@@ -92,17 +93,17 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
     <div class="card-jp-body"><p style="margin:0;color:var(--text-muted);font-size:13px">No hay cobros en este periodo.</p></div>
     <?php else: ?>
     <div class="table-responsive">
-        <table class="table-jp" style="font-size:13px">
-            <thead><tr><th>Fecha</th><th>Alumno</th><th>Medio</th><th>Referencia / nota</th><th style="text-align:right">Importe</th><th>Anular</th></tr></thead>
+        <table class="table-jp" style="font-size:13px" data-fin-list="cobros" data-fin-order='[[0,"desc"]]'>
+            <thead><tr><th>Fecha</th><th>Alumno</th><th>Medio</th><th>Referencia / nota</th><th style="text-align:right">Importe</th><th class="no-sort">Anular<?= fin_help('anular') ?></th></tr></thead>
             <tbody>
             <?php foreach ($payments as $p): ?>
             <tr style="<?= $p['voided_at'] ? 'opacity:.55' : '' ?>">
-                <td style="white-space:nowrap;color:var(--text-muted)"><?= date('d/m/Y', strtotime($p['paid_at'])) ?></td>
+                <td style="white-space:nowrap;color:var(--text-muted)" data-order="<?= esc($p['paid_at']) . sprintf('%08d', (int) $p['id']) ?>"><?= date('d/m/Y', strtotime($p['paid_at'])) ?></td>
                 <td style="font-weight:600"><a href="<?= base_url('finanzas/alumnos/' . (int) $p['player_id']) ?>" class="row-link-anchor"><?= esc($p['player_name'] ?? '—') ?></a></td>
                 <td><?= esc($p['method_name'] ?? '—') ?></td>
                 <td style="color:var(--text-body)"><?= esc(trim(($p['reference'] ?? '') . ' ' . ($p['note'] ?? ''))) ?: '—' ?>
                     <?php if ($p['voided_at']): ?><div style="font-size:11px;color:var(--danger);font-weight:600">Anulado: <?= esc($p['void_reason']) ?></div><?php endif; ?></td>
-                <td style="text-align:right;font-weight:700;<?= $p['voided_at'] ? 'text-decoration:line-through' : '' ?>"><?= eur((int) $p['amount_cents']) ?></td>
+                <td data-order="<?= (int) $p['amount_cents'] ?>" style="text-align:right;font-weight:700;<?= $p['voided_at'] ? 'text-decoration:line-through' : '' ?>"><?= eur((int) $p['amount_cents']) ?></td>
                 <td>
                     <?php if (!$p['voided_at']): ?>
                     <form action="<?= base_url('finanzas/cobros/' . (int) $p['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0"

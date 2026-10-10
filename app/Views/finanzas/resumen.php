@@ -3,11 +3,12 @@
 <?php
 $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Cómo va la academia: lo vendido, lo cobrado, lo que se ha dado y lo que se ha gastado';
+helper(['money', 'finhelp']);
 $s   = $summary;
 $max = max(1, ...array_map(fn($m) => max($m['sold'], $m['service']), $monthly));
-$kpi = static function (string $label, string $value, string $sub, string $style = '') {
+$kpi = static function (string $label, string $value, string $sub, string $style = '', string $help = '') {
     return '<div class="col-6 col-lg-3"><div class="metric-card" style="height:100%;' . $style . '">'
-         . '<div class="metric-card-header"><span class="metric-label">' . $label . '</span></div>'
+         . '<div class="metric-card-header"><span class="metric-label">' . $label . ($help ? fin_help($help) : '') . '</span></div>'
          . '<div class="metric-value" style="font-size:26px">' . $value . '</div>'
          . '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">' . $sub . '</div></div></div>';
 };
@@ -19,23 +20,23 @@ $a = $s['attendance'];
 <?= view('finanzas/_period', ['period' => $period, 'months' => $months]) ?>
 
 <div class="row g-3 mb-3">
-    <?= $kpi('Vendido', eur($s['sold']['cents']), $s['sold']['count'] . ' cargos' . ($s['sold']['discount'] ? ' · ' . eur($s['sold']['discount']) . ' en descuentos' : '')) ?>
-    <?= $kpi('Cobrado', eur($s['paid']['cents']), $s['paid']['count'] . ' cobros') ?>
-    <?= $kpi('Servicio prestado', eur($s['service']['cents']), $s['service']['count'] . ' sesiones consumidas') ?>
-    <?= $kpi('Gastos', eur($s['expenses']['cents']), $s['expenses']['count'] ? $s['expenses']['count'] . ' gastos' : '<a href="' . base_url('finanzas/gastos') . '">Registrar un gasto</a>') ?>
+    <?= $kpi('Vendido', eur($s['sold']['cents']), $s['sold']['count'] . ' cargos' . ($s['sold']['discount'] ? ' · ' . eur($s['sold']['discount']) . ' en descuentos' : ''), '', 'vendido') ?>
+    <?= $kpi('Cobrado', eur($s['paid']['cents']), $s['paid']['count'] . ' cobros', '', 'cobrado') ?>
+    <?= $kpi('Servicio prestado', eur($s['service']['cents']), $s['service']['count'] . ' sesiones consumidas', '', 'servicio') ?>
+    <?= $kpi('Gastos', eur($s['expenses']['cents']), $s['expenses']['count'] ? $s['expenses']['count'] . ' gastos' : '<a href="' . base_url('finanzas/gastos') . '">Registrar un gasto</a>', '', 'gastos') ?>
 </div>
 <div class="row g-3 mb-3">
-    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda en el periodo', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0') ?>
-    <?= $kpi('Pendiente de cobro (hoy)', eur($s['due']), '<a href="' . base_url('finanzas/alumnos?ver=deben') . '">Ver quién debe</a>') ?>
-    <?= $kpi('Sesiones pagadas sin dar (hoy)', eur($s['prepaid']['cents']), $s['prepaid']['sessions'] . ' sesiones por dar') ?>
-    <?= $kpi('Caducado sin usar', eur($s['expired']['cents']), $s['expired']['sessions'] . ' sesiones de ' . $s['expired']['count'] . ' bonos') ?>
+    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda en el periodo', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0', 'resultado') ?>
+    <?= $kpi('Pendiente de cobro (hoy)', eur($s['due']), '<a href="' . base_url('finanzas/alumnos?ver=deben') . '">Ver quién debe</a>', '', 'pendiente') ?>
+    <?= $kpi('Sesiones pagadas sin dar (hoy)', eur($s['prepaid']['cents']), $s['prepaid']['sessions'] . ' sesiones por dar', '', 'pagado_sin_dar') ?>
+    <?= $kpi('Caducado sin usar', eur($s['expired']['cents']), $s['expired']['sessions'] . ' sesiones de ' . $s['expired']['count'] . ' bonos', '', 'caducado') ?>
 </div>
 
 <div class="row g-3 mb-3">
     <div class="col-12 col-xl-8">
         <div class="card-jp h-100">
             <div class="card-jp-header" style="flex-wrap:wrap;gap:8px">
-                <span class="card-jp-title">Vendido y servicio prestado · últimos 12 meses</span>
+                <span class="card-jp-title">Vendido y servicio prestado · últimos 12 meses<?= fin_help('servicio', 'Barras azules: lo vendido cada mes. Barras verdes: el valor de las clases dadas ese mes. Pasa el ratón por una barra o abre «Ver como tabla» para ver las cifras.') ?></span>
                 <span style="display:flex;gap:14px;font-size:12px;color:var(--text-body)">
                     <span><span aria-hidden="true" style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#2563eb;vertical-align:-1px"></span> Vendido</span>
                     <span><span aria-hidden="true" style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#0d9488;vertical-align:-1px"></span> Servicio prestado</span>
@@ -93,7 +94,7 @@ $a = $s['attendance'];
         </div>
         <div class="card-jp">
             <div class="card-jp-body" style="font-size:13px">
-                <div style="display:flex;justify-content:space-between"><span>Precio medio por sesión</span><strong style="color:var(--text-h)"><?= eur($s['avg_session_cents']) ?></strong></div>
+                <div style="display:flex;justify-content:space-between"><span>Precio medio por sesión<?= fin_help('precio_medio') ?></span><strong style="color:var(--text-h)"><?= eur($s['avg_session_cents']) ?></strong></div>
                 <?php $rv = (int) $review['unclosed'] + (int) $review['debts'] + (int) $review['pre_control'] + (int) $review['estimated']; ?>
                 <div style="display:flex;justify-content:space-between;margin-top:8px"><span>Pendiente de revisar</span><a href="<?= base_url('finanzas/revision') ?>" style="font-weight:700"><?= $rv ?></a></div>
             </div>
@@ -104,7 +105,7 @@ $a = $s['attendance'];
 <div class="row g-3 mb-3">
     <div class="col-12 col-lg-6">
         <div class="card-jp h-100">
-            <div class="card-jp-header"><span class="card-jp-title">Asistencia del periodo y su efecto en el bono</span></div>
+            <div class="card-jp-header"><span class="card-jp-title">Asistencia del periodo y su efecto en el bono<?= fin_help('asistencia') ?></span></div>
             <div class="table-responsive">
                 <table class="table-jp" style="font-size:13px">
                     <thead><tr><th>Estado</th><th style="text-align:right">Veces</th><th>¿Consume sesión?</th></tr></thead>

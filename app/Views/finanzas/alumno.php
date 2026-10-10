@@ -3,6 +3,7 @@
 <?php
 $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Cuenta del alumno';
+helper(['money', 'finhelp']);
 $t     = $account['totals'];
 $due   = (int) $t['due'];
 $usable = array_filter($bonos, fn($b) => empty($b['voided_at']) && (int) $b['sessions_remaining'] > 0 && (empty($b['expires_at']) || $b['expires_at'] >= $today));
@@ -26,11 +27,11 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
 </div>
 
 <div class="row g-3 mb-3">
-    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Comprado</span></div><div class="metric-value" style="font-size:24px"><?= eur((int) $t['charged']) ?></div></div></div>
-    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Pagado</span></div><div class="metric-value" style="font-size:24px"><?= eur((int) $t['paid']) ?></div></div></div>
-    <div class="col-6 col-lg"><div class="metric-card" style="<?= $due > 0 ? 'border-color:#fdba74;background:#fff7ed' : '' ?>"><div class="metric-card-header"><span class="metric-label"><?= $due < 0 ? 'A su favor' : 'Debe' ?></span></div><div class="metric-value" style="font-size:24px;color:<?= $due > 0 ? '#9a3412' : '#047857' ?>"><?= eur(abs($due)) ?></div></div></div>
-    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Sesiones disponibles</span></div><div class="metric-value" style="font-size:24px"><?= $left ?></div></div></div>
-    <div class="col-12 col-lg"><div class="metric-card" style="<?= $debts ? 'border-color:#fdba74;background:#fff7ed' : '' ?>"><div class="metric-card-header"><span class="metric-label">Clases sin descontar</span></div><div class="metric-value" style="font-size:24px"><?= count($debts) ?></div><?php if ($debts): ?><a href="<?= base_url('bonos/deudas') ?>" style="font-size:12px">Resolver</a><?php endif; ?></div></div>
+    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Comprado<?= fin_help('comprado') ?></span></div><div class="metric-value" style="font-size:24px"><?= eur((int) $t['charged']) ?></div></div></div>
+    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Pagado<?= fin_help('pagado') ?></span></div><div class="metric-value" style="font-size:24px"><?= eur((int) $t['paid']) ?></div></div></div>
+    <div class="col-6 col-lg"><div class="metric-card" style="<?= $due > 0 ? 'border-color:#fdba74;background:#fff7ed' : '' ?>"><div class="metric-card-header"><span class="metric-label"><?= $due < 0 ? 'A su favor' : 'Debe' ?><?= fin_help('debe') ?></span></div><div class="metric-value" style="font-size:24px;color:<?= $due > 0 ? '#9a3412' : '#047857' ?>"><?= eur(abs($due)) ?></div></div></div>
+    <div class="col-6 col-lg"><div class="metric-card"><div class="metric-card-header"><span class="metric-label">Sesiones disponibles<?= fin_help('sesiones') ?></span></div><div class="metric-value" style="font-size:24px"><?= $left ?></div></div></div>
+    <div class="col-12 col-lg"><div class="metric-card" style="<?= $debts ? 'border-color:#fdba74;background:#fff7ed' : '' ?>"><div class="metric-card-header"><span class="metric-label">Clases sin descontar<?= fin_help('sin_descontar') ?></span></div><div class="metric-value" style="font-size:24px"><?= count($debts) ?></div><?php if ($debts): ?><a href="<?= base_url('bonos/deudas') ?>" style="font-size:12px">Resolver</a><?php endif; ?></div></div>
 </div>
 
 <div class="row g-3">
@@ -39,11 +40,11 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
         <!-- Bonos -->
         <div class="card-jp">
             <div class="card-jp-header"><span class="card-jp-title">Bonos</span></div>
+            <?php if (empty($bonos)): ?><div class="card-jp-body"><p style="margin:0;color:var(--text-muted);font-size:13px">Sin bonos.</p></div><?php else: ?>
             <div class="table-responsive">
-                <table class="table-jp" style="font-size:13px">
+                <table class="table-jp" style="font-size:13px" data-fin-list="alumno-bonos" data-fin-page="10">
                     <thead><tr><th>Bono</th><th style="text-align:right">Precio</th><th>Vigencia</th><th style="text-align:right">Usadas</th><th style="text-align:right">Quedan</th><th>Estado</th></tr></thead>
                     <tbody>
-                    <?php if (empty($bonos)): ?><tr><td colspan="6" style="color:var(--text-muted)">Sin bonos.</td></tr><?php endif; ?>
                     <?php foreach ($bonos as $b):
                         $rem = (int) $b['sessions_remaining']; $exp = !empty($b['expires_at']) && $b['expires_at'] < $today;
                         [$lbl, $fg, $bg] = !empty($b['voided_at']) ? ['Anulado', '#475569', '#f1f5f9']
@@ -61,16 +62,17 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                     </tbody>
                 </table>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- Estado de cuenta -->
         <div class="card-jp">
-            <div class="card-jp-header" style="flex-wrap:wrap;gap:6px"><span class="card-jp-title">Estado de cuenta</span><span style="font-size:12px;color:var(--text-muted)">Nada se borra: lo erróneo se anula y queda a la vista</span></div>
+            <div class="card-jp-header" style="flex-wrap:wrap;gap:6px"><span class="card-jp-title">Estado de cuenta<?= fin_help('estado_cuenta') ?></span><span style="font-size:12px;color:var(--text-muted)">Nada se borra: lo erróneo se anula y queda a la vista</span></div>
+            <?php if (empty($account['lines'])): ?><div class="card-jp-body"><p style="margin:0;color:var(--text-muted);font-size:13px">Sin movimientos.</p></div><?php else: ?>
             <div class="table-responsive">
-                <table class="table-jp" style="font-size:13px">
-                    <thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Cargo</th><th style="text-align:right">Pago</th><th style="text-align:right">Saldo</th><th>Anular</th></tr></thead>
+                <table class="table-jp" style="font-size:13px" data-fin-list="alumno-cuenta" data-fin-page="10">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Cargo</th><th style="text-align:right">Pago</th><th style="text-align:right">Saldo</th><th class="no-sort">Anular<?= fin_help('anular') ?></th></tr></thead>
                     <tbody>
-                    <?php if (empty($account['lines'])): ?><tr><td colspan="6" style="color:var(--text-muted)">Sin movimientos.</td></tr><?php endif; ?>
                     <?php foreach ($account['lines'] as $l): $isCharge = $l['kind'] === 'charge'; ?>
                     <tr style="<?= $l['voided'] ? 'opacity:.55' : '' ?>">
                         <td style="white-space:nowrap;color:var(--text-muted)"><?= date('d/m/Y', strtotime($l['date'])) ?></td>
@@ -98,19 +100,20 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                     </tbody>
                 </table>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- Clases -->
         <div class="card-jp">
             <div class="card-jp-header"><span class="card-jp-title">Clases y sesiones consumidas</span></div>
-            <div class="table-responsive" style="max-height:420px;overflow-y:auto">
-                <table class="table-jp" style="font-size:13px">
+            <div class="table-responsive">
+                <table class="table-jp" style="font-size:13px" data-fin-list="alumno-clases" data-fin-page="10" data-fin-order='[[0,"desc"]]'>
                     <thead><tr><th>Fecha</th><th>Asistencia</th><th>Bono</th><th style="text-align:right">Valor</th></tr></thead>
                     <tbody>
                     <?php foreach ($classes as $c):
                         $state = $c['status'] === 'cancelled' ? 'Cancelada' : ($c['status'] === 'scheduled' && $c['session_date'] < $today ? 'Sesión sin cerrar' : ($attLabel[$c['attendance']] ?? $c['attendance'])); ?>
                     <tr>
-                        <td style="white-space:nowrap"><a href="<?= base_url('clases/' . (int) $c['id']) ?>" class="row-link-anchor"><?= date('d/m/Y', strtotime($c['session_date'])) ?> · <?= substr($c['start_time'], 0, 5) ?></a></td>
+                        <td style="white-space:nowrap" data-order="<?= esc($c['session_date'] . ' ' . $c['start_time']) ?>"><a href="<?= base_url('clases/' . (int) $c['id']) ?>" class="row-link-anchor"><?= date('d/m/Y', strtotime($c['session_date'])) ?> · <?= substr($c['start_time'], 0, 5) ?></a></td>
                         <td><?= esc($state) ?></td>
                         <td><?php if ($c['bono_deducted_at']): ?><?= esc($c['bono_name'] ?? 'Bono') ?>
                             <?php elseif ($c['bono_resolution']): ?><span style="color:var(--text-muted)"><?= esc(\App\Services\BonoControlService::resolutionLabel($c['bono_resolution'])) ?></span>
@@ -133,11 +136,11 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                 <input type="hidden" name="player_id" value="<?= (int) $player['id'] ?>">
                 <input type="hidden" name="back" value="alumno">
                 <div>
-                    <label class="form-label" for="ac-amount">Importe (€)</label>
+                    <label class="form-label" for="ac-amount">Importe (€)<?= fin_help('cobro_importe') ?></label>
                     <input id="ac-amount" name="amount" type="text" inputmode="decimal" class="form-control-jp" value="<?= $due > 0 ? eur_input($due) : '' ?>" placeholder="0,00" required style="font-size:18px;font-weight:700">
                 </div>
                 <fieldset style="border:0;margin:0;padding:0">
-                    <legend class="form-label" style="font-size:inherit">Medio de pago</legend>
+                    <legend class="form-label" style="font-size:inherit">Medio de pago<?= fin_help('cobro_medio') ?></legend>
                     <div class="d-flex flex-wrap gap-2">
                         <?php foreach ($methods as $i => $m): if ($m['code'] === 'sin_especificar') continue; ?>
                         <label style="display:flex;align-items:center;gap:6px;border:1px solid var(--border-dark);border-radius:8px;padding:8px 10px;min-height:40px;font-size:13px;font-weight:600;cursor:pointer">
@@ -148,7 +151,7 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                 </fieldset>
                 <?php if ($pending): ?>
                 <div>
-                    <label class="form-label" for="ac-charge">Paga</label>
+                    <label class="form-label" for="ac-charge">Paga<?= fin_help('cobro_reparto') ?></label>
                     <select id="ac-charge" name="charge_id" class="form-control-jp">
                         <option value="">Lo más antiguo primero</option>
                         <?php foreach ($pending as $cid => $cents): $ch = $chargesById[$cid] ?? null; ?>
@@ -168,7 +171,7 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
 
         <!-- Cargo manual -->
         <div class="card-jp">
-            <div class="card-jp-header"><span class="card-jp-title">Añadir cargo</span></div>
+            <div class="card-jp-header"><span class="card-jp-title">Añadir cargo<?= fin_help('cargo_manual') ?></span></div>
             <form action="<?= base_url('finanzas/alumnos/' . (int) $player['id'] . '/cargo') ?>" method="post" class="card-jp-body d-flex flex-column gap-2">
                 <?= csrf_field() ?>
                 <p style="margin:0 0 4px;font-size:12px;color:var(--text-muted)">Para una sesión suelta, material u otro concepto. Los bonos se cargan solos al venderlos.</p>
@@ -179,7 +182,7 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                         <select id="mc-cat" name="category_id" class="form-control-jp"><?php foreach ($incomeCategories as $ic): ?><option value="<?= (int) $ic['id'] ?>"><?= esc($ic['name']) ?></option><?php endforeach; ?></select></div>
                 </div>
                 <div class="row g-2">
-                    <div class="col-6"><label class="form-label" for="mc-disc">Descuento</label><input id="mc-disc" name="discount" type="text" class="form-control-jp" placeholder="10 o 10%"></div>
+                    <div class="col-6"><label class="form-label" for="mc-disc">Descuento<?= fin_help('descuento') ?></label><input id="mc-disc" name="discount" type="text" class="form-control-jp" placeholder="10 o 10%"></div>
                     <div class="col-6"><label class="form-label" for="mc-reason">Motivo</label><input id="mc-reason" name="discount_reason" type="text" class="form-control-jp" maxlength="120" placeholder="Hermanos…"></div>
                 </div>
                 <button type="submit" class="btn-jp btn-jp-secondary">Añadir cargo</button>

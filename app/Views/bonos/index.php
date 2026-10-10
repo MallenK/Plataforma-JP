@@ -291,6 +291,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 
 <!-- ── Modal crear / emitir bono ──────────────────────────────── -->
+<?php helper('finhelp'); ?>
 <div id="modalEmitirBono" class="bono-modal-overlay d-none">
     <div class="bono-modal">
         <div class="bono-modal-header">
@@ -350,7 +351,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
                     <!-- Finanzas 2.0: precio, descuento y cobro opcional en el mismo paso -->
                     <div class="col-6 col-md-3">
-                        <label class="form-label" for="bnDiscount">Descuento <span style="color:var(--text-muted);font-weight:400;font-size:12px">(opcional)</span></label>
+                        <label class="form-label" for="bnDiscount">Descuento<?= fin_help('descuento') ?> <span style="color:var(--text-muted);font-weight:400;font-size:12px">(opcional)</span></label>
                         <input type="text" id="bnDiscount" name="discount" class="form-control-jp" placeholder="10 o 10%" oninput="bnRecalc()">
                     </div>
                     <div class="col-6 col-md-3">
@@ -366,7 +367,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     <div class="col-12">
                         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
                             <input type="checkbox" id="bnPayNow" name="pay_now" value="1" onchange="document.getElementById('bnPayBox').style.display=this.checked?'block':'none'">
-                            Cobrado ahora <span style="font-weight:400;color:var(--text-muted)">(si no, queda pendiente de cobro en Finanzas)</span>
+                            Cobrado ahora<?= fin_help('venta_pago') ?> <span style="font-weight:400;color:var(--text-muted)">(si no, queda pendiente de cobro en Finanzas)</span>
                         </label>
                         <div id="bnPayBox" style="display:none;margin-top:8px">
                             <div class="d-flex flex-wrap gap-2 mb-2">
@@ -513,6 +514,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="<?= base_url('assets/js/fin-ui.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/fin-ui.js') ?: time() ?>"></script>
 <script>JPList.init({
     table: '#bonos-table', key: 'bonos', search: '#bonos-search', searchAttrs: ['name', 'email'],
     filters: [{ el: '#bonos-filter-status', attr: 'status' }, { el: '#bonos-filter-multi', attr: 'multi' }],

@@ -239,6 +239,44 @@ class FinanzasController extends BaseController
         ]));
     }
 
+    // ────────────────────────────────────────────────────────────────
+    //  Ayuda: manual de uso (pantalla, versión imprimible, capturas y PDF)
+    // ────────────────────────────────────────────────────────────────
+
+    private const MANUAL_DIR = APPPATH . 'Data/manual_finanzas/';
+    private const MANUAL_PDF = 'Manual-Finanzas-JP-Preparation.pdf';
+
+    public function ayuda()
+    {
+        return view('finanzas/ayuda', $this->base('ayuda', ['hasPdf' => is_file(self::MANUAL_DIR . self::MANUAL_PDF)]));
+    }
+
+    public function ayudaImprimir()
+    {
+        return view('finanzas/manual_print', ['date' => date('d/m/Y')]);
+    }
+
+    /** Capturas del manual (solo admin, nunca públicas). */
+    public function manualImg(string $name)
+    {
+        if (!preg_match('/^[a-z0-9_-]+\.png$/', $name) || !is_file(self::MANUAL_DIR . $name)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        return $this->response->setHeader('Content-Type', 'image/png')
+            ->setHeader('Cache-Control', 'private, max-age=86400')
+            ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setBody(file_get_contents(self::MANUAL_DIR . $name));
+    }
+
+    public function manualPdf()
+    {
+        $f = self::MANUAL_DIR . self::MANUAL_PDF;
+        if (!is_file($f)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        return $this->response->download($f, null)->setFileName(self::MANUAL_PDF);
+    }
+
     /** Ruta antigua `/pendientes` (v1.33.0 en desarrollo) → Finanzas › Revisión. */
     public function legacyPendientes()
     {

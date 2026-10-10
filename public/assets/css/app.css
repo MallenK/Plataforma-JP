@@ -2701,3 +2701,16 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
 .cal-legend { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-size:12px; color:var(--text-body); }
 .cal-legend span { display:inline-flex; align-items:center; gap:6px; }
 .cal-legend i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+/* ── Finanzas: ayudas «?» (tooltips) ─────────────────────────────── */
+.fin-help { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0; margin-left:4px;
+            border:0; border-radius:50%; background:transparent; color:var(--text-muted); font-size:14px; line-height:1; cursor:help;
+            vertical-align:middle; }
+.fin-help:hover, .fin-help:focus-visible { color:var(--accent-dark); background:var(--accent-light); outline:none; }
+.fin-help:focus-visible { box-shadow:0 0 0 2px var(--accent); }
+.fin-tooltip { --bs-tooltip-max-width: 300px; --bs-tooltip-bg: #0f172a; --bs-tooltip-font-size: 12.5px; --bs-tooltip-padding-x: 10px; --bs-tooltip-padding-y: 8px; }
+.fin-tooltip .tooltip-inner { text-align:left; line-height:1.45; font-family:inherit; }
+.metric-label .fin-help { width:18px; height:18px; font-size:12px; margin-left:2px; }
+/* Finanzas: tablas paginadas — el buscador de DataTables con el estilo de la plataforma */
+.jp-list .dt-search input { border:1px solid var(--border-dark); border-radius:var(--radius-sm); padding:6px 10px; font-family:inherit; font-size:13px; min-width:min(260px, 100%); }
+.jp-list .dt-search label { font-size:12px; color:var(--text-muted); margin-right:6px; }

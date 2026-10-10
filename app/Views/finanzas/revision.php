@@ -60,7 +60,7 @@ $cards = [
 <!-- 1. Sesiones pasadas sin cerrar -->
 <div class="card-jp mb-3" id="sin-cerrar">
     <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#b45309"><i class="bi bi-calendar-x-fill me-2"></i>Sesiones pasadas sin cerrar (<?= count($unclosed) ?>)</span>
+        <span class="card-jp-title" style="color:#b45309"><i class="bi bi-calendar-x-fill me-2"></i>Sesiones pasadas sin cerrar (<?= count($unclosed) ?>)<?= fin_help('rev_sesiones') ?></span>
     </div>
     <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
         Ya pasó su fecha pero siguen como «programadas». Ábrelas y <strong>pasa lista y ciérralas</strong> si se dieron, o <strong>cancélalas</strong> si no se dieron.
@@ -69,14 +69,14 @@ $cards = [
     <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todas las sesiones pasadas están cerradas.</p></div>
     <?php else: ?>
     <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-sesiones" data-fin-order='[[0,"asc"]]'>
             <thead><tr>
                 <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Estado</th>
             </tr></thead>
             <tbody>
             <?php foreach ($unclosed as $s): ?>
             <tr style="border-bottom:1px solid var(--border)">
-                <td style="<?= $td ?>;white-space:nowrap;color:var(--text-muted)"><?= date('d/m/Y', strtotime($s['session_date'])) ?> · <?= substr($s['start_time'], 0, 5) ?></td>
+                <td style="<?= $td ?>;white-space:nowrap;color:var(--text-muted)" data-order="<?= esc($s['session_date'] . ' ' . $s['start_time']) ?>"><?= date('d/m/Y', strtotime($s['session_date'])) ?> · <?= substr($s['start_time'], 0, 5) ?></td>
                 <td style="<?= $td ?>"><a href="<?= base_url('clases/' . (int) $s['id']) ?>" class="row-link-anchor" style="font-weight:600"><?= esc($s['title']) ?></a></td>
                 <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : '<span style="color:var(--text-muted)">Sin asignar</span>' ?></td>
                 <td style="<?= $td ?>">
@@ -97,7 +97,7 @@ $cards = [
 <!-- 2. Clases dadas sin descontar -->
 <div class="card-jp mb-3" id="sin-bono">
     <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin descontar bono (<?= count($debts) + count($preControl) ?>)</span>
+        <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin descontar bono (<?= count($debts) + count($preControl) ?>)<?= fin_help('rev_sin_bono') ?></span>
         <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none">Revisarlas</a>
     </div>
     <div class="card-jp-body" style="font-size:13px">
@@ -114,7 +114,7 @@ $cards = [
 <!-- 3. Bonos con precio estimado -->
 <div class="card-jp mb-3" id="precios">
     <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#92400e"><i class="bi bi-question-circle-fill me-2"></i>Bonos con precio estimado (<?= count($estimated) ?>)</span>
+        <span class="card-jp-title" style="color:#92400e"><i class="bi bi-question-circle-fill me-2"></i>Bonos con precio estimado (<?= count($estimated) ?>)<?= fin_help('rev_precios') ?></span>
     </div>
     <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
         Antes de la v1.33.0 no se guardaba lo que se pagó por cada bono: se ha puesto el precio del tipo de bono como <strong>estimado</strong>.
@@ -124,7 +124,7 @@ $cards = [
     <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todos los precios están confirmados.</p></div>
     <?php else: ?>
     <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-precios">
             <thead><tr>
                 <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Emitido</th><th style="<?= $th ?>">Precio estimado</th><th style="<?= $th ?>">Precio real pagado</th>
             </tr></thead>
@@ -156,7 +156,7 @@ $cards = [
 <!-- 4. Caducados con sesiones sin usar -->
 <div class="card-jp mb-3" id="sin-usar">
     <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#6d28d9"><i class="bi bi-hourglass-bottom me-2"></i>Bonos caducados con sesiones sin usar (<?= count($unused) ?>)</span>
+        <span class="card-jp-title" style="color:#6d28d9"><i class="bi bi-hourglass-bottom me-2"></i>Bonos caducados con sesiones sin usar (<?= count($unused) ?>)<?= fin_help('rev_caducados') ?></span>
         <?php if ($unusedTotal > 0): ?><span style="font-size:13px;font-weight:700;color:var(--text-h)"><?= $eur($unusedTotal) ?></span><?php endif; ?>
     </div>
     <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
@@ -167,7 +167,7 @@ $cards = [
     <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>No hay bonos caducados con sesiones sin usar.</p></div>
     <?php else: ?>
     <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-caducados" data-fin-order='[[2,"desc"]]'>
             <thead><tr>
                 <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Caducó</th><th style="<?= $th ?>">Sin usar</th><th style="<?= $th ?>">Importe</th>
             </tr></thead>
@@ -176,7 +176,7 @@ $cards = [
             <tr style="border-bottom:1px solid var(--border)">
                 <td style="<?= $td ?>;font-weight:600"><?= $b['player_name'] ? esc($b['player_name']) : '<span style="color:var(--text-muted)">Sin asignar</span>' ?></td>
                 <td style="<?= $td ?>"><a href="<?= base_url('bonos/' . (int) $b['id']) ?>" class="row-link-anchor"><?= esc($b['bono_name'] ?? 'Bono') ?></a></td>
-                <td style="<?= $td ?>;color:var(--text-muted);white-space:nowrap"><?= date('d/m/Y', strtotime($b['expires_at'])) ?></td>
+                <td style="<?= $td ?>;color:var(--text-muted);white-space:nowrap" data-order="<?= esc($b['expires_at']) ?>"><?= date('d/m/Y', strtotime($b['expires_at'])) ?></td>
                 <td style="<?= $td ?>"><?= (int) $b['sessions_remaining'] ?> de <?= (int) $b['sessions_total'] ?></td>
                 <td style="<?= $td ?>;white-space:nowrap"><?= $eur((int) $b['unused_cents']) ?><?php if (!empty($b['price_estimated'])): ?> <span title="Precio estimado" style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 5px">est.</span><?php endif; ?></td>
             </tr>

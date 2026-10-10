@@ -3,6 +3,7 @@
 <?php
 $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Configuración: medios de pago, categorías y reglas';
+helper(['money', 'finhelp']);
 $hours = (int) ($settings['fin_notice_hours'] ?? 24);
 $auto  = ($settings['fin_auto_deduct'] ?? '1') === '1';
 $catalog = static function (string $kind, array $items, string $title, ?string $catKind = null) {
@@ -52,10 +53,10 @@ $catalog = static function (string $kind, array $items, string $title, ?string $
                 <?= csrf_field() ?>
                 <label class="d-flex gap-2 align-items-start" style="cursor:pointer">
                     <input type="checkbox" name="fin_auto_deduct" value="1" <?= $auto ? 'checked' : '' ?> style="margin-top:3px">
-                    <span><strong>Descontar la sesión automáticamente</strong> cuando el alumno falta sin justificar o avisa con poca antelación. Siempre se puede deshacer desde Pasar lista (entrenador, admin y superadmin).</span>
+                    <span><strong>Descontar la sesión automáticamente</strong><?= fin_help('cfg_auto') ?> cuando el alumno falta sin justificar o avisa con poca antelación. Siempre se puede deshacer desde Pasar lista (entrenador, admin y superadmin).</span>
                 </label>
                 <div>
-                    <label class="form-label" for="cf-hours">Horas mínimas de aviso para no perder la sesión</label>
+                    <label class="form-label" for="cf-hours">Horas mínimas de aviso para no perder la sesión<?= fin_help('cfg_horas') ?></label>
                     <div class="d-flex align-items-center gap-2"><input id="cf-hours" name="fin_notice_hours" type="number" min="1" max="168" value="<?= $hours ?>" class="form-control-jp" style="width:100px"> horas</div>
                 </div>
                 <div><button type="submit" class="btn-jp btn-jp-primary">Guardar reglas</button></div>

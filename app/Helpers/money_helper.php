@@ -9,7 +9,8 @@ if (!function_exists('eur')) {
         if ($cents === null) {
             return '—';
         }
-        return number_format($cents / 100, 2, ',', '.') . ($symbol ? ' €' : '');
+        // Espacio de no separación: el «€» nunca queda solo en otra línea.
+        return number_format($cents / 100, 2, ',', '.') . ($symbol ? "\u{00A0}€" : '');
     }
 }
 

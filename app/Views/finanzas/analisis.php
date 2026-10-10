@@ -3,6 +3,7 @@
 <?php
 $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Análisis: qué se vende, cómo se usan las clases y dónde';
+helper(['money', 'finhelp']);
 $a   = $an['attendance'];
 $cat = ['prebenjamin' => 'Prebenjamín', 'benjamin' => 'Benjamín', 'alevin' => 'Alevín', 'infantil' => 'Infantil', 'cadete' => 'Cadete',
         'juvenil' => 'Juvenil', 'junior' => 'Júnior', 'senior' => 'Sénior', 'veterano' => 'Veterano'];
@@ -16,17 +17,17 @@ $soldTotal = array_sum(array_map(fn($r) => (int) $r['v'], $an['by_type']));
 <div class="row g-3">
     <div class="col-12 col-xl-7">
         <div class="card-jp h-100">
-            <div class="card-jp-header"><span class="card-jp-title">Ventas por tipo de bono · <?= eur($soldTotal) ?></span></div>
+            <div class="card-jp-header"><span class="card-jp-title">Ventas por tipo de bono · <?= eur($soldTotal) ?><?= fin_help('an_tipos') ?></span></div>
+            <?php if (empty($an['by_type'])): ?><div class="card-jp-body"><p style="margin:0;color:var(--text-muted);font-size:13px">Sin ventas en el periodo.</p></div><?php else: ?>
             <div class="table-responsive">
-                <table class="table-jp" style="font-size:13px">
+                <table class="table-jp" style="font-size:13px" data-fin-list="analisis-tipos" data-fin-page="10" data-fin-order='[[2,"desc"]]'>
                     <thead><tr><th>Tipo</th><th style="text-align:right">Vendidos</th><th style="text-align:right">Importe</th><th style="text-align:right">Descuentos</th><th style="text-align:right">€ / sesión</th><th style="text-align:right">% ventas</th></tr></thead>
                     <tbody>
-                    <?php if (empty($an['by_type'])): ?><tr><td colspan="6" style="color:var(--text-muted)">Sin ventas en el periodo.</td></tr><?php endif; ?>
                     <?php foreach ($an['by_type'] as $r): $per = (int) $r['sessions'] > 0 && (int) $r['n'] > 0 ? (int) round((int) $r['v'] / (int) $r['n'] / (int) $r['sessions']) : null; ?>
                     <tr>
                         <td style="font-weight:600"><?= esc($r['name']) ?></td>
                         <td style="text-align:right"><?= (int) $r['n'] ?></td>
-                        <td style="text-align:right;font-weight:700"><?= eur((int) $r['v']) ?></td>
+                        <td style="text-align:right;font-weight:700" data-order="<?= (int) $r['v'] ?>"><?= eur((int) $r['v']) ?></td>
                         <td style="text-align:right;color:var(--text-muted)"><?= (int) $r['d'] ? eur((int) $r['d']) : '—' ?></td>
                         <td style="text-align:right"><?= $per !== null ? eur($per) : '—' ?></td>
                         <td style="text-align:right"><?= $soldTotal ? number_format((int) $r['v'] / $soldTotal * 100, 1, ',', '') . ' %' : '—' ?></td>
@@ -35,11 +36,12 @@ $soldTotal = array_sum(array_map(fn($r) => (int) $r['v'], $an['by_type']));
                     </tbody>
                 </table>
             </div>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-12 col-xl-5">
         <div class="card-jp h-100">
-            <div class="card-jp-header"><span class="card-jp-title">Asistencia del periodo</span></div>
+            <div class="card-jp-header"><span class="card-jp-title">Asistencia del periodo<?= fin_help('asistencia') ?></span></div>
             <div class="table-responsive">
                 <table class="table-jp" style="font-size:13px">
                     <tbody>

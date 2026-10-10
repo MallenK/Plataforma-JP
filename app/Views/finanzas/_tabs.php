@@ -4,7 +4,7 @@
  * $tab = pestaña activa · $reviewCount = tareas pendientes en Revisión.
  * Las pestañas con periodo conservan el ?mes / ?desde / ?hasta elegido.
  */
-helper('money');
+helper(['money', 'finhelp']);
 $finTabs = [
     'resumen'      => ['Resumen',       'bi-speedometer2',    'finanzas/resumen',      true],
     'movimientos'  => ['Movimientos',   'bi-journal-text',    'finanzas/movimientos',  true],
@@ -15,6 +15,7 @@ $finTabs = [
     'analisis'     => ['Análisis',      'bi-graph-up',        'finanzas/analisis',     true],
     'revision'     => ['Revisión',      'bi-clipboard-check', 'finanzas/revision',     false],
     'config'       => ['Configuración', 'bi-sliders',         'finanzas/configuracion', false],
+    'ayuda'        => ['Ayuda',         'bi-life-preserver',  'finanzas/ayuda',        false],
 ];
 $tab = $tab ?? '';
 $keep = array_filter([
@@ -42,3 +43,4 @@ $qs = $keep ? '?' . http_build_query($keep) : '';
 <?php if (session()->getFlashdata('error')): ?>
 <div class="alert-jp error mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error')) ?></div>
 <?php endif; ?>
+<script src="<?= base_url('assets/js/fin-ui.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/fin-ui.js') ?: time() ?>"></script>
