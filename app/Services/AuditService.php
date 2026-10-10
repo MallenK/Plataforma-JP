@@ -21,6 +21,7 @@ class AuditService
     public const RESTORE = 'restore';
     public const DELETE  = 'delete';    // borrado permitido (sin histórico) — se guarda la foto
     public const BLOCKED = 'blocked';   // intento de borrado rechazado por tener histórico
+    public const VIEW    = 'view';      // consulta de datos personales (p. ej. historial completo de un alumno)
 
     /** Campos que nunca se guardan en la auditoría. */
     private const SECRET_KEYS = ['password', 'password_hash', 'token', 'remember_token'];
@@ -33,6 +34,7 @@ class AuditService
         self::RESTORE => 'Restaurado',
         self::DELETE  => 'Borrado',
         self::BLOCKED => 'Borrado bloqueado',
+        self::VIEW    => 'Consulta',
     ];
 
     public static function label(string $action): string

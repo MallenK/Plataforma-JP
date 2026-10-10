@@ -25,6 +25,8 @@
     if (!$ || !$.fn.dataTable) return;
 
     var LANG = {
+        search:       'Buscar:',
+        searchPlaceholder: 'Nombre, importe, concepto…',
         emptyTable:   'No hay datos disponibles',
         zeroRecords:  'Sin resultados para esta búsqueda',
         info:         'Mostrando _START_–_END_ de _TOTAL_',

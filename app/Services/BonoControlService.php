@@ -426,6 +426,10 @@ class BonoControlService
             BonoLedgerService::log($playerId, BonoLedgerService::VOIDED, -$remaining, $bonoId, null,
                 'Motivo: ' . trim((string) $reason), $actorId);
             (new BonoCoverageService($this->db))->refreshMarks($playerId);
+            // Finanzas 2.0: se anula su cargo (lo ya pagado queda a favor del alumno).
+            if ($this->db->tableExists('fin_charges')) {
+                (new FinanceService($this->db))->onBonoVoided($bonoId, $reason, $actorId);
+            }
         }
 
         return ['success' => true, 'cancelled' => $remaining];

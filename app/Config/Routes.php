@@ -384,6 +384,32 @@ $routes->get('finanzas', 'FinanzasController::index', [
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+// Finanzas 2.0 — pestañas y acciones (solo admin y superadmin)
+$routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], static function ($routes) {
+    $routes->get('resumen',                 'FinanzasController::resumen');
+    $routes->get('movimientos',             'FinanzasController::movimientos');
+    $routes->get('cobros',                  'FinanzasController::cobros');
+    $routes->post('cobros',                 'FinanzasController::storePayment');
+    $routes->post('cobros/(:num)/anular',   'FinanzasController::voidPayment/$1');
+    $routes->get('gastos',                  'FinanzasController::gastos');
+    $routes->post('gastos',                 'FinanzasController::storeExpense');
+    $routes->post('gastos/(:num)/anular',   'FinanzasController::voidExpense/$1');
+    $routes->get('gastos/(:num)/adjunto',   'FinanzasController::expenseAttachment/$1');
+    $routes->get('alumnos',                 'FinanzasController::alumnos');
+    $routes->get('alumnos/(:num)',          'FinanzasController::alumno/$1');
+    $routes->get('alumnos/(:num)/historial', 'FinanzasController::historial/$1');
+    $routes->post('alumnos/(:num)/cargo',   'FinanzasController::storeCharge/$1');
+    $routes->post('cargos/(:num)/anular',   'FinanzasController::voidCharge/$1');
+    $routes->get('entrenadores',            'FinanzasController::entrenadores');
+    $routes->get('analisis',                'FinanzasController::analisis');
+    $routes->get('configuracion',           'FinanzasController::config');
+    $routes->post('configuracion',          'FinanzasController::saveConfig');
+    $routes->post('configuracion/(metodo|categoria)', 'FinanzasController::saveCatalog/$1');
+    $routes->get('ayuda',                   'FinanzasController::ayuda');
+    $routes->get('ayuda/imprimir',          'FinanzasController::ayudaImprimir');
+    $routes->get('ayuda/manual.pdf',        'FinanzasController::manualPdf');
+    $routes->get('ayuda/img/(:segment)',    'FinanzasController::manualImg/$1');
+});
 $routes->post('finanzas/revision/cierre-inicial', 'FinanzasController::initialClose', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

@@ -42,6 +42,16 @@ class PerfilController extends BaseController
             }
         }
 
+        // Finanzas 2.0: «Mis pagos» (lo ve el propio alumno y administración).
+        $finAccount = null;
+        if ($user['role'] === 'player') {
+            try {
+                $finAccount = (new \App\Services\FinanceService())->account((int) $user['id']);
+            } catch (\Throwable $e) {
+                log_message('error', 'Perfil: FinanceService::account falló: ' . $e->getMessage());
+            }
+        }
+
         $docService     = new \App\Services\DocumentService();
         $personalFolder = $docService->getOrCreatePersonalFolder((int)$user['id']);
         $documents      = $personalFolder ? $docService->getFolderFiles((int)$personalFolder['id']) : [];
@@ -62,6 +72,7 @@ class PerfilController extends BaseController
             'documents'         => $documents,
             'playerFullProfile' => $playerFullProfile,
             'annotations'       => $annotations,
+            'finAccount'        => $finAccount,
         ]);
     }
 

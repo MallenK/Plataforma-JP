@@ -422,6 +422,37 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
 
         <!-- Planes / Bonos: el propio alumno y administración (coach y staff no ven bonos) -->
         <?php $perfSeesBonos = !empty($isSelf) || in_array(session('role'), ['superadmin', 'admin'], true); ?>
+
+        <!-- Finanzas 2.0: Mis pagos (mismas personas que ven los bonos) -->
+        <?php if ($perfSeesBonos && !empty($finAccount) && !empty($finAccount['lines'])): helper('money'); $fa = $finAccount['totals']; $faDue = (int) $fa['due']; ?>
+        <div class="card-jp">
+            <div class="card-jp-header">
+                <span class="card-jp-title"><i class="bi bi-cash-coin me-2" style="color:var(--accent)"></i>Mis pagos</span>
+            </div>
+            <div class="card-jp-body" style="font-size:13px">
+                <div class="d-flex flex-wrap gap-4 mb-3">
+                    <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.4px">Comprado</div><div style="font-size:20px;font-weight:800;color:var(--text-h)"><?= eur((int) $fa['charged']) ?></div></div>
+                    <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.4px">Pagado</div><div style="font-size:20px;font-weight:800;color:var(--text-h)"><?= eur((int) $fa['paid']) ?></div></div>
+                    <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.4px"><?= $faDue < 0 ? 'A tu favor' : 'Pendiente' ?></div><div style="font-size:20px;font-weight:800;color:<?= $faDue > 0 ? '#9a3412' : '#047857' ?>"><?= eur(abs($faDue)) ?></div></div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table-jp" style="font-size:12.5px">
+                        <thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Importe</th></tr></thead>
+                        <tbody>
+                        <?php foreach (array_slice(array_filter($finAccount['lines'], fn($l) => empty($l['voided'])), 0, 12) as $l): ?>
+                        <tr>
+                            <td style="white-space:nowrap;color:var(--text-muted)"><?= date('d/m/Y', strtotime($l['date'])) ?></td>
+                            <td><?= $l['kind'] === 'payment' ? 'Pago' . (str_contains($l['concept'], 'Sin especificar') ? '' : ' · ' . esc(substr($l['concept'], strlen('Cobro · ')))) : esc($l['concept']) ?></td>
+                            <td style="text-align:right;font-weight:700;color:<?= $l['kind'] === 'payment' ? '#047857' : 'var(--text-h)' ?>"><?= $l['kind'] === 'payment' ? '−' : '' ?><?= eur((int) $l['amount']) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php if ($faDue > 0): ?><p style="margin:10px 0 0;font-size:12px;color:var(--text-muted)">Si ya lo has pagado, avisa a la academia para que lo registre.</p><?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         <?php if ($perfSeesBonos && !empty($pfp['plans'])): ?>
         <?php
         $perfUsable = array_filter($pfp['plans'], fn($pl) => (int) ($pl['sessions_remaining'] ?? 0) > 0 && (empty($pl['expires_at']) || $pl['expires_at'] >= $today));

@@ -291,6 +291,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
 
 <!-- ── Modal crear / emitir bono ──────────────────────────────── -->
+<?php helper('finhelp'); ?>
 <div id="modalEmitirBono" class="bono-modal-overlay d-none">
     <div class="bono-modal">
         <div class="bono-modal-header">
@@ -307,8 +308,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         <select name="bono_type_id" id="selectBonoType" class="form-control-jp" required onchange="renderAvisoDeudas()">
                             <option value="">— Selecciona un tipo —</option>
                             <?php foreach ($bonoTypes as $bt): ?>
-                            <option value="<?= $bt['id'] ?>" data-sessions="<?= (int) $bt['sessions'] ?>">
-                                <?= esc($bt['name']) ?> — <?= $bt['sessions'] ?> sesiones
+                            <option value="<?= $bt['id'] ?>" data-sessions="<?= (int) $bt['sessions'] ?>" data-price="<?= (int) round(((float) $bt['price']) * 100) ?>">
+                                <?= esc($bt['name']) ?> — <?= $bt['sessions'] ?> sesiones · <?= number_format((float) $bt['price'], 2, ',', '.') ?> €
                             </option>
                             <?php endforeach; ?>
                         </select>
@@ -346,6 +347,40 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                     <div class="col-12 col-md-6">
                         <label class="form-label">Fecha de inicio</label>
                         <input type="date" name="start_date" class="form-control-jp" value="<?= date('Y-m-d') ?>">
+                    </div>
+
+                    <!-- Finanzas 2.0: precio, descuento y cobro opcional en el mismo paso -->
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="bnDiscount">Descuento<?= fin_help('descuento') ?> <span style="color:var(--text-muted);font-weight:400;font-size:12px">(opcional)</span></label>
+                        <input type="text" id="bnDiscount" name="discount" class="form-control-jp" placeholder="10 o 10%" oninput="bnRecalc()">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="bnDiscountReason">Motivo</label>
+                        <input type="text" id="bnDiscountReason" name="discount_reason" class="form-control-jp" maxlength="120" placeholder="Hermanos, promo…">
+                    </div>
+                    <div class="col-12">
+                        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px">
+                            Precio: <strong id="bnPrice">—</strong>
+                            <span id="bnFinalWrap" style="display:none"> · con descuento <strong id="bnFinal"></strong></span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+                            <input type="checkbox" id="bnPayNow" name="pay_now" value="1" onchange="document.getElementById('bnPayBox').style.display=this.checked?'block':'none'">
+                            Cobrado ahora<?= fin_help('venta_pago') ?> <span style="font-weight:400;color:var(--text-muted)">(si no, queda pendiente de cobro en Finanzas)</span>
+                        </label>
+                        <div id="bnPayBox" style="display:none;margin-top:8px">
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <?php foreach ($finMethods ?? [] as $i => $m): if ($m['code'] === 'sin_especificar') continue; ?>
+                                <label style="display:flex;align-items:center;gap:6px;border:1px solid var(--border-dark);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer">
+                                    <input type="radio" name="pay_method_id" value="<?= (int) $m['id'] ?>" <?= $i === 0 ? 'checked' : '' ?>> <?= esc($m['name']) ?>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <label class="form-label" for="bnPayAmount">Importe cobrado (€)</label>
+                            <input type="text" id="bnPayAmount" name="pay_amount" inputmode="decimal" class="form-control-jp" style="max-width:160px" placeholder="0,00">
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Puede ser una parte (pago a plazos). Requiere jugador asignado.</div>
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -479,6 +514,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="<?= base_url('assets/js/fin-ui.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/fin-ui.js') ?: time() ?>"></script>
 <script>JPList.init({
     table: '#bonos-table', key: 'bonos', search: '#bonos-search', searchAttrs: ['name', 'email'],
     filters: [{ el: '#bonos-filter-status', attr: 'status' }, { el: '#bonos-filter-multi', attr: 'multi' }],
@@ -713,6 +749,29 @@ document.addEventListener('keydown', e => {
 
 // Clases ya dadas sin bono del jugador elegido (se rellena en checkBonoActivo)
 let deudasJugador = [];
+
+// Finanzas 2.0: precio del tipo elegido, descuento y sugerencia de importe cobrado.
+function bnEur(c) { return (c / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+function bnRecalc() {
+    var opt  = document.querySelector('#selectBonoType option:checked');
+    var list = opt && opt.dataset.price ? parseInt(opt.dataset.price, 10) : 0;
+    var raw  = (document.getElementById('bnDiscount').value || '').trim();
+    var disc = 0;
+    if (raw.slice(-1) === '%') { disc = Math.round(list * Math.min(100, parseFloat(raw.replace(',', '.')) || 0) / 100); }
+    else if (raw !== '') { disc = Math.round((parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0) * 100); }
+    disc = Math.max(0, Math.min(list, disc));
+    document.getElementById('bnPrice').textContent = list ? bnEur(list) : '—';
+    document.getElementById('bnFinalWrap').style.display = disc > 0 ? 'inline' : 'none';
+    document.getElementById('bnFinal').textContent = bnEur(list - disc);
+    var pay = document.getElementById('bnPayAmount');
+    if (pay && !pay.dataset.touched) { pay.value = list ? ((list - disc) / 100).toFixed(2).replace('.', ',') : ''; }
+}
+document.addEventListener('DOMContentLoaded', function () {
+    var sel = document.getElementById('selectBonoType');
+    if (sel) { sel.addEventListener('change', bnRecalc); }
+    var pay = document.getElementById('bnPayAmount');
+    if (pay) { pay.addEventListener('input', function () { pay.dataset.touched = '1'; }); }
+});
 
 function renderAvisoDeudas() {
     const box   = document.getElementById('alertaDeudas');
