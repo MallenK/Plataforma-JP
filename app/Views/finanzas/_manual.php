@@ -158,6 +158,20 @@ $shot = static function (string $file, string $caption) use ($img) {
     <li><strong>Clases:</strong> sus clases, a qué bono se descontaron y su valor.</li>
     <li><strong>A la derecha:</strong> <em>Registrar cobro</em> (puedes elegir qué bono paga) y <em>Añadir cargo</em> para cobrar algo que no es un bono (una sesión suelta, material…).</li>
 </ul>
+<h3>Historial completo de un alumno</h3>
+<p>Desde la cuenta del alumno, el botón <span class="fm-btn">Historial completo</span> abre una página con <strong>absolutamente todo lo que ha pasado con ese alumno</strong> en la plataforma, de lo más reciente a lo más antiguo:</p>
+<ul>
+    <li><strong>Económico:</strong> cada cargo y cada pago, también los anulados y su motivo.</li>
+    <li><strong>Bonos:</strong> cuándo se emitieron, cada sesión descontada o devuelta, ampliaciones de fecha, ajustes y anulaciones.</li>
+    <li><strong>Clases:</strong> cada clase con su asistencia, y los avisos y respuestas del propio alumno.</li>
+    <li><strong>Acceso:</strong> alta, primer acceso e inicios de sesión.</li>
+    <li><strong>Comunicación:</strong> mensajes enviados (solo el registro, nunca el texto, que es privado), tickets, avisos y emails.</li>
+    <li><strong>Seguimiento y auditoría:</strong> documentos, anotaciones y cualquier cambio registrado (quién, cuándo y por qué).</li>
+</ul>
+<?= $shot('historial.png', 'Historial completo de un alumno') ?>
+<p>Puedes filtrar por <strong>categoría</strong> o por <strong>fechas</strong>, buscar cualquier palabra, y llevártelo con <span class="fm-btn">Descargar Excel (CSV)</span> o <span class="fm-btn">Imprimir / guardar PDF</span> (imprime el historial entero, no solo la página que estás viendo).</p>
+<div class="fm-box fm-warn"><strong>Datos personales</strong>Cada vez que alguien consulta o descarga el historial de un alumno queda anotado (quién y cuándo). Úsalo solo cuando haga falta y no compartas el fichero fuera de la academia.</div>
+
 <div class="fm-box fm-tip"><strong>Lo que ve el alumno</strong>Cada alumno ve en su perfil un apartado <em>Mis pagos</em> con lo que ha comprado, lo que ha pagado y lo que tiene pendiente. No ve nada de la academia ni de otros alumnos.</div>
 
 <h2 id="fm-entrenadores">9. Entrenadores</h2>

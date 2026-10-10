@@ -30,6 +30,7 @@ pages = [
     ("gastos",       "/finanzas/gastos?mes=2026-10",       1150, False),
     ("alumnos",      "/finanzas/alumnos",                  1100, False),
     ("cuenta",       "/finanzas/alumnos/1013",             1450, False),
+    ("historial",    "/finanzas/alumnos/1013/historial",   1250, False),
     ("entrenadores", "/finanzas/entrenadores?mes=2026-09", 950,  False),
     ("analisis",     "/finanzas/analisis?mes=2026-09",     1150, False),
     ("revision",     "/finanzas/revision",                 1150, False),

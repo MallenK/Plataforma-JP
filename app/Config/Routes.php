@@ -397,6 +397,7 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], stat
     $routes->get('gastos/(:num)/adjunto',   'FinanzasController::expenseAttachment/$1');
     $routes->get('alumnos',                 'FinanzasController::alumnos');
     $routes->get('alumnos/(:num)',          'FinanzasController::alumno/$1');
+    $routes->get('alumnos/(:num)/historial', 'FinanzasController::historial/$1');
     $routes->post('alumnos/(:num)/cargo',   'FinanzasController::storeCharge/$1');
     $routes->post('cargos/(:num)/anular',   'FinanzasController::voidCharge/$1');
     $routes->get('entrenadores',            'FinanzasController::entrenadores');

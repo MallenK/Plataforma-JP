@@ -190,6 +190,44 @@ class FinanzasController extends BaseController
         ]));
     }
 
+    /** Historial completo del alumno: todo lo que ha pasado con él en la plataforma. Descargable. */
+    public function historial(int $playerId)
+    {
+        $db     = \Config\Database::connect();
+        $player = $db->table('users')->select('id, name, email, status')->where('id', $playerId)->where('role', 'player')->get()->getRowArray();
+        if (!$player) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        $okDate = static fn($d) => is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) ? $d : null;
+        $from   = $okDate($this->request->getGet('desde'));
+        $to     = $okDate($this->request->getGet('hasta'));
+        $cat    = (string) $this->request->getGet('categoria');
+        $cat    = array_key_exists($cat, \App\Services\StudentHistoryService::CATEGORIES) ? $cat : '';
+
+        $rows = (new \App\Services\StudentHistoryService())->timeline($playerId, $from, $to);
+        $counts = array_fill_keys(array_keys(\App\Services\StudentHistoryService::CATEGORIES), 0);
+        foreach ($rows as $r) {
+            $counts[$r['cat']]++;
+        }
+        if ($cat !== '') {
+            $rows = array_values(array_filter($rows, fn($r) => $r['cat'] === $cat));
+        }
+
+        AuditService::record('user', $playerId, AuditService::VIEW, null, null,
+            'Historial completo consultado' . ($this->request->getGet('export') === 'csv' ? ' y descargado' : ''));
+
+        if ($this->request->getGet('export') === 'csv') {
+            $slug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $player['name']) ?: 'alumno')), '-');
+            $csv  = \App\Services\StudentHistoryService::toCsvRows($rows);
+            return $this->csv('historial_' . $slug . '_' . date('Y-m-d') . '.csv', array_shift($csv), $csv);
+        }
+
+        return view('finanzas/historial', $this->base('alumnos', [
+            'player' => $player, 'rows' => $rows, 'counts' => $counts,
+            'from' => $from, 'to' => $to, 'cat' => $cat,
+        ]));
+    }
+
     public function entrenadores()
     {
         $p = $this->period();

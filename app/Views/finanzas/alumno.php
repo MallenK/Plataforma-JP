@@ -28,6 +28,7 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
         <div class="fin-head-actions">
             <a href="<?= base_url('alumnos/' . (int) $player['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>Ficha del alumno</a>
             <a href="<?= base_url('bonos') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none"><i class="bi bi-ticket-perforated me-1" aria-hidden="true"></i>Vender bono</a>
+            <a href="<?= base_url('finanzas/alumnos/' . (int) $player['id'] . '/historial') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Historial completo</a>
             <a href="#cobro" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Registrar cobro</a>
         </div>
     </div>
