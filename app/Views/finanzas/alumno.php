@@ -20,9 +20,16 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
-        <a href="<?= base_url('finanzas/alumnos') ?>" style="font-size:13px;font-weight:600;text-decoration:none">← Alumnos</a>
-        <h2 style="margin:6px 0 0;font-size:22px;font-weight:800;color:var(--text-h)"><?= esc($player['name']) ?></h2>
-        <div style="font-size:13px;color:var(--text-muted)"><?= $player['status'] === 'active' ? 'Activo' : 'De baja' ?> · <a href="<?= base_url('alumnos/' . (int) $player['id']) ?>">ficha del alumno</a> · <a href="<?= base_url('bonos') ?>">vender bono</a></div>
+        <a href="<?= base_url('finanzas/alumnos') ?>" class="fin-back"><i class="bi bi-arrow-left" aria-hidden="true"></i>Volver a Alumnos</a>
+        <div class="d-flex flex-wrap align-items-center gap-2" style="margin-top:6px">
+            <h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text-h)"><?= esc($player['name']) ?></h2>
+            <span class="badge-status <?= $player['status'] === 'active' ? 'active' : 'inactive' ?>"><?= $player['status'] === 'active' ? 'Activo' : 'De baja' ?></span>
+        </div>
+        <div class="fin-head-actions">
+            <a href="<?= base_url('alumnos/' . (int) $player['id']) ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>Ficha del alumno</a>
+            <a href="<?= base_url('bonos') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none"><i class="bi bi-ticket-perforated me-1" aria-hidden="true"></i>Vender bono</a>
+            <a href="#cobro" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Registrar cobro</a>
+        </div>
     </div>
 </div>
 
