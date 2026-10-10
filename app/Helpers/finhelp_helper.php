@@ -50,6 +50,7 @@ if (!function_exists('fin_help_texts')) {
             'debe'         => 'Comprado menos pagado. Si sale «a su favor», el alumno ha pagado de más y se le aplicará en el próximo bono.',
             'sesiones'     => 'Sesiones que le quedan en bonos que todavía no han caducado.',
             'sin_descontar'=> 'Clases a las que asistió y que no se descontaron de ningún bono. Hay que revisarlas.',
+            'historial'    => 'Reúne pagos y cargos, bonos y sus movimientos, clases y asistencia, avisos del alumno, accesos, mensajes (solo el registro, no el texto), tickets, avisos, emails, documentos, anotaciones y cambios registrados. Cada consulta queda anotada en la auditoría.',
             'estado_cuenta'=> 'Todos sus cargos y pagos por fecha, con lo que debía después de cada uno.',
             'cargo_manual' => 'Para cobrar algo que no es un bono: una sesión suelta, material, una inscripción… Los bonos se cargan solos al venderlos.',
             'descuento'    => 'Escribe un importe (10) o un porcentaje (10%). Indica el motivo: hermanos, promoción, cortesía…',

@@ -32,7 +32,7 @@ $total = array_sum($counts);
     <div>
         <a href="<?= base_url('finanzas/alumnos/' . (int) $player['id']) ?>" class="fin-back fin-noprint"><i class="bi bi-arrow-left" aria-hidden="true"></i>Volver a la cuenta</a>
         <h2 style="margin:6px 0 0;font-size:22px;font-weight:800;color:var(--text-h)">Historial completo · <?= esc($player['name']) ?></h2>
-        <div style="font-size:13px;color:var(--text-body)">Todo lo que ha pasado con este alumno en la plataforma, de lo más reciente a lo más antiguo.<?= fin_help('historial', 'Reúne pagos y cargos, bonos y sus movimientos, clases y asistencia, avisos del alumno, accesos, mensajes (solo el registro, no el texto), tickets, avisos, emails, documentos, anotaciones y cambios registrados. Cada consulta queda anotada en la auditoría.') ?></div>
+        <div style="font-size:13px;color:var(--text-body)">Todo lo que ha pasado con este alumno en la plataforma, de lo más reciente a lo más antiguo.<?= fin_help('historial') ?></div>
     </div>
     <div class="d-flex flex-wrap gap-2 fin-noprint">
         <a href="<?= $qs(['export' => 'csv']) ?>" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Descargar Excel (CSV)</a>
