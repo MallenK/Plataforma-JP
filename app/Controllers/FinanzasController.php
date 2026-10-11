@@ -272,19 +272,34 @@ class FinanzasController extends BaseController
     {
         $rev     = new RevisionService();
         $control = new BonoControlService();
+        $unclosed   = $rev->unclosedSessions();
+        $incomplete = $rev->incompleteSessions();
 
         return view('finanzas/revision', $this->base('revision', [
             'title'      => 'Finanzas · Revisión — JP Preparation',
             'counts'     => $rev->counts(),
-            'unclosed'   => $rev->unclosedSessions(),
+            'unclosed'   => $unclosed,
             'debts'      => $control->openDebts(),
             'preControl' => $control->unreflected(),
             'estimated'  => $rev->estimatedPriceBonos(),
             'unused'     => $rev->expiredUnused(),
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
             'closePreview' => $rev->initialClose(false),
-            'incomplete' => $rev->incompleteSessions(),
+            'incomplete' => $incomplete,
+            'buckets'    => RevisionService::classBuckets($unclosed, $incomplete),
         ]));
+    }
+
+    /** Elimina clases vacías (sin alumnos) desde Revisión: las marcadas, o todas las eliminables. */
+    public function deleteEmptyClasses()
+    {
+        $rev = new RevisionService();
+        $ids = $this->request->getPost('ids');
+        $r   = $rev->deleteEmptySessions(is_array($ids) ? $ids : null, (int) $this->currentUserId());
+        session()->setFlashdata($r['deleted'] > 0 ? 'success' : 'error', $r['deleted'] > 0
+            ? sprintf('%d clase(s) vacía(s) eliminada(s)%s. Queda registrado.', $r['deleted'], $r['skipped'] ? " ({$r['skipped']} se han dejado porque tienen archivos)" : '')
+            : 'No se ha eliminado ninguna clase: tienen archivos adjuntos o ya no existen.');
+        return redirect()->to('/finanzas/revision#vacias');
     }
 
     // ────────────────────────────────────────────────────────────────

@@ -55,6 +55,28 @@ final class ClasesIncompletasTest extends CIUnitTestCase
         $this->assertSame(RevisionService::INCOMPLETE_EMPTY, RevisionService::incompleteKind(0, 0, 'cancelled'));
     }
 
+    public function testClassBucketsGroupByWhatToDo(): void
+    {
+        $unclosed = [
+            ['id' => 1, 'marked' => 0, 'lista_pasada_at' => null],
+            ['id' => 2, 'marked' => 3, 'lista_pasada_at' => null],
+            ['id' => 3, 'marked' => 0, 'lista_pasada_at' => '2026-10-01 10:00:00'],
+        ];
+        $incomplete = [
+            ['id' => 4, 'kind' => RevisionService::INCOMPLETE_NO_COACH],
+            ['id' => 5, 'kind' => RevisionService::INCOMPLETE_NO_PLAYER],
+            ['id' => 6, 'kind' => RevisionService::INCOMPLETE_EMPTY],
+        ];
+        $b = RevisionService::classBuckets($unclosed, $incomplete);
+
+        $ids = static fn(array $rows) => array_column($rows, 'id');
+        $this->assertSame([1], $ids($b[RevisionService::BUCKET_NO_LIST]));
+        $this->assertSame([2, 3], $ids($b[RevisionService::BUCKET_TO_CLOSE]));
+        $this->assertSame([4], $ids($b[RevisionService::BUCKET_NO_COACH]));
+        $this->assertSame([5, 6], $ids($b[RevisionService::BUCKET_EMPTY]));
+        $this->assertSame(['sin_lista', 'sin_cerrar', 'sin_entrenador', 'vacias'], array_keys($b));
+    }
+
     public function testIsTestName(): void
     {
         foreach (['Alumno Prueba', 'Prueba', 'Rtrt', 'prueba prueba', '  RTRT  ', 'Alumna Pruebas', 'Rtrt Rtrt'] as $n) {

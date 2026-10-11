@@ -413,6 +413,9 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], stat
 $routes->post('finanzas/revision/cierre-inicial', 'FinanzasController::initialClose', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+$routes->post('finanzas/revision/eliminar-vacias', 'FinanzasController::deleteEmptyClasses', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 $routes->get('pendientes', 'FinanzasController::legacyPendientes', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
