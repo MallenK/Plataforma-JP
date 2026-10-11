@@ -109,23 +109,9 @@ class RevisionService
         }
 
         $reason = 'Cierre de revisión inicial';
-        $hasBy  = $this->db->fieldExists('lista_pasada_by', 'class_sessions');
 
         // 1. Sesiones con asistencia marcada → cerradas
-        foreach ($sessionIds as $sid) {
-            $s = $this->db->table('class_sessions')->select('status, lista_pasada_at')->where('id', $sid)->get()->getRowArray();
-            $upd = ['status' => 'completed', 'updated_at' => $now];
-            if (empty($s['lista_pasada_at'])) {
-                $upd['lista_pasada_at'] = $now;
-                if ($hasBy && $actorId) {
-                    $upd['lista_pasada_by'] = $actorId;
-                }
-            }
-            $this->db->table('class_sessions')->where('id', $sid)->where('status', 'scheduled')->update($upd);
-            AuditService::record('class_session', $sid, AuditService::UPDATE,
-                ['status' => $s['status'] ?? 'scheduled'], ['status' => 'completed'],
-                $reason . ': tenía asistencia marcada', $actorId);
-        }
+        $this->closeSessions($sessionIds, $actorId, $reason . ': tenía asistencia marcada');
 
         // 2. Clases dadas sin descontar → dadas por buenas
         $debtRows = $this->db->query(
@@ -148,11 +134,7 @@ class RevisionService
         }
 
         // 3. Precios estimados → confirmados (precio de tarifa)
-        foreach ($priceIds as $bid) {
-            $this->db->table('player_bonos')->where('id', $bid)->where('price_estimated', 1)->update(['price_estimated' => 0]);
-            AuditService::record('player_bono', $bid, AuditService::UPDATE,
-                ['price_estimated' => 1], ['price_estimated' => 0], $reason . ': precio de tarifa confirmado', $actorId);
-        }
+        $this->confirmPrices($priceIds, $actorId, $reason . ': precio de tarifa confirmado');
 
         // Marca de cuándo se hizo (informativo)
         try {
@@ -166,6 +148,67 @@ class RevisionService
         }
 
         return ['sessions' => count($sessionIds), 'debts' => count($debtRows), 'prices' => count($priceIds), 'applied' => true];
+    }
+
+    /**
+     * Cierra todas las clases con la lista ya pasada que faltan por cerrar (el
+     * grupo «Falta cerrar la clase»). Solo cambia el estado: no descuenta
+     * bonos ni avisa a nadie. Idempotente.
+     *
+     * @return int clases cerradas
+     */
+    public function closeListedSessions(?int $actorId = null, ?string $today = null): int
+    {
+        $b   = self::classBuckets($this->unclosedSessions($today), []);
+        $ids = array_map('intval', array_column($b[self::BUCKET_TO_CLOSE], 'id'));
+        $this->closeSessions($ids, $actorId, 'Revisión: cierre automático de clases con la lista pasada');
+        return count($ids);
+    }
+
+    /**
+     * Confirma de golpe todos los precios estimados dándolos por buenos al
+     * precio de tarifa con el que se rellenaron. Idempotente.
+     *
+     * @return int bonos confirmados
+     */
+    public function confirmAllEstimatedPrices(?int $actorId = null): int
+    {
+        $ids = array_map('intval', array_column($this->estimatedPriceBonos(), 'id'));
+        $this->confirmPrices($ids, $actorId, 'Revisión: precio de tarifa confirmado en bloque');
+        return count($ids);
+    }
+
+    /** @param int[] $sessionIds */
+    private function closeSessions(array $sessionIds, ?int $actorId, string $reason): void
+    {
+        $now   = date('Y-m-d H:i:s');
+        $hasBy = $this->db->fieldExists('lista_pasada_by', 'class_sessions');
+        foreach ($sessionIds as $sid) {
+            $s = $this->db->table('class_sessions')->select('status, lista_pasada_at')->where('id', $sid)->get()->getRowArray();
+            if (!$s || $s['status'] !== 'scheduled') {
+                continue;
+            }
+            $upd = ['status' => 'completed', 'updated_at' => $now];
+            if (empty($s['lista_pasada_at'])) {
+                $upd['lista_pasada_at'] = $now;
+                if ($hasBy && $actorId) {
+                    $upd['lista_pasada_by'] = $actorId;
+                }
+            }
+            $this->db->table('class_sessions')->where('id', $sid)->where('status', 'scheduled')->update($upd);
+            AuditService::record('class_session', $sid, AuditService::UPDATE,
+                ['status' => 'scheduled'], ['status' => 'completed'], $reason, $actorId);
+        }
+    }
+
+    /** @param int[] $bonoIds */
+    private function confirmPrices(array $bonoIds, ?int $actorId, string $reason): void
+    {
+        foreach ($bonoIds as $bid) {
+            $this->db->table('player_bonos')->where('id', $bid)->where('price_estimated', 1)->update(['price_estimated' => 0]);
+            AuditService::record('player_bono', $bid, AuditService::UPDATE,
+                ['price_estimated' => 1], ['price_estimated' => 0], $reason, $actorId);
+        }
     }
 
     public const INCOMPLETE_EMPTY     = 'empty';      // sin alumnos ni entrenador
