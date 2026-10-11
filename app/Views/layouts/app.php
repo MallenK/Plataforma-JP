@@ -5,7 +5,11 @@
 <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>">
 <link rel="stylesheet" href="<?= base_url('assets/css/doc-preview.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/doc-preview.css') ?: time() ?>">
 
-<script>window.APP_BASE = '<?= rtrim(base_url(), '/') ?>';</script>
+<?php if (in_array(session('role'), ['admin', 'superadmin'], true)): ?>
+<link rel="stylesheet" href="<?= base_url('assets/css/money-privacy.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/money-privacy.css') ?: time() ?>">
+<?php endif; ?>
+
+<script>window.APP_BASE ='<?= rtrim(base_url(), '/') ?>';</script>
 <?php if (\App\Services\PushService::enabled()): ?>
 <script>
 window.JP_PUSH = <?= json_encode([
@@ -46,6 +50,9 @@ window.JP_PUSH = <?= json_encode([
 
 <?= view('partials/tutorial_init') ?>
 
+<?php if (in_array(session('role'), ['admin', 'superadmin'], true)): ?>
+<script src="<?= base_url('assets/js/money-privacy.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/money-privacy.js') ?: time() ?>"></script>
+<?php endif; ?>
 <script src="<?= base_url('assets/js/doc-preview.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/doc-preview.js') ?: time() ?>"></script>
 
 <?php

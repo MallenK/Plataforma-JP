@@ -67,6 +67,14 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
 
     <div class="topbar-right">
 
+        <?php if (in_array($role, ['admin', 'superadmin'], true)): ?>
+        <!-- Privacidad de importes — solo admin/superadmin; money-privacy.js lo muestra si la página tiene importes -->
+        <button class="topbar-btn" id="money-toggle-all" type="button" hidden aria-pressed="false"
+                title="Mostrar los importes de esta página" aria-label="Mostrar los importes de esta página">
+            <i class="bi bi-eye-slash"></i>
+        </button>
+        <?php endif; ?>
+
         <!-- Reportar problema — todos los roles -->
         <button class="topbar-btn" id="topbar-ticket-btn" title="Reportar un problema o sugerencia"
                 data-bs-toggle="modal" data-bs-target="#modalTicketRapido">
