@@ -290,6 +290,26 @@ class FinanzasController extends BaseController
         ]));
     }
 
+    /** Cierra de golpe todas las clases con la lista pasada que faltan por cerrar. */
+    public function closeListedClasses()
+    {
+        $n = (new RevisionService())->closeListedSessions((int) $this->currentUserId());
+        session()->setFlashdata('success', $n > 0
+            ? sprintf('%d clase(s) cerrada(s). Queda registrado.', $n)
+            : 'No había clases pendientes de cerrar.');
+        return redirect()->to('/finanzas/revision#sin-cerrar');
+    }
+
+    /** Confirma de golpe todos los precios estimados al precio de tarifa. */
+    public function confirmAllPrices()
+    {
+        $n = (new RevisionService())->confirmAllEstimatedPrices((int) $this->currentUserId());
+        session()->setFlashdata('success', $n > 0
+            ? sprintf('%d precio(s) confirmado(s) al precio de tarifa. Queda registrado.', $n)
+            : 'No había precios pendientes de confirmar.');
+        return redirect()->to('/finanzas/revision#precios');
+    }
+
     /** Elimina clases vacías (sin alumnos) desde Revisión: las marcadas, o todas las eliminables. */
     public function deleteEmptyClasses()
     {

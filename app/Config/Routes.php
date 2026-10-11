@@ -413,6 +413,12 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], stat
 $routes->post('finanzas/revision/cierre-inicial', 'FinanzasController::initialClose', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
+$routes->post('finanzas/revision/cerrar-clases', 'FinanzasController::closeListedClasses', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('finanzas/revision/confirmar-precios', 'FinanzasController::confirmAllPrices', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
 $routes->post('finanzas/revision/eliminar-vacias', 'FinanzasController::deleteEmptyClasses', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);

@@ -142,10 +142,24 @@ $openBtn = static fn(array $s, string $label) => '<a href="' . base_url('clases/
 </div>
 
 <!-- 2. Falta cerrar la clase -->
+<?php
+$closeAll = '';
+if ($bk['sin_cerrar']) {
+    ob_start(); ?>
+    <form action="<?= base_url('finanzas/revision/cerrar-clases') ?>" method="post" style="margin:0"
+          data-ru-confirm="¿Cerrar todas las clases?"
+          data-ru-confirm-desc="Se cierran <?= count($bk['sin_cerrar']) ?> clases que ya tienen la lista pasada. Solo cambia su estado a «Cerrada»: no se descuenta ningún bono ni se avisa a nadie. Queda registrado."
+          data-ru-confirm-label="Sí, cerrarlas todas">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm"><i class="bi bi-lock-fill me-1"></i>Cerrar las <?= count($bk['sin_cerrar']) ?> clases automáticamente</button>
+    </form>
+    <?php $closeAll = ob_get_clean();
+}
+?>
 <div class="card-jp mb-3" id="sin-cerrar">
     <?= $head('sin-cerrar', 'bi-lock-fill', '#1d4ed8', 'Clases con lista pasada que faltan por cerrar', count($bk['sin_cerrar']), 'rev_sin_cerrar',
         'Ya se marcó quién vino, pero la clase sigue abierta y todavía no cuenta en Finanzas.',
-        'Ábrela, comprueba que la asistencia es correcta y pulsa <strong>«Cerrar clase»</strong>.') ?>
+        'Pulsa el botón para <strong>cerrarlas todas de golpe</strong>, o ábrelas una a una para comprobar la asistencia y pulsar «Cerrar clase». Las que tengan alumnos que deben bono pasarán a «Clases sin bono descontado».', $closeAll) ?>
     <?php if (empty($bk['sin_cerrar'])): ?>
     <?= $allGood('No hay clases pendientes de cerrar.') ?>
     <?php else: ?>
@@ -273,10 +287,24 @@ if ($deletableEmpty) {
 </div>
 
 <!-- 6. Bonos con precio por confirmar -->
+<?php
+$priceAll = '';
+if ($estimated) {
+    ob_start(); ?>
+    <form action="<?= base_url('finanzas/revision/confirmar-precios') ?>" method="post" style="margin:0"
+          data-ru-confirm="¿Confirmar todos los precios?"
+          data-ru-confirm-desc="Se dan por buenos los <?= count($estimated) ?> precios al precio de tarifa (el estimado que ya figura). Si alguno se pagó distinto, podrás corregirlo después desde la ficha del bono. Queda registrado."
+          data-ru-confirm-label="Sí, confirmarlos todos">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm"><i class="bi bi-check2-all me-1"></i>Confirmar los <?= count($estimated) ?> al precio de tarifa</button>
+    </form>
+    <?php $priceAll = ob_get_clean();
+}
+?>
 <div class="card-jp mb-3" id="precios">
     <?= $head('precios', 'bi-question-circle-fill', '#92400e', 'Bonos con el precio por confirmar', count($estimated), 'rev_precios',
         'De estos bonos no se guardó lo que pagó el alumno. Se ha puesto el precio de tarifa como <strong>estimado</strong>.',
-        'Escribe lo que pagó de verdad (con descuento; si fue gratis, 0) y pulsa <strong>Confirmar</strong>.') ?>
+        'Si los alumnos pagaron la tarifa normal, pulsa el botón para <strong>confirmarlos todos de golpe</strong>. Si alguno pagó otra cantidad (descuento, gratis = 0), escríbela en su fila y pulsa «Confirmar».', $priceAll) ?>
     <?php if (empty($estimated)): ?>
     <?= $allGood('Todos los precios están confirmados.') ?>
     <?php else: ?>
