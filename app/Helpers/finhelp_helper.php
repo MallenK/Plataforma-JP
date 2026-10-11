@@ -67,7 +67,8 @@ if (!function_exists('fin_help_texts')) {
             'an_tipos'     => 'Qué bonos se venden más y cuánto dejan, con el precio medio por sesión.',
 
             // Revisión / configuración
-            'rev_sesiones' => 'Clases cuya fecha ya pasó y que nadie cerró. Ábrelas: pasa lista y ciérralas si se dieron, o cancélalas si no se dieron.',
+            'rev_sesiones' => 'Clases con alumnos cuya fecha ya pasó y que nadie cerró. Ábrelas: pasa lista y ciérralas si se dieron, o cancélalas si no se dieron. Las que no tienen alumnos salen en «Clases incompletas».',
+            'rev_incompletas' => 'Toda clase necesita al menos un alumno y un entrenador. Sin alumnos es un error o una prueba (no cuenta en Finanzas); sin entrenador, ábrela y asígnale uno. Ya no se pueden crear clases así.',
             'rev_sin_bono' => 'Clases dadas que no se descontaron de ningún bono. Se pueden saldar con un bono, marcar como pagadas aparte o no cobrar.',
             'rev_precios'  => 'Bonos de antes de esta versión cuyo precio pagado no se guardaba.',
             'rev_caducados'=> 'Solo informativo: bonos que caducaron con sesiones sin usar.',

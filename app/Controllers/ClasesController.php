@@ -320,6 +320,19 @@ class ClasesController extends BaseController
 
         $data = $this->request->getPost();
 
+        // Una clase no puede quedar sin responsable ni sin alumnos.
+        $participantsErr = null;
+        if (!empty($data['coach_ids_present'])) {
+            $participantsErr = \App\Services\ClasesService::participantsError($data['coach_ids'] ?? [], [1]);
+        }
+        if ($participantsErr === null && isset($data['player_ids'])) {
+            $participantsErr = \App\Services\ClasesService::participantsError([1], $data['player_ids']);
+        }
+        if ($participantsErr !== null) {
+            session()->setFlashdata('error', $participantsErr);
+            return redirect()->back()->withInput();
+        }
+
         // Si la sesión pertenece a una clase recurrente y se pidió aplicar el
         // cambio de responsable a "esta y las siguientes", ese campo se
         // gestiona aparte con changeResponsible() (misma lógica que el modal
@@ -1087,8 +1100,8 @@ class ClasesController extends BaseController
 
     public function removeCoach(int $id, int $coachId)
     {
-        $this->clasesService->removeCoach($id, $coachId);
-        session()->setFlashdata('success', 'Entrenador eliminado.');
+        $r = $this->clasesService->removeCoach($id, $coachId);
+        session()->setFlashdata($r['success'] ? 'success' : 'error', $r['success'] ? 'Entrenador eliminado.' : $r['error']);
         return redirect()->to('/clases/' . $id);
     }
 

@@ -794,8 +794,8 @@ $statusHint   = [
             <form action="/clases/<?= $session['id'] ?>/responsable" method="POST">
                 <?= csrf_field() ?>
                 <label class="form-label"><?= $isStaffSession ? 'Staff' : 'Entrenador' ?></label>
-                <select name="user_id" class="form-control-jp mb-3">
-                    <option value="">Sin responsable asignado</option>
+                <select name="user_id" class="form-control-jp mb-3" required>
+                    <option value="" disabled <?= $assignedCoachId ? '' : 'selected' ?>>Elige el responsable…</option>
                     <?php foreach ($modalPool as $c): ?>
                     <option value="<?= $c['id'] ?>" <?= ((int) $assignedCoachId === (int) $c['id']) ? 'selected' : '' ?>>
                         <?= esc($c['name']) ?>

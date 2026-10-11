@@ -40,7 +40,7 @@ class FinanzasController extends BaseController
     {
         try {
             $c = (new RevisionService())->counts();
-            return (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['estimated'];
+            return (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['estimated'] + (int) $c['incomplete'];
         } catch (\Throwable $e) {
             return 0;
         }
@@ -283,6 +283,7 @@ class FinanzasController extends BaseController
             'unused'     => $rev->expiredUnused(),
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
             'closePreview' => $rev->initialClose(false),
+            'incomplete' => $rev->incompleteSessions(),
         ]));
     }
 
