@@ -237,6 +237,11 @@ class ConfiguracionService
         $db->table('player_plans')->where('player_id', $userId)->set(['player_id' => null])->update();
         $db->table('logs')->where('user_id', $userId)->set(['user_id' => null])->update();
 
+        // Sesiones en las que estaba: si se quedan sin alumnos, se eliminan
+        // después (una clase no puede quedar sin alumnos).
+        $touchedSessions = array_map('intval', array_column($db->table('class_session_players')
+            ->select('session_id')->where('user_id', $userId)->get()->getResultArray(), 'session_id'));
+
         // Tablas pivot sin FK — limpiar para coherencia
         $db->table('class_session_coaches')->where('user_id', $userId)->delete();
         $db->table('class_session_players')->where('user_id', $userId)->delete();
@@ -251,6 +256,13 @@ class ConfiguracionService
 
         if (!$db->transStatus()) {
             return ['success' => false, 'error' => 'Error al eliminar el usuario. Inténtalo de nuevo.'];
+        }
+
+        if ($touchedSessions) {
+            $clases = new ClasesService();
+            foreach (array_unique($touchedSessions) as $sid) {
+                $clases->deleteEmptySession($sid, $byUserId, 'Clase sin alumnos tras eliminar a su único alumno');
+            }
         }
 
         return ['success' => true, 'name' => $user['name']];

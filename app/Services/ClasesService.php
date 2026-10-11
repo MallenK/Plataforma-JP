@@ -162,6 +162,10 @@ class ClasesService
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
 
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+            return ['success' => false, 'error' => $err];
+        }
+
         $id = $this->insertSingle($data, $userId);
         if (!$id) {
             $errors = $this->sessionModel->errors();
@@ -172,6 +176,73 @@ class ClasesService
         $this->syncPlayers($id, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
 
         return ['success' => true, 'id' => $id, 'count' => 1];
+    }
+
+    /**
+     * Toda clase necesita, como mínimo, un responsable (entrenador o staff) y
+     * un alumno. Devuelve el mensaje de error, o null si se cumple. Pura.
+     */
+    public static function participantsError($coachIds, $playerIds): ?string
+    {
+        $ids = static fn($v) => array_filter(array_map('intval', (array) $v), static fn($i) => $i > 0);
+        $noCoach  = $ids($coachIds) === [];
+        $noPlayer = $ids($playerIds) === [];
+        if ($noCoach && $noPlayer) {
+            return 'Una clase necesita al menos un entrenador y un alumno.';
+        }
+        if ($noCoach) {
+            return 'Asigna un entrenador (o staff responsable): una clase no puede quedar sin responsable.';
+        }
+        if ($noPlayer) {
+            return 'Añade al menos un alumno: una clase no puede quedar sin alumnos.';
+        }
+        return null;
+    }
+
+    /**
+     * Motivo por el que una clase SIN alumnos no se puede eliminar, o null.
+     * Sin alumnos no hay asistencia, bonos ni cobros: es un error o una
+     * prueba y se puede borrar aunque ya haya pasado. Solo se conserva si
+     * alguien le subió archivos (se cancela en su lugar). Pura.
+     */
+    public static function emptySessionDeletionBlocker(int $players, int $attachments): ?string
+    {
+        if ($players > 0) {
+            return 'La clase tiene alumnos: no es una clase vacía.';
+        }
+        if ($attachments > 0) {
+            return 'La clase tiene archivos adjuntos: ábrela y cancélala en lugar de eliminarla.';
+        }
+        return null;
+    }
+
+    /**
+     * Elimina una clase que no tiene ningún alumno (error, prueba o restos de
+     * un alumno quitado o borrado). Deja en auditoría una foto de la sesión.
+     *
+     * @return array{success:bool,error?:string}
+     */
+    public function deleteEmptySession(int $id, ?int $actorId = null, string $reason = 'Clase sin alumnos'): array
+    {
+        $session = $this->sessionModel->find($id);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
+        }
+        $players = (int) $this->db->table('class_session_players')->where('session_id', $id)->countAllResults();
+        $files   = $this->db->tableExists('class_session_attachments')
+            ? (int) $this->db->table('class_session_attachments')->where('session_id', $id)->countAllResults()
+            : 0;
+        if ($blocker = self::emptySessionDeletionBlocker($players, $files)) {
+            return ['success' => false, 'error' => $blocker];
+        }
+        $coaches = $this->db->table('class_session_coaches')->where('session_id', $id)->get()->getResultArray();
+
+        AuditService::record('class_session', $id, AuditService::DELETE,
+            ['session' => $session, 'coaches' => $coaches], null, $reason, $actorId);
+
+        $this->db->table('class_session_coaches')->where('session_id', $id)->delete();
+        $this->sessionModel->delete($id);
+        return ['success' => true];
     }
 
     private function insertSingle(array $data, int $userId, ?int $classId = null): int
@@ -238,6 +309,10 @@ class ClasesService
         }
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
+
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+            return ['success' => false, 'error' => $err];
+        }
 
         // TICKET-013: la serie no se genera a ciegas — se cruza con el saldo de
         // bono de cada alumno ANTES de crear nada (ni siquiera la plantilla).
@@ -488,6 +563,10 @@ class ClasesService
         }
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
+
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+            return ['success' => false, 'error' => $err];
+        }
 
         try {
             $id = $this->insertSingle($data, $userId);
@@ -1023,6 +1102,14 @@ class ClasesService
             } else {
                 $update[$key] = $data[$key];
             }
+        }
+
+        // Una clase no puede quedar sin responsable ni sin alumnos.
+        if (isset($data['coach_ids']) && self::participantsError($data['coach_ids'], [1]) !== null) {
+            return false;
+        }
+        if (isset($data['player_ids']) && self::participantsError([1], $data['player_ids']) !== null) {
+            return false;
         }
 
         if (!empty($update)) {
@@ -2084,13 +2171,18 @@ class ClasesService
         return ['success' => true];
     }
 
-    public function removeCoach(int $sessionId, int $userId): bool
+    public function removeCoach(int $sessionId, int $userId): array
     {
+        $others = (int) $this->db->table('class_session_coaches')
+            ->where('session_id', $sessionId)->where('user_id !=', $userId)->countAllResults();
+        if ($others === 0) {
+            return ['success' => false, 'error' => 'Una clase no puede quedar sin responsable: cambia el responsable en lugar de quitarlo.'];
+        }
         $this->db->table('class_session_coaches')
             ->where('session_id', $sessionId)
             ->where('user_id', $userId)
             ->delete();
-        return true;
+        return ['success' => true];
     }
 
     /**
@@ -2430,6 +2522,10 @@ class ClasesService
             return ['success' => false, 'error' => 'No se puede cambiar el responsable de una sesión cerrada o cancelada.'];
         }
 
+        if ($newUserId === null) {
+            return ['success' => false, 'error' => 'Una clase no puede quedar sin responsable: elige un entrenador o staff.'];
+        }
+
         $sessionType  = $session['session_type'] ?? 'coach';
         $allowedRoles = $sessionType === 'staff' ? self::RESPONSABLE_STAFF_ROLES : self::RESPONSABLE_TECNICO_ROLES;
 
@@ -2609,11 +2705,13 @@ class ClasesService
 
     /**
      * Quita a un alumno de una sesión solo si su fila no es histórico (ver
-     * playerRemovalBlocker); si lo es, hay que marcar su ausencia.
+     * playerRemovalBlocker); si lo es, hay que marcar su ausencia. Tampoco
+     * quita al último alumno (una clase no queda sin alumnos), salvo que se
+     * esté sustituyendo por otro (`$replacing`, desde syncPlayers).
      *
      * @return array{success:bool,error?:string}
      */
-    public function removePlayer(int $sessionId, int $userId): array
+    public function removePlayer(int $sessionId, int $userId, bool $replacing = false): array
     {
         $row = $this->playerModel
             ->where('session_id', $sessionId)
@@ -2624,6 +2722,10 @@ class ClasesService
         }
         $session = $this->sessionModel->find($sessionId) ?? [];
         $blocker = self::playerRemovalBlocker($session, $row, date('Y-m-d'));
+        if ($blocker === null && !$replacing && (int) $this->db->table('class_session_players')
+                ->where('session_id', $sessionId)->where('user_id !=', $userId)->countAllResults() === 0) {
+            $blocker = 'Es el único alumno de la clase y una clase no puede quedar sin alumnos: añade otro antes, o cancela o elimina la clase.';
+        }
         if ($blocker !== null) {
             AuditService::record('class_session_player', (int) $row['id'], AuditService::BLOCKED, null, null, $blocker);
             return ['success' => false, 'error' => $blocker];
@@ -3184,7 +3286,7 @@ class ClasesService
         // si lo es, se queda y se avisa con takeKeptPlayers()).
         foreach ($existingByUser as $uid => $rowId) {
             if (!in_array($uid, $wanted, true)) {
-                $r = $this->removePlayer($sessionId, $uid);
+                $r = $this->removePlayer($sessionId, $uid, $wanted !== []);
                 if (!$r['success']) {
                     $this->keptPlayers[] = ['session_id' => $sessionId, 'user_id' => $uid, 'reason' => $r['error']];
                 }

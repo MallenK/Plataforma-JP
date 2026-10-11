@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Plan de adecuación legal · JP Preparation</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root{
+    --navy:#0f172a; --navy2:#1e293b; --blue:#3b82f6; --blue-d:#1d4ed8; --blue-l:#eff6ff;
+    --ink:#0f172a; --body:#334155; --muted:#64748b; --line:#e2e8f0;
+    --ok:#10b981; --ok-l:#d1fae5; --warn:#f59e0b; --warn-l:#fef3c7; --bg:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  body{margin:0; font-family:"Segoe UI",Arial,Helvetica,sans-serif; color:var(--body); font-size:10.4pt; line-height:1.5}
+  .page{width:210mm; height:297mm; padding:20mm 18mm 18mm; position:relative; page-break-after:always; overflow:hidden; background:#fff}
+  .page:last-child{page-break-after:auto}
+
+  /* Cover */
+  .cover{background:var(--navy); color:#fff; padding:0}
+  .cover .band{position:absolute; left:0; top:0; bottom:0; width:12mm; background:var(--blue)}
+  .cover .inner{position:absolute; left:30mm; right:20mm; top:62mm}
+  .cover .tag{display:inline-block; font-size:9pt; letter-spacing:.22em; text-transform:uppercase; color:#93c5fd; border:1px solid #334155; padding:3px 12px; border-radius:20px}
+  .cover h1{font-size:38pt; line-height:1.08; margin:22px 0 14px; font-weight:800; letter-spacing:-.5px; color:#fff}
+  .cover h1 span{color:var(--blue)}
+  .cover p.sub{font-size:14pt; color:#cbd5e1; max-width:130mm; margin:0}
+  .cover .meta{position:absolute; left:30mm; right:20mm; bottom:22mm; display:flex; justify-content:space-between; border-top:1px solid #334155; padding-top:10px; font-size:9.5pt; color:#94a3b8}
+  .cover .meta b{display:block; color:#fff; font-size:10.5pt}
+  .cover .circle{position:absolute; right:-40mm; top:-30mm; width:130mm; height:130mm; border-radius:50%; background:radial-gradient(circle at 30% 30%, #1d4ed8, rgba(29,78,216,0) 70%); opacity:.55}
+
+  /* Headings */
+  .kicker{font-size:8.5pt; letter-spacing:.2em; text-transform:uppercase; color:var(--blue-d); font-weight:700}
+  h2{font-size:21pt; color:var(--ink); margin:4px 0 6px; letter-spacing:-.3px; line-height:1.15}
+  .lead{font-size:11.2pt; color:var(--muted); margin:0 0 14px; max-width:165mm}
+  h3{font-size:12pt; color:var(--ink); margin:0 0 3px}
+  .pagefoot{position:absolute; left:18mm; right:18mm; bottom:9mm; display:flex; justify-content:space-between; font-size:8pt; color:#94a3b8; border-top:1px solid var(--line); padding-top:6px}
+
+  /* Cards */
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0}
+  .card{border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:#fff}
+  .card.tint{background:var(--bg)}
+  .card .ico{width:30px; height:30px; border-radius:8px; background:var(--blue-l); color:var(--blue-d); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13pt; margin-bottom:8px}
+  .card p{margin:0; font-size:9.6pt}
+  .callout{border-left:4px solid var(--blue); background:var(--blue-l); border-radius:0 8px 8px 0; padding:10px 14px; margin:12px 0; font-size:9.8pt; color:#1e3a8a}
+  .callout.warn{border-color:var(--warn); background:var(--warn-l); color:#78350f}
+
+  /* Change items */
+  .item{display:grid; grid-template-columns:34px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); page-break-inside:avoid}
+  .item:last-of-type{border-bottom:0}
+  .num{width:30px; height:30px; border-radius:50%; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:10.5pt}
+  .item .why{font-size:9.6pt; margin:3px 0 0}
+  .item .why b{color:var(--ink)}
+  .chip{display:inline-block; font-size:7.8pt; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:1px 8px; border-radius:20px; margin-left:6px; vertical-align:2px}
+  .chip.web{background:#dbeafe; color:#1d4ed8}
+  .chip.app{background:#d1fae5; color:#047857}
+  .chip.law{background:#fef3c7; color:#92400e}
+  .note{font-size:9pt; color:var(--muted); margin-top:3px}
+
+  /* Table */
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:9.4pt}
+  th{background:var(--navy); color:#fff; text-align:left; padding:7px 10px; font-weight:600}
+  th:first-child{border-radius:8px 0 0 0} th:last-child{border-radius:0 8px 0 0}
+  td{padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  tr:nth-child(even) td{background:var(--bg)}
+
+  /* Timeline */
+  .steps{margin:14px 0; position:relative}
+  .step{display:grid; grid-template-columns:44px 1fr; gap:12px; padding-bottom:12px; position:relative}
+  .step:not(:last-child)::before{content:""; position:absolute; left:21px; top:38px; bottom:0; width:2px; background:var(--line)}
+  .step .dot{width:42px; height:42px; border-radius:50%; background:var(--blue); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center}
+  .step .body{border:1px solid var(--line); border-radius:10px; padding:9px 14px; background:#fff}
+  .step .body p{margin:2px 0 0; font-size:9.5pt}
+
+  ul.clean{margin:6px 0 0; padding-left:18px}
+  ul.clean li{margin:3px 0}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .legend{display:flex; gap:10px; margin:6px 0 2px; font-size:9pt}
+</style>
+</head>
+<body>
+
+<!-- 1. PORTADA -->
+<section class="page cover">
+  <div class="band"></div>
+  <div class="circle"></div>
+  <div class="inner">
+    <span class="tag">Informe para el cliente</span>
+    <h1>Plan de adecuación <span>legal</span></h1>
+    <p class="sub">Qué vamos a cambiar en la web y en la plataforma de JP Preparation, y por qué.</p>
+  </div>
+  <div class="meta">
+    <div><b>JP Preparation</b>Sant Vicenç dels Horts · Barcelona</div>
+    <div><b>Octubre de 2026</b>Versión 1.0 · Propuesta pendiente de aprobación</div>
+  </div>
+</section>
+
+<!-- 2. RESUMEN -->
+<section class="page">
+  <div class="kicker">Resumen</div>
+  <h2>Por qué hacemos esto</h2>
+  <p class="lead">JP Preparation trabaja con menores de edad y guarda datos personales de alumnos y familias. La normativa española y europea exige tratar esos datos con cuidado y poder demostrarlo. Este plan ajusta la web y la plataforma para cumplirla, sin cambiar la forma de trabajar de la academia.</p>
+
+  <div class="grid3">
+    <div class="card tint"><div class="ico">1</div><h3>Menos terceros</h3><p>Dejamos de enviar la dirección IP de los visitantes a Google y a otros servicios externos al cargar las páginas.</p></div>
+    <div class="card tint"><div class="ico">2</div><h3>Menores protegidos</h3><p>Registramos quién da el consentimiento por cada menor y a partir de qué edad lo da el propio alumno.</p></div>
+    <div class="card tint"><div class="ico">3</div><h3>Transparencia</h3><p>Publicamos las páginas legales que exige la ley y dejamos constancia de cada consentimiento.</p></div>
+  </div>
+
+  <h3 style="margin-top:16px">Normas que aplicamos</h3>
+  <table>
+    <tr><th style="width:26%">Norma</th><th>Qué regula</th></tr>
+    <tr><td><b>RGPD</b></td><td>Reglamento europeo de protección de datos. Cómo se recogen, guardan y comparten los datos personales.</td></tr>
+    <tr><td><b>LOPDGDD</b></td><td>Ley española de protección de datos. Fija en 14 años la edad desde la que un menor puede consentir por sí mismo.</td></tr>
+    <tr><td><b>LSSI-CE</b></td><td>Ley de servicios de la sociedad de la información. Datos del titular de la web, cookies y envío de comunicaciones comerciales.</td></tr>
+  </table>
+
+  <div class="callout"><b>Qué no cambia.</b> El diseño de la web, los precios, los programas y el día a día de la plataforma siguen igual. Los cambios son mayoritariamente invisibles para las familias, salvo los textos legales y algún campo nuevo en los formularios.</div>
+
+  <div class="callout warn"><b>Importante.</b> Este documento es un plan técnico, no asesoramiento jurídico. Los textos legales los revisará un abogado o delegado de protección de datos (DPO) antes de publicarse.</div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>2</span></div>
+</section>
+
+<!-- 3. WEB -->
+<section class="page">
+  <div class="kicker">Parte 1 · Web pública</div>
+  <h2>Cambios en jppreparation.com</h2>
+  <p class="lead">Objetivo: que la web cumpla la ley <b>sin necesidad de banner de cookies</b>, eliminando lo que lo haría obligatorio.</p>
+
+  <div class="item"><div class="num">1</div><div>
+    <h3>Quitar la analítica y el banner de cookies</h3>
+    <p class="why"><b>Qué:</b> se retiran Google Tag Manager, Analytics y el aviso de cookies.</p>
+    <p class="why"><b>Por qué:</b> si no hay cookies de medición, no hay nada que consentir, y el banner deja de ser necesario. Si más adelante queréis medir visitas, se reactiva o se estudia una analítica sin cookies.</p>
+  </div></div>
+
+  <div class="item"><div class="num">2</div><div>
+    <h3>Alojar fuentes e imágenes en nuestro servidor</h3>
+    <p class="why"><b>Qué:</b> las tipografías de Google, las fotos de Unsplash y las texturas externas pasan a servirse desde la propia web. Los mapas e Instagram pasan a ser un botón («Ver mapa», «Ver en Instagram») en lugar de contenido incrustado.</p>
+    <p class="why"><b>Por qué:</b> cada recurso externo envía la IP del visitante a una empresa de EE. UU. sin que lo sepa. Es un riesgo conocido de RGPD.</p>
+    <p class="note">Necesitamos que nos indiquéis qué fotos propias usar en lugar de las de Unsplash.</p>
+  </div></div>
+
+  <div class="item"><div class="num">3</div><div>
+    <h3>Tres páginas legales separadas</h3>
+    <p class="why"><b>Qué:</b> Aviso legal, Política de privacidad y Política de cookies, enlazadas en el pie de todas las páginas.</p>
+    <p class="why"><b>Por qué:</b> la LSSI-CE obliga a identificar al titular de la web, y el RGPD a informar de cómo se tratan los datos. La política de privacidad incluirá cómo ejercer vuestros derechos y cómo reclamar ante la AEPD.</p>
+  </div></div>
+
+  <div class="item"><div class="num">4</div><div>
+    <h3>Formulario de contacto con consentimiento</h3>
+    <p class="why"><b>Qué:</b> casilla obligatoria de aceptación de la privacidad, resumen informativo bajo el botón, y un campo «¿Quién rellena el formulario?» (jugador adulto o padre/madre/tutor). Si es un tutor, se pide su nombre y una declaración de que actúa en nombre del menor. Se avisa de no incluir datos de salud.</p>
+    <p class="why"><b>Por qué:</b> hay que poder demostrar que el consentimiento es libre e informado, y que en menores de 14 años lo da un adulto. También dejamos de guardar la IP del visitante en el email (minimización de datos).</p>
+  </div></div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>3</span></div>
+</section>
+
+<!-- 4. WEB (cont.) -->
+<section class="page">
+  <div class="kicker">Parte 1 · Web pública (continuación)</div>
+  <h2>Seguridad, dominio y detalles</h2>
+
+  <div class="item"><div class="num">5</div><div>
+    <h3>Seguridad y dominio único</h3>
+    <p class="why"><b>Qué:</b> la web responderá siempre en <b>https://jppreparation.com</b> (sin «www» y siempre cifrada), con cabeceras de seguridad modernas. Se actualiza el mapa del sitio, los datos de buscadores y la guía interna.</p>
+    <p class="why"><b>Por qué:</b> protege la conexión de los visitantes y evita contenido duplicado en Google.</p>
+    <p class="note">Fuera del código: añadir la propiedad sin «www» en Search Console y revisar los enlaces de redes sociales y Google Business.</p>
+  </div></div>
+
+  <div class="item"><div class="num">6</div><div>
+    <h3>Enlace coherente con la plataforma</h3>
+    <p class="why"><b>Qué:</b> la pantalla de acceso de la plataforma enlazará a las mismas páginas legales de la web.</p>
+    <p class="why"><b>Por qué:</b> el usuario debe poder consultar la información legal desde cualquier punto donde deja sus datos.</p>
+  </div></div>
+
+  <div class="item"><div class="num">7</div><div>
+    <h3>Correcciones menores</h3>
+    <ul class="clean">
+      <li>Unificar la edad mínima que aparece en la web (hoy hay textos con 4 y con 8 años).</li>
+      <li>Sustituir un teléfono de WhatsApp de ejemplo por el número real.</li>
+      <li>Ajustar el pie de página con la razón social cuando se conozca.</li>
+    </ul>
+  </div></div>
+
+  <div class="item"><div class="num">8</div><div>
+    <h3>Imágenes de menores</h3>
+    <p class="why"><b>Qué:</b> os entregamos el listado de fotos donde pueden aparecer menores. Vosotros las cotejáis con las autorizaciones de imagen firmadas, y retiramos las que no la tengan. Proponemos además un modelo de autorización para tutores.</p>
+    <p class="why"><b>Por qué:</b> publicar la imagen de un menor requiere el consentimiento de sus tutores, y hay que poder demostrarlo.</p>
+  </div></div>
+
+  <h3 style="margin-top:14px">Qué verán los visitantes</h3>
+  <div class="two">
+    <div class="card"><h3>Cambia</h3><ul class="clean"><li>Nuevo pie con enlaces legales</li><li>Casillas y campos nuevos en el formulario</li><li>Botones «Ver mapa» y «Ver en Instagram»</li></ul></div>
+    <div class="card"><h3>No cambia</h3><ul class="clean"><li>Diseño y contenidos principales</li><li>Programas, precios y textos comerciales</li><li>Velocidad: suele mejorar al no depender de terceros</li></ul></div>
+  </div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>4</span></div>
+</section>
+
+<!-- 5. PLATAFORMA -->
+<section class="page">
+  <div class="kicker">Parte 2 · Plataforma interna</div>
+  <h2>Cambios en la plataforma de gestión</h2>
+  <p class="lead">La plataforma guarda fichas de alumnos, incluidos menores y notas médicas. Estos cambios refuerzan su protección y dejan constancia de los consentimientos.</p>
+
+  <div class="item"><div class="num">A</div><div>
+    <h3>Recursos en local <span class="chip app">Plataforma</span></h3>
+    <p class="why"><b>Qué:</b> tipografías, iconos y librerías (Bootstrap, Toastify…) se alojan en nuestro propio servidor.</p>
+    <p class="why"><b>Por qué:</b> igual que en la web, evita enviar datos de los usuarios a terceros al abrir la plataforma.</p>
+  </div></div>
+
+  <div class="item"><div class="num">B</div><div>
+    <h3>Menores y consentimiento <span class="chip app">Plataforma</span></h3>
+    <p class="why"><b>Qué:</b> la fecha de nacimiento pasa a ser obligatoria. Cada ficha indica <b>de quién es el email de la cuenta</b> (alumno o padre/madre/tutor) y, si procede, registra los datos del tutor y la fecha en que se obtuvo el consentimiento. Las fichas existentes incompletas generan un aviso al administrador, sin bloquear nada.</p>
+    <p class="why"><b>Por qué:</b> la ley exige consentimiento paterno por debajo de 14 años. Como muchas cuentas usan el email de los padres, necesitamos saber quién consiente en cada caso.</p>
+  </div></div>
+
+  <table>
+    <tr><th>Edad del alumno</th><th>Email de la cuenta</th><th>Qué se registra</th></tr>
+    <tr><td>Menos de 14</td><td>Padre/madre/tutor</td><td>Datos del tutor y su consentimiento</td></tr>
+    <tr><td>Menos de 14</td><td>Alumno</td><td>Datos completos del tutor y consentimiento (se avisa del caso)</td></tr>
+    <tr><td>14 o más</td><td>Padre/madre/tutor</td><td>Consentimiento del alumno y constancia de que sabe que la cuenta la gestiona su tutor</td></tr>
+    <tr><td>14 o más</td><td>Alumno</td><td>Consentimiento del alumno</td></tr>
+  </table>
+  <p class="note">El consentimiento se firma fuera de la plataforma (en papel o en el alta). El administrador solo registra que se ha obtenido y cuándo.</p>
+
+  <div class="item"><div class="num">C</div><div>
+    <h3>Páginas legales <span class="chip app">Plataforma</span></h3>
+    <p class="why"><b>Qué:</b> política de privacidad, aviso legal y política de cookies, accesibles desde el acceso y el pie de la plataforma. Las cookies que usa son solo técnicas (sesión y seguridad), por lo que no requieren banner.</p>
+    <p class="why"><b>Por qué:</b> deben poder consultarse antes de dejar ningún dato, e informan de los encargados del tratamiento, los plazos y los derechos.</p>
+  </div></div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>5</span></div>
+</section>
+
+<!-- 6. MARKETING + DOCS -->
+<section class="page">
+  <div class="kicker">Parte 2 · Plataforma interna (continuación)</div>
+  <h2>Marketing y documentación</h2>
+
+  <div class="item"><div class="num">D</div><div>
+    <h3>Preparar los emails de marketing, sin activarlos <span class="chip app">Plataforma</span></h3>
+    <p class="why"><b>Qué:</b> dejamos lista la herramienta para enviar promociones o boletines, con enlace de baja en un clic y la dirección postal de la academia en cada envío. Permanece <b>desactivada</b> hasta que se decida usarla.</p>
+    <p class="why"><b>Por qué:</b> la LSSI-CE exige consentimiento previo para las comunicaciones comerciales, y una forma sencilla de darse de baja. Los avisos de la plataforma (bienvenida, cambio de contraseña) no son marketing y no se ven afectados.</p>
+  </div></div>
+
+  <div class="item"><div class="num">E</div><div>
+    <h3>Documentos de la academia <span class="chip law">Sin código</span></h3>
+    <ul class="clean">
+      <li><b>Registro de actividades de tratamiento:</b> inventario de qué datos se guardan y para qué.</li>
+      <li><b>Contratos con proveedores</b> que tratan datos por cuenta de la academia (correo, alojamiento).</li>
+      <li><b>Procedimiento ante brechas de seguridad:</b> avisar a la AEPD en un máximo de 72 horas.</li>
+      <li><b>Autorización de derechos de imagen</b> para tutores.</li>
+      <li>Valoración de si hace falta nombrar un <b>DPO</b>.</li>
+    </ul>
+  </div></div>
+
+  <h3 style="margin-top:16px">Puntos que quedan fuera por ahora</h3>
+  <div class="two">
+    <div class="card tint"><h3>Varios alumnos, un mismo email</h3><p>Hoy cada alumno necesita un email de acceso distinto. Si una familia quiere gestionar varios hijos con un solo correo, es un cambio mayor que se valorará más adelante.</p></div>
+    <div class="card tint"><h3>Torneos y compras</h3><p>Siguen desactivados. Si se reactivan, habrá que revisar condiciones de pago, renovación y cancelación.</p></div>
+  </div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>6</span></div>
+</section>
+
+<!-- 7. DECISIONES Y ORDEN -->
+<section class="page">
+  <div class="kicker">Siguientes pasos</div>
+  <h2>Orden de trabajo y decisiones</h2>
+
+  <div class="steps">
+    <div class="step"><div class="dot">1</div><div class="body"><h3>Web: quitar analítica y recursos externos</h3><p>Es lo que reduce el riesgo de forma más inmediata.</p></div></div>
+    <div class="step"><div class="dot">2</div><div class="body"><h3>Web: páginas legales y formulario</h3><p>Textos con marcadores hasta recibir vuestros datos.</p></div></div>
+    <div class="step"><div class="dot">3</div><div class="body"><h3>Web: seguridad y dominio sin «www»</h3><p>Redirecciones y cabeceras, con verificación posterior.</p></div></div>
+    <div class="step"><div class="dot">4</div><div class="body"><h3>Plataforma: recursos locales, menores y consentimiento</h3><p>Aviso a administradores de las fichas incompletas.</p></div></div>
+    <div class="step"><div class="dot">5</div><div class="body"><h3>Plataforma: páginas legales y marketing preparado</h3><p>Revisión de los textos por un abogado o DPO antes de publicar.</p></div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Lo que necesitamos de vosotros</h3>
+      <ul class="clean">
+        <li>Razón social, NIF y domicilio fiscal</li>
+        <li>Email de contacto y datos registrales, si los hay</li>
+        <li>Correo que recibirá los formularios</li>
+        <li>Fotos propias para sustituir las externas</li>
+        <li>¿Habrá comunicaciones comerciales?</li>
+        <li>¿Están firmadas las autorizaciones de imagen de menores?</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Decisiones ya tomadas</h3>
+      <ul class="clean">
+        <li>Dominio sin «www»</li>
+        <li>Web sin banner de cookies</li>
+        <li>Sin analítica por ahora</li>
+        <li>Marketing: preparado pero desactivado</li>
+        <li>Fichas incompletas: aviso sin bloqueo</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top:12px"><b>Puntos recomendados a revisar con un profesional.</b> Los testimonios y casos de éxito con nombre y edad de menores, y el uso de un correo Gmail para recibir los formularios (Google actúa como proveedor sin contrato específico). Se mantienen como están por decisión vuestra; recomendamos que el abogado o DPO los valore.</div>
+
+  <div class="pagefoot"><span>JP Preparation · Plan de adecuación legal</span><span>7</span></div>
+</section>
+
+</body>
+</html>

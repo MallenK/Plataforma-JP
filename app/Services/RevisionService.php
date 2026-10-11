@@ -14,8 +14,11 @@ namespace App\Services;
  *  3. Bonos con precio estimado (anteriores a v1.33.0; se confirma el real).
  *  4. Bonos caducados con sesiones sin usar («sin usar»: se dan por ganados,
  *     pero se señalan).
+ *  5. Clases incompletas: sin alumnos y/o sin entrenador (toda clase necesita
+ *     al menos uno de cada). Las que no tienen alumnos son errores o pruebas
+ *     y se pueden eliminar desde aquí.
  *
- * `unusedValueCents()` y `parseEuroToCents()` son puras.
+ * `unusedValueCents()`, `parseEuroToCents()` e `incompleteKind()` son puras.
  */
 class RevisionService
 {
@@ -165,6 +168,84 @@ class RevisionService
         return ['sessions' => count($sessionIds), 'debts' => count($debtRows), 'prices' => count($priceIds), 'applied' => true];
     }
 
+    public const INCOMPLETE_EMPTY     = 'empty';      // sin alumnos ni entrenador
+    public const INCOMPLETE_NO_PLAYER = 'no_player';  // con entrenador, sin alumnos
+    public const INCOMPLETE_NO_COACH  = 'no_coach';   // con alumnos, sin entrenador
+
+    /**
+     * Qué le falta a una clase, o null si está bien. Una clase cancelada solo
+     * se señala si no tiene alumnos (un resto sin valor); que le falte el
+     * entrenador ya da igual porque no se impartió. Pura.
+     */
+    public static function incompleteKind(int $players, int $coaches, string $status): ?string
+    {
+        if ($players === 0) {
+            return $coaches === 0 ? self::INCOMPLETE_EMPTY : self::INCOMPLETE_NO_PLAYER;
+        }
+        if ($coaches === 0 && $status !== 'cancelled') {
+            return self::INCOMPLETE_NO_COACH;
+        }
+        return null;
+    }
+
+    /**
+     * Clases a las que les falta el alumno o el entrenador, de la más antigua a
+     * la más reciente. Cada fila lleva `kind` (ver incompleteKind) y
+     * `deletable` (sin alumnos ni adjuntos → se puede eliminar).
+     */
+    public function incompleteSessions(): array
+    {
+        $hasFiles = $this->db->tableExists('class_session_attachments');
+        $rows = $this->db->query(
+            "SELECT cs.id, cs.title, cs.session_date, cs.start_time, cs.status, cs.class_id, cs.session_type,
+                    (SELECT COUNT(*) FROM class_session_players p WHERE p.session_id = cs.id) AS players,
+                    (SELECT COUNT(*) FROM class_session_coaches c WHERE c.session_id = cs.id) AS coaches,
+                    (SELECT GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ', ') FROM class_session_coaches c
+                       JOIN users u ON u.id = c.user_id WHERE c.session_id = cs.id) AS coach_names,
+                    (SELECT GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ', ') FROM class_session_players p
+                       JOIN users u ON u.id = p.user_id WHERE p.session_id = cs.id) AS player_names,
+                    " . ($hasFiles ? "(SELECT COUNT(*) FROM class_session_attachments a WHERE a.session_id = cs.id)" : '0') . " AS files
+             FROM class_sessions cs
+             WHERE NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+                OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id))
+             ORDER BY cs.session_date ASC, cs.start_time ASC"
+        )->getResultArray();
+
+        $out = [];
+        foreach ($rows as $r) {
+            $kind = self::incompleteKind((int) $r['players'], (int) $r['coaches'], (string) $r['status']);
+            if ($kind === null) {
+                continue;
+            }
+            $r['kind']      = $kind;
+            $r['deletable'] = ClasesService::emptySessionDeletionBlocker((int) $r['players'], (int) $r['files']) === null;
+            $out[] = $r;
+        }
+        return $out;
+    }
+
+    /**
+     * Elimina las clases sin alumnos indicadas (o todas, con null). Las que
+     * tengan alumnos o adjuntos se saltan. Cada una queda en auditoría.
+     *
+     * @param int[]|null $ids
+     * @return array{deleted:int,skipped:int}
+     */
+    public function deleteEmptySessions(?array $ids, ?int $actorId): array
+    {
+        if ($ids === null) {
+            $ids = array_map('intval', array_column(array_filter($this->incompleteSessions(),
+                static fn($r) => $r['deletable']), 'id'));
+        }
+        $clases = new ClasesService();
+        $deleted = $skipped = 0;
+        foreach (array_unique(array_map('intval', $ids)) as $id) {
+            $r = $clases->deleteEmptySession($id, $actorId, 'Finanzas › Revisión: clase sin alumnos (error o prueba)');
+            $r['success'] ? $deleted++ : $skipped++;
+        }
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
     /** Recuentos para el aviso del dashboard (consultas baratas). */
     public function counts(?string $today = null): array
     {
@@ -172,7 +253,14 @@ class RevisionService
         $control = new BonoControlService($this->db);
 
         return [
-            'unclosed'  => (int) $this->db->table('class_sessions')->where('status', 'scheduled')->where('session_date <', $today)->countAllResults(),
+            'unclosed'  => (int) $this->db->table('class_sessions cs')->where('cs.status', 'scheduled')->where('cs.session_date <', $today)
+                                    ->where('EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)', null, false)
+                                    ->countAllResults(),
+            'incomplete' => (int) $this->db->query(
+                "SELECT COUNT(*) AS n FROM class_sessions cs
+                 WHERE NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+                    OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id))"
+            )->getRow()->n,
             'debts'     => count($control->openDebts()),
             'pre_control' => count($control->unreflected()),
             'estimated' => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('price_estimated', 1)->countAllResults(),
@@ -181,7 +269,10 @@ class RevisionService
         ];
     }
 
-    /** Sesiones pasadas sin cerrar, de la más antigua a la más reciente. */
+    /**
+     * Sesiones pasadas sin cerrar, de la más antigua a la más reciente. Las
+     * que no tienen alumnos no salen aquí: van a «Clases incompletas».
+     */
     public function unclosedSessions(?string $today = null): array
     {
         $today = $today ?: date('Y-m-d');
@@ -192,7 +283,7 @@ class RevisionService
                       SUM(CASE WHEN csp.attendance <> 'pending' THEN 1 ELSE 0 END) AS marked", false)
             ->join('class_session_coaches csc', 'csc.session_id = cs.id', 'left')
             ->join('users u', 'u.id = csc.user_id', 'left')
-            ->join('class_session_players csp', 'csp.session_id = cs.id', 'left')
+            ->join('class_session_players csp', 'csp.session_id = cs.id')
             ->where('cs.status', 'scheduled')
             ->where('cs.session_date <', $today)
             ->groupBy('cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at')

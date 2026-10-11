@@ -14,7 +14,15 @@ $cards = [
     ['#sin-bono',   'Clases sin descontar',      count($debts) + count($preControl),   'bi-receipt',                  '#b91c1c', '#fee2e2'],
     ['#precios',    'Bonos con precio estimado', count($estimated),                    'bi-question-circle-fill',     '#92400e', '#fef3c7'],
     ['#sin-usar',   'Caducados sin usar (aviso)', count($unused),                      'bi-hourglass-bottom',         '#6d28d9', '#ede9fe'],
+    ['#incompletas', 'Clases incompletas',       count($incomplete ?? []),             'bi-exclamation-octagon-fill', '#b91c1c', '#fee2e2'],
 ];
+$incomplete = $incomplete ?? [];
+$kindLabel = [
+    \App\Services\RevisionService::INCOMPLETE_EMPTY     => ['Sin alumnos ni entrenador', '#b91c1c', '#fee2e2'],
+    \App\Services\RevisionService::INCOMPLETE_NO_PLAYER => ['Sin alumnos',               '#b91c1c', '#fee2e2'],
+    \App\Services\RevisionService::INCOMPLETE_NO_COACH  => ['Sin entrenador',            '#b45309', '#ffedd5'],
+];
+$statusLabel = ['scheduled' => 'Programada', 'completed' => 'Cerrada', 'cancelled' => 'Cancelada'];
 ?>
 
 <?= $this->section('page_content') ?>
@@ -45,7 +53,7 @@ $cards = [
 
 <div class="row g-3 mb-3">
     <?php foreach ($cards as [$href, $label, $n, $icon, $fg, $bg]): ?>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg">
         <a href="<?= $href ?>" class="metric-card" style="display:block;text-decoration:none;color:inherit;<?= $n > 0 ? 'border-color:' . $fg : '' ?>">
             <div class="metric-card-header">
                 <span class="metric-label"><?= $label ?></span>
@@ -86,6 +94,40 @@ $cards = [
                     <span style="font-size:11px;font-weight:700;color:#b45309;background:#ffedd5;border-radius:10px;padding:2px 8px">Sin pasar lista</span>
                     <?php endif; ?>
                 </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- 1b. Clases incompletas: sin alumnos y/o sin entrenador -->
+<div class="card-jp mb-3" id="incompletas">
+    <div class="card-jp-header">
+        <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-exclamation-octagon-fill me-2"></i>Clases incompletas (<?= count($incomplete) ?>)<?= fin_help('rev_incompletas') ?></span>
+    </div>
+    <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
+        Toda clase necesita <strong>al menos un alumno y un entrenador</strong>. Las que no tienen alumnos son un error, una prueba o restos de un alumno que se quitó:
+        no cuentan en Finanzas. Las que no tienen entrenador hay que abrirlas y <strong>asignarle uno</strong>.
+    </div>
+    <?php if (empty($incomplete)): ?>
+    <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todas las clases tienen alumno y entrenador.</p></div>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-incompletas" data-fin-order='[[0,"asc"]]'>
+            <thead><tr>
+                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Alumnos</th><th style="<?= $th ?>">Estado</th><th style="<?= $th ?>">Problema</th>
+            </tr></thead>
+            <tbody>
+            <?php foreach ($incomplete as $s): [$kTxt, $kFg, $kBg] = $kindLabel[$s['kind']]; ?>
+            <tr style="border-bottom:1px solid var(--border)">
+                <td style="<?= $td ?>;white-space:nowrap;color:var(--text-muted)" data-order="<?= esc($s['session_date'] . ' ' . $s['start_time']) ?>"><?= date('d/m/Y', strtotime($s['session_date'])) ?> · <?= substr($s['start_time'], 0, 5) ?></td>
+                <td style="<?= $td ?>"><a href="<?= base_url('clases/' . (int) $s['id']) ?>" class="row-link-anchor" style="font-weight:600"><?= esc($s['title']) ?></a> <span style="color:var(--text-muted);font-size:11px">#<?= (int) $s['id'] ?></span></td>
+                <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : '<span style="color:var(--text-muted)">—</span>' ?></td>
+                <td style="<?= $td ?>"><?= $s['player_names'] ? esc($s['player_names']) : '<span style="color:var(--text-muted)">—</span>' ?></td>
+                <td style="<?= $td ?>;color:var(--text-muted)"><?= esc($statusLabel[$s['status']] ?? $s['status']) ?></td>
+                <td style="<?= $td ?>"><span style="font-size:11px;font-weight:700;color:<?= $kFg ?>;background:<?= $kBg ?>;border-radius:10px;padding:2px 8px;white-space:nowrap"><?= $kTxt ?></span></td>
             </tr>
             <?php endforeach; ?>
             </tbody>

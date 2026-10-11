@@ -9,7 +9,7 @@
 // v1.33.0 «Pendiente de revisar»: aviso para administración con enlace al panel.
 $prTotal = $isAdmin && !empty($pendingReview)
     ? (int) $pendingReview['unclosed'] + (int) $pendingReview['debts'] + (int) $pendingReview['pre_control']
-      + (int) $pendingReview['estimated']
+      + (int) $pendingReview['estimated'] + (int) ($pendingReview['incomplete'] ?? 0)
     : 0;   // los caducados sin usar son un aviso, no una tarea: no cuentan
 ?>
 <?php if ($prTotal > 0): ?>
@@ -19,7 +19,8 @@ $prTotal = $isAdmin && !empty($pendingReview)
     <span style="font-size:13px">
         <?= (int) $pendingReview['unclosed'] ?> sesiones sin cerrar ·
         <?= (int) $pendingReview['debts'] + (int) $pendingReview['pre_control'] ?> clases sin descontar ·
-        <?= (int) $pendingReview['estimated'] ?> precios estimados
+        <?= (int) $pendingReview['estimated'] ?> precios estimados<?php if (!empty($pendingReview['incomplete'])): ?> ·
+        <?= (int) $pendingReview['incomplete'] ?> clases incompletas<?php endif; ?>
     </span>
     <span style="margin-left:auto;font-weight:700;font-size:13px">Revisar <i class="bi bi-arrow-right"></i></span>
 </a>
