@@ -2,96 +2,250 @@
 
 <?php
 $pageTitle    = 'Finanzas';
-$pageSubtitle = 'Revisión: lo que hay que revisar a mano para que el histórico económico cuadre';
+$pageSubtitle = 'Revisión: lo que conviene mirar para que las cuentas cuadren';
 $th  = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:left;font-size:11px';
 $td  = 'padding:8px 12px';
 $eur = static fn(?int $c) => $c === null ? '—' : number_format($c / 100, 2, ',', '.') . ' €';
 $sinceTxt = $since ? date('d/m/Y', strtotime($since)) : '—';
 $unusedTotal = array_sum(array_column($unused, 'unused_cents'));
-
-$cards = [
-    ['#sin-cerrar', 'Sesiones sin cerrar',       count($unclosed),                     'bi-calendar-x-fill',          '#b45309', '#ffedd5'],
-    ['#sin-bono',   'Clases sin descontar',      count($debts) + count($preControl),   'bi-receipt',                  '#b91c1c', '#fee2e2'],
-    ['#precios',    'Bonos con precio estimado', count($estimated),                    'bi-question-circle-fill',     '#92400e', '#fef3c7'],
-    ['#sin-usar',   'Caducados sin usar (aviso)', count($unused),                      'bi-hourglass-bottom',         '#6d28d9', '#ede9fe'],
-    ['#incompletas', 'Clases incompletas',       count($incomplete ?? []),             'bi-exclamation-octagon-fill', '#b91c1c', '#fee2e2'],
-];
-$incomplete = $incomplete ?? [];
-$kindLabel = [
-    \App\Services\RevisionService::INCOMPLETE_EMPTY     => ['Sin alumnos ni entrenador', '#b91c1c', '#fee2e2'],
-    \App\Services\RevisionService::INCOMPLETE_NO_PLAYER => ['Sin alumnos',               '#b91c1c', '#fee2e2'],
-    \App\Services\RevisionService::INCOMPLETE_NO_COACH  => ['Sin entrenador',            '#b45309', '#ffedd5'],
-];
 $statusLabel = ['scheduled' => 'Programada', 'completed' => 'Cerrada', 'cancelled' => 'Cancelada'];
+
+$bk = $buckets ?? ['sin_lista' => [], 'sin_cerrar' => [], 'sin_entrenador' => [], 'vacias' => []];
+$nDebts = count($debts) + count($preControl);
+
+// [ancla, título corto, nº, icono, color, fondo, qué hacer]
+$groups = [
+    'Clases' => [
+        ['#sin-lista',      'Falta pasar lista',    count($bk['sin_lista']),       'bi-card-checklist',       '#b45309', '#ffedd5', 'Marcar quién vino'],
+        ['#sin-cerrar',     'Falta cerrar la clase', count($bk['sin_cerrar']),     'bi-lock-fill',            '#1d4ed8', '#dbeafe', 'Pulsar «Cerrar clase»'],
+        ['#sin-entrenador', 'Sin entrenador',       count($bk['sin_entrenador']),  'bi-person-x-fill',        '#b45309', '#ffedd5', 'Elegir quién la da'],
+        ['#vacias',         'Clases vacías',        count($bk['vacias']),          'bi-trash3-fill',          '#b91c1c', '#fee2e2', 'Eliminarlas'],
+    ],
+    'Bonos y dinero' => [
+        ['#sin-bono',       'Clases sin bono descontado', $nDebts,                 'bi-receipt',              '#b91c1c', '#fee2e2', 'Descontar del bono o dar por pagada'],
+        ['#precios',        'Precio por confirmar', count($estimated),             'bi-question-circle-fill', '#92400e', '#fef3c7', 'Escribir lo que pagó'],
+    ],
+];
+$totalTasks = 0;
+foreach ($groups as $g) { foreach ($g as $c) { $totalTasks += $c[2]; } }
+
+// Cabecera de cada bloque: qué pasa y qué hago, en dos líneas.
+$head = static function (string $id, string $icon, string $color, string $title, int $n, string $help, string $what, string $todo, string $extra = '') {
+    ob_start(); ?>
+    <div class="card-jp-header">
+        <span class="card-jp-title" style="color:<?= $color ?>"><i class="bi <?= $icon ?> me-2"></i><?= $title ?> (<?= $n ?>)<?= fin_help($help) ?></span>
+        <?= $extra ?>
+    </div>
+    <div class="card-jp-body" style="font-size:13px;line-height:1.6;padding-bottom:0">
+        <div><strong style="color:var(--text-h)">¿Qué pasa?</strong> <span style="color:var(--text-muted)"><?= $what ?></span></div>
+        <div><strong style="color:var(--text-h)">¿Qué hago?</strong> <span style="color:var(--text-muted)"><?= $todo ?></span></div>
+    </div>
+    <?php return ob_get_clean();
+};
+$allGood = static fn(string $msg) => '<div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>' . $msg . '</p></div>';
+$dateCell = static fn(array $s) => '<td style="padding:8px 12px;white-space:nowrap;color:var(--text-muted)" data-order="' . esc($s['session_date'] . ' ' . $s['start_time']) . '">'
+    . date('d/m/Y', strtotime($s['session_date'])) . ' · ' . substr($s['start_time'], 0, 5) . '</td>';
+$classCell = static fn(array $s) => '<td style="padding:8px 12px"><a href="' . base_url('clases/' . (int) $s['id']) . '" class="row-link-anchor" style="font-weight:600">' . esc($s['title']) . '</a></td>';
+$noneTxt = '<span style="color:var(--text-muted)">—</span>';
+$openBtn = static fn(array $s, string $label) => '<a href="' . base_url('clases/' . (int) $s['id']) . '" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none;white-space:nowrap">' . $label . '</a>';
 ?>
 
 <?= $this->section('page_content') ?>
 
 <?= view('finanzas/_tabs', ['tab' => $tab ?? 'revision', 'reviewCount' => $reviewCount ?? 0]) ?>
 
+<!-- Qué es esta pantalla -->
+<div class="card-jp mb-3" style="border:2px solid <?= $totalTasks > 0 ? '#fde68a' : '#bbf7d0' ?>">
+    <div class="card-jp-body" style="font-size:14px;line-height:1.6">
+        <?php if ($totalTasks > 0): ?>
+        <strong style="color:var(--text-h)"><i class="bi bi-clipboard-check me-1" style="color:#b45309"></i>Hay <?= (int) $totalTasks ?> cosa<?= $totalTasks === 1 ? '' : 's' ?> por revisar.</strong>
+        <span style="color:var(--text-muted)">Aquí se juntan las clases y los bonos que han quedado a medias. Hasta que se resuelvan, los números de Finanzas pueden no ser exactos.
+        Cada bloque te explica qué pasa y qué tienes que hacer; basta con ir de arriba abajo.</span>
+        <?php else: ?>
+        <strong style="color:var(--text-h)"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todo en orden.</strong>
+        <span style="color:var(--text-muted)">No hay clases ni bonos pendientes de revisar. Los números de Finanzas son fiables.</span>
+        <?php endif; ?>
+    </div>
+</div>
+
 <?php $cp = $closePreview ?? ['sessions' => 0, 'debts' => 0, 'prices' => 0]; ?>
 <?php if ($cp['sessions'] + $cp['debts'] + $cp['prices'] > 0): ?>
 <div class="card-jp mb-3" style="border:2px solid #bfdbfe">
     <div class="card-jp-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
         <div style="font-size:13px;line-height:1.6;max-width:760px">
-            <strong style="font-size:14px;color:var(--text-h)"><i class="bi bi-check2-all me-1" style="color:var(--accent)"></i>Cierre de revisión inicial</strong><br>
-            Da por bueno lo anterior en un solo paso: se cierran las <strong><?= (int) $cp['sessions'] ?></strong> sesiones pasadas que ya tienen asistencia marcada,
-            se dan por buenas las <strong><?= (int) $cp['debts'] ?></strong> clases dadas sin descontar (el saldo de los bonos no cambia)
-            y se confirman los <strong><?= (int) $cp['prices'] ?></strong> precios estimados al precio de tarifa.
-            Solo quedarán por revisar las sesiones que nadie cerró. Todo queda registrado.
+            <strong style="font-size:14px;color:var(--text-h)"><i class="bi bi-check2-all me-1" style="color:var(--accent)"></i>Dar por bueno todo lo anterior, de una vez</strong><br>
+            Si lo de antes de empezar a usar Finanzas ya está dado por válido, puedes cerrarlo todo con un clic:
+            se cierran <strong><?= (int) $cp['sessions'] ?></strong> clases pasadas que ya tienen asistencia marcada,
+            se dan por buenas <strong><?= (int) $cp['debts'] ?></strong> clases sin bono descontado (el saldo de los bonos no cambia)
+            y se confirman <strong><?= (int) $cp['prices'] ?></strong> precios al precio de tarifa.
+            Solo te quedará lo que de verdad nadie cerró. Todo queda registrado.
         </div>
         <form action="<?= base_url('finanzas/revision/cierre-inicial') ?>" method="post" style="margin:0"
               data-ru-confirm="¿Dar por bueno lo anterior?"
-              data-ru-confirm-desc="Se cierran <?= (int) $cp['sessions'] ?> sesiones, se aceptan <?= (int) $cp['debts'] ?> clases sin descontar y se confirman <?= (int) $cp['prices'] ?> precios. Queda en el registro de auditoría."
-              data-ru-confirm-label="Cerrar revisión inicial">
+              data-ru-confirm-desc="Se cierran <?= (int) $cp['sessions'] ?> clases, se aceptan <?= (int) $cp['debts'] ?> clases sin bono descontado y se confirman <?= (int) $cp['prices'] ?> precios. Queda en el registro de auditoría."
+              data-ru-confirm-label="Sí, dar por bueno">
             <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check2-all me-1"></i>Cerrar revisión inicial</button>
+            <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check2-all me-1"></i>Dar por bueno lo anterior</button>
         </form>
     </div>
 </div>
 <?php endif; ?>
 
+<!-- Resumen por grupos -->
+<?php foreach ($groups as $groupName => $cards): ?>
+<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:4px 0 8px"><?= $groupName ?></div>
 <div class="row g-3 mb-3">
-    <?php foreach ($cards as [$href, $label, $n, $icon, $fg, $bg]): ?>
-    <div class="col-6 col-lg">
+    <?php foreach ($cards as [$href, $label, $n, $icon, $fg, $bg, $todo]): ?>
+    <div class="col-6 col-lg-3">
         <a href="<?= $href ?>" class="metric-card" style="display:block;text-decoration:none;color:inherit;<?= $n > 0 ? 'border-color:' . $fg : '' ?>">
             <div class="metric-card-header">
                 <span class="metric-label"><?= $label ?></span>
-                <div class="metric-icon" style="background:<?= $bg ?>;color:<?= $fg ?>"><i class="bi <?= $icon ?>"></i></div>
+                <div class="metric-icon" style="background:<?= $n > 0 ? $bg : '#dcfce7' ?>;color:<?= $n > 0 ? $fg : '#15803d' ?>"><i class="bi <?= $n > 0 ? $icon : 'bi-check-lg' ?>"></i></div>
             </div>
             <div class="metric-value"><?= (int) $n ?></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px"><?= $n > 0 ? esc($todo) : 'Nada pendiente' ?></div>
         </a>
     </div>
     <?php endforeach; ?>
 </div>
+<?php endforeach; ?>
 
-<!-- 1. Sesiones pasadas sin cerrar -->
-<div class="card-jp mb-3" id="sin-cerrar">
-    <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#b45309"><i class="bi bi-calendar-x-fill me-2"></i>Sesiones pasadas sin cerrar (<?= count($unclosed) ?>)<?= fin_help('rev_sesiones') ?></span>
-    </div>
-    <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        Ya pasó su fecha pero siguen como «programadas». Ábrelas y <strong>pasa lista y ciérralas</strong> si se dieron, o <strong>cancélalas</strong> si no se dieron.
-    </div>
-    <?php if (empty($unclosed)): ?>
-    <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todas las sesiones pasadas están cerradas.</p></div>
+<!-- ───────── CLASES ───────── -->
+
+<!-- 1. Falta pasar lista -->
+<div class="card-jp mb-3" id="sin-lista">
+    <?= $head('sin-lista', 'bi-card-checklist', '#b45309', 'Clases dadas en las que falta pasar lista', count($bk['sin_lista']), 'rev_sin_lista',
+        'La clase ya pasó, pero nadie marcó quién vino.',
+        'Ábrela y marca la asistencia. Si en realidad no se dio, <strong>cancélala</strong>.') ?>
+    <?php if (empty($bk['sin_lista'])): ?>
+    <?= $allGood('Todas las clases pasadas tienen la lista pasada.') ?>
     <?php else: ?>
     <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-sesiones" data-fin-order='[[0,"asc"]]'>
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-sin-lista" data-fin-order='[[0,"asc"]]'>
             <thead><tr>
-                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Estado</th>
+                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Alumnos</th><th style="<?= $th ?>"></th>
             </tr></thead>
             <tbody>
-            <?php foreach ($unclosed as $s): ?>
+            <?php foreach ($bk['sin_lista'] as $s): ?>
             <tr style="border-bottom:1px solid var(--border)">
-                <td style="<?= $td ?>;white-space:nowrap;color:var(--text-muted)" data-order="<?= esc($s['session_date'] . ' ' . $s['start_time']) ?>"><?= date('d/m/Y', strtotime($s['session_date'])) ?> · <?= substr($s['start_time'], 0, 5) ?></td>
-                <td style="<?= $td ?>"><a href="<?= base_url('clases/' . (int) $s['id']) ?>" class="row-link-anchor" style="font-weight:600"><?= esc($s['title']) ?></a></td>
+                <?= $dateCell($s) ?>
+                <?= $classCell($s) ?>
                 <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : '<span style="color:var(--text-muted)">Sin asignar</span>' ?></td>
-                <td style="<?= $td ?>">
-                    <?php if (!empty($s['lista_pasada_at']) || (int) $s['marked'] > 0): ?>
-                    <span style="font-size:11px;font-weight:700;color:#1d4ed8;background:#dbeafe;border-radius:10px;padding:2px 8px">Lista pasada, sin cerrar</span>
+                <td style="<?= $td ?>"><?= (int) $s['players'] ?></td>
+                <td style="<?= $td ?>;text-align:right"><?= $openBtn($s, 'Pasar lista') ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- 2. Falta cerrar la clase -->
+<div class="card-jp mb-3" id="sin-cerrar">
+    <?= $head('sin-cerrar', 'bi-lock-fill', '#1d4ed8', 'Clases con lista pasada que faltan por cerrar', count($bk['sin_cerrar']), 'rev_sin_cerrar',
+        'Ya se marcó quién vino, pero la clase sigue abierta y todavía no cuenta en Finanzas.',
+        'Ábrela, comprueba que la asistencia es correcta y pulsa <strong>«Cerrar clase»</strong>.') ?>
+    <?php if (empty($bk['sin_cerrar'])): ?>
+    <?= $allGood('No hay clases pendientes de cerrar.') ?>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-sin-cerrar" data-fin-order='[[0,"asc"]]'>
+            <thead><tr>
+                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Alumnos</th><th style="<?= $th ?>"></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach ($bk['sin_cerrar'] as $s): ?>
+            <tr style="border-bottom:1px solid var(--border)">
+                <?= $dateCell($s) ?>
+                <?= $classCell($s) ?>
+                <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : '<span style="color:var(--text-muted)">Sin asignar</span>' ?></td>
+                <td style="<?= $td ?>"><?= (int) $s['players'] ?></td>
+                <td style="<?= $td ?>;text-align:right"><?= $openBtn($s, 'Cerrar clase') ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- 3. Sin entrenador -->
+<div class="card-jp mb-3" id="sin-entrenador">
+    <?= $head('sin-entrenador', 'bi-person-x-fill', '#b45309', 'Clases sin entrenador', count($bk['sin_entrenador']), 'rev_sin_entrenador',
+        'Tienen alumnos apuntados, pero ningún entrenador asignado. No se sabe quién las da ni a quién imputarlas.',
+        'Ábrela y elige el <strong>entrenador</strong> (o el staff responsable).') ?>
+    <?php if (empty($bk['sin_entrenador'])): ?>
+    <?= $allGood('Todas las clases tienen entrenador.') ?>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-sin-entrenador" data-fin-order='[[0,"asc"]]'>
+            <thead><tr>
+                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Alumnos</th><th style="<?= $th ?>">Estado</th><th style="<?= $th ?>"></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach ($bk['sin_entrenador'] as $s): ?>
+            <tr style="border-bottom:1px solid var(--border)">
+                <?= $dateCell($s) ?>
+                <?= $classCell($s) ?>
+                <td style="<?= $td ?>"><?= $s['player_names'] ? esc($s['player_names']) : $noneTxt ?></td>
+                <td style="<?= $td ?>;color:var(--text-muted)"><?= esc($statusLabel[$s['status']] ?? $s['status']) ?></td>
+                <td style="<?= $td ?>;text-align:right"><?= $openBtn($s, 'Asignar entrenador') ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- 4. Clases vacías -->
+<?php
+$deletableEmpty = array_filter($bk['vacias'], static fn($s) => !empty($s['deletable']));
+$deleteAll = '';
+if ($deletableEmpty) {
+    ob_start(); ?>
+    <form action="<?= base_url('finanzas/revision/eliminar-vacias') ?>" method="post" style="margin:0"
+          data-ru-confirm="¿Eliminar las clases vacías?"
+          data-ru-confirm-desc="Se eliminan <?= count($deletableEmpty) ?> clases que no tienen ningún alumno. Queda registrado en el historial de cambios."
+          data-ru-confirm-label="Sí, eliminarlas">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn-jp btn-jp-sm" style="background:#b91c1c;color:#fff;border-color:#b91c1c"><i class="bi bi-trash3 me-1"></i>Eliminar las <?= count($deletableEmpty) ?> vacías</button>
+    </form>
+    <?php $deleteAll = ob_get_clean();
+}
+?>
+<div class="card-jp mb-3" id="vacias">
+    <?= $head('vacias', 'bi-trash3-fill', '#b91c1c', 'Clases vacías (sin ningún alumno)', count($bk['vacias']), 'rev_vacias',
+        'No tienen ningún alumno apuntado. Casi seguro son un error, una prueba o lo que quedó al quitar a un alumno. No cuentan en Finanzas.',
+        'Elimínalas. Si alguna es útil, ábrela y apunta a un alumno.', $deleteAll) ?>
+    <?php if (empty($bk['vacias'])): ?>
+    <?= $allGood('No hay clases vacías.') ?>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-vacias" data-fin-order='[[0,"asc"]]'>
+            <thead><tr>
+                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Estado</th><th style="<?= $th ?>"></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach ($bk['vacias'] as $s): ?>
+            <tr style="border-bottom:1px solid var(--border)">
+                <?= $dateCell($s) ?>
+                <?= $classCell($s) ?>
+                <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : $noneTxt ?></td>
+                <td style="<?= $td ?>;color:var(--text-muted)"><?= esc($statusLabel[$s['status']] ?? $s['status']) ?></td>
+                <td style="<?= $td ?>;text-align:right">
+                    <?php if (!empty($s['deletable'])): ?>
+                    <form action="<?= base_url('finanzas/revision/eliminar-vacias') ?>" method="post" style="margin:0"
+                          data-ru-confirm="¿Eliminar esta clase?"
+                          data-ru-confirm-desc="«<?= esc($s['title'], 'attr') ?>» no tiene ningún alumno. Queda registrado en el historial de cambios."
+                          data-ru-confirm-label="Sí, eliminar">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="ids[]" value="<?= (int) $s['id'] ?>">
+                        <button type="submit" class="btn-jp btn-jp-sm" style="color:#b91c1c;border-color:#fecaca"><i class="bi bi-trash3 me-1"></i>Eliminar</button>
+                    </form>
                     <?php else: ?>
-                    <span style="font-size:11px;font-weight:700;color:#b45309;background:#ffedd5;border-radius:10px;padding:2px 8px">Sin pasar lista</span>
+                    <span style="font-size:12px;color:var(--text-muted)">Tiene archivos: <a href="<?= base_url('clases/' . (int) $s['id']) ?>">ábrela y cancélala</a></span>
                     <?php endif; ?>
                 </td>
             </tr>
@@ -102,73 +256,34 @@ $statusLabel = ['scheduled' => 'Programada', 'completed' => 'Cerrada', 'cancelle
     <?php endif; ?>
 </div>
 
-<!-- 1b. Clases incompletas: sin alumnos y/o sin entrenador -->
-<div class="card-jp mb-3" id="incompletas">
-    <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-exclamation-octagon-fill me-2"></i>Clases incompletas (<?= count($incomplete) ?>)<?= fin_help('rev_incompletas') ?></span>
-    </div>
-    <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        Toda clase necesita <strong>al menos un alumno y un entrenador</strong>. Las que no tienen alumnos son un error, una prueba o restos de un alumno que se quitó:
-        no cuentan en Finanzas. Las que no tienen entrenador hay que abrirlas y <strong>asignarle uno</strong>.
-    </div>
-    <?php if (empty($incomplete)): ?>
-    <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todas las clases tienen alumno y entrenador.</p></div>
-    <?php else: ?>
-    <div class="table-responsive">
-        <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-incompletas" data-fin-order='[[0,"asc"]]'>
-            <thead><tr>
-                <th style="<?= $th ?>">Fecha</th><th style="<?= $th ?>">Clase</th><th style="<?= $th ?>">Entrenador</th><th style="<?= $th ?>">Alumnos</th><th style="<?= $th ?>">Estado</th><th style="<?= $th ?>">Problema</th>
-            </tr></thead>
-            <tbody>
-            <?php foreach ($incomplete as $s): [$kTxt, $kFg, $kBg] = $kindLabel[$s['kind']]; ?>
-            <tr style="border-bottom:1px solid var(--border)">
-                <td style="<?= $td ?>;white-space:nowrap;color:var(--text-muted)" data-order="<?= esc($s['session_date'] . ' ' . $s['start_time']) ?>"><?= date('d/m/Y', strtotime($s['session_date'])) ?> · <?= substr($s['start_time'], 0, 5) ?></td>
-                <td style="<?= $td ?>"><a href="<?= base_url('clases/' . (int) $s['id']) ?>" class="row-link-anchor" style="font-weight:600"><?= esc($s['title']) ?></a> <span style="color:var(--text-muted);font-size:11px">#<?= (int) $s['id'] ?></span></td>
-                <td style="<?= $td ?>"><?= $s['coach_names'] ? esc($s['coach_names']) : '<span style="color:var(--text-muted)">—</span>' ?></td>
-                <td style="<?= $td ?>"><?= $s['player_names'] ? esc($s['player_names']) : '<span style="color:var(--text-muted)">—</span>' ?></td>
-                <td style="<?= $td ?>;color:var(--text-muted)"><?= esc($statusLabel[$s['status']] ?? $s['status']) ?></td>
-                <td style="<?= $td ?>"><span style="font-size:11px;font-weight:700;color:<?= $kFg ?>;background:<?= $kBg ?>;border-radius:10px;padding:2px 8px;white-space:nowrap"><?= $kTxt ?></span></td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php endif; ?>
-</div>
+<!-- ───────── BONOS Y DINERO ───────── -->
 
-<!-- 2. Clases dadas sin descontar -->
+<!-- 5. Clases sin bono descontado -->
 <div class="card-jp mb-3" id="sin-bono">
-    <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin descontar bono (<?= count($debts) + count($preControl) ?>)<?= fin_help('rev_sin_bono') ?></span>
-        <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none">Revisarlas</a>
-    </div>
+    <?= $head('sin-bono', 'bi-receipt', '#b91c1c', 'Clases dadas sin descontar del bono', $nDebts, 'rev_sin_bono',
+        'El alumno vino a clase, pero no se le ha descontado ninguna sesión de su bono. Esa clase está dada y no cobrada.',
+        'Para cada una: <strong>descuéntala de un bono</strong>, márcala como <strong>ya pagada</strong> (se cobró de otra forma) o como <strong>no cobrar</strong>. Nada se resuelve solo.',
+        '<a href="' . base_url('bonos/deudas') . '" class="btn-jp btn-jp-primary btn-jp-sm" style="text-decoration:none">Revisarlas una a una</a>') ?>
     <div class="card-jp-body" style="font-size:13px">
         <div class="d-flex flex-wrap gap-4">
-            <div><div style="font-size:22px;font-weight:800;color:var(--text-h)"><?= count($debts) ?></div><div style="color:var(--text-muted);font-size:12px">desde el <?= $sinceTxt ?> (control de bonos)</div></div>
-            <div><div style="font-size:22px;font-weight:800;color:var(--text-h)"><?= count($preControl) ?></div><div style="color:var(--text-muted);font-size:12px">anteriores al <?= $sinceTxt ?></div></div>
+            <div><div style="font-size:22px;font-weight:800;color:var(--text-h)"><?= count($debts) ?></div><div style="color:var(--text-muted);font-size:12px">desde el <?= $sinceTxt ?> (cuando empezó el control de bonos)</div></div>
+            <div><div style="font-size:22px;font-weight:800;color:var(--text-h)"><?= count($preControl) ?></div><div style="color:var(--text-muted);font-size:12px">de antes del <?= $sinceTxt ?></div></div>
         </div>
-        <p style="color:var(--text-muted);font-size:12.5px;margin:10px 0 0">
-            Cada una se salda con un bono, o se marca como <strong>ya pagada</strong> (se cobró de otra forma) o <strong>no cobrar</strong>. Nada se salda solo.
-        </p>
     </div>
 </div>
 
-<!-- 3. Bonos con precio estimado -->
+<!-- 6. Bonos con precio por confirmar -->
 <div class="card-jp mb-3" id="precios">
-    <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#92400e"><i class="bi bi-question-circle-fill me-2"></i>Bonos con precio estimado (<?= count($estimated) ?>)<?= fin_help('rev_precios') ?></span>
-    </div>
-    <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        Antes de la v1.33.0 no se guardaba lo que se pagó por cada bono: se ha puesto el precio del tipo de bono como <strong>estimado</strong>.
-        Escribe el importe real que pagó el alumno (con descuento, gratis = 0) y pulsa <strong>Confirmar</strong>. Queda registrado.
-    </div>
+    <?= $head('precios', 'bi-question-circle-fill', '#92400e', 'Bonos con el precio por confirmar', count($estimated), 'rev_precios',
+        'De estos bonos no se guardó lo que pagó el alumno. Se ha puesto el precio de tarifa como <strong>estimado</strong>.',
+        'Escribe lo que pagó de verdad (con descuento; si fue gratis, 0) y pulsa <strong>Confirmar</strong>.') ?>
     <?php if (empty($estimated)): ?>
-    <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todos los precios están confirmados.</p></div>
+    <?= $allGood('Todos los precios están confirmados.') ?>
     <?php else: ?>
     <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-precios">
             <thead><tr>
-                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Emitido</th><th style="<?= $th ?>">Precio estimado</th><th style="<?= $th ?>">Precio real pagado</th>
+                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Emitido</th><th style="<?= $th ?>">Precio estimado</th><th style="<?= $th ?>">Lo que pagó</th>
             </tr></thead>
             <tbody>
             <?php foreach ($estimated as $b): ?>
@@ -182,7 +297,7 @@ $statusLabel = ['scheduled' => 'Programada', 'completed' => 'Cerrada', 'cancelle
                         <?= csrf_field() ?>
                         <input type="text" name="price" inputmode="decimal" class="form-control-jp" style="width:96px;padding:4px 8px;font-size:13px"
                                value="<?= $b['price_cents'] !== null ? number_format((int) $b['price_cents'] / 100, 2, ',', '') : '' ?>"
-                               aria-label="Precio real pagado en euros" required>
+                               aria-label="Lo que pagó el alumno, en euros" required>
                         <span style="color:var(--text-muted)">€</span>
                         <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm">Confirmar</button>
                     </form>
@@ -195,23 +310,19 @@ $statusLabel = ['scheduled' => 'Programada', 'completed' => 'Cerrada', 'cancelle
     <?php endif; ?>
 </div>
 
-<!-- 4. Caducados con sesiones sin usar -->
+<!-- 7. Caducados con clases sin usar (informativo) -->
 <div class="card-jp mb-3" id="sin-usar">
-    <div class="card-jp-header">
-        <span class="card-jp-title" style="color:#6d28d9"><i class="bi bi-hourglass-bottom me-2"></i>Bonos caducados con sesiones sin usar (<?= count($unused) ?>)<?= fin_help('rev_caducados') ?></span>
-        <?php if ($unusedTotal > 0): ?><span style="font-size:13px;font-weight:700;color:var(--text-h)"><?= $eur($unusedTotal) ?></span><?php endif; ?>
-    </div>
-    <div class="card-jp-body" style="font-size:12.5px;color:var(--text-muted);padding-bottom:0">
-        <strong>Solo informativo, no es una tarea.</strong> El bono caducó y le quedaban sesiones: ese importe <strong>se da por ganado</strong> y se señala aquí como <strong>«sin usar»</strong>.
-        Si se le quiere dar más tiempo al alumno, se amplía la caducidad desde la ficha del bono.
-    </div>
+    <?= $head('sin-usar', 'bi-hourglass-bottom', '#6d28d9', 'Bonos caducados con clases sin usar (solo informativo)', count($unused), 'rev_caducados',
+        'El bono caducó y al alumno le quedaban clases. Ese dinero se da por ganado.',
+        '<strong>Nada, no es una tarea.</strong> Si quieres darle más tiempo al alumno, amplía la caducidad desde la ficha del bono.',
+        $unusedTotal > 0 ? '<span style="font-size:13px;font-weight:700;color:var(--text-h)">' . $eur($unusedTotal) . '</span>' : '') ?>
     <?php if (empty($unused)): ?>
-    <div class="card-jp-body"><p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>No hay bonos caducados con sesiones sin usar.</p></div>
+    <?= $allGood('No hay bonos caducados con clases sin usar.') ?>
     <?php else: ?>
     <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;font-size:13px" data-fin-list="rev-caducados" data-fin-order='[[2,"desc"]]'>
             <thead><tr>
-                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Caducó</th><th style="<?= $th ?>">Sin usar</th><th style="<?= $th ?>">Importe</th>
+                <th style="<?= $th ?>">Alumno</th><th style="<?= $th ?>">Bono</th><th style="<?= $th ?>">Caducó</th><th style="<?= $th ?>">Clases sin usar</th><th style="<?= $th ?>">Importe</th>
             </tr></thead>
             <tbody>
             <?php foreach ($unused as $b): ?>

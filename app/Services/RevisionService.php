@@ -246,6 +246,33 @@ class RevisionService
         return ['deleted' => $deleted, 'skipped' => $skipped];
     }
 
+    public const BUCKET_NO_LIST  = 'sin_lista';       // ya pasó y nadie marcó quién vino
+    public const BUCKET_TO_CLOSE = 'sin_cerrar';      // lista pasada, falta pulsar «Cerrar»
+    public const BUCKET_NO_COACH = 'sin_entrenador';  // hay alumnos, nadie la da
+    public const BUCKET_EMPTY    = 'vacias';          // ningún alumno apuntado
+
+    /**
+     * Reparte las clases a revisar en 4 grupos según lo que hay que HACER con
+     * cada una (no según el fallo técnico). Una clase sale en un solo grupo.
+     * Pura.
+     *
+     * @param array[] $unclosed   filas de unclosedSessions() (campos marked, lista_pasada_at)
+     * @param array[] $incomplete filas de incompleteSessions() (campo kind)
+     * @return array{sin_lista:array,sin_cerrar:array,sin_entrenador:array,vacias:array}
+     */
+    public static function classBuckets(array $unclosed, array $incomplete): array
+    {
+        $b = [self::BUCKET_NO_LIST => [], self::BUCKET_TO_CLOSE => [], self::BUCKET_NO_COACH => [], self::BUCKET_EMPTY => []];
+        foreach ($unclosed as $s) {
+            $listDone = !empty($s['lista_pasada_at']) || (int) ($s['marked'] ?? 0) > 0;
+            $b[$listDone ? self::BUCKET_TO_CLOSE : self::BUCKET_NO_LIST][] = $s;
+        }
+        foreach ($incomplete as $s) {
+            $b[$s['kind'] === self::INCOMPLETE_NO_COACH ? self::BUCKET_NO_COACH : self::BUCKET_EMPTY][] = $s;
+        }
+        return $b;
+    }
+
     /** Recuentos para el aviso del dashboard (consultas baratas). */
     public function counts(?string $today = null): array
     {
