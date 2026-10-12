@@ -17,6 +17,8 @@ const UA = {
     iphoneWebview: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
     ipadSafari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
     macSafari: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+    iphoneOld: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1',
+    iphone164: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1',
     androidChrome: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
     winChrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     macChrome: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -33,6 +35,9 @@ ok(detect({ ua: UA.macChrome, touchPoints: 0 }) === 'desktop', 'Mac + Chrome →
 ok(detect({ ua: UA.androidChrome }) === 'android', 'Android');
 ok(detect({ ua: UA.winChrome }) === 'desktop', 'Windows + Chrome → escritorio');
 ok(detect({ ua: UA.iphoneSafari, standalone: true }) === 'installed', 'ya instalada (standalone) gana a todo');
+ok(detect({ ua: UA.iphoneOld }) === 'ios-old', 'iOS 16.3 → avisar de actualizar (sin push)');
+ok(detect({ ua: UA.iphone164 }) === 'ios-safari', 'iOS 16.4 → ya admite push');
+ok(detect({ ua: UA.iphoneOld, standalone: true }) === 'installed', 'iOS antiguo ya instalada → instalada');
 ok(detect({}) === 'desktop', 'sin datos → escritorio, sin romper');
 
 if (failed) { console.error('\n' + failed + ' fallo(s)'); process.exit(1); }

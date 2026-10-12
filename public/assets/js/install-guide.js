@@ -18,7 +18,7 @@
 
     /**
      * Caso de instalación según el dispositivo. Claves:
-     *  installed | ios-safari | ios-other | ios-inapp | android | mac-safari | desktop
+     *  installed | ios-safari | ios-other | ios-inapp | ios-old | android | mac-safari | desktop
      */
     function detect(env) {
         env = env || {};
@@ -27,6 +27,8 @@
 
         var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (env.touchPoints || 0) > 1); // iPadOS se hace pasar por Mac
         if (ios) {
+            var v = /OS (\d+)_(\d+)/.exec(ua);   // "CPU iPhone OS 16_3 like Mac OS X"
+            if (v && (+v[1] < 16 || (+v[1] === 16 && +v[2] < 4))) return 'ios-old';
             if (/CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|DuckDuckGo|Brave/.test(ua)) return 'ios-other';
             // Navegadores integrados en apps (Instagram, Facebook, Gmail…): WKWebView no lleva el token "Safari/"
             if (!/Safari\//.test(ua) || /FBAN|FBAV|Instagram|Line\/|Twitter|MicroMessenger|Snapchat|GSA\//.test(ua)) return 'ios-inapp';
@@ -42,6 +44,12 @@
             return '<li><span class="ig-n">' + (i + 1) + '</span><span class="ig-t">' + s + '</span></li>';
         }).join('') + '</ol>';
     }
+    /** Ilustración mínima de la barra de Safari con el botón Compartir resaltado. */
+    function iosMock() {
+        return '<div class="ig-mock" aria-hidden="true"><div class="ig-mock-bar"><span class="ig-mock-url">app.jppreparation.com</span>' +
+            '<span class="ig-mock-btn ig-mock-hl">' + ICON.share + '</span></div>' +
+            '<div class="ig-mock-sheet"><span>Añadir a pantalla de inicio</span>' + ICON.add + '</div></div>';
+    }
     function chip(icon, label) { return '<span class="ig-chip">' + icon + '<b>' + label + '</b></span>'; }
 
     var TITLES = {
@@ -49,6 +57,7 @@
         'ios-safari': 'iPhone / iPad (Safari)',
         'ios-other':  'iPhone / iPad (otro navegador)',
         'ios-inapp':  'iPhone / iPad (navegador de otra app)',
+        'ios-old':    'iPhone / iPad (iOS antiguo)',
         'android':    'Android',
         'mac-safari': 'Mac (Safari)',
         'desktop':    'Ordenador (Chrome, Edge…)'
@@ -60,12 +69,17 @@
                 return '<p class="ig-ok">' + ICON.check + '<span>Estás usando la app instalada. Para recibir avisos al instante ve a <b>Configuración → Notificaciones</b> y pulsa «Activar notificaciones».</span></p>';
 
             case 'ios-safari':
-                return steps([
-                    'Pulsa el botón <b>Compartir</b> ' + chip(ICON.share, 'Compartir') + ' de Safari (abajo en iPhone; arriba a la derecha en iPad).',
-                    'Desliza el menú hacia arriba y elige <b>«Añadir a pantalla de inicio»</b> ' + chip(ICON.add, 'Añadir a pantalla de inicio') + '. Si no aparece, pulsa «Más» al final de la lista.',
-                    'Pulsa <b>«Añadir»</b> arriba a la derecha. Verás el icono de JP Preparation en tu pantalla de inicio.',
-                    '<b>Abre la app desde ese icono</b> (no desde Safari) y ve a <b>Configuración → Notificaciones → Activar notificaciones</b>.'
-                ]) + '<p class="ig-note">Necesitas iOS 16.4 o superior. En el iPhone los avisos solo funcionan con la app instalada.</p>';
+                return iosMock() + steps([
+                    'Pulsa el botón <b>Compartir</b> ' + chip(ICON.share, 'Compartir') + ' de Safari (abajo en iPhone; arriba a la derecha en iPad). Si no lo ves, pulsa antes <b>«⋯»</b> y luego <b>Compartir</b> (iOS 26).',
+                    'Desliza el menú hacia arriba y elige <b>«Añadir a pantalla de inicio»</b> ' + chip(ICON.add, 'Añadir a pantalla de inicio') + '. Si no aparece, pulsa «Más» o «Editar acciones» al final de la lista.',
+                    'Deja activado <b>«Abrir como app web»</b> si te lo pregunta y pulsa <b>«Añadir»</b> arriba a la derecha. Verás el icono de JP Prep en tu pantalla de inicio.',
+                    '<b>Cierra Safari y abre la app desde ese icono</b>. Dentro de la app tendrás que <b>iniciar sesión otra vez</b> (iPhone no comparte la sesión con Safari).',
+                    'Entra en <b>Configuración → Notificaciones</b> y pulsa <b>«Activar notificaciones»</b>. iPhone te preguntará: pulsa <b>«Permitir»</b>.'
+                ]) + '<p class="ig-note">Necesitas iOS 16.4 o superior. En el iPhone los avisos solo funcionan con la app instalada. Si pulsaste «No permitir» por error: Ajustes del iPhone → Notificaciones → JP Prep → Permitir notificaciones.</p>';
+
+            case 'ios-old':
+                return '<p class="ig-warn">Tu iPhone/iPad tiene una versión de iOS anterior a la 16.4, que no permite recibir avisos desde la app. Puedes actualizarlo en <b>Ajustes → General → Actualización de software</b>.</p>' +
+                    '<p class="ig-note" style="margin-top:0">Aun así puedes añadir el acceso directo (Compartir → Añadir a pantalla de inicio), y los avisos seguirán viéndose en la campanita dentro de la plataforma.</p>';
 
             case 'ios-other':
             case 'ios-inapp':
