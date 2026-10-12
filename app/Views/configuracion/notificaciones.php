@@ -11,6 +11,8 @@
     <p class="text-muted mb-0" style="font-size:13px">Elige qué avisos quieres recibir y dónde.</p>
 </div>
 
+<?= view('configuracion/_subnav', ['active' => 'notificaciones']) ?>
+
 <div style="max-width:860px">
     <?= view('configuracion/_notificaciones', ['prefs' => $prefs, 'categories' => $categories, 'returnTo' => 'page']) ?>
 </div>

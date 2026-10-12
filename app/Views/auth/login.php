@@ -60,6 +60,8 @@
             </button>
         </form>
 
+        <p class="text-center" style="margin:18px 0 0;font-size:13.5px"><a href="<?= base_url('instalar') ?>"><i class="bi bi-phone me-1"></i>Instalar la app en el móvil</a></p>
+
     </div>
     <footer class="login-footer">
         <span>Sant Vicenç dels Horts · Barcelona</span>
