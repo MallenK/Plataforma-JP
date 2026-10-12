@@ -31,6 +31,18 @@ email.SMTPCrypto = tls
 email.mailType   = html
 EOF
 
+# Notificaciones push (PWA): solo si están definidas; sin claves el push queda desactivado.
+if [ -n "${VAPID_PUBLIC_KEY:-}" ] && [ -n "${VAPID_PRIVATE_KEY:-}" ]; then
+  cat >> /var/www/html/.env << EOF
+vapid.publicKey  = ${VAPID_PUBLIC_KEY}
+vapid.privateKey = ${VAPID_PRIVATE_KEY}
+vapid.subject    = ${VAPID_SUBJECT:-mailto:info@jppreparation.com}
+EOF
+  echo "==> VAPID configurado (push activado)."
+else
+  echo "[WARN] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY no definidas: push desactivado."
+fi
+
 echo "==> Running database migrations..."
 cd /var/www/html
 php spark migrate --all -n 2>&1 || echo "[WARN] Migrations failed, continuing..."
