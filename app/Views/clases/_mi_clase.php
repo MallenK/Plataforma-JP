@@ -78,7 +78,7 @@ $reasonKinds = [
     <?php else: ?>
         <details class="mc-cancel">
             <summary class="mc-btn mc-btn-danger" role="button">
-                <i class="bi bi-calendar-x-fill"></i> No puedo ir a esta clase
+                <i class="bi bi-calendar-x-fill"></i> No puedo ir
             </summary>
 
             <form action="/clases/<?= $sid ?>/ausencia" method="POST" class="mc-form">
@@ -142,6 +142,7 @@ $reasonKinds = [
             <textarea id="mc-msg-<?= $sid ?>" name="student_message" class="form-control-jp" rows="3" required
                       maxlength="<?= ClasesService::STUDENT_MESSAGE_MAX ?>" placeholder="Escribe aquí tu mensaje…"></textarea>
             <p class="mc-hint">Lo verán tu entrenador y la administración. No cambia tu asistencia ni tu bono.</p>
+            <p class="mc-hint"><i class="bi bi-bandaid-fill"></i> ¿Una lesión o algo médico que deban saber siempre? Añádelo en <a href="/alumno">tus notas médicas</a>.</p>
             <button type="submit" class="mc-btn mc-btn-primary"><i class="bi bi-send-fill"></i> Enviar mensaje</button>
         </form>
         <?php if (!empty($myPlayer['student_message'])): ?>

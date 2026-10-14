@@ -2749,7 +2749,8 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
 .mc-msg > summary { font-size:16px; font-weight:700; color:var(--accent-dark,var(--accent)); display:flex; align-items:center; gap:10px; min-height:44px; }
 .mc-help { margin:14px 0 0; font-size:14px; }
 .mc-help a { color:var(--text-muted); text-decoration:none; }
-@media (min-width:768px) { .mc-actions { flex-direction:row; } .mc-actions .mc-btn { width:auto; flex:1; } .mc-title { font-size:2.4rem; } }
+@media (min-width:768px) { .mc-cancel > summary.mc-btn { display:inline-flex; width:auto; min-width:220px; }
+  .mc-actions { flex-direction:row; } .mc-actions .mc-btn { width:auto; flex:1; } .mc-title { font-size:2.4rem; } }
 
 /* ── Ayuda del alumno ─────────────────────────────────────────────── */
 .ay-wrap { max-width:760px; }
