@@ -27,6 +27,25 @@ final class AutoDeductRuleTest extends CIUnitTestCase
         $this->assertTrue(C::isLateNotice('2026-10-15 14:00:00', '2026-10-15', '19:00:00', 6));
     }
 
+    public function testAvisoTardioSigueContandoMientrasLaAsistenciaEstaPendiente(): void
+    {
+        // El alumno avisa desde la app (11 h antes) y el equipo aún no ha pasado lista.
+        $row = ['attendance' => 'pending', 'student_noted_at' => '2026-10-15 08:00:00'];
+        $this->assertSame('Aviso con menos de 24 h', C::autoDeductReason($row, self::SESSION, 24));
+        $this->assertTrue(C::rowConsumesBono($row, self::SESSION, 24));
+
+        // A tiempo (3 días antes): no cuenta.
+        $ok = ['attendance' => 'pending', 'student_noted_at' => '2026-10-12 08:00:00'];
+        $this->assertNull(C::autoDeductReason($ok, self::SESSION, 24));
+        $this->assertFalse(C::rowConsumesBono($ok, self::SESSION, 24));
+
+        // Pendiente sin aviso del alumno: nunca descuenta.
+        $this->assertNull(C::autoDeductReason(['attendance' => 'pending'], self::SESSION, 24));
+
+        // Si el equipo decide «Ausente» (justificado), deja de contar y se devolverá al guardar.
+        $this->assertFalse(C::rowConsumesBono(['attendance' => 'absent', 'student_noted_at' => '2026-10-15 08:00:00'], self::SESSION, 24));
+    }
+
     public function testMotivoDelDescuento(): void
     {
         $this->assertSame('Falta sin justificar', C::autoDeductReason(['attendance' => 'unjustified'], self::SESSION, 24));
