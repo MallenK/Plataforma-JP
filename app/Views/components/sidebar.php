@@ -86,6 +86,17 @@ if ($isAdmin) {
                 </a>
             </li>
 
+            <!-- Ayuda — solo alumno -->
+            <?php if ($isAlumno): ?>
+            <li class="sidebar-nav-item">
+                <a href="<?= base_url('ayuda') ?>"
+                   class="sidebar-nav-link <?= sidebarActive('/ayuda', $currentUri) ?>">
+                    <i class="bi bi-question-circle-fill"></i>
+                    Ayuda
+                </a>
+            </li>
+            <?php endif; ?>
+
             <!-- Entrenadores — solo admin / superadmin -->
             <?php if ($isAdmin): ?>
             <li class="sidebar-nav-item">
