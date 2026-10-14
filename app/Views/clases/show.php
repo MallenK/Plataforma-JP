@@ -124,6 +124,16 @@ $statusHint   = [
     <div class="alert-jp error mb-3"><i class="bi bi-x-circle-fill me-2"></i><?= esc($flash) ?></div>
 <?php endif; ?>
 
+<?php if ($myPlayer && !$canManage): ?>
+    <?= view('clases/_mi_clase', [
+        'session'       => $session,
+        'myPlayer'      => $myPlayer,
+        'statusColor'   => $statusColor,
+        'attendanceMap' => $attendanceMap,
+        'noticePolicy'  => $noticePolicy,
+    ]) ?>
+<?php endif; ?>
+
 <div class="row g-3">
 
     <!-- ── Columna principal ──────────────────────────────── -->
@@ -273,8 +283,8 @@ $statusHint   = [
         <!-- Vista read-only para jugadores -->
         <div class="card-jp mb-3">
             <div class="card-jp-header" style="flex-direction:column;align-items:flex-start;gap:2px">
-                <span class="card-jp-title"><i class="bi bi-clipboard-fill me-2" style="color:#7c3aed"></i>Observaciones generales de la sesión</span>
-                <span style="font-size:12px;color:var(--text-muted);font-weight:400">Sobre toda la clase, no solo sobre ti.</span>
+                <span class="card-jp-title"><i class="bi bi-clipboard-fill me-2" style="color:#7c3aed"></i>Mensaje de tu entrenador para toda la clase</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:400">Es para todo el grupo, no solo para ti.</span>
             </div>
             <div class="card-jp-body">
                 <?php if (!empty($session['pre_notes'])): ?>
@@ -304,12 +314,16 @@ $statusHint   = [
         <?php endif; ?>
 
         <!-- Jugadores: observaciones individuales y asistencia -->
-        <?php if (!empty($session['players'])): ?>
+        <?php
+        // El alumno no ve a sus compañeros: solo sus propias observaciones, si las hay.
+        $hasOwnObs = $myPlayer && (!empty($myPlayer['pre_obs']) || !empty($myPlayer['post_obs']) || !empty($myPlayer['attachments']));
+        ?>
+        <?php if ($canManage ? !empty($session['players']) : $hasOwnObs): ?>
         <div class="card-jp mb-3">
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>
-                    Jugadores (<?= count($session['players']) ?>)
+                    <?= $canManage ? 'Jugadores (' . count($session['players']) . ')' : 'Lo que tu entrenador ha escrito para ti' ?>
                 </span>
             </div>
 
@@ -361,7 +375,7 @@ $statusHint   = [
                                     </div>
                                 </div>
                             </td>
-                            <td style="font-size:12px;max-width:160px">
+                            <td style="font-size:12px;max-width:220px">
                                 <?php if ($hasNotice): ?>
                                 <span title="<?= $hasNote ? esc($p['student_note']) : 'Avisó de que no asistirá, sin indicar motivo' ?>"
                                       style="display:inline-flex;align-items:center;gap:4px;color:#d97706;font-size:12px">
@@ -376,8 +390,14 @@ $statusHint   = [
                                 <div style="font-size:10px;color:var(--text-muted)">
                                     <?= !empty($p['student_noted_at']) ? date('d/m H:i', strtotime($p['student_noted_at'])) : '' ?>
                                 </div>
-                                <?php else: ?>
+                                <?php elseif (empty($p['student_message'])): ?>
                                 <span style="color:var(--text-muted)">—</span>
+                                <?php endif; ?>
+                                <?php if (!empty($p['student_message'])): ?>
+                                <div style="margin-top:4px;font-size:12px;color:#1d4ed8;white-space:normal" title="Mensaje del alumno">
+                                    <i class="bi bi-chat-dots-fill me-1"></i><?= esc($p['student_message']) ?>
+                                    <span style="font-size:10px;color:var(--text-muted)"><?= !empty($p['student_message_at']) ? date('d/m H:i', strtotime($p['student_message_at'])) : '' ?></span>
+                                </div>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -414,43 +434,28 @@ $statusHint   = [
             </div>
 
             <?php else: ?>
-            <!-- Vista jugador: solo ve a sus compañeros y su obs -->
+            <!-- Vista alumno: solo sus propias observaciones -->
             <div class="card-jp-body">
-                <?php foreach ($session['players'] as $p):
-                    [$aLabel, $aColor, $aIcon] = $attendanceMap[$p['attendance']] ?? $attendanceMap['pending'];
-                ?>
-                <div class="d-flex align-items-start gap-3 mb-3" style="padding-bottom:12px;border-bottom:1px solid var(--border)">
-                    <div class="td-avatar"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
-                    <div style="flex:1">
-                        <div class="td-name"><?= esc($p['name']) ?>
-                            <?php if ((int)$p['user_id'] === $currentUserId): ?>
-                                <span style="font-size:11px;color:var(--text-muted)">(tú)</span>
-                            <?php endif; ?>
-                        </div>
-                        <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44;font-size:10px">
-                            <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
-                        </span>
-                        <?php if ((int)$p['user_id'] === $currentUserId && (!empty($p['pre_obs']) || !empty($p['post_obs']) || !empty($p['attachments']))): ?>
-                        <div class="mt-2">
-                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Tus observaciones individuales</div>
-                            <?php if (!empty($p['pre_obs'])): ?>
-                                <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px"><i class="bi bi-arrow-right-circle me-1" style="color:#7c3aed"></i>Pre: <?= esc($p['pre_obs']) ?></div>
-                            <?php endif; ?>
-                            <?php if (!empty($p['post_obs'])): ?>
-                                <div style="font-size:12px;color:var(--text-muted)"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Post: <?= esc($p['post_obs']) ?></div>
-                            <?php endif; ?>
-                            <?php if (!empty($p['attachments'])): ?>
-                            <div class="cs-attach-list mt-2">
-                                <?php foreach ($p['attachments'] as $att): ?>
-                                    <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => false]) ?>
-                                <?php endforeach; ?>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                        <?php endif; ?>
+                <?php if (!empty($myPlayer['pre_obs'])): ?>
+                    <div class="mb-3">
+                        <div class="form-label"><i class="bi bi-arrow-right-circle me-1" style="color:#7c3aed"></i>Antes de la clase</div>
+                        <div style="background:var(--bg-app);padding:12px;border-radius:var(--radius-sm);font-size:14px;white-space:pre-wrap"><?= esc($myPlayer['pre_obs']) ?></div>
                     </div>
-                </div>
-                <?php endforeach; ?>
+                <?php endif; ?>
+                <?php if (!empty($myPlayer['post_obs'])): ?>
+                    <div class="mb-3">
+                        <div class="form-label"><i class="bi bi-check-circle me-1" style="color:#059669"></i>Después de la clase</div>
+                        <div style="background:var(--bg-app);padding:12px;border-radius:var(--radius-sm);font-size:14px;white-space:pre-wrap"><?= esc($myPlayer['post_obs']) ?></div>
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($myPlayer['attachments'])): ?>
+                    <div class="form-label"><i class="bi bi-paperclip me-1" style="color:#7c3aed"></i>Fotos, vídeos y documentos</div>
+                    <div class="cs-attach-list">
+                        <?php foreach ($myPlayer['attachments'] as $att): ?>
+                            <?= view('clases/_attachment_chip', ['att' => $att, 'canDelete' => false]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -582,89 +587,8 @@ $statusHint   = [
             </div>
         </div>
 
-        <!-- ── Mi convocatoria (solo jugadores) ────────────────────── -->
-        <?php if ($myPlayer): ?>
-        <?php
-        $myAttendance = $myPlayer['attendance'] ?? 'pending';
-        [$aLabel, $aColor, $aIcon] = $attendanceMap[$myAttendance] ?? $attendanceMap['pending'];
-        $hasStudentNote = !empty($myPlayer['student_note']);
-        $noticeDeadline = \App\Services\ClasesService::absenceNoticeDeadline($session);
-        $pastCutoff     = \App\Services\ClasesService::isLateAbsenceNotice($session);
-        ?>
-        <div class="card-jp mb-3" style="border-left:3px solid <?= $statusColor ?>">
-            <div class="card-jp-body">
-                <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-                    <div>
-                        <div style="font-weight:700;color:var(--text-h);margin-bottom:6px">Mi asistencia</div>
-                        <span class="badge-status" style="background:<?= $aColor ?>22;color:<?= $aColor ?>;border:1px solid <?= $aColor ?>44">
-                            <i class="bi <?= $aIcon ?> me-1"></i><?= $aLabel ?>
-                        </span>
-                        <?php if ($myPlayer['coach_name']): ?>
-                            <span style="font-size:12px;color:var(--text-muted);margin-left:10px">
-                                <i class="bi bi-person-workspace me-1"></i><?= $isStaffSession ? 'Staff' : 'Entrenador' ?>: <?= esc($myPlayer['coach_name']) ?>
-                            </span>
-                        <?php endif; ?>
-                        <?php if (!empty($myPlayer['absence_reason'])): ?>
-                        <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">
-                            <i class="bi bi-chat-left-text me-1" style="color:var(--danger)"></i>
-                            <strong style="color:var(--danger)">Motivo (admin):</strong> <?= esc($myPlayer['absence_reason']) ?>
-                        </div>
-                        <?php endif; ?>
-                        <?php if ($hasStudentNote): ?>
-                        <div style="margin-top:6px;font-size:12.5px;color:var(--text-muted)">
-                            <i class="bi bi-check-circle-fill me-1" style="color:#059669"></i>
-                            <strong style="color:#059669">Tu aviso enviado:</strong> <?= esc($myPlayer['student_note']) ?>
-                            <span style="font-size:11px;margin-left:4px">(<?= !empty($myPlayer['student_noted_at']) ? date('d/m H:i', strtotime($myPlayer['student_noted_at'])) : '' ?>)</span>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if ($session['status'] === 'scheduled' && $hasStudentNote): ?>
-                    <span style="font-size:12px;color:#059669">
-                        <i class="bi bi-check-circle-fill me-1"></i>Aviso enviado
-                    </span>
-                    <?php endif; ?>
-                </div>
-
-                <?php if ($session['status'] === 'scheduled' && !$hasStudentNote): ?>
-                <?php
-                $deadlineDate = $noticeDeadline ? $noticeDeadline->format('d/m/Y') : '';
-                $deadlineTime = $noticeDeadline ? $noticeDeadline->format('H:i') : '';
-                ?>
-                <div class="aviso-ausencia">
-                    <?php if ($noticeDeadline): ?>
-                    <div class="aviso-panel <?= $pastCutoff ? 'is-late' : 'is-ok' ?>" role="<?= $pastCutoff ? 'alert' : 'status' ?>">
-                        <i class="bi <?= $pastCutoff ? 'bi-exclamation-octagon-fill' : 'bi-check-circle-fill' ?> aviso-panel__icon" aria-hidden="true"></i>
-                        <div class="aviso-panel__text">
-                            <div class="aviso-panel__title">
-                                <?= $pastCutoff ? 'Ya no estás a tiempo de avisar' : 'Aún estás a tiempo de avisar' ?>
-                            </div>
-                            <p>Recuerda: los avisos deben enviarse con al menos <strong>24 horas de antelación</strong> al inicio de la clase.</p>
-                            <?php if ($pastCutoff): ?>
-                            <p>El plazo terminó el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>. Si avisas ahora, tu aviso se registrará igualmente como <strong>aviso tardío</strong>.</p>
-                            <?php else: ?>
-                            <p>Puedes avisar hasta el <strong><?= $deadlineDate ?> a las <?= $deadlineTime ?></strong>.</p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <form action="/clases/<?= $session['id'] ?>/ausencia" method="POST" class="aviso-form">
-                        <?= csrf_field() ?>
-                        <label for="student-note-<?= (int) $session['id'] ?>" class="aviso-form__label">Motivo <span>(opcional)</span></label>
-                        <textarea id="student-note-<?= (int) $session['id'] ?>" name="student_note" class="form-control-jp" rows="3"
-                                  placeholder="Cuéntanos por qué no puedes asistir…"></textarea>
-                        <button type="submit" class="btn-jp btn-jp-danger aviso-form__btn">
-                            <i class="bi bi-calendar-x-fill me-1"></i><?= $pastCutoff ? 'Avisar igualmente' : 'Avisar que no puedo asistir' ?>
-                        </button>
-                    </form>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Resumen de asistencia -->
-        <?php if (!empty($session['players'])): ?>
+        <!-- Resumen de asistencia (solo equipo: el alumno no ve datos del grupo) -->
+        <?php if ($canManage && !empty($session['players'])): ?>
         <?php
         $totalP      = count($session['players']);
         $confirmed   = count(array_filter($session['players'], fn($p) => $p['attendance'] === 'confirmed'));
