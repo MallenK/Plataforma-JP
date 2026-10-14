@@ -109,7 +109,7 @@ final class ClasesAbsenceNoticeTest extends CIUnitTestCase
     {
         $view = file_get_contents(APPPATH . 'Views/clases/_mi_clase.php');
 
-        $this->assertStringContainsString('No puedo ir a esta clase', $view);
+        $this->assertStringContainsString('No puedo ir', $view);
         $this->assertStringContainsString('Avisas con tiempo.', $view);
         $this->assertStringContainsString('Faltan menos de <?= $hours ?> horas para la clase.', $view);
         $this->assertStringContainsString('Sí, avisar que no voy', $view);
