@@ -16,7 +16,7 @@ $autoOn = !empty($noticePolicy['auto']);
         <div class="ay-body">
             <ol class="ay-steps">
                 <li><span>Entra en <a href="/clases"><strong>Clases</strong></a> y toca la clase a la que no puedes ir.</span></li>
-                <li><span>Arriba verás tu clase con el botón rojo <strong>«No puedo ir a esta clase»</strong>. Tócalo.</span></li>
+                <li><span>Arriba verás tu clase con el botón rojo <strong>«No puedo ir»</strong>. Tócalo.</span></li>
                 <li><span>Elige el motivo (enfermo, colegio, viaje u otro) y, si quieres, añade una frase.</span></li>
                 <li><span>Lee el recuadro «Qué pasará si avisas ahora» y toca <strong>«Sí, avisar que no voy»</strong>.</span></li>
             </ol>
@@ -54,6 +54,7 @@ $autoOn = !empty($noticePolicy['auto']);
         <div class="ay-body">
             <p>En la clase, toca <strong>«Decirle algo a mi entrenador»</strong>. Hay atajos para lo más habitual: <em>Llegaré tarde</em>, <em>Voy con molestias</em> o <em>Tengo una duda</em>.</p>
             <p>Este mensaje no cambia tu asistencia ni tu bono; es solo para que lo sepan.</p>
+            <p>Si tienes una lesión o algo médico que deban saber siempre, añádelo en <a href="/alumno">Mi ficha › Notas médicas</a>.</p>
         </div>
     </details>
 
