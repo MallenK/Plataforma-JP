@@ -32,7 +32,7 @@ class NotificationPreferenceModel extends Model
             self::CAT_MENSAJES => ['label' => 'Mensajes', 'icon' => 'bi-chat-dots',
                 'desc' => 'Cuando alguien te escribe en el chat.'],
             self::CAT_CLASES   => ['label' => 'Clases', 'icon' => 'bi-calendar3',
-                'desc' => 'Altas, cambios de hora o sede, cancelaciones, cambio de responsable y avisos de asistencia.'],
+                'desc' => 'Clases nuevas, cambios de fecha, hora o sede, cancelaciones, alumnos añadidos o quitados, cambio de responsable, recordatorio el día antes y avisos de asistencia.'],
             self::CAT_BONOS    => ['label' => 'Bonos', 'icon' => 'bi-ticket-perforated',
                 'desc' => 'Saldo, consumo, caducidad y renovación de bonos.'],
             self::CAT_TICKETS  => ['label' => 'Soporte (tickets)', 'icon' => 'bi-life-preserver',

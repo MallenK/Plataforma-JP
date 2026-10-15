@@ -235,6 +235,9 @@ class ClasesController extends BaseController
             }
         }
 
+        // Entrar a la clase deja leídas sus notificaciones (la campanita no sigue contándolas).
+        (new \App\Models\NotificationModel())->markReadBySource((int) $userId, \App\Models\NotificationModel::SOURCE_CLASS, $id);
+
         // Entrada propia del jugador
         $myPlayer = null;
         foreach ($session['players'] as $p) {

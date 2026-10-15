@@ -180,8 +180,27 @@ class ClasesService
 
         $this->syncCoaches($id, $data['coach_ids'] ?? []);
         $this->syncPlayers($id, $data['player_ids'] ?? [], $data['player_coach_map'] ?? []);
+        $this->notices()->created([$id], $userId);
 
         return ['success' => true, 'id' => $id, 'count' => 1];
+    }
+
+    /** Avisos de clases (alta, cambios, cancelación, recordatorio). Nunca lanza. */
+    private function notices(): ClassNoticeService
+    {
+        return $this->noticeService ??= new ClassNoticeService($this->db);
+    }
+
+    private ?ClassNoticeService $noticeService = null;
+
+    /** Quien hace la acción (sesión web). 0 en CLI/cron: sin remitente no se avisa. */
+    private function actorId(): int
+    {
+        try {
+            return (int) session('id');
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /**
@@ -384,6 +403,8 @@ class ClasesService
                 }
             }
         }
+
+        $this->notices()->created($ids, $userId);
 
         return [
             'success'  => true,
@@ -594,6 +615,8 @@ class ClasesService
         } catch (\Throwable $e) {
             log_message('error', 'ClasesService::quickCreate sync error (session=' . $id . '): ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
         }
+
+        $this->notices()->created([$id], $userId);
 
         $session = $this->sessionModel->find($id);
         return [
@@ -1118,6 +1141,12 @@ class ClasesService
             return false;
         }
 
+        // Foto previa para avisar de cambios de fecha/hora/sede y de alumnos añadidos.
+        $before = $this->sessionModel->find($id);
+        $playersBefore = isset($data['player_ids'])
+            ? array_map('intval', array_column($this->db->table('class_session_players')->select('user_id')->where('session_id', $id)->get()->getResultArray(), 'user_id'))
+            : [];
+
         if (!empty($update)) {
             $this->sessionModel->update($id, $update);
         }
@@ -1127,6 +1156,18 @@ class ClasesService
         }
         if (isset($data['player_ids'])) {
             $this->syncPlayers($id, $data['player_ids'], $data['player_coach_map'] ?? []);
+        }
+
+        if ($before && ($actor = $this->actorId()) > 0) {
+            $this->notices()->changed($before, $actor);
+            if (isset($data['player_ids'])) {
+                $playersAfter = array_map('intval', array_column($this->db->table('class_session_players')->select('user_id')->where('session_id', $id)->get()->getResultArray(), 'user_id'));
+                $added = array_values(array_diff($playersAfter, $playersBefore));
+                if ($added !== []) {
+                    // `before` lleva el estado anterior; para el texto del aviso hace falta el actual.
+                    $this->notices()->playersChanged($this->sessionModel->find($id) ?? $before, $added, [], $actor);
+                }
+            }
         }
 
         return true;
@@ -1246,12 +1287,9 @@ class ClasesService
                    . "Considera renovar o asignar un nuevo bono.";
         }
 
-        // Destinatarios: el propio alumno + el creador del bono + todos los admins/superadmins
+        // Destinatarios: el propio alumno + todos los admins/superadmins (el creador del
+        // bono es casi siempre uno de ellos: no se añade aparte).
         $recipients = [$playerId];
-
-        if (!empty($bono['created_by'])) {
-            $recipients[] = (int)$bono['created_by'];
-        }
 
         $admins = $userModel
             ->select('id')
@@ -1283,6 +1321,7 @@ class ClasesService
             'title'     => $title,
             'body'      => $body,
             'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+            'notify_sender' => true,
         ], $recipients);
     }
 
@@ -1291,7 +1330,7 @@ class ClasesService
      * 1 o 0. Solo tiene sentido con varios bonos vigentes: con uno solo, el aviso
      * del propio bono (1 o 0 sesiones) ya dice lo mismo.
      */
-    private function emitPlayerLowTotalNotification(int $playerId): void
+    private function emitPlayerLowTotalNotification(int $playerId): bool
     {
         $bonos = $this->db->table('player_bonos pb')
             ->select('pb.sessions_remaining, bt.name AS bono_name')
@@ -1302,7 +1341,7 @@ class ClasesService
             ->get()->getResultArray();
 
         if (count($bonos) < 2) {
-            return;
+            return false;
         }
         $total = 0;
         $parts = [];
@@ -1311,7 +1350,7 @@ class ClasesService
             $parts[] = ($b['bono_name'] ?? 'Bono') . ': ' . (int) $b['sessions_remaining'];
         }
         if ($total > 1) {
-            return;
+            return false;
         }
 
         $userModel  = new UserModel();
@@ -1339,16 +1378,34 @@ class ClasesService
         }
         $sender = $sender ?: (int) ($admins[0]['id'] ?? 0);
         if ($sender <= 0) {
-            return;
+            return false;
         }
 
         (new NotificationModel())->createWithRecipients([
-            'sender_id' => $sender,
-            'type'      => 'group',
-            'title'     => $title,
-            'body'      => $body,
-            'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+            'sender_id'     => $sender,
+            'type'          => 'group',
+            'title'         => $title,
+            'body'          => $body,
+            'category'      => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+            'notify_sender' => true,
         ], $recipients);
+        return true;
+    }
+
+    /**
+     * Un solo aviso de saldo bajo por alumno tras descontar: si el saldo TOTAL de sus
+     * bonos llega a 1 o 0 (con 2+ bonos) se envía ese; si no, el del propio bono cuando
+     * le queda 1 o 0. Antes salían los dos casi a la vez.
+     */
+    private function emitLowBalanceNotice(int $playerId, array $bono): void
+    {
+        if ($this->emitPlayerLowTotalNotification($playerId)) {
+            return;
+        }
+        $remaining = (int) ($bono['sessions_remaining'] ?? -1);
+        if ($remaining === 1 || $remaining === 0) {
+            $this->emitBonoLowSessionsNotification($playerId, $bono);
+        }
     }
 
     /**
@@ -1487,11 +1544,7 @@ class ClasesService
         AuditService::record('class_session_player', (int) $row['id'], AuditService::UPDATE,
             ['bono_deducted_at' => null], ['bono_deducted_from_id' => (int) $bono['id']], 'Descuento automático: ' . $reason);
         try {
-            $remaining = (int) $bono['sessions_remaining'];
-            if ($remaining === 1 || $remaining === 0) {
-                $this->emitBonoLowSessionsNotification($playerId, $bono);
-            }
-            $this->emitPlayerLowTotalNotification($playerId);
+            $this->emitLowBalanceNotice($playerId, $bono);
         } catch (\Throwable $e) {
             log_message('error', 'autoDeduct: aviso de saldo bajo falló: ' . $e->getMessage());
         }
@@ -1610,21 +1663,12 @@ class ClasesService
         }
 
         $remaining = (int)$bono['sessions_remaining'];
-        if ($remaining === 1 || $remaining === 0) {
-            // El aviso de bono bajo no debe tumbar el descuento si algo falla.
-            try {
-                $this->emitBonoLowSessionsNotification($playerId, $bono);
-            } catch (\Throwable $e) {
-                log_message('error', 'emitBonoLowSessionsNotification falló tras descontar bono: ' . $e->getMessage());
-            }
-        }
 
-        // Aviso por ALUMNO: con varios bonos, además del aviso de cada bono, se avisa
-        // cuando el saldo TOTAL entre todos ellos se queda en 1 o 0.
+        // El aviso de saldo bajo no debe tumbar el descuento si algo falla.
         try {
-            $this->emitPlayerLowTotalNotification($playerId);
+            $this->emitLowBalanceNotice($playerId, $bono);
         } catch (\Throwable $e) {
-            log_message('error', 'emitPlayerLowTotalNotification falló tras descontar bono: ' . $e->getMessage());
+            log_message('error', 'emitLowBalanceNotice falló tras descontar bono: ' . $e->getMessage());
         }
 
         $typeRow   = $this->db->table('bono_types')->select('name')->where('id', $bono['bono_type_id'])->get()->getRowArray();
@@ -2063,9 +2107,16 @@ class ClasesService
 
     public function cancelSession(int $id): bool
     {
+        $before = $this->sessionModel->find($id);
+
         // Una clase cancelada no se imparte: se devuelven los bonos ya descontados.
         $this->refundAllDeductedForSession($id);
-        return (bool)$this->sessionModel->update($id, ['status' => 'cancelled']);
+        $ok = (bool)$this->sessionModel->update($id, ['status' => 'cancelled']);
+
+        if ($ok && $before && ($actor = $this->actorId()) > 0) {
+            $this->notices()->cancelled($before, $actor);
+        }
+        return $ok;
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -2455,6 +2506,8 @@ class ClasesService
         // La serie ahora llega hasta la última fecha creada.
         $this->classModel->update($classId, ['recurrence_end' => end($dates)]);
 
+        $this->notices()->created($ids, $userId);
+
         return ['success' => true, 'count' => count($ids), 'id' => $ids[0], 'class_id' => $classId, 'coverage' => $plan['payload']];
     }
 
@@ -2690,6 +2743,10 @@ class ClasesService
 
         $coverage = $this->markCoverage($sessionId, [$userId])[$userId] ?? null;
 
+        if ($session && ($actor = $this->actorId()) > 0) {
+            $this->notices()->playersChanged($session, [$userId], [], $actor);
+        }
+
         return ['success' => true, 'coverage' => $coverage];
     }
 
@@ -2751,6 +2808,10 @@ class ClasesService
         } catch (\Throwable $e) {
             $this->db->transRollback();
             throw $e;
+        }
+
+        if ($session && ($actor = $this->actorId()) > 0) {
+            $this->notices()->playersChanged($session, [], [$userId], $actor);
         }
         return ['success' => true];
     }

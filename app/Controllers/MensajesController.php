@@ -108,6 +108,7 @@ class MensajesController extends BaseController
             // scroll hacia arriba (GET /mensajes/:id/historial).
             try {
                 $this->msgModel->markReadInConversation($conv['id'], $userId);
+                $this->notifModel->markReadBySource($userId, NotificationModel::SOURCE_CONVERSATION, (int) $conv['id']);
                 $page = $this->msgModel->getPage((int) $conv['id']);
             } catch (\Throwable $e) {
                 // No bloqueamos la apertura de la conversación por un fallo al
@@ -265,6 +266,7 @@ class MensajesController extends BaseController
             // Marcar como leídos los mensajes del otro
             if (!empty($messages)) {
                 $this->msgModel->markReadInConversation($convId, $userId);
+                $this->notifModel->markReadBySource($userId, NotificationModel::SOURCE_CONVERSATION, (int) $convId);
             }
 
             // IDs de mis mensajes ya leídos por el otro (para actualizar la UI).
@@ -417,10 +419,10 @@ class MensajesController extends BaseController
                 return $this->jsonError('No se pudo crear el reporte. Inténtalo de nuevo.', 500);
             }
 
-            // Notificar a los superadmins (mismo patrón que TicketsController::notifyAdmins)
+            // Notificar a los gestores, igual que TicketsController::notifyAdmins (admin y superadmin)
             try {
                 $superadmins = $this->userModel
-                    ->where('role', 'superadmin')
+                    ->whereIn('role', ['admin', 'superadmin'])
                     ->where('id !=', $userId)
                     ->where('status', 'active')
                     ->select('id')

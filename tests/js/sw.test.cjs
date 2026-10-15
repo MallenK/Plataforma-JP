@@ -13,7 +13,7 @@ const SCOPE = 'https://app.test/plataforma/';
 let failed = 0;
 const ok = (c, l) => { console.log((c ? '  OK   ' : '  FAIL ') + l); if (!c) failed++; };
 
-function loadSW({ windows = [], badge = true } = {}) {
+function loadSW({ windows = [], badge = true, existing = [] } = {}) {
     const listeners = {};
     const rec = { shown: [], opened: [], badges: [], subscribed: [], cachePuts: [], cachesOpened: [], deleted: [] };
 
@@ -21,13 +21,14 @@ function loadSW({ windows = [], badge = true } = {}) {
     const caches = {
         open: async (name) => { rec.cachesOpened.push(name); return cacheStore; },
         match: async (r) => (typeof r === 'string' && r.endsWith('offline.html') ? { offline: true } : undefined),
-        keys: async () => ['jp-sw-v1-shell', 'jp-sw-v2-shell', 'otra-cosa'],
+        keys: async () => ['jp-sw-v1-shell', 'jp-sw-v2-shell', 'jp-sw-v3-shell', 'otra-cosa'],
         delete: async (k) => { rec.deleted.push(k); },
     };
     const self = {
         registration: {
             scope: SCOPE,
             showNotification: async (title, opts) => { rec.shown.push({ title, opts }); },
+            getNotifications: async () => existing,
             pushManager: { subscribe: async (o) => { rec.subscribed.push(o); return {}; } },
         },
         clients: {
@@ -152,7 +153,45 @@ const pushEvent = (data) => ({ data: data === undefined ? null : { json: () => (
     {
         const sw = loadSW();
         await sw.fire('activate', {});
-        ok(sw.rec.deleted.length === 1 && sw.rec.deleted[0] === 'jp-sw-v1-shell', 'activate: borra cachés jp-sw- antiguas y deja las demás');
+        ok(sw.rec.deleted.length === 2 && sw.rec.deleted.includes('jp-sw-v1-shell') && sw.rec.deleted.includes('jp-sw-v2-shell'), 'activate: borra cachés jp-sw- antiguas y deja las demás');
+    }
+
+    // ── Anti-saturación: «Tienes N notificaciones nuevas» ───────────────
+    const shownN = (tag, count, extra = {}) => ({ tag, data: { count }, closed: false, close() { this.closed = true; }, ...extra });
+    {
+        const sw = loadSW({ existing: [shownN('jp-n-1'), shownN('jp-n-2')] });
+        await sw.fire('push', pushEvent({ id: 3, title: 'tercera', body: 'x', url: 'notificaciones/3/ir' }));
+        const n = sw.rec.shown[0];
+        ok(sw.rec.shown.length === 1 && n.title === 'Tienes 3 notificaciones nuevas', 'agrupa: con 2 en pantalla, la 3ª se convierte en «Tienes 3 notificaciones nuevas»');
+        ok(n.opts.tag === 'jp-group' && n.opts.data.url === 'notificaciones' && n.opts.data.count === 3, 'agrupa: una sola tarjeta que abre la lista');
+        ok(n.opts.renotify === false, 'agrupa: al crecer el grupo no vuelve a sonar');
+    }
+    {
+        const a = shownN('jp-n-1'), b = shownN('jp-n-2');
+        const sw = loadSW({ existing: [a, b] });
+        await sw.fire('push', pushEvent({ id: 3, title: 't' }));
+        ok(a.closed && b.closed, 'agrupa: cierra las tarjetas sueltas que sustituye');
+    }
+    {
+        const sw = loadSW({ existing: [shownN('jp-group', 4)] });
+        await sw.fire('push', pushEvent({ id: 9, title: 't' }));
+        ok(sw.rec.shown[0].title === 'Tienes 5 notificaciones nuevas', 'agrupa: el grupo existente suma (4 + 1 = 5)');
+    }
+    {
+        const sw = loadSW({ existing: [shownN('jp-n-1')] });
+        await sw.fire('push', pushEvent({ id: 2, title: 'segunda' }));
+        ok(sw.rec.shown[0].title === 'segunda' && sw.rec.shown[0].opts.tag === 'jp-n-2', 'agrupa: con 1 en pantalla, la 2ª sale normal');
+    }
+    {
+        const sw = loadSW({ existing: [shownN('jp-c-7'), shownN('jp-n-1')] });
+        await sw.fire('push', pushEvent({ id: 5, title: 'Nuevo mensaje de Ana', tag: 'jp-c-7' }));
+        const n = sw.rec.shown[0];
+        ok(n.title === 'Nuevo mensaje de Ana' && n.opts.tag === 'jp-c-7' && n.opts.renotify === true, 'chat: el mensaje sustituye a su tarjeta (no cuenta doble) y vuelve a avisar');
+    }
+    {
+        const sw = loadSW({});
+        await sw.fire('push', pushEvent({ id: null, title: 'Tienes 6 notificaciones nuevas', body: 'Toca para verlas todas.', url: 'notificaciones', tag: 'jp-group', count: 6 }));
+        ok(sw.rec.shown[0].title === 'Tienes 6 notificaciones nuevas' && sw.rec.shown[0].opts.data.count === 6, 'resumen del servidor: se muestra tal cual con su cuenta');
     }
 
     // ── Cambio de suscripción ───────────────────────────────────────────
