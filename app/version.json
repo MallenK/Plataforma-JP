@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.0.4",
+        "date": "2026-10-15 00:00:00",
+        "description": "Las notificaciones llegan antes al móvil bloqueado: los avisos se envían con prioridad alta, para que Android los entregue al momento en lugar de retrasarlos. Sin cambios en pantalla."
+    },
+    {
         "version": "2.0.3",
         "date": "2026-10-15 00:00:00",
         "description": "Las notificaciones push funcionan también en el entorno de pre-producción (Render): el arranque del servidor pasa las claves VAPID a la aplicación. Sin cambios para el resto de entornos."
