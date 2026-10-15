@@ -1,0 +1,37 @@
+name: Tests
+
+# Cada PR y cada push a main/prod ejecuta toda la suite. Si falla, no se mergea.
+on:
+  pull_request:
+  push:
+    branches: [main, prod]
+
+jobs:
+  php:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: intl, mbstring, sqlite3, curl, openssl, mysqli, gd, zip
+          coverage: none
+      # vendor/ va dentro del repositorio (se despliega copiando app/), no hace falta composer install.
+      - run: vendor/bin/phpunit --no-coverage
+
+  js:
+    name: Tests JS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar jsdom (solo para tests)
+        run: npm install --no-audit --no-fund --no-package-lock
+        working-directory: tests/js
+      - name: Ejecutar tests JS
+        run: |
+          set -e
+          for f in tests/js/*.test.cjs; do echo "== $f"; node "$f"; done

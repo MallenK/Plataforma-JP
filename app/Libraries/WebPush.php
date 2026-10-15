@@ -2,6 +2,8 @@
 
 namespace App\Libraries;
 
+use App\Libraries\Push\PushTransport;
+
 /**
  * Web Push nativo (RFC 8030 + RFC 8291 aes128gcm + VAPID RFC 8292) usando solo
  * ext-openssl + ext-curl. Sin Composer: así se despliega a Hostinger copiando
@@ -11,7 +13,7 @@ namespace App\Libraries;
  * Samsung), Mozilla autopush (Firefox) y Apple (Safari macOS 13+ / iOS 16.4+,
  * este último solo con la PWA instalada en la pantalla de inicio).
  */
-class WebPush
+class WebPush implements PushTransport
 {
     private const SPKI_P256_PREFIX = '3059301306072a8648ce3d020106082a8648ce3d030107034200';
     private const SEC1_P256_PREFIX = '30770201010420';

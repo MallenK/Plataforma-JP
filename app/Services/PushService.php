@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Libraries\Push\DeliveryPolicy;
+use App\Libraries\Push\PushLogger;
+use App\Libraries\Push\PushTransport;
+use App\Libraries\Push\SubscriptionStore;
 use App\Libraries\WebPush;
 use App\Models\NotificationModel;
 use Config\Database;
@@ -13,6 +17,9 @@ use Config\Database;
  * se empuja automáticamente a los dispositivos suscritos de sus destinatarios;
  * al pulsarla se abre el mismo destino que la campanita (GET /notificaciones/:id/ir).
  * El envío se aplaza a post_system (la respuesta HTTP ya salió) y nunca lanza.
+ *
+ * Piezas: SubscriptionStore (BD) · DeliveryPolicy (qué hacer con cada respuesta) ·
+ * PushTransport (WebPush en producción, un falso en los tests) · PushLogger (logs).
  */
 class PushService
 {
@@ -24,15 +31,33 @@ class PushService
         'notify.windows.com',          // Edge/Windows (WNS)
     ];
 
-    private const MAX_FAILURES = 5;
-
-    /** @var list<array{recipients: list<int>, payload: array}> */
+    /** @var list<array{notif: int, recipients: list<int>, payload: array}> */
     private static array $queue = [];
     private static bool $hooked = false;
+    private static ?PushTransport $transport = null;
+
+    // ── Configuración / pruebas ──────────────────────────────────────────
+
+    /** Solo para tests: sustituye el transporte real. null = volver al de producción. */
+    public static function setTransport(?PushTransport $transport): void
+    {
+        self::$transport = $transport;
+    }
+
+    /** Solo para tests: descarta lo encolado sin enviarlo. */
+    public static function resetQueue(): void
+    {
+        self::$queue = [];
+    }
+
+    private static function transport(): ?PushTransport
+    {
+        return self::$transport ?? WebPush::fromEnv();
+    }
 
     public static function enabled(): bool
     {
-        return WebPush::fromEnv() !== null;
+        return self::transport() !== null;
     }
 
     public static function publicKey(): string
@@ -68,41 +93,29 @@ class PushService
             throw new \InvalidArgumentException('Claves de suscripción no válidas.');
         }
 
-        $db   = Database::connect();
         $hash = hash('sha256', $endpoint);
-        $now  = date('Y-m-d H:i:s');
-        $data = [
-            'user_id'      => $userId,
-            'endpoint'     => $endpoint,
-            'p256dh'       => $p256dh,
-            'auth'         => $auth,
-            'user_agent'   => $userAgent !== null ? mb_substr($userAgent, 0, 255) : null,
-            'failures'     => 0,
-            'last_used_at' => $now,
-        ];
+        (new SubscriptionStore())->upsert($hash, [
+            'user_id'    => $userId,
+            'endpoint'   => $endpoint,
+            'p256dh'     => $p256dh,
+            'auth'       => $auth,
+            'user_agent' => $userAgent !== null ? mb_substr($userAgent, 0, 255) : null,
+        ]);
 
-        $exists = $db->table('push_subscriptions')->select('id')->where('endpoint_hash', $hash)->get()->getRowArray();
-        if ($exists) {
-            $db->table('push_subscriptions')->where('id', $exists['id'])->update($data);
-        } else {
-            $db->table('push_subscriptions')->insert($data + ['endpoint_hash' => $hash, 'created_at' => $now]);
-        }
+        PushLogger::info('subscribe', ['user' => $userId, 'sub' => substr($hash, 0, 10), 'host' => parse_url($endpoint, PHP_URL_HOST)]);
 
         return $hash;
     }
 
     public function unsubscribeByHash(string $hash, ?int $userId = null): void
     {
-        $b = Database::connect()->table('push_subscriptions')->where('endpoint_hash', $hash);
-        if ($userId !== null) {
-            $b->where('user_id', $userId);
-        }
-        $b->delete();
+        $n = (new SubscriptionStore())->deleteByHash($hash, $userId);
+        PushLogger::info('unsubscribe', ['user' => $userId, 'sub' => substr($hash, 0, 10), 'removed' => $n]);
     }
 
     public function countForUser(int $userId): int
     {
-        return (int) Database::connect()->table('push_subscriptions')->where('user_id', $userId)->countAllResults();
+        return (new SubscriptionStore())->countForUser($userId);
     }
 
     // ── Envío ligado a notificaciones ────────────────────────────────────
@@ -128,7 +141,7 @@ class PushService
                 return;
             }
 
-            self::$queue[] = ['recipients' => $ids, 'payload' => self::buildPayload($notifId, $notification)];
+            self::$queue[] = ['notif' => $notifId, 'recipients' => $ids, 'payload' => self::buildPayload($notifId, $notification)];
 
             if (is_cli()) {
                 self::flush();
@@ -137,7 +150,7 @@ class PushService
                 \CodeIgniter\Events\Events::on('post_system', static fn () => self::flush());
             }
         } catch (\Throwable $e) {
-            log_message('error', '[PushService] queue: ' . $e->getMessage());
+            PushLogger::error('queue_failed', ['notif' => $notifId], $e);
         }
     }
 
@@ -170,61 +183,149 @@ class PushService
         }
 
         try {
-            if (function_exists('fastcgi_finish_request')) {
-                @fastcgi_finish_request();
-            }
+            self::releaseClient();
             ignore_user_abort(true);
             @set_time_limit(60);
 
-            $push = WebPush::fromEnv();
-            if (!$push) {
+            $transport = self::transport();
+            if (!$transport) {
+                PushLogger::warning('flush_skipped', ['reason' => 'sin claves VAPID', 'jobs' => count($queue)]);
                 return;
             }
-            $db = Database::connect();
 
+            $alive = self::existingNotifications(array_column($queue, 'notif'));
             foreach ($queue as $job) {
-                $unread = self::unreadCounts($job['recipients']);
-                $subs   = $db->table('push_subscriptions')->whereIn('user_id', $job['recipients'])->get()->getResultArray();
-                if ($subs === []) {
+                if (!in_array($job['notif'], $alive, true)) {
+                    // La notificación no existe (transacción revertida): un push llevaría a un 404.
+                    PushLogger::warning('job_dropped', ['notif' => $job['notif'], 'reason' => 'notificación inexistente']);
                     continue;
                 }
-
-                // Un payload por suscripción: lleva el nº de no leídas de SU usuario (badge de la app instalada).
-                $targets = [];
-                $bodies  = [];
-                foreach ($subs as $s) {
-                    $targets[] = ['endpoint' => $s['endpoint'], 'p256dh' => $s['p256dh'], 'auth' => $s['auth']];
-                    $bodies[]  = json_encode($job['payload'] + ['unread' => $unread[(int) $s['user_id']] ?? 1], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                try {
+                    self::deliver($transport, $job);
+                } catch (\Throwable $e) {
+                    // Un trabajo roto no debe llevarse por delante los demás de la cola.
+                    PushLogger::error('deliver_failed', ['notif' => $job['notif']], $e);
                 }
-
-                self::applyResults($subs, $push->sendMany($targets, $bodies));
             }
         } catch (\Throwable $e) {
-            log_message('error', '[PushService] flush: ' . $e->getMessage());
+            PushLogger::error('flush_failed', [], $e);
         }
     }
 
-    /** @param list<array> $subs @param list<int> $codes */
-    private static function applyResults(array $subs, array $codes): void
+    /** @param array{notif: int, recipients: list<int>, payload: array} $job */
+    private static function deliver(PushTransport $transport, array $job): void
     {
-        $db  = Database::connect();
-        $now = date('Y-m-d H:i:s');
+        $started = microtime(true);
+        $batch   = bin2hex(random_bytes(3));
+        $store   = new SubscriptionStore();
+
+        $subs = $store->forUsers($job['recipients']);
+        if ($subs === []) {
+            PushLogger::info('batch', ['batch' => $batch, 'notif' => $job['notif'], 'subs' => 0]);
+            return;
+        }
+
+        // Un payload por suscripción: lleva el nº de no leídas de SU usuario (badge de la app instalada).
+        $unread  = self::unreadCounts($job['recipients']);
+        $targets = [];
+        $bodies  = [];
+        foreach ($subs as $s) {
+            $targets[] = ['endpoint' => $s['endpoint'], 'p256dh' => $s['p256dh'], 'auth' => $s['auth']];
+            $bodies[]  = json_encode($job['payload'] + ['unread' => $unread[(int) $s['user_id']] ?? 1], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        $codes   = $transport->sendMany($targets, $bodies);
+        $summary = self::applyResults($store, $subs, $codes, $batch);
+
+        PushLogger::info('batch', [
+            'batch' => $batch, 'notif' => $job['notif'], 'subs' => count($subs),
+            'ok' => $summary['ok'], 'gone' => $summary['gone'], 'transient' => $summary['transient'],
+            'rejected' => $summary['rejected'], 'deleted' => $summary['deleted'],
+            'ms' => (int) round((microtime(true) - $started) * 1000),
+        ]);
+    }
+
+    /**
+     * Aplica DeliveryPolicy a cada suscripción.
+     *
+     * @param list<array> $subs
+     * @param list<int>   $codes
+     * @return array{ok:int,gone:int,transient:int,rejected:int,deleted:int}
+     */
+    private static function applyResults(SubscriptionStore $store, array $subs, array $codes, string $batch): array
+    {
+        $failures = array_map(static fn (array $s) => (int) $s['failures'], $subs);
+        $plan     = DeliveryPolicy::plan($codes, $failures);
+        $out      = ['ok' => 0, 'gone' => 0, 'transient' => 0, 'rejected' => 0, 'deleted' => 0];
+
+        if ($plan['config_suspected']) {
+            PushLogger::error('vapid_rejected', [
+                'batch' => $batch, 'subs' => count($subs), 'codes' => implode(',', array_unique($codes)),
+                'hint'  => 'Todos los servicios push rechazan la firma VAPID: revisar vapid.publicKey/privateKey/subject del .env. No se borra ninguna suscripcion.',
+            ]);
+        }
+
         foreach ($subs as $i => $s) {
             $code = $codes[$i] ?? 0;
-            if ($code >= 200 && $code < 300) {
-                $db->table('push_subscriptions')->where('id', $s['id'])->update(['failures' => 0, 'last_used_at' => $now]);
-            } elseif ($code === 404 || $code === 410) {
-                // El navegador/usuario ya no existe o revocó el permiso.
-                $db->table('push_subscriptions')->where('id', $s['id'])->delete();
-            } else {
-                // 0 = red caída, 4xx/5xx = rechazo temporal o clave inválida: tolerar unos cuantos.
-                log_message('warning', "[PushService] push HTTP {$code} (sub {$s['id']})");
-                if ((int) $s['failures'] + 1 >= self::MAX_FAILURES) {
-                    $db->table('push_subscriptions')->where('id', $s['id'])->delete();
-                } else {
-                    $db->table('push_subscriptions')->where('id', $s['id'])->update(['failures' => (int) $s['failures'] + 1]);
-                }
+            $out[DeliveryPolicy::classify($code)]++;
+
+            switch ($plan['actions'][$i]) {
+                case DeliveryPolicy::ACTION_RESET:
+                    $store->markDelivered((int) $s['id']);
+                    break;
+                case DeliveryPolicy::ACTION_DELETE:
+                    $store->delete((int) $s['id']);
+                    $out['deleted']++;
+                    break;
+                case DeliveryPolicy::ACTION_INCREMENT:
+                    $store->setFailures((int) $s['id'], (int) $s['failures'] + 1);
+                    break;
             }
+
+            if ($plan['actions'][$i] !== DeliveryPolicy::ACTION_RESET) {
+                PushLogger::warning('delivery_failed', [
+                    'batch' => $batch, 'sub_id' => $s['id'], 'user' => $s['user_id'], 'http' => $code,
+                    'action' => $plan['actions'][$i], 'host' => parse_url((string) $s['endpoint'], PHP_URL_HOST),
+                ]);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Libera al navegador antes de enviar para que no espere a los servicios push.
+     * LiteSpeed (Hostinger) usa litespeed_finish_request; PHP-FPM, fastcgi_finish_request.
+     */
+    private static function releaseClient(): void
+    {
+        if (function_exists('litespeed_finish_request')) {
+            @litespeed_finish_request();
+            $via = 'litespeed';
+        } elseif (function_exists('fastcgi_finish_request')) {
+            @fastcgi_finish_request();
+            $via = 'fastcgi';
+        } else {
+            $via = 'none';
+        }
+        PushLogger::debug('release_client', ['via' => $via, 'sapi' => PHP_SAPI]);
+    }
+
+    /**
+     * Ids que siguen existiendo en `notifications`. Si la consulta falla se asume que existen todos:
+     * es preferible un aviso de más que perder uno.
+     *
+     * @param  list<int> $ids
+     * @return list<int>
+     */
+    private static function existingNotifications(array $ids): array
+    {
+        try {
+            $rows = Database::connect()->table('notifications')->select('id')->whereIn('id', $ids)->get()->getResultArray();
+            return array_map(static fn (array $r) => (int) $r['id'], $rows);
+        } catch (\Throwable $e) {
+            PushLogger::warning('exists_check_failed', ['error' => $e->getMessage()]);
+            return array_map('intval', $ids);
         }
     }
 

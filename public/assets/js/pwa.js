@@ -4,7 +4,7 @@
  * Safari macOS 13+ y Safari iOS/iPadOS 16.4+ (en iOS SOLO con la app instalada en
  * la pantalla de inicio). Donde no hay push, la campanita sigue sondeando.
  *
- * API pública: window.JPPwa.{state, enable, disable, test, install, setBadge}
+ * API pública: window.JPPwa.{state, enable, disable, test, install, setBadge, resync}
  * Eventos:     'jp:push' (llega un push con la pestaña abierta), 'jp:pwa-state'.
  */
 (function () {
@@ -14,7 +14,8 @@
     var BASE = (script && script.dataset.base) || (window.APP_BASE ? window.APP_BASE + '/' : '/');
     if (BASE.slice(-1) !== '/') BASE += '/';
 
-    var CFG = window.JP_PUSH || null; // solo en páginas autenticadas: { key, csrfName, csrfHash }
+    var RESYNC_EVERY_MS = 6 * 3600 * 1000;
+    var CFG = window.JP_PUSH || null; // solo en páginas autenticadas: { key, csrfName, csrfHash, sessionHasSub }
     var supportsSW = 'serviceWorker' in navigator && (window.isSecureContext || location.hostname === 'localhost');
     var supportsPush = supportsSW && 'PushManager' in window && 'Notification' in window;
     var ua = navigator.userAgent || '';
@@ -23,7 +24,11 @@
     var deferredInstall = null;
 
     function safeStorage(op, k, v) {
-        try { return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (_) { return null; }
+        try {
+            if (op === 'get') return localStorage.getItem(k);
+            if (op === 'remove') return localStorage.removeItem(k);
+            return localStorage.setItem(k, v);
+        } catch (_) { return null; }
     }
     function emit(name, detail) { window.dispatchEvent(new CustomEvent(name, { detail: detail })); }
 
@@ -35,7 +40,10 @@
             .catch(function (e) { console.warn('[pwa] service worker:', e); return null; });
 
         navigator.serviceWorker.addEventListener('message', function (e) {
-            if (e.data && e.data.type === 'jp-push') emit('jp:push', e.data.payload);
+            if (!e.data) return;
+            if (e.data.type === 'jp-push') emit('jp:push', e.data.payload);
+            // El navegador rotó la suscripción: registrar la nueva en el servidor sin esperar al reloj.
+            if (e.data.type === 'jp-subchange') resync(true);
         });
     }
 
@@ -109,6 +117,12 @@
         });
     }
 
+    /** Anota qué suscripción tiene registrada el servidor: si el navegador la cambia, se nota por el endpoint. */
+    function markSynced(sub) {
+        safeStorage('set', 'jp_push_synced', String(Date.now()));
+        safeStorage('set', 'jp_push_endpoint', sub.endpoint);
+    }
+
     function enable() {
         if (!CFG || !CFG.key) return Promise.reject(new Error('Las notificaciones no están configuradas en el servidor.'));
         if (!supportsPush) return Promise.reject(new Error('Este navegador no admite notificaciones push.'));
@@ -123,10 +137,10 @@
             if (!reg) throw new Error('El service worker no está disponible.');
             return subscribeNow(reg);
         }).then(function (sub) {
-            return api('push/subscribe', { subscription: sub.toJSON() }).catch(function (err) {
+            return api('push/subscribe', { subscription: sub.toJSON() }).then(function () { markSynced(sub); }, function (err) {
                 return sub.unsubscribe().then(function () { throw err; }); // sin fila en servidor = sin suscripción local
             });
-        }).then(function () { safeStorage('set', 'jp_push_synced', String(Date.now())); emit('jp:pwa-state'); });
+        }).then(function () { emit('jp:pwa-state'); });
     }
 
     function disable() {
@@ -134,7 +148,11 @@
             if (!sub) return null;
             var endpoint = sub.endpoint;
             return sub.unsubscribe().then(function () { return api('push/unsubscribe', { endpoint: endpoint }); });
-        }).then(function () { emit('jp:pwa-state'); });
+        }).then(function () {
+            safeStorage('remove', 'jp_push_synced');
+            safeStorage('remove', 'jp_push_endpoint');
+            emit('jp:pwa-state');
+        });
     }
 
     function test() { return api('push/test'); }
@@ -153,21 +171,32 @@
         } catch (_) { /* sin soporte */ }
     }
 
-    // Al cargar una página autenticada: si ya hay permiso, mantener la suscripción viva y
-    // asociada al usuario ACTUAL (otro usuario puede haber entrado en este navegador).
-    function resync() {
-        if (!CFG || !CFG.key || !supportsPush || Notification.permission !== 'granted') return;
+    /**
+     * Mantiene la suscripción viva y asociada al usuario ACTUAL (otro usuario puede haber entrado en este
+     * navegador). Se salta solo si pasaron menos de 6 h, la sesión ya tiene suscripción Y el endpoint es el
+     * mismo que se registró; `force` (cambio de suscripción avisado por el service worker) no se salta nunca.
+     * @returns {Promise<void>} nunca rechaza
+     */
+    function resync(force) {
+        if (!CFG || !CFG.key || !supportsPush || Notification.permission !== 'granted' || !swReady) return Promise.resolve();
         var last = parseInt(safeStorage('get', 'jp_push_synced') || '0', 10);
-        if (Date.now() - last < 6 * 3600 * 1000 && CFG.sessionHasSub) return;
-        swReady && swReady.then(function (reg) {
+        var recent = Date.now() - last < RESYNC_EVERY_MS && !!CFG.sessionHasSub;
+
+        return swReady.then(function (reg) {
             if (!reg) return null;
-            return reg.pushManager.getSubscription().then(function (sub) { return sub || subscribeNow(reg); });
+            return reg.pushManager.getSubscription().then(function (sub) {
+                if (sub && !force && recent && safeStorage('get', 'jp_push_endpoint') === sub.endpoint) return null;
+                return sub || subscribeNow(reg);
+            });
         }).then(function (sub) {
             if (!sub) return null;
-            return api('push/subscribe', { subscription: sub.toJSON() }).then(function () { safeStorage('set', 'jp_push_synced', String(Date.now())); });
+            return api('push/subscribe', { subscription: sub.toJSON() }).then(function () { markSynced(sub); });
         }).catch(function (e) { console.warn('[pwa] resync push:', e && e.message); });
     }
 
-    window.JPPwa = { state: state, enable: enable, disable: disable, test: test, install: install, setBadge: setBadge };
-    if (CFG) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', resync); else resync(); }
+    window.JPPwa = { state: state, enable: enable, disable: disable, test: test, install: install, setBadge: setBadge, resync: resync };
+    if (CFG) {
+        var boot = function () { resync(false); };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    }
 })();
