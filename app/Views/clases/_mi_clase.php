@@ -35,7 +35,7 @@ $reasonKinds = [
     'otro'    => ['bi-three-dots',       'Otro motivo'],
 ];
 ?>
-<section class="mc-card" aria-labelledby="mc-title-<?= $sid ?>" style="--mc-accent:<?= esc($statusColor, 'attr') ?>">
+<section class="mc-card" aria-labelledby="mc-title-<?= $sid ?>" style="--mc-accent:<?= esc($statusColor, 'attr') ?>" data-live="mi-clase" data-live-kinds="class">
     <!-- Lo primero que ve la familia: avisar de que no va a la clase (o el estado del aviso) -->
     <div class="mc-aviso">
     <?php if ($session['status'] === 'cancelled'): ?>
@@ -69,7 +69,7 @@ $reasonKinds = [
                 <i class="bi bi-calendar-x-fill"></i> No puedo ir
             </summary>
 
-            <form action="/clases/<?= $sid ?>/ausencia" method="POST" class="mc-form">
+            <form action="/clases/<?= $sid ?>/ausencia" method="POST" class="mc-form" data-live-form>
                 <?= csrf_field() ?>
                 <fieldset class="mc-step">
                     <legend><span>1</span> ¿Por qué no puedes venir?</legend>
@@ -136,7 +136,7 @@ $reasonKinds = [
     <?php if ($scheduled): ?>
     <details class="mc-msg">
         <summary><i class="bi bi-chat-dots-fill"></i> Decirle algo a mi entrenador</summary>
-        <form action="/clases/<?= $sid ?>/mensaje" method="POST" class="mc-form">
+        <form action="/clases/<?= $sid ?>/mensaje" method="POST" class="mc-form" data-live-form>
             <?= csrf_field() ?>
             <div class="mc-chips mc-chips-sm" data-mc-quick="#mc-msg-<?= $sid ?>">
                 <button type="button" class="mc-quick" data-text="Llegaré tarde a la clase.">Llegaré tarde</button>

@@ -70,7 +70,7 @@ $dbQuick = [
 ];
 ?>
 <!-- Resumen del alumno: compacto y con enlaces -->
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-3" data-live="dash-quick" data-live-kinds="class,bono">
     <?php foreach ($dbQuick as $q): ?>
     <div class="col-6 col-md-3">
         <a href="<?= esc($q['href'], 'attr') ?>" class="metric-link" aria-label="<?= esc($q['label'] . ': ' . $q['value'] . '. ' . $q['sub'], 'attr') ?>">
@@ -197,7 +197,7 @@ $dbQuick = [
 
         <?php if ($role === 'player' && !empty($playerFullProfile)): ?>
         <!-- ── Próximas clases del alumno (encima del calendario) ── -->
-        <div class="card-jp mb-3" id="proximas-clases">
+        <div class="card-jp mb-3" id="proximas-clases" data-live="dash-proximas" data-live-kinds="class">
             <div class="card-jp-header">
                 <span class="card-jp-title" style="font-size:13px">
                     <i class="bi bi-collection-play-fill me-2" style="color:var(--accent)"></i>Próximas clases
@@ -1014,6 +1014,8 @@ CalOverlap.useEvents(() => DBCAL.events);
 const dbCalScopeSelect = document.getElementById('db-cal-scope-select');
 if (dbCalScopeSelect) dbCalScopeSelect.value = DBCAL.scope;
 DBCAL.load();
+// Llega un aviso de clase o bono: el calendario y «Próximas clases» se actualizan solos.
+window.JPLive && JPLive.on(['class', 'bono'], () => DBCAL.load());
 </script>
 <?php if ($dbCanManage): ?>
 <script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>

@@ -238,7 +238,8 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             </div>
         </div>
 
-        <!-- Respuestas -->
+        <!-- Respuestas (se actualizan solas cuando llega un aviso del ticket) -->
+        <div data-live="ticket-replies" data-live-kinds="ticket" style="display:contents">
         <?php foreach ($replies as $reply): ?>
         <?php
             $isAdmin    = in_array($reply['user_role'], ['superadmin', 'admin']);
@@ -288,6 +289,7 @@ $isClosed    = in_array($ticket['status'], ['resuelto', 'cerrado']);
             </div>
         </div>
         <?php endforeach; ?>
+        </div>
 
         <!-- Formulario de respuesta (solo superadmin) -->
         <?php if ($canManage && !in_array($ticket['status'], ['cerrado'])): ?>

@@ -956,6 +956,8 @@ CalOverlap.useEvents(() => CAL.events);
 const calScopeSelect = document.getElementById('cal-scope-select');
 if (calScopeSelect) calScopeSelect.value = CAL.scope;
 CAL.load();
+// Llega un aviso de clase: el calendario se actualiza solo.
+window.JPLive && JPLive.on(['class'], () => CAL.load());
 
 <?php if ($canManage): ?>
 ClaseModal.init({
