@@ -31,6 +31,13 @@ class PushService
         'notify.windows.com',          // Edge/Windows (WNS)
     ];
 
+    /**
+     * Prioridad del push (cabecera Urgency, RFC 8030). 'high' hace que Android entregue el aviso
+     * aunque el móvil esté bloqueado y quieto (Doze); con 'normal' Google lo retrasa. Cada push
+     * lleva una notificación visible, que es lo que exige Chrome para aceptar prioridad alta.
+     */
+    public const URGENCY = 'high';
+
     /** @var list<array{notif: int, recipients: list<int>, payload: array}> */
     private static array $queue = [];
     private static bool $hooked = false;
@@ -234,7 +241,7 @@ class PushService
             $bodies[]  = json_encode($job['payload'] + ['unread' => $unread[(int) $s['user_id']] ?? 1], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        $codes   = $transport->sendMany($targets, $bodies);
+        $codes   = $transport->sendMany($targets, $bodies, 86400, self::URGENCY);
         $summary = self::applyResults($store, $subs, $codes, $batch);
 
         PushLogger::info('batch', [
