@@ -36,20 +36,8 @@ $reasonKinds = [
 ];
 ?>
 <section class="mc-card" aria-labelledby="mc-title-<?= $sid ?>" style="--mc-accent:<?= esc($statusColor, 'attr') ?>">
-    <div class="mc-head">
-        <div class="mc-when">
-            <span class="mc-rel"><?= esc($rel) ?></span>
-            <span class="mc-date"><?= date('d/m/Y', $ts) ?></span>
-        </div>
-        <h2 class="mc-title" id="mc-title-<?= $sid ?>">
-            <?= esc(substr($session['start_time'], 0, 5)) ?> – <?= esc(substr($session['end_time'], 0, 5)) ?>
-        </h2>
-        <ul class="mc-facts">
-            <?php if ($place): ?><li><i class="bi bi-geo-alt-fill"></i><?= esc($place) ?></li><?php endif; ?>
-            <?php if ($who): ?><li><i class="bi bi-person-workspace"></i><?= esc($who) ?></li><?php endif; ?>
-        </ul>
-    </div>
-
+    <!-- Lo primero que ve la familia: avisar de que no va a la clase (o el estado del aviso) -->
+    <div class="mc-aviso">
     <?php if ($session['status'] === 'cancelled'): ?>
         <div class="mc-state is-info"><i class="bi bi-x-circle-fill"></i>
             <div><strong>Esta clase se ha cancelado.</strong><p>No tienes que hacer nada.</p></div></div>
@@ -128,6 +116,22 @@ $reasonKinds = [
             </form>
         </details>
     <?php endif; ?>
+    </div>
+
+    <div class="mc-head">
+        <div class="mc-when">
+            <span class="mc-rel"><?= esc($rel) ?></span>
+            <span class="mc-date"><?= date('d/m/Y', $ts) ?></span>
+        </div>
+        <h2 class="mc-title" id="mc-title-<?= $sid ?>">
+            <?= esc(substr($session['start_time'], 0, 5)) ?> – <?= esc(substr($session['end_time'], 0, 5)) ?>
+        </h2>
+        <ul class="mc-facts">
+            <?php if ($place): ?><li><i class="bi bi-geo-alt-fill"></i><?= esc($place) ?></li><?php endif; ?>
+            <?php if ($who): ?><li><i class="bi bi-person-workspace"></i><?= esc($who) ?></li><?php endif; ?>
+        </ul>
+    </div>
+
 
     <?php if ($scheduled): ?>
     <details class="mc-msg">
