@@ -536,6 +536,33 @@ body {
     background: var(--accent);
 }
 
+/* ── Resumen compacto y enlazado (dashboard del alumno) ───── */
+.metric-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.metric-link:hover { border-color: var(--accent); box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,.08)); color: inherit; }
+.metric-link:active { transform: scale(.985); }
+.metric-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.metric-link .metric-icon { width: 34px; height: 34px; font-size: 16px; }
+.metric-link-text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.metric-link-value { font-size: 20px; font-weight: 800; color: var(--text-h); }
+.metric-link-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.metric-link-sub { font-size: 11px; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.metric-link-go { color: var(--text-muted); font-size: 13px; flex-shrink: 0; transition: transform .15s, color .15s; }
+.metric-link:hover .metric-link-go { color: var(--accent); transform: translateX(2px); }
+
 /* ── Tarjeta genérica ────────────────────────────────────── */
 .card-jp {
     background: var(--bg-card);

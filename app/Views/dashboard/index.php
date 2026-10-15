@@ -55,55 +55,35 @@ if (!empty($dbPfp['birth_date'])) {
 }
 $dbRemPct   = $dbActiveTotal > 0 ? min(100, round($dbActiveRem / $dbActiveTotal * 100)) : 0;
 $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' : 'var(--success)');
+
+// Resumen compacto: cada dato es un enlace a donde está el detalle.
+$dbQuick = [
+    ['href' => base_url('clases'),                  'icon' => 'bi-calendar-check-fill', 'tone' => 'blue',
+     'value' => (int)($dbPfp['classes_count'] ?? 0), 'label' => 'Clases asistidas', 'sub' => 'Ver mis clases', 'color' => null],
+    ['href' => '#proximas-clases',                  'icon' => 'bi-calendar3', 'tone' => 'green',
+     'value' => (int)($dbPfp['upcoming_count'] ?? 0), 'label' => 'Próximas clases', 'sub' => 'Ver la lista', 'color' => null],
+    ['href' => base_url('perfil') . '#mis-bonos',   'icon' => 'bi-ticket-perforated-fill', 'tone' => 'orange',
+     'value' => $dbUsable ? $dbActiveRem : '—',     'label' => 'Sesiones de bono',
+     'sub' => $dbUsable ? 'de ' . $dbActiveTotal . ' en total' : 'sin bono con saldo', 'color' => $dbUsable ? $dbRemColor : null],
+    ['href' => base_url('perfil') . '#mis-bonos',   'icon' => 'bi-collection-fill', 'tone' => 'purple',
+     'value' => count($dbUsable),                   'label' => 'Bonos con saldo', 'sub' => 'Ver mis bonos', 'color' => null],
+];
 ?>
-<!-- Métricas del player -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-sm-3">
-        <div class="metric-card">
-            <div class="metric-card-header">
-                <span class="metric-label">Clases asistidas</span>
-                <div class="metric-icon blue"><i class="bi bi-calendar-check-fill"></i></div>
-            </div>
-            <div class="metric-value"><?= (int)($dbPfp['classes_count'] ?? 0) ?></div>
-            <div class="metric-footer"><span class="metric-footer-label">total historial</span></div>
-            <div class="metric-progress"><div class="metric-progress-bar" style="width:100%;background:var(--accent)"></div></div>
-        </div>
+<!-- Resumen del alumno: compacto y con enlaces -->
+<div class="row g-2 mb-3">
+    <?php foreach ($dbQuick as $q): ?>
+    <div class="col-6 col-md-3">
+        <a href="<?= esc($q['href'], 'attr') ?>" class="metric-link" aria-label="<?= esc($q['label'] . ': ' . $q['value'] . '. ' . $q['sub'], 'attr') ?>">
+            <span class="metric-icon <?= esc($q['tone'], 'attr') ?>"><i class="bi <?= esc($q['icon'], 'attr') ?>"></i></span>
+            <span class="metric-link-text">
+                <span class="metric-link-value"<?= $q['color'] ? ' style="color:' . esc($q['color'], 'attr') . '"' : '' ?>><?= esc((string) $q['value']) ?></span>
+                <span class="metric-link-label"><?= esc($q['label']) ?></span>
+                <span class="metric-link-sub"><?= esc($q['sub']) ?></span>
+            </span>
+            <i class="bi bi-chevron-right metric-link-go" aria-hidden="true"></i>
+        </a>
     </div>
-    <div class="col-6 col-sm-3">
-        <div class="metric-card">
-            <div class="metric-card-header">
-                <span class="metric-label">Próximas clases</span>
-                <div class="metric-icon green"><i class="bi bi-calendar3"></i></div>
-            </div>
-            <div class="metric-value"><?= (int)($dbPfp['upcoming_count'] ?? 0) ?></div>
-            <div class="metric-footer"><span class="metric-footer-label">programadas</span></div>
-            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, (int)($dbPfp['upcoming_count'] ?? 0) * 20) ?>%;background:var(--success)"></div></div>
-        </div>
-    </div>
-    <div class="col-6 col-sm-3">
-        <div class="metric-card">
-            <div class="metric-card-header">
-                <span class="metric-label">Sesiones bono</span>
-                <div class="metric-icon orange"><i class="bi bi-ticket-perforated-fill"></i></div>
-            </div>
-            <div class="metric-value" style="color:<?= $dbRemColor ?>"><?= $dbUsable ? $dbActiveRem : '—' ?></div>
-            <div class="metric-footer">
-                <span class="metric-footer-label"><?= $dbUsable ? 'de ' . $dbActiveTotal . ' en total' : 'sin bono con saldo' ?></span>
-            </div>
-            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= $dbRemPct ?>%;background:<?= $dbRemColor ?>"></div></div>
-        </div>
-    </div>
-    <div class="col-6 col-sm-3">
-        <div class="metric-card">
-            <div class="metric-card-header">
-                <span class="metric-label">Bonos con saldo</span>
-                <div class="metric-icon" style="background:rgba(139,92,246,.15);color:#8b5cf6"><i class="bi bi-collection-fill"></i></div>
-            </div>
-            <div class="metric-value"><?= count($dbUsable) ?></div>
-            <div class="metric-footer"><span class="metric-footer-label">con sesiones</span></div>
-            <div class="metric-progress"><div class="metric-progress-bar" style="width:<?= min(100, count($dbUsable) * 25) ?>%;background:#8b5cf6"></div></div>
-        </div>
-    </div>
+    <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -214,6 +194,50 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
     <!-- Calendario -->
     <?php $dbCanManage = in_array($role, ['superadmin', 'admin', 'staff', 'coach']); ?>
     <div class="col-12 col-xl-8">
+
+        <?php if ($role === 'player' && !empty($playerFullProfile)): ?>
+        <!-- ── Próximas clases del alumno (encima del calendario) ── -->
+        <div class="card-jp mb-3" id="proximas-clases">
+            <div class="card-jp-header">
+                <span class="card-jp-title" style="font-size:13px">
+                    <i class="bi bi-collection-play-fill me-2" style="color:var(--accent)"></i>Próximas clases
+                </span>
+                <a href="<?= base_url('clases') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todas</a>
+            </div>
+            <div class="card-jp-body py-1">
+                <?php if (empty($dbPfp['upcoming'])): ?>
+                <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:14px 0">No tienes clases programadas.</div>
+                <?php endif; ?>
+                <?php foreach (array_slice($dbPfp['upcoming'] ?? [], 0, 4) as $up):
+                    $upDate = !empty($up['session_date']) ? new \DateTime($up['session_date']) : null;
+                    $mn = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                ?>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                    <?php if ($upDate): ?>
+                    <div style="min-width:38px;text-align:center;background:var(--accent-light,#e0edff);color:var(--accent);border-radius:6px;padding:4px 0;font-size:12px;font-weight:700;flex-shrink:0">
+                        <?= $upDate->format('d') ?><br>
+                        <span style="font-size:10px"><?= $mn[(int)$upDate->format('n') - 1] ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <div style="flex:1;min-width:0">
+                        <a href="<?= base_url('clases/' . (int)$up['id']) ?>" style="font-size:13px;font-weight:600;color:var(--text-h);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                            <?= esc($up['title'] ?? '—') ?>
+                        </a>
+                        <div style="font-size:11px;color:var(--text-muted)">
+                            <?= !empty($up['start_time']) ? substr($up['start_time'], 0, 5) : '' ?>
+                            <?= (!empty($up['start_time']) && !empty($up['end_time'])) ? '–' . substr($up['end_time'], 0, 5) : '' ?>
+                            <?php $loc = $up['location_name'] ?? $up['location_custom'] ?? ''; if ($loc): ?>
+                            · <?= esc($loc) ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <a href="<?= base_url('clases/' . (int)$up['id']) ?>" style="color:var(--text-muted);flex-shrink:0" aria-label="Abrir la clase"><i class="bi bi-chevron-right"></i></a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="card-jp">
             <div class="card-jp-header">
                 <span class="card-jp-title"><i class="bi bi-calendar3 me-2" style="color:var(--accent)"></i>Calendario</span>
@@ -404,7 +428,7 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                 <span class="card-jp-title" style="font-size:13px">
                     <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>Mis bonos
                 </span>
-                <a href="<?= base_url('perfil') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todos</a>
+                <a href="<?= base_url("perfil") ?>#mis-bonos" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todos</a>
             </div>
             <div class="card-jp-body">
                 <div class="d-flex align-items-end gap-2 mb-3">
@@ -445,45 +469,6 @@ $dbRemColor = $dbRemPct <= 25 ? 'var(--danger)' : ($dbRemPct <= 50 ? '#f97316' :
                     <i class="bi bi-exclamation-circle-fill me-1"></i>Te quedan pocas sesiones. Renueva tu bono pronto.
                 </div>
                 <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- ── Próximas clases del player ─────────────── -->
-        <?php if (!empty($dbPfp['upcoming'])): ?>
-        <div class="card-jp">
-            <div class="card-jp-header">
-                <span class="card-jp-title" style="font-size:13px">
-                    <i class="bi bi-collection-play-fill me-2" style="color:var(--accent)"></i>Próximas clases
-                </span>
-                <a href="<?= base_url('clases') ?>" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">Ver todas</a>
-            </div>
-            <div class="card-jp-body py-1">
-                <?php foreach (array_slice($dbPfp['upcoming'], 0, 4) as $up):
-                    $upDate = !empty($up['session_date']) ? new \DateTime($up['session_date']) : null;
-                    $mn = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                ?>
-                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-                    <?php if ($upDate): ?>
-                    <div style="min-width:38px;text-align:center;background:var(--accent-light,#e0edff);color:var(--accent);border-radius:6px;padding:4px 0;font-size:12px;font-weight:700;flex-shrink:0">
-                        <?= $upDate->format('d') ?><br>
-                        <span style="font-size:10px"><?= $mn[(int)$upDate->format('n') - 1] ?></span>
-                    </div>
-                    <?php endif; ?>
-                    <div style="flex:1;min-width:0">
-                        <a href="<?= base_url('clases/' . (int)$up['id']) ?>" style="font-size:13px;font-weight:600;color:var(--text-h);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                            <?= esc($up['title'] ?? '—') ?>
-                        </a>
-                        <div style="font-size:11px;color:var(--text-muted)">
-                            <?= !empty($up['start_time']) ? substr($up['start_time'], 0, 5) : '' ?>
-                            <?= (!empty($up['start_time']) && !empty($up['end_time'])) ? '–' . substr($up['end_time'], 0, 5) : '' ?>
-                            <?php $loc = $up['location_name'] ?? $up['location_custom'] ?? ''; if ($loc): ?>
-                            · <?= esc($loc) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
             </div>
         </div>
         <?php endif; ?>
