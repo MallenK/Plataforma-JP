@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.32.2",
+        "date": "2026-10-15 00:00:00",
+        "description": "En la ficha de la clase, lo primero que ve el alumno o la familia es el aviso de que no va a asistir («No puedo ir» o el estado del aviso enviado), en móvil y en escritorio. Debajo quedan la fecha, la hora y el lugar."
+    },
+    {
         "version": "1.32.1",
         "date": "2026-10-15 00:00:00",
         "description": "Clases más sencillas para el alumno y las familias. La ficha de la clase muestra arriba un panel «Tu clase» con un botón «No puedo ir»: se elige el motivo y, antes de confirmar, se explica qué pasará. Corregido que un aviso sin motivo no se confirmara en pantalla. El alumno puede escribir un mensaje al entrenador y a la administración sobre su clase (lo ven ambos). El alumno ya no ve a sus compañeros ni las métricas del grupo. Nueva pestaña Ayuda para alumnos."

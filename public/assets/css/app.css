@@ -2706,6 +2706,7 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
 .mc-card { background:var(--bg-card,#fff); border:1px solid var(--border); border-left:5px solid var(--mc-accent,var(--accent));
            border-radius:var(--radius,12px); padding:18px; margin-bottom:16px; }
 .mc-head { margin-bottom:14px; }
+.mc-aviso { margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--border); }
 .mc-when { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
 .mc-rel { font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--mc-accent,var(--accent)); }
 .mc-date { font-size:14px; color:var(--text-muted); }
