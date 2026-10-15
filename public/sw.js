@@ -5,7 +5,7 @@
  *   la plataforma (es contenido privado, por usuario, y cambia a cada momento).
  * - Sube VERSION cuando cambies este fichero o offline.html.
  */
-const VERSION = 'jp-sw-v1';
+const VERSION = 'jp-sw-v2';
 const SHELL   = VERSION + '-shell';
 const ASSETS  = VERSION + '-assets';
 const SCOPE   = self.registration.scope; // termina en "/"
@@ -73,13 +73,16 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil((async () => {
+    // userVisibleOnly: SIEMPRE se muestra algo, aunque lo demás falle (si no, el navegador revoca el permiso).
     await self.registration.showNotification(title, opts);
-    if (typeof data.unread === 'number' && self.navigator && self.navigator.setAppBadge) {
-      try { await self.navigator.setAppBadge(data.unread); } catch (_) { /* sin soporte */ }
-    }
-    // Pestañas abiertas: que refresquen la campanita al instante.
-    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    wins.forEach((w) => w.postMessage({ type: 'jp-push', payload: data }));
+    try {
+      if (typeof data.unread === 'number' && self.navigator && self.navigator.setAppBadge) {
+        await self.navigator.setAppBadge(data.unread);
+      }
+      // Pestañas abiertas: que refresquen la campanita al instante.
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      wins.forEach((w) => w.postMessage({ type: 'jp-push', payload: data }));
+    } catch (_) { /* sin soporte de badge o sin ventanas: la notificación ya se mostró */ }
   })());
 });
 
@@ -99,5 +102,19 @@ self.addEventListener('notificationclick', (event) => {
       } catch (_) { /* cae a openWindow */ }
     }
     await self.clients.openWindow(target);
+  })());
+});
+
+/* El navegador rotó o caducó la suscripción: crear otra con la misma clave del servidor y avisar a las
+ * pestañas para que la registren en el servidor (el SW no tiene el token CSRF; lo hace pwa.js). Si no hay
+ * pestañas, pwa.js detecta el cambio de endpoint al abrir la siguiente página. */
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const key = event.oldSubscription && event.oldSubscription.options && event.oldSubscription.options.applicationServerKey;
+      if (key) await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    } catch (_) { /* pwa.js lo reintenta al abrir la app */ }
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    wins.forEach((w) => w.postMessage({ type: 'jp-subchange' }));
   })());
 });
