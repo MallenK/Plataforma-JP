@@ -18,7 +18,8 @@ jobs:
           extensions: intl, mbstring, sqlite3, curl, openssl, mysqli, gd, zip
           coverage: none
       # vendor/ va dentro del repositorio (se despliega copiando app/), no hace falta composer install.
-      - run: vendor/bin/phpunit --no-coverage
+      # `php` explícito: vendor/bin/phpunit se versionó sin permiso de ejecución (modo 100644) y daba "Permission denied" (126).
+      - run: php vendor/bin/phpunit --no-coverage
 
   js:
     name: Tests JS
