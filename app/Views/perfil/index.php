@@ -459,7 +459,7 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
         $perfSaldo  = array_sum(array_map(fn($pl) => (int) $pl['sessions_remaining'], $perfUsable));
         $perfUsed   = array_values(array_filter($pfp['attendance'] ?? [], fn($a) => !empty($a['bono_deducted_at'])));
         ?>
-        <div class="card-jp">
+        <div class="card-jp" id="mis-bonos" style="scroll-margin-top:80px">
             <div class="card-jp-header">
                 <span class="card-jp-title">
                     <i class="bi bi-ticket-perforated-fill me-2" style="color:var(--accent)"></i>
