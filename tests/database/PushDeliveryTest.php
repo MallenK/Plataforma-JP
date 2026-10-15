@@ -130,6 +130,15 @@ final class PushDeliveryTest extends CIUnitTestCase
         $this->assertSame(1, $payload['unread']);
     }
 
+    public function testPushIsSentWithHighUrgencySoLockedPhonesGetItAtOnce(): void
+    {
+        $this->subscribeUsers([2]);
+
+        $this->notify(1, [2]);
+
+        $this->assertSame(['high'], $this->transport->urgencies);
+    }
+
     public function testSuccessfulDeliveryResetsFailureCounter(): void
     {
         $this->subscribeUsers([2]);
@@ -417,6 +426,8 @@ final class FakePushTransport implements PushTransport
     /** @var list<array{endpoint: string, body: string}> */
     public array $sent = [];
     public int $defaultCode = 201;
+    /** @var list<string> urgencia de cada llamada a sendMany */
+    public array $urgencies = [];
     public bool $throw = false;
     /** @var array<string,int> */
     private array $codes = [];
@@ -431,6 +442,7 @@ final class FakePushTransport implements PushTransport
         if ($this->throw) {
             throw new \RuntimeException('curl explotó');
         }
+        $this->urgencies[] = $urgency;
         $out = [];
         foreach ($targets as $i => $t) {
             $this->sent[] = ['endpoint' => $t['endpoint'], 'body' => is_array($payloads) ? $payloads[$i] : $payloads];
