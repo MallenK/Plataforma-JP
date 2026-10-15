@@ -3,7 +3,7 @@
   "private": true,
   "description": "Solo para tests: jsdom para probar el JS de la plataforma (radix-ui.js, diálogos de confirmación). La app NO tiene build step; esto vive aislado aquí.",
   "scripts": {
-    "test": "node radix-confirm.test.cjs && node money-privacy.test.cjs"
+    "test": "for f in *.test.cjs; do node $f || exit 1; done"
   },
   "devDependencies": {
     "jsdom": "^29.0.0"
