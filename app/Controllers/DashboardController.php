@@ -35,12 +35,10 @@ class DashboardController extends BaseController
 
         $clasesService   = new \App\Services\ClasesService();
         $isAdminRole     = in_array($role, ['superadmin', 'admin']);
-        if ($isAdminRole) {
-            // TICKET-013: sin cron en Hostinger, los avisos de "bono a punto de
-            // caducar" se disparan desde el uso normal (máx. 1 vez/hora, y un
-            // solo aviso por bono). Nunca debe tumbar el dashboard.
-            (new \App\Services\BonoControlService())->runExpiryAlerts();
-        }
+        // Sin cron en Hostinger: los avisos programados (recordatorio de clase y resumen
+        // de bonos a punto de caducar) se disparan desde el uso normal, como mucho cada
+        // 5 min. Nunca debe tumbar el dashboard.
+        \App\Services\ScheduledNoticeService::tick();
         // v1.33.0: aviso «Pendiente de revisar» (sesiones sin cerrar, clases sin
         // descontar, precios estimados, caducados sin usar). Nunca tumba el dashboard.
         $pendingReview = null;

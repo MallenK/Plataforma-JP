@@ -118,6 +118,10 @@ class NotificacionesController extends BaseController
 
     public function ajaxLatest(): \CodeIgniter\HTTP\ResponseInterface
     {
+        // Sin cron: los avisos programados (recordatorio de clase, caducidad de bonos)
+        // se disparan desde el sondeo de la campanita, como mucho cada 5 min.
+        \App\Services\ScheduledNoticeService::tick();
+
         $userId = $this->currentUserId();
         $notifs = $this->notifModel->getForUser($userId, 10);
         $unread = $this->notifModel->countUnread($userId);

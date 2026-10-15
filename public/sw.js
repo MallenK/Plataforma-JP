@@ -5,7 +5,7 @@
  *   la plataforma (es contenido privado, por usuario, y cambia a cada momento).
  * - Sube VERSION cuando cambies este fichero o offline.html.
  */
-const VERSION = 'jp-sw-v2';
+const VERSION = 'jp-sw-v3';
 const SHELL   = VERSION + '-shell';
 const ASSETS  = VERSION + '-assets';
 const SCOPE   = self.registration.scope; // termina en "/"
@@ -57,24 +57,66 @@ self.addEventListener('fetch', (event) => {
 
 /* ── Push ─────────────────────────────────────────────────────────────── */
 
+/* Anti-saturación: si ya hay GROUP_AT avisos (contando el que llega) sin atender en la
+ * bandeja del móvil, se sustituyen por UNO solo: «Tienes N notificaciones nuevas». Las
+ * notificaciones siguen todas en la campanita de la plataforma. El servidor ya resume las
+ * ráfagas de una misma pasada; esto cubre las que llegan una a una en poco tiempo. */
+const GROUP_AT  = 3;
+const GROUP_TAG = 'jp-group';
+
+async function buildDisplay(data) {
+  const icon  = new URL('assets/img/pwa/icon-192.png', SCOPE).href;
+  const badge = new URL('assets/img/pwa/badge-96.png', SCOPE).href;
+  const incoming = data.count || 1;
+  const tag = data.tag || (data.id ? 'jp-n-' + data.id : undefined);
+
+  let shown = [];
+  try { shown = await self.registration.getNotifications(); } catch (_) { /* sin soporte: se muestra tal cual */ }
+
+  // Lo que ya hay en pantalla, sin contar lo que este aviso va a sustituir (misma tag).
+  const others = shown.filter((n) => !tag || n.tag !== tag);
+  const pending = others.reduce((sum, n) => sum + ((n.data && n.data.count) || 1), 0);
+  const total = pending + incoming;
+
+  if (total >= GROUP_AT) {
+    others.forEach((n) => n.close());
+    return {
+      title: 'Tienes ' + total + ' notificaciones nuevas',
+      opts: {
+        body: 'Toca para verlas todas.',
+        icon, badge, lang: 'es',
+        tag: GROUP_TAG,
+        renotify: false, // al crecer el grupo se actualiza sin volver a sonar
+        data: { url: 'notificaciones', id: null, count: total },
+      },
+    };
+  }
+
+  return {
+    title: data.title || 'JP Preparation',
+    opts: {
+      body: data.body || '',
+      icon, badge, lang: 'es',
+      tag,
+      renotify: !!data.tag && data.tag !== GROUP_TAG, // chat: cada mensaje avisa, pero en una sola tarjeta
+      data: { url: data.url || 'notificaciones', id: data.id || null, count: incoming },
+    },
+  };
+}
+
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; }
   catch (_) { data = { title: 'JP Preparation', body: event.data ? event.data.text() : '' }; }
 
-  const title = data.title || 'JP Preparation';
-  const opts = {
-    body: data.body || '',
-    icon: new URL('assets/img/pwa/icon-192.png', SCOPE).href,
-    badge: new URL('assets/img/pwa/badge-96.png', SCOPE).href,
-    tag: data.id ? 'jp-n-' + data.id : undefined,
-    lang: 'es',
-    data: { url: data.url || 'notificaciones', id: data.id || null },
-  };
-
   event.waitUntil((async () => {
     // userVisibleOnly: SIEMPRE se muestra algo, aunque lo demás falle (si no, el navegador revoca el permiso).
-    await self.registration.showNotification(title, opts);
+    let view;
+    try { view = await buildDisplay(data); }
+    catch (_) {
+      view = { title: data.title || 'JP Preparation', opts: { body: data.body || '', lang: 'es', data: { url: data.url || 'notificaciones', id: data.id || null } } };
+    }
+    await self.registration.showNotification(view.title, view.opts);
     try {
       if (typeof data.unread === 'number' && self.navigator && self.navigator.setAppBadge) {
         await self.navigator.setAppBadge(data.unread);

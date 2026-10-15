@@ -107,7 +107,6 @@ class BonoControlService
     public function settleWithBono(int $playerId, ?int $actorId, int $bonoId, ?int $limit = null): array
     {
         $settled = 0;
-        $names   = [];
 
         try {
             $svc = new ClasesService();
@@ -120,7 +119,6 @@ class BonoControlService
                     break; // sin saldo (u otro motivo): se para, no se fuerza
                 }
                 $settled++;
-                $names[] = date('d/m', strtotime($debt['session_date']));
                 BonoLedgerService::log($playerId, BonoLedgerService::DEBT_SETTLED, 0, $bonoId, (int) $debt['session_id'],
                     'Saldada a mano con el bono elegido', $actorId);
             }
@@ -130,17 +128,8 @@ class BonoControlService
 
         $remaining = count($this->openDebts($playerId));
 
-        if ($settled > 0) {
-            $bonoName = $this->bonoName($bonoId);
-            $this->notifyAdmins(
-                $playerId,
-                '🎟️ Clases sin bono saldadas con un bono',
-                sprintf('%s: se han saldado %d clase(s) dadas sin bono (%s) con el bono "%s", 1 sesión por cada una.%s Si algo no cuadra, puedes devolver la sesión desde la propia clase.',
-                    $this->playerName($playerId), $settled, implode(', ', $names), $bonoName,
-                    $remaining > 0 ? " Quedan {$remaining} clase(s) sin saldar." : ''),
-                $actorId
-            );
-        }
+        // Saldar deudas lo hace un admin a mano y queda en el libro de movimientos: no se
+        // avisa a los admins de lo que ellos mismos acaban de hacer.
 
         // El saldo ha cambiado: las marcas de cobertura de sus clases futuras también.
         (new BonoCoverageService($this->db))->refreshMarks($playerId);
@@ -487,12 +476,15 @@ class BonoControlService
     public function runExpiryAlerts(bool $force = false): int
     {
         try {
+            // Dos pasadas al día (mañana / tarde): a los admins les llega UN resumen por
+            // pasada, no un aviso por bono. Sin cron: la pasada se hace en el primer uso
+            // de cada franja.
             $settings = new \App\Models\SettingsModel();
-            $last     = (string) $settings->get('bono_expiry_alert_last_run', '');
-            if (!$force && $last !== '' && strtotime($last) > time() - 3600) {
+            $slot     = self::expirySlot(time());
+            if (!$force && (string) $settings->get('bono_expiry_alert_last_slot', '') === $slot) {
                 return 0;
             }
-            $settings->setSetting('bono_expiry_alert_last_run', date('Y-m-d H:i:s'));
+            $settings->setSetting('bono_expiry_alert_last_slot', $slot);
 
             $today = date('Y-m-d');
             $limit = date('Y-m-d', strtotime('+' . BonoCoverageService::EXPIRY_WARN_DAYS . ' days'));
@@ -508,7 +500,9 @@ class BonoControlService
                 ->where('NOT EXISTS (SELECT 1 FROM bono_movements bm WHERE bm.bono_id = pb.id AND bm.type = \'' . BonoLedgerService::EXPIRY_ALERT . '\')', null, false)
                 ->get()->getResultArray();
 
-            $n = 0;
+            $n      = 0;
+            $digest = [];
+            $sender = $this->anyAdminId();
             foreach ($rows as $r) {
                 $after = (int) $this->db->table('class_session_players csp')
                     ->join('class_sessions cs', 'cs.id = csp.session_id')
@@ -520,36 +514,78 @@ class BonoControlService
                 $when = date('d/m/Y', strtotime($r['expires_at']));
                 $extra = $after > 0 ? " Tiene {$after} clase(s) programadas para después de esa fecha." : '';
 
-                $sender = $this->anyAdminId();
                 if (!$sender) {
                     continue;
                 }
-                $notif = new NotificationModel();
-                $notif->createWithRecipients([
+                (new NotificationModel())->createWithRecipients([
                     'sender_id'   => $sender,
-                    'type'        => 'group',
-                    'title'       => '⏳ Bono a punto de caducar: ' . $r['player_name'],
-                    'body'        => "El bono \"{$r['bono_name']}\" de {$r['player_name']} caduca el {$when} y le quedan {$r['sessions_remaining']} sesión(es) sin usar.{$extra} Si hace falta, puedes darle más días desde el detalle del bono.",
-                    'source_type' => NotificationModel::SOURCE_BONO,
-                    'source_id'   => (int) $r['id'],
-                ], $this->adminIds());
-                $notif->createWithRecipients([
-                    'sender_id' => $sender,
-                    'type'      => 'individual',
-                    'title'     => '⏳ Tu bono caduca pronto',
-                    'body'      => "Tu bono \"{$r['bono_name']}\" caduca el {$when} y te quedan {$r['sessions_remaining']} sesión(es) sin usar. Si quieres más días o renovarlo, habla con la academia.",
-                    'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+                    'type'        => 'individual',
+                    'title'       => '⏳ Tu bono caduca pronto',
+                    'body'        => "Tu bono \"{$r['bono_name']}\" caduca el {$when} y te quedan {$r['sessions_remaining']} sesión(es) sin usar. Si quieres más días o renovarlo, habla con la academia.",
+                    'category'    => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+                    'notify_sender' => true,
                 ], [(int) $r['player_id']]);
 
                 BonoLedgerService::log((int) $r['player_id'], BonoLedgerService::EXPIRY_ALERT, 0, (int) $r['id'], null,
                     "Aviso: caduca el {$when}", $sender);
+                $digest[] = ['id' => (int) $r['id'], 'player' => $r['player_name'], 'bono' => $r['bono_name'],
+                             'when' => $when, 'left' => (int) $r['sessions_remaining'], 'after' => $after];
                 $n++;
+            }
+
+            if ($digest !== [] && $sender) {
+                $msg = self::expiryDigestMessage($digest);
+                (new NotificationModel())->createWithRecipients([
+                    'sender_id'     => $sender,
+                    'type'          => 'group',
+                    'title'         => $msg['title'],
+                    'body'          => $msg['body'],
+                    'category'      => \App\Models\NotificationPreferenceModel::CAT_BONOS,
+                    'notify_sender' => true,
+                ] + (count($digest) === 1 ? ['source_type' => NotificationModel::SOURCE_BONO, 'source_id' => $digest[0]['id']] : []),
+                    $this->adminIds());
             }
             return $n;
         } catch (\Throwable $e) {
             log_message('error', 'BonoControlService::runExpiryAlerts falló: ' . $e->getMessage());
             return 0;
         }
+    }
+
+    /** Franja del día para el resumen de caducidades: «2026-10-16-am» (antes de las 14:00) o «-pm». Pura. */
+    public static function expirySlot(int $ts): string
+    {
+        return date('Y-m-d', $ts) . ((int) date('G', $ts) < 14 ? '-am' : '-pm');
+    }
+
+    /**
+     * Resumen para admins de los bonos que han entrado en la ventana de caducidad.
+     * Pura.
+     *
+     * @param list<array{player:string,bono:string,when:string,left:int,after:int}> $items
+     * @return array{title:string, body:string}
+     */
+    public static function expiryDigestMessage(array $items): array
+    {
+        $n = count($items);
+        if ($n === 1) {
+            $i     = $items[0];
+            $extra = $i['after'] > 0 ? " Tiene {$i['after']} clase(s) programadas para después de esa fecha." : '';
+            return [
+                'title' => '⏳ Bono a punto de caducar: ' . $i['player'],
+                'body'  => "El bono \"{$i['bono']}\" de {$i['player']} caduca el {$i['when']} y le quedan {$i['left']} sesión(es) sin usar.{$extra} Si hace falta, puedes darle más días desde el detalle del bono.",
+            ];
+        }
+
+        $lines = [];
+        foreach (array_slice($items, 0, 6) as $i) {
+            $lines[] = "{$i['player']} ({$i['left']} ses., caduca el {$i['when']})";
+        }
+        $more = $n > 6 ? ' y ' . ($n - 6) . ' más' : '';
+        return [
+            'title' => "⏳ {$n} bonos a punto de caducar",
+            'body'  => implode(' · ', $lines) . $more . '. Puedes darles más días desde el detalle de cada bono.',
+        ];
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -601,37 +637,39 @@ class BonoControlService
         return ['success' => true];
     }
 
-    private function bonoName(int $bonoId): string
+    /** Texto del aviso «tienes un bono nuevo». Pura. */
+    public static function grantedMessage(string $bonoName, int $sessions, ?string $expiresAt): array
     {
-        $row = $this->db->table('player_bonos pb')->select('bt.name')
-            ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
-            ->where('pb.id', $bonoId)->get()->getRowArray();
-        return $row['name'] ?? 'Bono';
+        $until = $expiresAt ? ', válido hasta el ' . date('d/m/Y', strtotime($expiresAt)) : '';
+        return [
+            'title' => '🎟️ Tienes un bono nuevo',
+            'body'  => sprintf('Se te ha asignado el bono "%s" con %d sesión(es)%s.', $bonoName, $sessions, $until),
+        ];
     }
 
-    private function playerName(int $playerId): string
-    {
-        $u = (new UserModel())->find($playerId);
-        return $u['name'] ?? 'El alumno';
-    }
-
-    private function notifyAdmins(int $playerId, string $title, string $body, ?int $actorId): void
+    /** Avisa al alumno de que se le ha emitido o asignado un bono. Nunca lanza. */
+    public function notifyBonoGranted(int $bonoId, int $actorId): void
     {
         try {
-            $sender = $actorId ?: $this->anyAdminId();
-            $admins = $this->adminIds();
-            if (!$sender || empty($admins)) {
+            $row = $this->db->table('player_bonos pb')
+                ->select('pb.player_id, pb.sessions_remaining, pb.expires_at, bt.name AS bono_name')
+                ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
+                ->where('pb.id', $bonoId)->get()->getRowArray();
+            if (!$row || empty($row['player_id']) || $actorId <= 0 || (int) $row['player_id'] === $actorId) {
                 return;
             }
+            $msg = self::grantedMessage((string) ($row['bono_name'] ?? 'Bono'), (int) $row['sessions_remaining'], $row['expires_at'] ?? null);
             (new NotificationModel())->createWithRecipients([
-                'sender_id' => $sender,
-                'type'      => 'group',
-                'title'     => $title,
-                'body'      => $body,
-                'category'  => \App\Models\NotificationPreferenceModel::CAT_BONOS,
-            ], $admins);
+                'sender_id'   => $actorId,
+                'type'        => 'individual',
+                'title'       => $msg['title'],
+                'body'        => $msg['body'],
+                'created_at'  => date('Y-m-d H:i:s'),
+                'source_type' => NotificationModel::SOURCE_BONO,
+                'source_id'   => $bonoId,
+            ], [(int) $row['player_id']]);
         } catch (\Throwable $e) {
-            log_message('error', 'BonoControlService::notifyAdmins falló: ' . $e->getMessage());
+            log_message('error', 'BonoControlService::notifyBonoGranted falló: ' . $e->getMessage());
         }
     }
 }

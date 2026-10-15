@@ -212,6 +212,9 @@ class TicketsController extends BaseController
             return $this->response->setStatusCode(403);
         }
 
+        // Entrar al ticket deja leídas sus notificaciones (la campanita no sigue contándolas).
+        $this->notifModel->markReadBySource((int) $userId, NotificationModel::SOURCE_TICKET, $id);
+
         // El solicitante no ve las notas internas.
         $replies     = $this->replyModel->getForTicket($id, $isManager);
         $attachments = $this->attachModel->getForTicket($id);
@@ -452,7 +455,12 @@ class TicketsController extends BaseController
                 $this->ticketModel->updateStatus($id, 'en_progreso');
                 $this->eventModel->log($id, $userId, 'status_changed', 'abierto', 'en_progreso');
             }
-            $this->notifyTicketOwner($ticket, 'respuesta');
+            if (in_array($this->currentRole(), ['admin', 'superadmin'], true)) {
+                $this->notifyTicketOwner($ticket, 'respuesta');
+            } else {
+                // Responde el solicitante: antes no avisaba a nadie.
+                $this->notifyManagersOfRequesterReply($ticket, $userId);
+            }
         }
 
         $reply = $this->replyModel->getForTicket($id);
@@ -816,18 +824,35 @@ class TicketsController extends BaseController
         ], $ids);
     }
 
-    /** Aviso de nota interna a los demás gestores (nunca al solicitante). */
-    private function notifyOtherManagers(array $ticket, int $fromUserId): void
+    /**
+     * A quién avisar de algo nuevo en un ticket entre gestores: al gestor asignado
+     * (si lo hay y está activo) y, si el ticket no está asignado, a todos los gestores
+     * activos. Nunca al autor del aviso ni, con $excludeRequester, al solicitante.
+     *
+     * @return list<int>
+     */
+    private function managerRecipients(array $ticket, int $fromUserId, bool $excludeRequester): array
     {
-        $managers = $this->userModel
+        $q = $this->userModel
             ->whereIn('role', ['admin', 'superadmin'])
             ->where('status', 'active')
-            ->where('id !=', $fromUserId)
-            ->where('id !=', $ticket['user_id'])
-            ->select('id')
-            ->findAll();
+            ->where('id !=', $fromUserId);
+        if ($excludeRequester) {
+            $q->where('id !=', (int) $ticket['user_id']);
+        }
+        $ids = array_map('intval', array_column($q->select('id')->findAll(), 'id'));
 
-        $ids = array_column($managers, 'id');
+        $assignee = (int) ($ticket['assigned_to'] ?? 0);
+        if ($assignee > 0 && in_array($assignee, $ids, true)) {
+            return [$assignee];
+        }
+        return $ids;
+    }
+
+    /** Aviso de nota interna al gestor asignado (o a todos si no hay) — nunca al solicitante. */
+    private function notifyOtherManagers(array $ticket, int $fromUserId): void
+    {
+        $ids = $this->managerRecipients($ticket, $fromUserId, true);
         if (empty($ids)) return;
 
         $this->notifModel->createWithRecipients([
@@ -835,6 +860,23 @@ class TicketsController extends BaseController
             'type'       => 'individual',
             'title'       => 'Nota interna en ' . $ticket['ticket_number'],
             'body'        => 'Hay una nota interna nueva en el ticket: ' . $ticket['title'],
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => NotificationModel::SOURCE_TICKET,
+            'source_id'   => $ticket['id'],
+        ], $ids);
+    }
+
+    /** El solicitante responde en su propio ticket: avisa al gestor asignado (o a todos). */
+    private function notifyManagersOfRequesterReply(array $ticket, int $fromUserId): void
+    {
+        $ids = $this->managerRecipients($ticket, $fromUserId, false);
+        if (empty($ids)) return;
+
+        $this->notifModel->createWithRecipients([
+            'sender_id'   => $fromUserId,
+            'type'        => 'individual',
+            'title'       => 'Respuesta en ' . $ticket['ticket_number'],
+            'body'        => 'El solicitante ha respondido en el ticket: ' . $ticket['title'],
             'created_at'  => date('Y-m-d H:i:s'),
             'source_type' => NotificationModel::SOURCE_TICKET,
             'source_id'   => $ticket['id'],

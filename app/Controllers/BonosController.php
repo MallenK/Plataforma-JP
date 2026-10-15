@@ -135,6 +135,7 @@ class BonosController extends BaseController
         $settledMsg = '';
         if ($playerId) {
             BonoLedgerService::log($playerId, BonoLedgerService::GRANTED, (int)$type['sessions'], $newBonoId, null, $type['name'] ?? null);
+            (new BonoControlService())->notifyBonoGranted($newBonoId, (int) $this->currentUserId());
             $settledMsg = $this->pendingDebtsHint($playerId);
         }
 
@@ -160,6 +161,8 @@ class BonosController extends BaseController
         if (!$bono) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
+
+        (new \App\Models\NotificationModel())->markReadBySource((int) $this->currentUserId(), \App\Models\NotificationModel::SOURCE_BONO, $id);
 
         $history = !empty($bono['player_id'])
             ? $this->bonoModel->getBonosForPlayer((int)$bono['player_id'])
@@ -222,6 +225,7 @@ class BonosController extends BaseController
         $this->bonoModel->update($id, ['player_id' => $playerId]);
         BonoLedgerService::log($playerId, BonoLedgerService::ASSIGNED, (int)$bono['sessions_remaining'], $id, null, 'Bono sin dueño asignado al alumno');
         (new FinanceService())->chargeForBono($id, (int) $this->currentUserId());   // Finanzas 2.0: se le carga al alumno
+        (new BonoControlService())->notifyBonoGranted($id, (int) $this->currentUserId());
         $settledMsg = $this->pendingDebtsHint($playerId);
 
         $msg = $hadOtherBonos

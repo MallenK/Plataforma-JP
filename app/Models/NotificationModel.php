@@ -252,6 +252,37 @@ class NotificationModel extends Model
     }
 
     /**
+     * Marca como leídas las notificaciones de un usuario que apuntan a un recurso
+     * (conversación, ticket, clase, bono). Se llama al ENTRAR en ese recurso por
+     * cualquier camino, para que la campanita no siga contando algo ya visto.
+     * Nunca lanza: marcar como leído es secundario.
+     */
+    public function markReadBySource(int $userId, string $sourceType, int $sourceId): void
+    {
+        if ($userId <= 0 || $sourceId <= 0) {
+            return;
+        }
+        try {
+            $rows = $this->db->table('notification_recipients nr')
+                ->select('nr.id')
+                ->join('notifications n', 'n.id = nr.notification_id')
+                ->where('nr.recipient_id', $userId)
+                ->where('nr.read_at IS NULL')
+                ->where('n.source_type', $sourceType)
+                ->where('n.source_id', $sourceId)
+                ->get()->getResultArray();
+            if ($rows === []) {
+                return;
+            }
+            $this->db->table('notification_recipients')
+                ->whereIn('id', array_column($rows, 'id'))
+                ->update(['read_at' => date('Y-m-d H:i:s')]);
+        } catch (\Throwable $e) {
+            log_message('warning', '[NotificationModel] markReadBySource: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Marca todas las notificaciones de un usuario como leídas.
      */
     public function markAllRead(int $userId): void

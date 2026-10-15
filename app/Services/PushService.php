@@ -139,7 +139,9 @@ class PushService
             if (!self::enabled() || $notifId <= 0) {
                 return;
             }
-            $senderId = (int) ($notification['sender_id'] ?? 0);
+            // El remitente no recibe el push de lo que él mismo hace… salvo en avisos del sistema
+            // (`notify_sender`), donde el «remitente» es solo un usuario cualquiera que firma el aviso.
+            $senderId = !empty($notification['notify_sender']) ? 0 : (int) ($notification['sender_id'] ?? 0);
             $ids = array_values(array_unique(array_filter(
                 array_map('intval', $recipientIds),
                 static fn (int $id) => $id > 0 && $id !== $senderId
@@ -171,13 +173,82 @@ class PushService
 
         $link = NotificationModel::sourceLink($n);
 
-        return [
+        $payload = [
             'id'    => $notifId,
             'title' => $clip((string) ($n['title'] ?? ''), 80) ?: 'JP Preparation',
             'body'  => $clip((string) ($n['body'] ?? ''), 140),
             'url'   => 'notificaciones/' . $notifId . '/ir',
             'kind'  => $link ? (string) $n['source_type'] : 'general',
         ];
+
+        // Los mensajes de una misma conversación comparten tarjeta en el móvil (se sustituye la
+        // anterior en vez de apilar una por mensaje).
+        if (($n['source_type'] ?? null) === NotificationModel::SOURCE_CONVERSATION && (int) ($n['source_id'] ?? 0) > 0) {
+            $payload['tag'] = 'jp-c-' . (int) $n['source_id'];
+        }
+
+        return $payload;
+    }
+
+    /** Desde cuántas notificaciones a la misma persona (en una pasada) se manda un único resumen. */
+    public const SUMMARY_AT = 3;
+
+    /** Texto del resumen «Tienes N notificaciones nuevas». Pura. */
+    public static function summaryPayload(int $count): array
+    {
+        return [
+            'id'    => null,
+            'title' => "Tienes {$count} notificaciones nuevas",
+            'body'  => 'Toca para verlas todas.',
+            'url'   => 'notificaciones',
+            'kind'  => 'general',
+            'tag'   => 'jp-group',
+            'count' => $count,
+        ];
+    }
+
+    /**
+     * Anti-saturación: si en una misma pasada a una persona le tocan {$threshold} o más
+     * notificaciones, en vez de {$threshold}+ avisos en el móvil recibe UNO («Tienes N
+     * notificaciones nuevas»). Las notificaciones siguen todas en la campanita. Pura.
+     *
+     * @param  list<array{notif: int, recipients: list<int>, payload: array}> $queue
+     * @return list<array{notif: int, recipients: list<int>, payload: array}>
+     */
+    public static function summarizeQueue(array $queue, int $threshold = self::SUMMARY_AT): array
+    {
+        $perUser  = [];
+        $lastNotif = [];
+        foreach ($queue as $job) {
+            foreach ($job['recipients'] as $uid) {
+                $perUser[$uid]   = ($perUser[$uid] ?? 0) + 1;
+                $lastNotif[$uid] = $job['notif'];
+            }
+        }
+
+        $summarized = array_keys(array_filter($perUser, static fn (int $n) => $n >= $threshold));
+        if ($summarized === []) {
+            return $queue;
+        }
+
+        $out = [];
+        foreach ($queue as $job) {
+            $job['recipients'] = array_values(array_diff($job['recipients'], $summarized));
+            if ($job['recipients'] !== []) {
+                $out[] = $job;
+            }
+        }
+
+        // Un resumen por cada "N" distinto (los que tienen el mismo N comparten envío).
+        $byCount = [];
+        foreach ($summarized as $uid) {
+            $byCount[$perUser[$uid]][] = $uid;
+        }
+        foreach ($byCount as $count => $uids) {
+            $out[] = ['notif' => (int) $lastNotif[$uids[0]], 'recipients' => array_values($uids), 'payload' => self::summaryPayload((int) $count)];
+        }
+
+        return $out;
     }
 
     /** Envía lo encolado. Tras la respuesta HTTP; no lanza nunca. */
@@ -201,12 +272,17 @@ class PushService
             }
 
             $alive = self::existingNotifications(array_column($queue, 'notif'));
+            $live  = [];
             foreach ($queue as $job) {
                 if (!in_array($job['notif'], $alive, true)) {
                     // La notificación no existe (transacción revertida): un push llevaría a un 404.
                     PushLogger::warning('job_dropped', ['notif' => $job['notif'], 'reason' => 'notificación inexistente']);
                     continue;
                 }
+                $live[] = $job;
+            }
+
+            foreach (self::summarizeQueue($live) as $job) {
                 try {
                     self::deliver($transport, $job);
                 } catch (\Throwable $e) {
