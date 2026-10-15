@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.0.3",
+        "date": "2026-10-15 00:00:00",
+        "description": "Las notificaciones push funcionan también en el entorno de pre-producción (Render): el arranque del servidor pasa las claves VAPID a la aplicación. Sin cambios para el resto de entornos."
+    },
+    {
         "version": "2.0.2",
         "date": "2026-10-15 00:00:00",
         "description": "Clases más sencillas para el alumno y las familias: la ficha de la clase muestra un panel «Tu clase» y lo primero que se ve es el aviso de que no va a asistir («No puedo ir» o el estado del aviso enviado), en móvil y en escritorio. Aviso tardío con descuento de bono, mensaje al entrenador y pestaña de ayuda. Migración: 2026-10-15-000001 (docs/deploy/migraciones_mensaje_alumno_clase.sql)."
