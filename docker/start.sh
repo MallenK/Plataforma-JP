@@ -29,6 +29,11 @@ email.SMTPPass   = "${SMTP_PASS:-}"
 email.SMTPPort   = ${SMTP_PORT:-587}
 email.SMTPCrypto = tls
 email.mailType   = html
+
+# Notificaciones push (PWA). Sin claves VAPID el push queda desactivado.
+vapid.publicKey  = "${VAPID_PUBLIC_KEY:-}"
+vapid.privateKey = "${VAPID_PRIVATE_KEY:-}"
+vapid.subject    = "${VAPID_SUBJECT:-mailto:info@jppreparation.com}"
 EOF
 
 echo "==> Running database migrations..."
