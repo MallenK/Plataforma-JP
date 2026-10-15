@@ -247,6 +247,7 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
     });
 
     // ── Polling cada 60 s ────────────────────────────────────
+    let lastNotifId = null; // id de la notificación más reciente vista (null = aún no hay referencia)
     async function pollAll() {
         try {
             const res  = await fetch(BASE + 'notificaciones/latest', {
@@ -255,6 +256,19 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
             const data = await res.json();
             // Número en el icono de la app instalada (PWA)
             if (data.unread !== undefined) window.JPPwa?.setBadge(data.unread);
+            // Avisos nuevos desde el último sondeo → las zonas data-live de la página se actualizan
+            // solas (live.js). El primer sondeo solo fija la referencia. Quien tiene push ya lo
+            // recibe al instante por 'jp:push'; esto cubre a quien no.
+            if (Array.isArray(data.notifications)) {
+                const maxId = data.notifications.reduce((m, n) => Math.max(m, parseInt(n.id) || 0), 0);
+                if (lastNotifId !== null && maxId > lastNotifId) {
+                    const kinds = [...new Set(data.notifications
+                        .filter(n => (parseInt(n.id) || 0) > lastNotifId)
+                        .map(n => n.source_type || '*'))];
+                    window.dispatchEvent(new CustomEvent('jp:notif-new', { detail: { kinds } }));
+                }
+                lastNotifId = Math.max(lastNotifId ?? 0, maxId);
+            }
             // Solo actualizar badge, no re-renderizar lista si está abierta
             if (!isOpen && data.unread !== undefined) {
                 if (data.unread > 0) {

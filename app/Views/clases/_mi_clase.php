@@ -35,7 +35,7 @@ $reasonKinds = [
     'otro'    => ['bi-three-dots',       'Otro motivo'],
 ];
 ?>
-<section class="mc-card" aria-labelledby="mc-title-<?= $sid ?>" style="--mc-accent:<?= esc($statusColor, 'attr') ?>">
+<section class="mc-card" aria-labelledby="mc-title-<?= $sid ?>" style="--mc-accent:<?= esc($statusColor, 'attr') ?>" data-live="mi-clase" data-live-kinds="class">
     <!-- Lo primero que ve la familia: avisar de que no va a la clase (o el estado del aviso) -->
     <div class="mc-aviso">
     <?php if ($session['status'] === 'cancelled'): ?>

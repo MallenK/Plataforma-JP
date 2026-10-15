@@ -49,6 +49,8 @@
 <script src="<?= base_url('assets/js/app.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/app.js') ?: time() ?>"></script>
 <!-- PWA: service worker, instalación y notificaciones push -->
 <script src="<?= base_url('assets/js/pwa.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/pwa.js') ?: time() ?>" data-base="<?= base_url() ?>"></script>
+<!-- Actualización en vivo: refresca zonas data-live al llegar un aviso -->
+<script src="<?= base_url('assets/js/live.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/live.js') ?: time() ?>"></script>
 <!-- Reporte de problemas desde alertas de error / permiso -->
 <script src="<?= base_url('assets/js/error-report.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/error-report.js') ?: time() ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->
