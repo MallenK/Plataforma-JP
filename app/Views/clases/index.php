@@ -25,8 +25,9 @@
 <?php endif; ?>
 
 <!-- ── Métricas ──────────────────────────────────────────────── -->
+<?php $mCol = in_array(session('role'), ['player', 'alumno'], true) ? 'col-6 col-md-6' : 'col-6 col-md-3'; ?>
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="<?= $mCol ?>">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Esta semana</span>
@@ -36,7 +37,7 @@
             <div class="metric-footer"><span class="metric-footer-label">clases programadas</span></div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="<?= $mCol ?>">
         <div class="metric-card">
             <div class="metric-card-header">
                 <span class="metric-label">Este mes</span>
@@ -46,6 +47,7 @@
             <div class="metric-footer"><span class="metric-footer-label">total del mes</span></div>
         </div>
     </div>
+    <?php if (!in_array(session('role'), ['player', 'alumno'], true)): // el alumno no ve datos del grupo ?>
     <div class="col-6 col-md-3">
         <div class="metric-card">
             <div class="metric-card-header">
@@ -66,6 +68,7 @@
             <div class="metric-footer"><span class="metric-footer-label">últimas 4 semanas</span></div>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <!-- ── Calendario ────────────────────────────────────────────── -->

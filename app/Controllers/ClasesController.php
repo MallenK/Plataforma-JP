@@ -266,6 +266,7 @@ class ClasesController extends BaseController
             'locationOptions'    => $canManage ? $this->clasesService->getLocationOptions() : [],
             'currentUserId'      => $userId,
             'myPlayer'           => $myPlayer,
+            'noticePolicy'       => $this->clasesService->noticePolicy(),
             // "Cambiar responsable" (TICKET-011): nº de sesiones futuras de
             // la misma serie, para ofrecer el alcance "esta y las siguientes".
             'seriesFutureCount'  => $canManage ? $this->clasesService->countFutureSeriesSessions($id) : 0,
@@ -596,7 +597,18 @@ class ClasesController extends BaseController
 
     public function notifyAbsence(int $id)
     {
-        $note   = trim($this->request->getPost('student_note') ?? '');
+        $kinds = [
+            'enfermo' => 'Enfermo o lesionado',
+            'colegio' => 'Colegio o exámenes',
+            'viaje'   => 'Viaje o familia',
+            'otro'    => 'Otro motivo',
+        ];
+        $kind   = (string) $this->request->getPost('reason_kind');
+        $extra  = trim((string) ($this->request->getPost('student_note') ?? ''));
+        $note   = isset($kinds[$kind])
+            ? $kinds[$kind] . ($extra !== '' ? ': ' . $extra : '')
+            : $extra;
+        $note   = mb_substr($note, 0, 300);
         $result = $this->clasesService->notifyAbsence(
             $this->currentUserId(),
             $id,
@@ -606,11 +618,33 @@ class ClasesController extends BaseController
         if (!$result['success']) {
             session()->setFlashdata('error', $result['error'] ?? 'Error al registrar el aviso.');
         } else {
-            $msg = 'Tu aviso de ausencia ha sido registrado.';
+            $msg = 'Listo, hemos avisado al equipo de que no vas a ir a esta clase.';
             if ($result['lateNotice'] ?? false) {
-                $msg .= ' Nota: el aviso se ha enviado con menos de 24 horas de antelación a la clase.';
+                $msg .= ' Como faltaban menos de ' . (int) ($result['hours'] ?? 24) . ' horas, es un aviso tardío'
+                      . (($result['deducted'] ?? false) ? ' y se ha descontado una sesión de tu bono hasta que el entrenador cierre la clase.' : '.');
             }
             session()->setFlashdata('success', $msg);
+        }
+
+        return redirect()->to('/clases/' . $id);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Mensaje del alumno al equipo (sobre una clase concreta)
+    // ────────────────────────────────────────────────────────────────
+
+    public function studentMessage(int $id)
+    {
+        $result = $this->clasesService->sendStudentMessage(
+            $this->currentUserId(),
+            $id,
+            (string) ($this->request->getPost('student_message') ?? '')
+        );
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se ha podido enviar el mensaje.');
+        } else {
+            session()->setFlashdata('success', 'Mensaje enviado. Lo verán tu entrenador y la administración.');
         }
 
         return redirect()->to('/clases/' . $id);

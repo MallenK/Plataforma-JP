@@ -103,19 +103,41 @@ final class ClasesAbsenceNoticeTest extends CIUnitTestCase
         $this->assertStringContainsString('24 horas', $n['body']);
     }
 
-    // ── Vista: panel de plazo claro (verde a tiempo / rojo fuera de plazo) ──
+    // ── Vista del alumno: panel «Tu clase» con plazo claro y consecuencia explicada ──
 
-    public function testViewShowsClearDeadlinePanelWithoutBrokenSentence(): void
+    public function testStudentPanelExplainsDeadlineAndConsequenceBeforeConfirming(): void
+    {
+        $view = file_get_contents(APPPATH . 'Views/clases/_mi_clase.php');
+
+        $this->assertStringContainsString('No puedo ir', $view);
+        $this->assertStringContainsString('Avisas con tiempo.', $view);
+        $this->assertStringContainsString('Faltan menos de <?= $hours ?> horas para la clase.', $view);
+        $this->assertStringContainsString('Sí, avisar que no voy', $view);
+        // Sin deshacer: se remite a escribir a administración.
+        $this->assertStringContainsString('no se puede deshacer', $view);
+        $this->assertStringContainsString('/mensaje', $view);
+        // Un aviso sin motivo también se confirma (antes el formulario volvía a salir).
+        $this->assertStringContainsString("!empty(\$myPlayer['student_noted_at'])", $view);
+    }
+
+    public function testShowHidesClassmatesAndGroupSummaryFromStudents(): void
     {
         $view = file_get_contents(APPPATH . 'Views/clases/show.php');
 
-        $this->assertStringContainsString('Recuerda: los avisos deben enviarse con al menos', $view);
-        $this->assertStringContainsString('Aún estás a tiempo de avisar', $view);
-        $this->assertStringContainsString('Ya no estás a tiempo de avisar', $view);
-        $this->assertStringContainsString("'is-late' : 'is-ok'", $view);
-        // La frase antigua partida ("…, es decir, antes del dd/mm a las") ya no existe.
-        $this->assertStringNotContainsString('es decir, antes del', $view);
-        // El panel no debe ser .alert-jp (flex: partía el texto en columnas).
-        $this->assertStringNotContainsString('class="alert-jp" style="background:rgba(245,158,11', $view);
+        $this->assertStringContainsString("if (\$canManage && !empty(\$session['players']))", $view);
+        $this->assertStringContainsString("view('clases/_mi_clase'", $view);
+        $this->assertStringNotContainsString('Vista jugador: solo ve a sus compañeros', $view);
+    }
+
+    public function testNotificationMentionsDeductionOnlyWhenLateAndDeducted(): void
+    {
+        $session = ['title' => 'Clase', 'session_date' => '2026-09-29', 'start_time' => '17:00'];
+
+        $late = ClasesService::buildAbsenceNotification($session, 'Ana', '', true, 12, true);
+        $this->assertStringContainsString('12 horas', $late['body']);
+        $this->assertStringContainsString('descontado una sesión', $late['body']);
+
+        $onTime = ClasesService::buildAbsenceNotification($session, 'Ana', '', false, 12, true);
+        $this->assertStringNotContainsString('descontado', $onTime['body']);
     }
 }
