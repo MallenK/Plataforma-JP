@@ -1,5 +1,10 @@
 [
     {
+        "version": "1.32.1",
+        "date": "2026-10-15 00:00:00",
+        "description": "Clases más sencillas para el alumno y las familias. La ficha de la clase muestra arriba un panel «Tu clase» con un botón «No puedo ir»: se elige el motivo y, antes de confirmar, se explica qué pasará. Corregido que un aviso sin motivo no se confirmara en pantalla. El alumno puede escribir un mensaje al entrenador y a la administración sobre su clase (lo ven ambos). El alumno ya no ve a sus compañeros ni las métricas del grupo. Nueva pestaña Ayuda para alumnos."
+    },
+    {
         "version": "1.32.0",
         "date": "2026-10-09 00:00:00",
         "description": "En la ficha del alumno, cada bono con notas muestra un desplegable «Ver notas» con lo que se escribió al crearlo. En el calendario, una clase con un alumno en estado «Avisó ausencia» se marca en naranja aunque aún no se haya pasado lista."
