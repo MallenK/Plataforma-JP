@@ -148,6 +148,148 @@ const region = (id, kinds, inner) => '<div id="' + id + '" data-live="' + id + '
         ok(p.doc.getElementById('a').innerHTML === 'nuevo', 'al volver a la pestaña se actualiza');
     }
 
+    // ════════════════ FASE 2 — sondeo único ════════════════
+    /** Página con un `fetch` totalmente controlado por `handler(url, opts)`. */
+    const page2 = (bodyHtml, handler, url) => {
+        const dom = new JSDOM('<!doctype html><body>' + bodyHtml + '</body>', { url: url || 'https://app.test/clases/7', runScripts: 'outside-only', pretendToBeVisual: true });
+        const w = dom.window;
+        const calls = [];
+        const alerts = [];
+        const navs = [];
+        w.fetch = async (u, o) => { calls.push({ url: u, opts: o }); return handler(u, o, calls.length); };
+        w.showAlert = (m, t) => alerts.push({ m, t });
+        w.eval(SRC);
+        w.JPLive._test.nav.assign = (u) => navs.push(['assign', u]);
+        w.JPLive._test.nav.reload = () => navs.push(['reload']);
+        return { w, calls, alerts, navs, doc: w.document };
+    };
+    const json = (obj) => ({ ok: true, redirected: false, url: 'https://app.test/live/ping', json: async () => obj });
+    const snap = (extra) => Object.assign({ unread: 0, msg_unread: 0, tickets_pending: null, max_id: 10, new_kinds: [], stamps: { class: 'A', bono: 'B', ticket: 'C' } }, extra);
+
+    {
+        const { w } = page2('', () => json({}));
+        const t = w.JPLive._test;
+        ok(JSON.stringify(t.changedKinds({ class: 'A', bono: 'B' }, { class: 'A2', bono: 'B' })) === '["class"]', 'changedKinds: solo la zona cuyo sello cambió');
+        ok(t.changedKinds(null, { class: 'A' }).length === 0 && t.changedKinds({ class: 'A' }, { class: null }).length === 0, 'changedKinds: sin referencia o sin sello (null) no cuenta como cambio');
+    }
+    {
+        // El primer sondeo solo fija la referencia; el segundo, con otro sello de clases, actualiza.
+        let n = 0;
+        const p = page2(region('a', 'class', 'viejo') + region('b', 'bono', 'viejo-b'), (u) => {
+            if (/live\/ping/.test(u)) { n++; return json(snap(n === 1 ? {} : { stamps: { class: 'A2', bono: 'B', ticket: 'C' } })); }
+            return { ok: true, redirected: false, url: u, text: async () => '<body>' + region('a', 'class', 'NUEVO') + region('b', 'bono', 'NUEVO-B') + '</body>' };
+        });
+        await p.w.JPLive.ping();
+        await sleep(900);
+        ok(p.calls.length === 1 && p.doc.getElementById('a').innerHTML === 'viejo', 'primer sondeo: fija la referencia y no refresca nada');
+        await p.w.JPLive.ping();
+        await sleep(1000);
+        ok(p.doc.getElementById('a').innerHTML === 'NUEVO', 'cambia el sello de clases → se actualiza la zona de clases (aunque no haya aviso)');
+        ok(p.doc.getElementById('b').innerHTML === 'viejo-b', 'cambia solo el sello de clases → la zona de bonos no se toca');
+        ok(/since=10/.test(p.calls[1].url), 'el sondeo manda el último id de aviso visto (since)');
+    }
+    {
+        // Avisos nuevos (new_kinds) del servidor
+        let n = 0;
+        const p = page2(region('a', 'bono', 'viejo'), (u) => {
+            if (/live\/ping/.test(u)) { n++; return json(snap(n === 1 ? {} : { new_kinds: ['bono'], max_id: 11 })); }
+            return { ok: true, redirected: false, url: u, text: async () => '<body>' + region('a', 'bono', 'NUEVO') + '</body>' };
+        });
+        await p.w.JPLive.ping(); await p.w.JPLive.ping();
+        await sleep(1000);
+        ok(p.doc.getElementById('a').innerHTML === 'NUEVO', 'new_kinds del servidor → se actualiza la zona de ese tipo');
+    }
+    {
+        // La barra superior recibe los contadores en un evento
+        const p = page2('', () => json(snap({ unread: 4, msg_unread: 2, tickets_pending: 3 })));
+        let got = null;
+        p.w.addEventListener('jp:live-ping', (e) => { got = e.detail; });
+        await p.w.JPLive.ping();
+        ok(got && got.unread === 4 && got.msg_unread === 2 && got.tickets_pending === 3, 'jp:live-ping lleva los contadores para la barra superior');
+    }
+    {
+        // Sesión caducada / error: ni evento ni cambios
+        const p = page2(region('a', 'class', 'viejo'), () => ({ ok: true, redirected: true, url: 'https://app.test/login', json: async () => { throw new Error('html'); } }));
+        let fired = false;
+        p.w.addEventListener('jp:live-ping', () => { fired = true; });
+        await p.w.JPLive.ping();
+        ok(!fired, 'sondeo con sesión caducada: no emite nada y no rompe');
+        const q = page2('', () => { throw new Error('sin red'); });
+        let threw = false;
+        try { await q.w.JPLive.ping(); } catch (e) { threw = true; }
+        ok(!threw, 'sondeo sin red: no lanza');
+    }
+
+    // ════════════════ FASE 3 — formularios sin recarga ════════════════
+    const formPage = (handler) => page2(
+        region('mi', 'class', '<form id="f" action="/clases/7/ausencia" method="POST" data-live-form><input name="reason" value="enfermo"><button type="submit">Enviar</button></form>') +
+        region('otra', 'bono', 'sin-cambios'),
+        handler);
+    const submit = (p) => p.doc.getElementById('f').dispatchEvent(new p.w.Event('submit', { bubbles: true, cancelable: true }));
+    const okPage = (url, body) => ({ ok: true, redirected: true, url, text: async () => '<body><div class="alert-jp success">Aviso enviado</div>' + body + '</body>' });
+
+    {
+        const p = formPage((u, o) => okPage('https://app.test/clases/7', region('mi', 'class', '<p id=\"estado\">Aviso enviado: no vas a venir</p>') + region('otra', 'bono', 'sin-cambios')));
+        const ev = submit(p);
+        await sleep(300);
+        ok(p.calls.length === 1 && p.calls[0].opts.method === 'POST' && p.calls[0].opts.body && p.calls[0].url === '/clases/7/ausencia', 'formulario: se envía por fetch (POST) a su action');
+        ok(p.calls[0].opts.body.get('reason') === 'enfermo', 'formulario: lleva sus campos (FormData)');
+        ok(p.doc.getElementById('estado'), 'formulario: la zona del propio formulario se actualiza con la respuesta');
+        ok(p.alerts.length === 1 && p.alerts[0].m === 'Aviso enviado' && p.alerts[0].t === 'success', 'formulario: el mensaje del servidor sale como aviso emergente');
+        ok(p.navs.length === 0, 'formulario: sin recarga ni navegación');
+    }
+    {
+        // El formulario con foco/desplegable abierto en SU zona sí se actualiza; otra zona ocupada no
+        const p = formPage((u) => okPage('https://app.test/clases/7', region('mi', 'class', 'listo') + region('otra', 'bono', 'CAMBIADA')));
+        p.doc.getElementById('otra').setAttribute('data-live-skip', '');
+        submit(p);
+        await sleep(300);
+        ok(p.doc.getElementById('mi').innerHTML === 'listo' && p.doc.getElementById('otra').innerHTML === 'sin-cambios', 'formulario: respeta data-live-skip en otras zonas');
+    }
+    {
+        // Doble envío mientras está en curso
+        let resolve;
+        const p = formPage(() => new Promise((r) => { resolve = r; }));
+        submit(p); submit(p);
+        await sleep(100);
+        ok(p.calls.length === 1, 'formulario: un doble clic no envía dos veces');
+        ok(p.doc.querySelector('#f button').disabled, 'formulario: mientras envía, los botones quedan desactivados');
+        resolve({ ok: true, redirected: true, url: 'https://app.test/clases/7', text: async () => '<body>' + region('mi', 'class', 'fin') + '</body>' });
+        await sleep(100);
+    }
+    {
+        // Redirige a otra pantalla → navegación normal
+        const p = formPage(() => okPage('https://app.test/clases', 'otra pantalla'));
+        submit(p);
+        await sleep(300);
+        ok(p.navs.length === 1 && p.navs[0][0] === 'assign' && p.navs[0][1] === 'https://app.test/clases', 'formulario: si el servidor redirige a otra pantalla, se navega a ella');
+    }
+    {
+        // Error del servidor: aviso + recarga (nunca se queda a medias)
+        const p = formPage(() => ({ ok: false, status: 500, redirected: false, url: 'https://app.test/clases/7/ausencia', text: async () => 'error' }));
+        submit(p);
+        await sleep(1500);
+        ok(p.alerts.length === 1 && p.alerts[0].t === 'error', 'formulario con error 500: avisa');
+        ok(p.navs.some((n) => n[0] === 'reload'), 'formulario con error 500: recarga la página');
+    }
+    {
+        // No interfiere con formularios normales ni con los que piden confirmación
+        const dom = page2('<form id="n" action="/x" method="POST"></form><form id="c" action="/y" method="POST" data-live-form data-ru-confirm="¿Seguro?"></form>', () => json({}));
+        const evN = new dom.w.Event('submit', { bubbles: true, cancelable: true });
+        dom.doc.getElementById('n').dispatchEvent(evN);
+        const evC = new dom.w.Event('submit', { bubbles: true, cancelable: true });
+        dom.doc.getElementById('c').dispatchEvent(evC);
+        await sleep(100);
+        ok(!evN.defaultPrevented && dom.calls.length === 0, 'formulario sin data-live-form: no se toca');
+        ok(!evC.defaultPrevented, 'formulario con data-ru-confirm: sigue su camino (el diálogo de confirmación)');
+    }
+    {
+        const doc = new JSDOM('<body><div class="alert-jp success">Hecho</div><div class="alert-jp error">Ups</div></body>').window.document;
+        const { w } = page2('', () => json({}));
+        const f = w.JPLive._test.flashFrom(doc);
+        ok(f.length === 2 && f[0].type === 'success' && f[1].type === 'error' && f[1].text === 'Ups', 'flashFrom: lee los mensajes de la página (éxito/error)');
+    }
+
     console.log(failed ? '\n' + failed + ' FALLO(S)' : '\nTodo OK');
     process.exit(failed ? 1 : 0);
 })();

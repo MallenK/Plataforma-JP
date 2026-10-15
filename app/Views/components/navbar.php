@@ -246,31 +246,15 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
         });
     });
 
-    // ── Polling cada 60 s ────────────────────────────────────
-    let lastNotifId = null; // id de la notificación más reciente vista (null = aún no hay referencia)
-    async function pollAll() {
-        try {
-            const res  = await fetch(BASE + 'notificaciones/latest', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const data = await res.json();
-            // Número en el icono de la app instalada (PWA)
-            if (data.unread !== undefined) window.JPPwa?.setBadge(data.unread);
-            // Avisos nuevos desde el último sondeo → las zonas data-live de la página se actualizan
-            // solas (live.js). El primer sondeo solo fija la referencia. Quien tiene push ya lo
-            // recibe al instante por 'jp:push'; esto cubre a quien no.
-            if (Array.isArray(data.notifications)) {
-                const maxId = data.notifications.reduce((m, n) => Math.max(m, parseInt(n.id) || 0), 0);
-                if (lastNotifId !== null && maxId > lastNotifId) {
-                    const kinds = [...new Set(data.notifications
-                        .filter(n => (parseInt(n.id) || 0) > lastNotifId)
-                        .map(n => n.source_type || '*'))];
-                    window.dispatchEvent(new CustomEvent('jp:notif-new', { detail: { kinds } }));
-                }
-                lastNotifId = Math.max(lastNotifId ?? 0, maxId);
-            }
-            // Solo actualizar badge, no re-renderizar lista si está abierta
-            if (!isOpen && data.unread !== undefined) {
+    // ── Números de la barra superior ─────────────────────────
+    // Un único sondeo (live.js → GET live/ping, cada 30 s con la pestaña visible, y al instante
+    // cuando llega un push) trae los tres contadores. Antes eran 3 peticiones cada 60 s.
+    function applyPing(data) {
+        // Campanita + número en el icono de la app instalada (PWA)
+        if (data.unread !== undefined) {
+            window.JPPwa?.setBadge(data.unread);
+            // Con el desplegable abierto no se repinta la lista (solo el contador al abrir/leer)
+            if (!isOpen) {
                 if (data.unread > 0) {
                     bellBadge.textContent = data.unread > 99 ? '99+' : data.unread;
                     bellBadge.classList.remove('d-none');
@@ -278,58 +262,41 @@ if (!isset($pageTitle) || !isset($pageSubtitle)) {
                     bellBadge.classList.add('d-none');
                 }
             }
-        } catch (_) {}
+        }
 
         // Mensajes no leídos
-        try {
-            const res  = await fetch(BASE + 'mensajes/conversations', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const data = await res.json();
-            if (data.conversations) {
-                const totalUnread = data.conversations.reduce((sum, c) => sum + parseInt(c.unread_count ?? 0), 0);
-                const sidebarBadge = document.getElementById('sidebar-msg-badge');
-                if (totalUnread > 0) {
-                    const txt = totalUnread > 99 ? '99+' : totalUnread;
-                    msgBadge.textContent = txt;
-                    msgBadge.classList.remove('d-none');
-                    if (sidebarBadge) { sidebarBadge.textContent = txt; sidebarBadge.classList.remove('d-none'); }
-                } else {
-                    msgBadge.classList.add('d-none');
-                    if (sidebarBadge) sidebarBadge.classList.add('d-none');
-                }
+        if (data.msg_unread !== undefined) {
+            const totalUnread = parseInt(data.msg_unread) || 0;
+            const sidebarBadge = document.getElementById('sidebar-msg-badge');
+            if (totalUnread > 0) {
+                const txt = totalUnread > 99 ? '99+' : totalUnread;
+                msgBadge.textContent = txt;
+                msgBadge.classList.remove('d-none');
+                if (sidebarBadge) { sidebarBadge.textContent = txt; sidebarBadge.classList.remove('d-none'); }
+            } else {
+                msgBadge.classList.add('d-none');
+                if (sidebarBadge) sidebarBadge.classList.add('d-none');
             }
-        } catch (_) {}
+        }
 
         // Tickets pendientes (solo admin/superadmin) — badge del botón "Soporte"
-        if (IS_ADMIN) {
-            try {
-                const res  = await fetch(BASE + 'tickets/gestion/pending-count', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const data = await res.json();
-                const ticketsBadge = document.getElementById('sidebar-tickets-badge');
-                if (ticketsBadge) {
-                    const count = parseInt(data.count ?? 0);
-                    if (count > 0) {
-                        ticketsBadge.textContent = count > 99 ? '99+' : count;
-                        ticketsBadge.classList.remove('d-none');
-                    } else {
-                        ticketsBadge.classList.add('d-none');
-                    }
+        if (IS_ADMIN && data.tickets_pending !== null && data.tickets_pending !== undefined) {
+            const ticketsBadge = document.getElementById('sidebar-tickets-badge');
+            if (ticketsBadge) {
+                const count = parseInt(data.tickets_pending) || 0;
+                if (count > 0) {
+                    ticketsBadge.textContent = count > 99 ? '99+' : count;
+                    ticketsBadge.classList.remove('d-none');
+                } else {
+                    ticketsBadge.classList.add('d-none');
                 }
-            } catch (_) {}
+            }
         }
     }
 
-    // Carga inicial y polling
-    // Cada sondeo son 2-3 peticiones (= conexiones a BD): 60 s y solo con la pestaña
-    // visible, que además refresca al volver. Hosting compartido limita conexiones/hora.
-    pollAll();
-    setInterval(() => { if (!document.hidden) pollAll(); }, 60000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) pollAll(); });
-    // Push recibido con la pestaña abierta (service worker): refrescar campanita y mensajes al instante.
-    window.addEventListener('jp:push', () => { pollAll(); if (isOpen) fetchNotifications(); });
+    window.addEventListener('jp:live-ping', (e) => applyPing(e.detail || {}));
+    // Push recibido con la pestaña abierta: si la lista de la campanita está abierta, refrescarla.
+    window.addEventListener('jp:push', () => { if (isOpen) fetchNotifications(); });
 
     // ── Helpers ──────────────────────────────────────────────
     function timeAgoJS(dt) {

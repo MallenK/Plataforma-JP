@@ -137,6 +137,149 @@
     });
     window.addEventListener('pageshow', function (e) { if (e.persisted) schedule(['*']); });
 
-    // Tipos de aviso → los de notification.source_type (conversation, ticket, class, bono).
-    window.JPLive._test = { wants: wants, normalize: normalize, busyRegion: busyRegion };
+    // ════════════════════════════════════════════════════════════════════
+    //  FASE 2 — sondeo único (GET live/ping) cada 30 s con la pestaña visible
+    //  Sustituye a los 3 sondeos sueltos de la barra superior (campanita, mensajes,
+    //  tickets). Devuelve contadores + «sellos de cambio» por zona: si un sello cambia
+    //  (alguien tocó una clase, un bono, un ticket) se actualizan las zonas de esa zona,
+    //  haya habido aviso o no. Emite 'jp:live-ping' para que la barra superior pinte sus
+    //  números.
+    // ════════════════════════════════════════════════════════════════════
+    var PING_EVERY_MS = 30000;
+    var stamps = null;          // null = aún sin referencia (el primer sondeo no refresca nada)
+    var maxId  = 0;
+    var pingTimer = null;
+    var pinging = false;
+
+    function baseUrl() {
+        var s = document.querySelector('script[data-base]');
+        var b = (s && s.getAttribute('data-base')) || '/';
+        return b.charAt(b.length - 1) === '/' ? b : b + '/';
+    }
+
+    /** Zonas cuyo sello cambió entre dos sondeos. Pura. */
+    function changedKinds(prev, next) {
+        var out = [];
+        if (!prev || !next) return out;
+        Object.keys(next).forEach(function (k) {
+            if (next[k] != null && prev[k] != null && next[k] !== prev[k]) out.push(k);
+        });
+        return out;
+    }
+
+    async function ping() {
+        if (pinging) return;
+        pinging = true;
+        try {
+            var res = await fetch(baseUrl() + 'live/ping?since=' + maxId, {
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!res.ok || res.redirected) return;                // sesión caducada: no insistir
+            var data = await res.json();
+
+            var kinds = (data.new_kinds || []).slice();
+            changedKinds(stamps, data.stamps).forEach(function (k) { if (kinds.indexOf(k) < 0) kinds.push(k); });
+            stamps = data.stamps || stamps;
+            maxId  = Math.max(maxId, parseInt(data.max_id, 10) || 0);
+
+            window.dispatchEvent(new CustomEvent('jp:live-ping', { detail: data }));
+
+            // Con push el mismo cambio ya llegó por 'jp:push' hace un instante: no repetir.
+            if (kinds.length && !(Date.now() - lastRun < 5000 && pending.size === 0)) schedule(kinds);
+        } catch (e) {
+            /* sin red: se reintenta en el próximo ciclo */
+        } finally {
+            pinging = false;
+        }
+    }
+
+    function startPinging() {
+        if (pingTimer) return;
+        ping();
+        pingTimer = setInterval(function () { if (!document.hidden) ping(); }, PING_EVERY_MS);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) ping(); });
+        window.addEventListener('jp:push', function () { ping(); }); // refresca los números al instante
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  FASE 3 — formularios sin recarga:  <form data-live-form> …
+    //  Se envía por fetch, el servidor responde como siempre (redirige a la página con su
+    //  mensaje) y de esa respuesta se toman las zonas data-live y el mensaje, que sale como
+    //  aviso emergente. Sin JS, o si algo falla, el formulario funciona igual que antes.
+    //  Los formularios con confirmación (data-ru-confirm) siguen su camino normal.
+    // ════════════════════════════════════════════════════════════════════
+    // Navegación aislada para poder sustituirla en los tests.
+    var nav = { assign: function (u) { location.assign(u); }, reload: function () { location.reload(); } };
+
+    function toast(msg, type) {
+        if (typeof window.showAlert === 'function') window.showAlert(msg, type);
+    }
+
+    /** Mensajes (.alert-jp) de una página ya parseada → [{type, text}]. */
+    function flashFrom(doc) {
+        return Array.prototype.map.call(doc.querySelectorAll('.alert-jp'), function (el) {
+            return { type: el.classList.contains('error') ? 'error' : 'success', text: (el.textContent || '').trim() };
+        }).filter(function (m) { return m.text; });
+    }
+
+    async function submitLiveForm(form, submitter) {
+        var buttons = form.querySelectorAll('button, input[type=submit]');
+        buttons.forEach(function (b) { b.disabled = true; });
+        form.setAttribute('aria-busy', 'true');
+        try {
+            var res = await fetch(form.getAttribute('action') || location.href, {
+                method: (form.getAttribute('method') || 'POST').toUpperCase(),
+                body: new FormData(form, submitter || undefined),
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-JP-Live': '1' },
+            });
+            if (!res.ok) throw new Error('http ' + res.status);
+
+            var finalUrl = new URL(res.url, location.href);
+            if (/\/login/.test(finalUrl.pathname) || finalUrl.pathname !== location.pathname) {
+                nav.assign(res.url);                              // otra pantalla: navegación normal
+                return;
+            }
+
+            var doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            var swapped = 0;
+            document.querySelectorAll('[data-live]').forEach(function (el) {
+                var id = el.getAttribute('data-live');
+                var fresh = Array.prototype.find.call(doc.querySelectorAll('[data-live]'), function (n) { return n.getAttribute('data-live') === id; });
+                if (!fresh) return;
+                // La zona del propio formulario SÍ se actualiza (es lo que acaba de cambiar).
+                if (!el.contains(form) && busyRegion(el)) return;
+                if (el.innerHTML !== fresh.innerHTML) { el.innerHTML = fresh.innerHTML; swapped++; }
+            });
+
+            var msgs = flashFrom(doc);
+            msgs.forEach(function (m) { toast(m.text, m.type); });
+            if (!swapped) { nav.reload(); return; }               // nada que pintar: recarga normal
+            window.dispatchEvent(new CustomEvent('jp:live-form-done', { detail: { form: form, messages: msgs } }));
+            // Código propio (calendarios…): las zonas ya están al día, no hace falta pedirlas otra vez.
+            hooks.forEach(function (h) { try { h.fn(['*']); } catch (err) { console.warn('[live] hook:', err); } });
+        } catch (e) {
+            toast('No se pudo completar la acción. Se recargará la página.', 'error');
+            setTimeout(function () { nav.reload(); }, 1200);
+        }
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-live-form')) return;
+        if (form.hasAttribute('data-ru-confirm') || e.defaultPrevented) return;
+        if (!window.fetch || !window.FormData || !window.DOMParser) return;
+        if (form.getAttribute('aria-busy') === 'true') { e.preventDefault(); return; }   // doble clic
+        e.preventDefault();
+        submitLiveForm(form, e.submitter);
+    });
+
+    // Arranque: solo en pantallas con barra superior (usuario con sesión).
+    function boot() { if (document.getElementById('topbar-notif-btn')) startPinging(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+    window.JPLive.ping = ping;
+    window.JPLive._test = { wants: wants, normalize: normalize, busyRegion: busyRegion, changedKinds: changedKinds, flashFrom: flashFrom, nav: nav };
 })();

@@ -734,6 +734,11 @@ $routes->get('notificaciones/latest', 'NotificacionesController::ajaxLatest', [
     'filter' => 'auth',
 ]);
 
+// Sondeo único de la barra superior + actualización en vivo (todos los roles autenticados)
+$routes->get('live/ping', 'LiveController::ping', [
+    'filter' => 'auth',
+]);
+
 // Destino de las notificaciones push (marca leída + salta al origen)
 $routes->get('notificaciones/(:num)/ir', 'NotificacionesController::go/$1', [
     'filter' => 'auth',
