@@ -236,6 +236,14 @@ $routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
     'filter' => 'auth',
 ]);
 
+// ── Ayuda / cómo funciona (pensada para alumnos y familias; cualquier usuario con sesión) ──
+$routes->get('ayuda', 'AyudaController::index', ['filter' => 'auth']);
+
+// ── Mensaje del alumno sobre su clase (llegaré tarde, molestias, dudas) ──
+$routes->post('clases/(:num)/mensaje', 'ClasesController::studentMessage/$1', [
+    'filter' => ['auth', 'role:player'],
+]);
+
 // ── Editar / Cancelar / Eliminar ───────────────────────────
 $routes->get('clases/(:num)/editar', 'ClasesController::edit/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],

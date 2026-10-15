@@ -59,7 +59,7 @@ class ClasesService
      * Momento límite para avisar de una ausencia: ABSENCE_NOTICE_HOURS antes
      * del inicio de la clase. Null si la sesión no tiene fecha/hora válidas.
      */
-    public static function absenceNoticeDeadline(array $session): ?\DateTimeImmutable
+    public static function absenceNoticeDeadline(array $session, ?int $hours = null): ?\DateTimeImmutable
     {
         $date  = $session['session_date'] ?? '';
         $start = self::normalizeTime($session['start_time'] ?? null);
@@ -73,21 +73,27 @@ class ClasesService
             return null;
         }
 
-        return $startAt->modify('-' . self::ABSENCE_NOTICE_HOURS . ' hours');
+        return $startAt->modify('-' . ($hours ?? self::ABSENCE_NOTICE_HOURS) . ' hours');
     }
 
     /**
      * ¿Llega tarde el aviso? True si ya pasó el límite (24 h antes del inicio).
      * Justo en el límite todavía se considera a tiempo.
      */
-    public static function isLateAbsenceNotice(array $session, ?\DateTimeInterface $now = null): bool
+    public static function isLateAbsenceNotice(array $session, ?\DateTimeInterface $now = null, ?int $hours = null): bool
     {
-        $deadline = self::absenceNoticeDeadline($session);
+        $deadline = self::absenceNoticeDeadline($session, $hours);
         if ($deadline === null) {
             return false;
         }
 
         return ($now ?? new \DateTimeImmutable()) > $deadline;
+    }
+
+    /** Regla de avisos para la vista del alumno. En esta versión no hay descuento automático. */
+    public function noticePolicy(): array
+    {
+        return ['auto' => false, 'hours' => self::ABSENCE_NOTICE_HOURS];
     }
 
     public static function normalizeTime(?string $time): ?string
@@ -2790,28 +2796,85 @@ class ClasesService
             return ['success' => false, 'error' => 'No se puede notificar ausencia en una sesión que no está programada.'];
         }
 
-        $lateNotice = self::isLateAbsenceNotice($session);
+        $hours      = self::ABSENCE_NOTICE_HOURS;
+        $lateNotice = self::isLateAbsenceNotice($session, null, $hours);
 
         // Reenviar el formulario (doble clic, pestaña vieja) no debe volver a
         // avisar al equipo. Solo es "nuevo" el primer aviso, o el que añade
-        // un motivo a uno anterior enviado sin él (la ficha sigue mostrando el
-        // formulario mientras no haya motivo).
+        // un motivo a uno anterior enviado sin él.
         $firstNotice = empty($player['student_noted_at'])
             || (empty($player['student_note']) && trim($note) !== '');
 
-        $this->playerModel->update($player['id'], [
-            'student_note'      => $note ?: null,
-            'student_noted_at'  => date('Y-m-d H:i:s'),
-        ]);
+        // La hora del aviso es la del PRIMER envío: reenviar para añadir el
+        // motivo no debe convertir un aviso a tiempo en tardío.
+        $update = ['student_note' => $note ?: ($player['student_note'] ?? null)];
+        if (empty($player['student_noted_at'])) {
+            $update['student_noted_at'] = date('Y-m-d H:i:s');
+        }
+        $this->playerModel->update($player['id'], $update);
+        $player = array_merge($player, $update);
 
         if ($firstNotice) {
-            $this->notifyAbsenceToStaff($session, $player, $userId, $note, $lateNotice);
+            $this->notifyAbsenceToStaff($session, $player, $userId, $note, $lateNotice, $hours);
         }
 
         return [
             'success'    => true,
             'lateNotice' => $lateNotice,
+            'deducted'   => false,
+            'hours'      => $hours,
         ];
+    }
+
+    /** Máx. de caracteres del mensaje del alumno a su entrenador/administración. */
+    public const STUDENT_MESSAGE_MAX = 500;
+
+    /**
+     * Mensaje libre del alumno sobre una clase (llegaré tarde, vengo con
+     * molestias, una duda…). Lo ven el entrenador de la clase y los admin, en
+     * la ficha de la sesión y por notificación. No cambia la asistencia.
+     */
+    public function sendStudentMessage(int $userId, int $sessionId, string $message): array
+    {
+        $message = trim(preg_replace('/\s+/u', ' ', $message) ?? '');
+        if ($message === '') {
+            return ['success' => false, 'error' => 'Escribe un mensaje antes de enviarlo.'];
+        }
+        if (mb_strlen($message) > self::STUDENT_MESSAGE_MAX) {
+            return ['success' => false, 'error' => 'El mensaje es demasiado largo (máx. ' . self::STUDENT_MESSAGE_MAX . ' caracteres).'];
+        }
+
+        $player = $this->playerModel->where('session_id', $sessionId)->where('user_id', $userId)->first();
+        if (!$player) {
+            return ['success' => false, 'error' => 'No estás asignado a esta sesión.'];
+        }
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session || $session['status'] !== 'scheduled') {
+            return ['success' => false, 'error' => 'Solo puedes escribir sobre una clase programada.'];
+        }
+
+        // Antirrebote: el mismo texto dos veces seguidas es un doble envío.
+        if (($player['student_message'] ?? null) === $message) {
+            return ['success' => true, 'duplicate' => true];
+        }
+
+        $this->playerModel->update($player['id'], [
+            'student_message'    => $message,
+            'student_message_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        try {
+            $student = (new UserModel())->select('name')->find($userId);
+            $date    = date('d/m/Y', strtotime($session['session_date']));
+            $this->notifyClassStaff($session, $player, $userId, [
+                'title' => '💬 Mensaje de ' . ($student['name'] ?? 'un alumno') . ' sobre su clase',
+                'body'  => sprintf('%s escribe sobre la clase "%s" del %s: "%s"', $student['name'] ?? 'Un alumno', $session['title'], $date, $message),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'sendStudentMessage: notificación falló: ' . $e->getMessage());
+        }
+
+        return ['success' => true];
     }
 
     /**
@@ -2820,7 +2883,7 @@ class ClasesService
      *
      * @return array{title: string, body: string}
      */
-    public static function buildAbsenceNotification(array $session, string $studentName, string $note, bool $late): array
+    public static function buildAbsenceNotification(array $session, string $studentName, string $note, bool $late, ?int $hours = null, bool $deducted = false): array
     {
         $date  = date('d/m/Y', strtotime($session['session_date']));
         $start = self::normalizeTime($session['start_time'] ?? null) ?? '';
@@ -2837,7 +2900,10 @@ class ClasesService
         $body .= $note !== '' ? ' Motivo: "' . $note . '".' : ' No ha indicado motivo.';
 
         if ($late) {
-            $body .= sprintf(' Aviso tardío: se ha enviado con menos de %d horas de antelación.', self::ABSENCE_NOTICE_HOURS);
+            $body .= sprintf(' Aviso tardío: se ha enviado con menos de %d horas de antelación.', $hours ?? self::ABSENCE_NOTICE_HOURS);
+            if ($deducted) {
+                $body .= ' Se le ha descontado una sesión del bono; puedes devolverla al pasar lista si decides lo contrario.';
+            }
         }
 
         return [
@@ -2851,49 +2917,59 @@ class ClasesService
      * la sesión y el asignado al alumno) y todos los admin/superadmin activos.
      * Un fallo al notificar nunca debe impedir que el aviso quede registrado.
      */
-    private function notifyAbsenceToStaff(array $session, array $player, int $studentId, string $note, bool $late): void
+    private function notifyAbsenceToStaff(array $session, array $player, int $studentId, string $note, bool $late, int $hours = self::ABSENCE_NOTICE_HOURS, bool $deducted = false): void
     {
         try {
-            $recipients = array_map(
-                fn($c) => (int) $c['user_id'],
-                $this->getCoachesForSession((int) $session['id'])
-            );
-            if (!empty($player['coach_id'])) {
-                $recipients[] = (int) $player['coach_id'];
-            }
-
-            $admins = (new UserModel())
-                ->select('id')
-                ->whereIn('role', ['admin', 'superadmin'])
-                ->where('status', 'active')
-                ->findAll();
-            foreach ($admins as $a) {
-                $recipients[] = (int) $a['id'];
-            }
-
-            $recipients = array_values(array_unique(array_filter(
-                $recipients,
-                fn($r) => $r > 0 && $r !== $studentId
-            )));
-            if (empty($recipients)) {
-                return;
-            }
-
             $student = (new UserModel())->select('name')->find($studentId);
-            $msg     = self::buildAbsenceNotification($session, $student['name'] ?? 'Un alumno', $note, $late);
-
-            (new NotificationModel())->createWithRecipients([
-                'sender_id'   => $studentId,
-                'type'        => 'individual',
-                'title'       => $msg['title'],
-                'body'        => $msg['body'],
-                'created_at'  => date('Y-m-d H:i:s'),
-                'source_type' => NotificationModel::SOURCE_CLASS,
-                'source_id'   => (int) $session['id'],
-            ], $recipients);
+            $msg     = self::buildAbsenceNotification($session, $student['name'] ?? 'Un alumno', $note, $late, $hours, $deducted);
+            $this->notifyClassStaff($session, $player, $studentId, $msg);
         } catch (\Throwable $e) {
             log_message('error', 'notifyAbsenceToStaff falló: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Notificación de un alumno a quien lleva su clase: entrenadores de la
+     * sesión, el asignado al alumno y todos los admin/superadmin activos.
+     *
+     * @param array{title:string, body:string} $msg
+     */
+    private function notifyClassStaff(array $session, array $player, int $studentId, array $msg): void
+    {
+        $recipients = array_map(
+            fn($c) => (int) $c['user_id'],
+            $this->getCoachesForSession((int) $session['id'])
+        );
+        if (!empty($player['coach_id'])) {
+            $recipients[] = (int) $player['coach_id'];
+        }
+
+        $admins = (new UserModel())
+            ->select('id')
+            ->whereIn('role', ['admin', 'superadmin'])
+            ->where('status', 'active')
+            ->findAll();
+        foreach ($admins as $a) {
+            $recipients[] = (int) $a['id'];
+        }
+
+        $recipients = array_values(array_unique(array_filter(
+            $recipients,
+            fn($r) => $r > 0 && $r !== $studentId
+        )));
+        if (empty($recipients)) {
+            return;
+        }
+
+        (new NotificationModel())->createWithRecipients([
+            'sender_id'   => $studentId,
+            'type'        => 'individual',
+            'title'       => $msg['title'],
+            'body'        => $msg['body'],
+            'created_at'  => date('Y-m-d H:i:s'),
+            'source_type' => NotificationModel::SOURCE_CLASS,
+            'source_id'   => (int) $session['id'],
+        ], $recipients);
     }
 
     // ────────────────────────────────────────────────────────────────

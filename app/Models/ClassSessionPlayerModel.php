@@ -16,7 +16,7 @@ class ClassSessionPlayerModel extends Model
         'attendance', 'responded_at',
         'pre_obs', 'post_obs',
         'absence_reason', 'absence_notes',
-        'student_note', 'student_noted_at',
+        'student_note', 'student_noted_at', 'student_message', 'student_message_at',
         'bono_deducted_at', 'bono_deducted_from_id',
     ];
 }
