@@ -14,20 +14,64 @@ namespace App\Services;
  *  - Las asignaciones a un cargo anulado dejan de contar: ese dinero vuelve a
  *    ser saldo a favor.
  *
- * `allocate()`, `parseDiscount()` y `statement()` son puras (sin BD).
+ *  - Las finanzas cuentan desde una fecha de inicio (`fin_start_date`, por
+ *    defecto el 1/10/2026): lo anterior no cuenta en ninguna cifra, lista ni
+ *    reparto de Finanzas (ver startDate()).
+ *
+ * `allocate()`, `parseDiscount()`, `statement()` y `validStartDate()` son puras (sin BD).
  */
 class FinanceService
 {
+    /** Fecha desde la que cuentan las finanzas si no se ha cambiado en Configuración. */
+    public const DEFAULT_START = '2026-10-01';
+
     private \CodeIgniter\Database\BaseConnection $db;
+
+    private static ?string $startCache = null;
 
     public function __construct(?\CodeIgniter\Database\BaseConnection $db = null)
     {
         $this->db = $db ?? \Config\Database::connect();
     }
 
+    /**
+     * Fecha (Y-m-d) desde la que cuentan las finanzas. Ajuste `fin_start_date`
+     * de academy_settings; sin ajuste (o si no se puede leer), DEFAULT_START.
+     */
+    public static function startDate(?\CodeIgniter\Database\BaseConnection $db = null): string
+    {
+        if (self::$startCache !== null) {
+            return self::$startCache;
+        }
+        $value = null;
+        try {
+            $db  = $db ?? \Config\Database::connect();
+            $row = $db->table('academy_settings')->select('setting_value')->where('setting_key', 'fin_start_date')->get()->getRow();
+            $value = $row->setting_value ?? null;
+        } catch (\Throwable $e) {
+            log_message('error', 'FinanceService::startDate: ' . $e->getMessage());
+        }
+        return self::$startCache = self::validStartDate($value) ?? self::DEFAULT_START;
+    }
+
+    /** Olvida la fecha leída (tras cambiarla en Configuración). */
+    public static function resetStartDate(): void
+    {
+        self::$startCache = null;
+    }
+
     // ────────────────────────────────────────────────────────────────
     //  Puras
     // ────────────────────────────────────────────────────────────────
+
+    /** La fecha si es un Y-m-d real, si no null. Pura. */
+    public static function validStartDate(?string $value): ?string
+    {
+        if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m)) {
+            return null;
+        }
+        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $value : null;
+    }
 
     /**
      * Reparte un importe entre cargos pendientes. El cargo preferido va
@@ -137,7 +181,7 @@ class FinanceService
      * Cargo por un bono vendido o asignado (precio congelado del bono). Aplica
      * solo el saldo a favor que tuviera el alumno.
      */
-    public function chargeForBono(int $bonoId, ?int $actorId = null, ?string $discountReason = null): ?int
+    public function chargeForBono(int $bonoId, ?int $actorId = null, ?string $discountReason = null, ?string $chargedAt = null): ?int
     {
         $b = $this->db->table('player_bonos pb')
             ->select('pb.id, pb.player_id, pb.price_list_cents, pb.price_cents, pb.start_date, bt.name')
@@ -160,7 +204,7 @@ class FinanceService
             'discount_cents'  => max(0, $list - $amount),
             'discount_reason' => $list > $amount ? ($discountReason ?: 'Descuento') : null,
             'amount_cents'    => $amount,
-            'charged_at'      => date('Y-m-d'),
+            'charged_at'      => $chargedAt ?: date('Y-m-d'),
         ], $actorId);
     }
 
@@ -213,13 +257,19 @@ class FinanceService
         }
     }
 
-    /** Al corregir el precio de un bono, se rehace su cargo (anular + nuevo). */
+    /**
+     * Al corregir el precio de un bono, se rehace su cargo (anular + nuevo). El
+     * nuevo conserva la fecha de venta: corregir en octubre el precio de un bono
+     * de septiembre no es una venta de octubre.
+     */
     public function onBonoPriceChanged(int $bonoId, int $actorId): void
     {
-        foreach ($this->db->table('fin_charges')->select('id, amount_cents')->where('bono_id', $bonoId)->where('voided_at IS NULL')->get()->getResultArray() as $c) {
+        $chargedAt = null;
+        foreach ($this->db->table('fin_charges')->select('id, amount_cents, charged_at')->where('bono_id', $bonoId)->where('voided_at IS NULL')->get()->getResultArray() as $c) {
+            $chargedAt = $chargedAt ?? $c['charged_at'];
             $this->voidCharge((int) $c['id'], 'Precio del bono corregido', $actorId);
         }
-        $this->chargeForBono($bonoId, $actorId);
+        $this->chargeForBono($bonoId, $actorId, null, $chargedAt);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -299,9 +349,9 @@ class FinanceService
              LEFT JOIN (SELECT a.payment_id, SUM(a.amount_cents) AS used FROM fin_payment_allocations a
                         JOIN fin_charges c ON c.id = a.charge_id AND c.voided_at IS NULL GROUP BY a.payment_id) u
                     ON u.payment_id = p.id
-             WHERE p.player_id = ? AND p.voided_at IS NULL AND p.amount_cents - COALESCE(u.used, 0) > 0
+             WHERE p.player_id = ? AND p.voided_at IS NULL AND p.paid_at >= ? AND p.amount_cents - COALESCE(u.used, 0) > 0
              ORDER BY p.paid_at, p.id",
-            [$playerId]
+            [$playerId, self::startDate($this->db)]
         )->getResultArray();
         foreach ($credits as $cr) {
             $res = self::allocate((int) $cr['free'], $pending);
@@ -320,7 +370,12 @@ class FinanceService
         }
     }
 
-    /** @return array<int,int> chargeId => céntimos pendientes, del más antiguo al más reciente */
+    /**
+     * Cargos con algo pendiente desde la fecha de inicio (los anteriores no
+     * cuentan: un cobro nuevo nunca se reparte a un cargo de antes).
+     *
+     * @return array<int,int> chargeId => céntimos pendientes, del más antiguo al más reciente
+     */
     public function pendingCharges(int $playerId): array
     {
         $rows = $this->db->query(
@@ -328,9 +383,9 @@ class FinanceService
              FROM fin_charges c
              LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) AS paid FROM fin_payment_allocations a
                         JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x ON x.charge_id = c.id
-             WHERE c.player_id = ? AND c.voided_at IS NULL AND c.amount_cents - COALESCE(x.paid, 0) > 0
+             WHERE c.player_id = ? AND c.voided_at IS NULL AND c.charged_at >= ? AND c.amount_cents - COALESCE(x.paid, 0) > 0
              ORDER BY c.charged_at, c.id",
-            [$playerId]
+            [$playerId, self::startDate($this->db)]
         )->getResultArray();
         $out = [];
         foreach ($rows as $r) {
@@ -344,7 +399,8 @@ class FinanceService
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Todo lo económico de un alumno para su cuenta (admin) o «Mis pagos».
+     * Todo lo económico de un alumno para su cuenta (admin) o «Mis pagos»,
+     * desde la fecha de inicio de las finanzas.
      *
      * @return array{charges:array,payments:array,lines:array,totals:array}
      */
@@ -355,14 +411,15 @@ class FinanceService
              FROM fin_charges c
              LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) AS paid FROM fin_payment_allocations a
                         JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x ON x.charge_id = c.id
-             WHERE c.player_id = ?
+             WHERE c.player_id = ? AND c.charged_at >= ?
              ORDER BY c.charged_at, c.id",
-            [$playerId]
+            [$playerId, $start = self::startDate($this->db)]
         )->getResultArray();
         $payments = $this->db->table('fin_payments p')
             ->select('p.*, m.name AS method_name')
             ->join('fin_payment_methods m', 'm.id = p.method_id', 'left')
             ->where('p.player_id', $playerId)
+            ->where('p.paid_at >=', $start)
             ->orderBy('p.paid_at')->orderBy('p.id')
             ->get()->getResultArray();
 
@@ -391,26 +448,28 @@ class FinanceService
     }
 
     /**
-     * Resumen económico de todos los alumnos (pestaña Alumnos).
+     * Resumen económico de todos los alumnos (pestaña Alumnos), desde la fecha
+     * de inicio: cargos, cobros y sesiones de bonos vendidos desde entonces.
      *
      * @return array<int,array> id, name, status, charged, paid, due, sessions_left
      */
     public function playersOverview(?string $today = null): array
     {
         $today = $today ?: date('Y-m-d');
+        $start = self::startDate($this->db);
         return $this->db->query(
             "SELECT u.id, u.name, u.status,
                     COALESCE(ch.charged, 0) AS charged, COALESCE(pa.paid, 0) AS paid,
                     COALESCE(ch.charged, 0) - COALESCE(pa.paid, 0) AS due,
                     COALESCE(bo.left_s, 0) AS sessions_left
              FROM users u
-             LEFT JOIN (SELECT player_id, SUM(amount_cents) charged FROM fin_charges WHERE voided_at IS NULL GROUP BY player_id) ch ON ch.player_id = u.id
-             LEFT JOIN (SELECT player_id, SUM(amount_cents) paid FROM fin_payments WHERE voided_at IS NULL GROUP BY player_id) pa ON pa.player_id = u.id
+             LEFT JOIN (SELECT player_id, SUM(amount_cents) charged FROM fin_charges WHERE voided_at IS NULL AND charged_at >= ? GROUP BY player_id) ch ON ch.player_id = u.id
+             LEFT JOIN (SELECT player_id, SUM(amount_cents) paid FROM fin_payments WHERE voided_at IS NULL AND paid_at >= ? GROUP BY player_id) pa ON pa.player_id = u.id
              LEFT JOIN (SELECT player_id, SUM(sessions_remaining) left_s FROM player_bonos
-                        WHERE voided_at IS NULL AND sessions_remaining > 0 AND (expires_at IS NULL OR expires_at >= ?) GROUP BY player_id) bo ON bo.player_id = u.id
+                        WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ? AND (expires_at IS NULL OR expires_at >= ?) GROUP BY player_id) bo ON bo.player_id = u.id
              WHERE u.role = 'player'
              ORDER BY due DESC, u.name ASC",
-            [$today]
+            [$start, $start, $start, $today]
         )->getResultArray();
     }
 }

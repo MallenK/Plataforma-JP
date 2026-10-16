@@ -16,13 +16,14 @@ use App\Services\RevisionService;
  */
 class FinanzasController extends BaseController
 {
+    /** Periodo pedido, recortado a la fecha de inicio de las finanzas (lo anterior no cuenta). */
     private function period(): array
     {
-        return FinanceReportService::period(
+        return FinanceReportService::clampToStart(FinanceReportService::period(
             $this->request->getGet('mes'),
             $this->request->getGet('desde'),
             $this->request->getGet('hasta')
-        );
+        ), FinanceService::startDate());
     }
 
     private function base(string $tab, array $data = []): array
@@ -31,7 +32,8 @@ class FinanzasController extends BaseController
             'tab'     => $tab,
             'title'   => 'Finanzas — JP Preparation',
             'period'  => $this->period(),
-            'months'  => FinanceReportService::lastMonths(18),
+            'months'  => FinanceReportService::monthsSince(FinanceReportService::lastMonths(18), FinanceService::startDate()),
+            'finStart' => FinanceService::startDate(),
             'reviewCount' => $this->reviewCount(),
         ];
     }
@@ -162,10 +164,12 @@ class FinanzasController extends BaseController
         }
         $fin = new FinanceService();
         $today = date('Y-m-d');
+        $start = FinanceService::startDate();
         $bonos = $db->table('player_bonos pb')
             ->select('pb.*, bt.name AS bono_name')
             ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
-            ->where('pb.player_id', $playerId)->orderBy('pb.created_at', 'DESC')->get()->getResultArray();
+            ->where('pb.player_id', $playerId)->where('pb.created_at >=', $start)
+            ->orderBy('pb.created_at', 'DESC')->get()->getResultArray();
         $classes = $db->query(
             "SELECT cs.id, cs.session_date, cs.start_time, cs.status, csp.attendance, csp.bono_deducted_at, csp.bono_resolution,
                     bt.name AS bono_name, pb.price_cents / NULLIF(pb.sessions_total, 0) AS unit_cents
@@ -173,8 +177,8 @@ class FinanzasController extends BaseController
              JOIN class_sessions cs ON cs.id = csp.session_id
              LEFT JOIN player_bonos pb ON pb.id = csp.bono_deducted_from_id
              LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
-             WHERE csp.user_id = ? ORDER BY cs.session_date DESC, cs.start_time DESC LIMIT 60",
-            [$playerId]
+             WHERE csp.user_id = ? AND cs.session_date >= ? ORDER BY cs.session_date DESC, cs.start_time DESC LIMIT 60",
+            [$playerId, $start]
         )->getResultArray();
 
         return view('finanzas/alumno', $this->base('alumnos', [
@@ -182,7 +186,7 @@ class FinanzasController extends BaseController
             'account'   => $fin->account($playerId),
             'bonos'     => $bonos,
             'classes'   => $classes,
-            'debts'     => (new BonoControlService())->openDebts($playerId),
+            'debts'     => (new BonoControlService())->openDebts($playerId, $start),
             'methods'   => $fin->methods(),
             'pending'   => $fin->pendingCharges($playerId),
             'today'     => $today,
@@ -258,7 +262,7 @@ class FinanzasController extends BaseController
         $fin = new FinanceService();
         $db  = \Config\Database::connect();
         $settings = [];
-        foreach ($db->table('academy_settings')->whereIn('setting_key', ['fin_notice_hours', 'fin_auto_deduct', 'fin_tax_enabled'])->get()->getResultArray() as $s) {
+        foreach ($db->table('academy_settings')->whereIn('setting_key', ['fin_notice_hours', 'fin_auto_deduct', 'fin_tax_enabled', 'fin_start_date'])->get()->getResultArray() as $s) {
             $settings[$s['setting_key']] = $s['setting_value'];
         }
         return view('finanzas/config', $this->base('config', [
@@ -279,8 +283,8 @@ class FinanzasController extends BaseController
             'title'      => 'Finanzas · Revisión — JP Preparation',
             'counts'     => $rev->counts(),
             'unclosed'   => $unclosed,
-            'debts'      => $control->openDebts(),
-            'preControl' => $control->unreflected(),
+            'debts'      => $control->openDebts(null, FinanceService::startDate()),
+            'preControl' => $control->unreflected(null, FinanceService::startDate()),
             'estimated'  => $rev->estimatedPriceBonos(),
             'unused'     => $rev->expiredUnused(),
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
@@ -453,6 +457,13 @@ class FinanzasController extends BaseController
             'fin_notice_hours' => (string) min(168, max(1, (int) $this->request->getPost('fin_notice_hours'))),
             'fin_auto_deduct'  => $this->request->getPost('fin_auto_deduct') ? '1' : '0',
         ];
+        $start = FinanceService::validStartDate((string) $this->request->getPost('fin_start_date'));
+        if ($start !== null) {
+            if ($start > date('Y-m-d')) {
+                return $this->back('/finanzas/configuracion', ['success' => false, 'error' => 'La fecha de inicio de las finanzas no puede ser futura.'], '');
+            }
+            $vals['fin_start_date'] = $start;
+        }
         foreach ($vals as $k => $v) {
             $old = $db->table('academy_settings')->select('setting_value')->where('setting_key', $k)->get()->getRow();
             if ($old) {
@@ -464,6 +475,7 @@ class FinanzasController extends BaseController
                 AuditService::record('setting', null, AuditService::UPDATE, [$k => $old->setting_value ?? null], [$k => $v]);
             }
         }
+        FinanceService::resetStartDate();
         return $this->back('/finanzas/configuracion', ['success' => true], 'Ajustes guardados.');
     }
 

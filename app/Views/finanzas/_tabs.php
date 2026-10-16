@@ -37,6 +37,12 @@ $qs = $keep ? '?' . http_build_query($keep) : '';
     <?php endforeach; ?>
 </nav>
 
+<?php if (in_array($tab, ['alumnos', 'revision'], true)): // las pestañas con periodo ya lo dicen en su selector ?>
+<p class="mb-3" style="font-size:13px;color:var(--text-muted)">
+    <i class="bi bi-info-circle me-1"></i>Las finanzas cuentan desde el <?= date('d/m/Y', strtotime(\App\Services\FinanceService::startDate())) ?>: lo anterior no se incluye.
+</p>
+<?php endif; ?>
+
 <?php if (session()->getFlashdata('success')): ?>
 <div class="alert-jp success mb-3"><i class="bi bi-check-circle-fill me-2"></i><?= esc(session()->getFlashdata('success')) ?></div>
 <?php endif; ?>

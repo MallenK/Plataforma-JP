@@ -68,28 +68,33 @@ class BonoControlService
     /**
      * Deudas abiertas (posteriores al punto de control), de más antigua a más reciente.
      *
+     * @param string|null $fromDate además, solo clases desde esta fecha (Finanzas: su fecha de inicio)
      * @return array<int,array>
      */
-    public function openDebts(?int $playerId = null): array
+    public function openDebts(?int $playerId = null, ?string $fromDate = null): array
     {
         [$q, $since] = $this->debtQuery($playerId);
         if (!$since) {
             return [];
         }
-        return $q->where('cs.session_date >=', $since)->get()->getResultArray();
+        return $q->where('cs.session_date >=', $fromDate ? max($since, $fromDate) : $since)->get()->getResultArray();
     }
 
     /**
      * "No reflejadas": sesiones dadas ANTES del punto de control, con asistencia
      * que consume bono y sin descuento. Solo informativo.
      *
+     * @param string|null $fromDate además, solo clases desde esta fecha (Finanzas: su fecha de inicio)
      * @return array<int,array>
      */
-    public function unreflected(?int $playerId = null): array
+    public function unreflected(?int $playerId = null, ?string $fromDate = null): array
     {
         [$q, $since] = $this->debtQuery($playerId);
         if ($since) {
             $q->where('cs.session_date <', $since);
+        }
+        if ($fromDate) {
+            $q->where('cs.session_date >=', $fromDate);
         }
         return $q->get()->getResultArray();
     }

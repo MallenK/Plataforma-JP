@@ -2,10 +2,14 @@
 /**
  * Selector de periodo (mes o rango). $period de FinanceReportService::period(),
  * $months = lista YYYY-MM. $extra = parámetros GET a conservar (p. ej. tipo).
+ * Si el periodo empieza antes de la fecha de inicio de las finanzas, se avisa
+ * de que se cuenta desde esa fecha (clampToStart()).
  */
 $mNames = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $extra  = $extra ?? [];
 $isRange = empty($period['month']);
+$finStartDate = $period['start'] ?? null;
+$finStartTxt  = $finStartDate ? date('d/m/Y', strtotime($finStartDate)) : '';
 ?>
 <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3" style="font-size:13px">
     <?php foreach ($extra as $k => $v): if ($v === '' || $v === null) continue; ?>
@@ -21,12 +25,24 @@ $isRange = empty($period['month']);
     </div>
     <div>
         <label for="fp-desde" class="form-label" style="margin-bottom:2px">o desde</label>
-        <input type="date" id="fp-desde" name="desde" class="form-control-jp" style="width:auto" value="<?= $isRange ? esc($period['from']) : '' ?>">
+        <input type="date" id="fp-desde" name="desde" class="form-control-jp" style="width:auto" value="<?= $isRange ? esc($period['from']) : '' ?>" <?= $finStartDate ? 'min="' . esc($finStartDate, 'attr') . '"' : '' ?>>
     </div>
     <div>
         <label for="fp-hasta" class="form-label" style="margin-bottom:2px">hasta</label>
-        <input type="date" id="fp-hasta" name="hasta" class="form-control-jp" style="width:auto" value="<?= $isRange ? esc($period['to']) : '' ?>">
+        <input type="date" id="fp-hasta" name="hasta" class="form-control-jp" style="width:auto" value="<?= $isRange ? esc($period['to']) : '' ?>" <?= $finStartDate ? 'min="' . esc($finStartDate, 'attr') . '"' : '' ?>>
     </div>
     <button type="submit" class="btn-jp btn-jp-secondary">Ver</button>
     <span style="color:var(--text-muted);margin-left:4px;align-self:center">Periodo: <strong style="color:var(--text-h)"><?= esc($period['label']) ?></strong></span>
+    <?php if ($finStartDate): ?>
+    <span style="flex-basis:100%;color:var(--text-muted)">
+        <i class="bi bi-info-circle me-1"></i>
+        <?php if (!empty($period['before_start'])): ?>
+        Este periodo es anterior al <?= $finStartTxt ?>, cuando empiezan a contar las finanzas: no hay nada que mostrar.
+        <?php elseif (!empty($period['clamped'])): ?>
+        Las finanzas cuentan desde el <?= $finStartTxt ?>: lo anterior de este periodo no se incluye.
+        <?php else: ?>
+        Las finanzas cuentan desde el <?= $finStartTxt ?>.
+        <?php endif; ?>
+    </span>
+    <?php endif; ?>
 </form>

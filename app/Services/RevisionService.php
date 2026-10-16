@@ -18,15 +18,23 @@ namespace App\Services;
  *     al menos uno de cada). Las que no tienen alumnos son errores o pruebas
  *     y se pueden eliminar desde aquí.
  *
+ * Solo mira lo que es desde la fecha de inicio de las finanzas
+ * (FinanceService::startDate()): clases de antes y bonos vendidos antes no
+ * salen ni se tocan.
+ *
  * `unusedValueCents()`, `parseEuroToCents()` e `incompleteKind()` son puras.
  */
 class RevisionService
 {
     private \CodeIgniter\Database\BaseConnection $db;
 
+    /** Fecha (Y-m-d) desde la que cuentan las finanzas. */
+    private string $start;
+
     public function __construct(?\CodeIgniter\Database\BaseConnection $db = null)
     {
-        $this->db = $db ?? \Config\Database::connect();
+        $this->db    = $db ?? \Config\Database::connect();
+        $this->start = FinanceService::startDate($this->db);
     }
 
     /** Valor de las sesiones sin usar de un bono, en céntimos. Pura. */
@@ -88,12 +96,12 @@ class RevisionService
         $sessionIds = array_map('intval', array_column($this->db->query(
             "SELECT DISTINCT cs.id FROM class_sessions cs
              JOIN class_session_players csp ON csp.session_id = cs.id AND csp.attendance <> 'pending'
-             WHERE cs.status = 'scheduled' AND cs.session_date < ?",
-            [$today]
+             WHERE cs.status = 'scheduled' AND cs.session_date < ? AND cs.session_date >= ?",
+            [$today, $this->start]
         )->getResultArray(), 'id'));
 
         $priceIds = array_map('intval', array_column($this->db->table('player_bonos')
-            ->select('id')->where('voided_at IS NULL')->where('price_estimated', 1)
+            ->select('id')->where('voided_at IS NULL')->where('price_estimated', 1)->where('created_at >=', $this->start)
             ->get()->getResultArray(), 'id'));
 
         if (!$apply) {
@@ -102,8 +110,10 @@ class RevisionService
                 "SELECT COUNT(*) AS n FROM class_session_players csp
                  JOIN class_sessions cs ON cs.id = csp.session_id
                  WHERE (cs.status = 'completed' OR cs.id IN (" . ($sessionIds ? implode(',', $sessionIds) : '0') . "))
+                   AND cs.session_date >= ?
                    AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
-                   AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL"
+                   AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL",
+                [$this->start]
             )->getRow()->n;
             return ['sessions' => count($sessionIds), 'debts' => $debts, 'prices' => count($priceIds), 'applied' => false];
         }
@@ -117,9 +127,10 @@ class RevisionService
         $debtRows = $this->db->query(
             "SELECT csp.id, csp.user_id, csp.session_id FROM class_session_players csp
              JOIN class_sessions cs ON cs.id = csp.session_id
-             WHERE cs.status = 'completed'
+             WHERE cs.status = 'completed' AND cs.session_date >= ?
                AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
-               AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL"
+               AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL",
+            [$this->start]
         )->getResultArray();
         foreach ($debtRows as $d) {
             $this->db->table('class_session_players')->where('id', (int) $d['id'])->where('bono_resolution IS NULL', null, false)->update([
@@ -249,9 +260,11 @@ class RevisionService
                        JOIN users u ON u.id = p.user_id WHERE p.session_id = cs.id) AS player_names,
                     " . ($hasFiles ? "(SELECT COUNT(*) FROM class_session_attachments a WHERE a.session_id = cs.id)" : '0') . " AS files
              FROM class_sessions cs
-             WHERE NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
-                OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id))
-             ORDER BY cs.session_date ASC, cs.start_time ASC"
+             WHERE cs.session_date >= ?
+               AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+                    OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))
+             ORDER BY cs.session_date ASC, cs.start_time ASC",
+            [$this->start]
         )->getResultArray();
 
         $out = [];
@@ -324,18 +337,22 @@ class RevisionService
 
         return [
             'unclosed'  => (int) $this->db->table('class_sessions cs')->where('cs.status', 'scheduled')->where('cs.session_date <', $today)
+                                    ->where('cs.session_date >=', $this->start)
                                     ->where('EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)', null, false)
                                     ->countAllResults(),
             'incomplete' => (int) $this->db->query(
                 "SELECT COUNT(*) AS n FROM class_sessions cs
-                 WHERE NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
-                    OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id))"
+                 WHERE cs.session_date >= ?
+                   AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+                        OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))",
+                [$this->start]
             )->getRow()->n,
-            'debts'     => count($control->openDebts()),
-            'pre_control' => count($control->unreflected()),
-            'estimated' => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('price_estimated', 1)->countAllResults(),
+            'debts'     => count($control->openDebts(null, $this->start)),
+            'pre_control' => count($control->unreflected(null, $this->start)),
+            'estimated' => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('price_estimated', 1)
+                                    ->where('created_at >=', $this->start)->countAllResults(),
             'unused'    => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('sessions_remaining >', 0)
-                                    ->where('expires_at <', $today)->countAllResults(),
+                                    ->where('created_at >=', $this->start)->where('expires_at <', $today)->countAllResults(),
         ];
     }
 
@@ -356,6 +373,7 @@ class RevisionService
             ->join('class_session_players csp', 'csp.session_id = cs.id')
             ->where('cs.status', 'scheduled')
             ->where('cs.session_date <', $today)
+            ->where('cs.session_date >=', $this->start)
             ->groupBy('cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at')
             ->orderBy('cs.session_date', 'ASC')->orderBy('cs.start_time', 'ASC')
             ->get()->getResultArray();
@@ -371,6 +389,7 @@ class RevisionService
             ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
             ->where('pb.voided_at IS NULL')
             ->where('pb.price_estimated', 1)
+            ->where('pb.created_at >=', $this->start)
             ->orderBy('pb.created_at', 'ASC')
             ->get()->getResultArray();
     }
@@ -386,6 +405,7 @@ class RevisionService
             ->join('bono_types bt', 'bt.id = pb.bono_type_id', 'left')
             ->where('pb.voided_at IS NULL')
             ->where('pb.sessions_remaining >', 0)
+            ->where('pb.created_at >=', $this->start)
             ->where('pb.expires_at <', $today)
             ->orderBy('pb.expires_at', 'DESC')
             ->get()->getResultArray();

@@ -59,6 +59,10 @@ $catalog = static function (string $kind, array $items, string $title, ?string $
                     <label class="form-label" for="cf-hours">Horas mínimas de aviso para no perder la sesión<?= fin_help('cfg_horas') ?></label>
                     <div class="d-flex align-items-center gap-2"><input id="cf-hours" name="fin_notice_hours" type="number" min="1" max="168" value="<?= $hours ?>" class="form-control-jp" style="width:100px"> horas</div>
                 </div>
+                <div>
+                    <label class="form-label" for="cf-start">Las finanzas cuentan desde<?= fin_help('cfg_desde') ?></label>
+                    <input id="cf-start" name="fin_start_date" type="date" value="<?= esc($finStart, 'attr') ?>" max="<?= date('Y-m-d') ?>" class="form-control-jp" style="width:auto" required>
+                </div>
                 <div><button type="submit" class="btn-jp btn-jp-primary">Guardar reglas</button></div>
             </form>
         </div>
