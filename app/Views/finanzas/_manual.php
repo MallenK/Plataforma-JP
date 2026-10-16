@@ -202,6 +202,7 @@ $shot = static function (string $file, string $caption) use ($img) {
 <h2 id="fm-config">12. Configuración</h2>
 <ul>
     <li><strong>Reglas de asistencia:</strong> activar o desactivar el descuento automático y fijar con cuántas horas debe avisar un alumno (por defecto, 24).</li>
+    <li><strong>Las finanzas cuentan desde:</strong> fecha a partir de la cual cuenta todo en Finanzas (por defecto, el 1 de octubre de 2026). Lo anterior —ventas, cobros, gastos, clases y los bonos vendidos antes— no sale en ninguna cifra, lista ni en Revisión. No se borra nada.</li>
     <li><strong>Medios de pago</strong> y <strong>categorías</strong> de gasto e ingreso: añadir, cambiar el nombre o archivar. Archivar no borra lo ya registrado.</li>
     <li><strong>IVA y facturas:</strong> por ahora está desactivado; se activará cuando el gestor lo confirme.</li>
 </ul>

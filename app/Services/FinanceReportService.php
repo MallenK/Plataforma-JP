@@ -9,25 +9,70 @@ namespace App\Services;
  * Conceptos (glosario en la vista):
  *  - Vendido:            cargos del periodo (bonos vendidos con su descuento, cargos manuales).
  *  - Cobrado:            cobros del periodo (dinero que entra).
- *  - Servicio prestado:  sesiones consumidas en el periodo × precio por sesión de su bono.
+ *  - Servicio prestado:  sesiones consumidas en el periodo × precio por sesión de su bono
+ *                        (solo bonos vendidos desde la fecha de inicio).
  *  - Gastos:             gastos del periodo.
  *  - Resultado:          cobrado − gastos.
  *  - Pendiente de cobro: lo vendido aún sin pagar (a hoy).
  *  - Sesiones pagadas sin dar: saldo vivo de los bonos (a hoy).
  *  - Caducado sin usar:  saldo de bonos que caducaron en el periodo.
  *
- * `period()` es pura.
+ * Todo cuenta desde la fecha de inicio de las finanzas (FinanceService::startDate()):
+ * un periodo que empiece antes se recorta (clampToStart()), las cifras «a hoy»
+ * solo miran cargos y bonos vendidos desde entonces y la evolución mensual
+ * empieza en ese mes.
+ *
+ * `period()`, `lastMonths()` y `clampToStart()` son puras.
  */
 class FinanceReportService
 {
     private \CodeIgniter\Database\BaseConnection $db;
+
+    /** Fecha (Y-m-d) desde la que cuentan las finanzas. */
+    private string $start;
 
     private const MONTHS = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
                             'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
     public function __construct(?\CodeIgniter\Database\BaseConnection $db = null)
     {
-        $this->db = $db ?? \Config\Database::connect();
+        $this->db    = $db ?? \Config\Database::connect();
+        $this->start = FinanceService::startDate($this->db);
+    }
+
+    /**
+     * Recorta un periodo de period() a la fecha de inicio. Si el periodo entero
+     * es anterior, `from` queda después de `to` (no sale nada) y `before_start`
+     * = true. `clamped` = true si se recortó. Pura.
+     *
+     * @return array{from:string,to:string,label:string,month:?string,clamped:bool,before_start:bool,start:string}
+     */
+    public static function clampToStart(array $period, string $start): array
+    {
+        $period += ['clamped' => false, 'before_start' => false, 'start' => $start];
+        $period['start'] = $start;
+        if ($period['to'] < $start) {
+            $period['from']         = $start;
+            $period['clamped']      = true;
+            $period['before_start'] = true;
+        } elseif ($period['from'] < $start) {
+            $period['from']    = $start;
+            $period['clamped'] = true;
+        }
+        return $period;
+    }
+
+    /** Meses de lastMonths() que no son anteriores al mes de inicio. Pura. */
+    public static function monthsSince(array $months, string $start): array
+    {
+        $first = substr($start, 0, 7);
+        return array_values(array_filter($months, static fn($m) => $m >= $first));
+    }
+
+    /** Desde: el mayor entre la fecha pedida y la de inicio. */
+    private function from(string $from): string
+    {
+        return max($from, $this->start);
     }
 
     /**
@@ -71,15 +116,19 @@ class FinanceReportService
         return (int) round((float) (array_values($row ?? [0])[0] ?? 0));
     }
 
-    /** Valor (céntimos) de las sesiones consumidas en sesiones de un rango de fechas. */
+    /**
+     * Valor (céntimos) de las sesiones consumidas en sesiones de un rango de
+     * fechas. Solo bonos vendidos desde la fecha de inicio: lo consumido de un
+     * bono anterior no cuenta.
+     */
     private function serviceValue(string $from, string $to, ?array $sessionIds = null): array
     {
         $sql = "SELECT COUNT(*) AS n, COALESCE(SUM(pb.price_cents / NULLIF(pb.sessions_total, 0)), 0) AS v
                 FROM class_session_players csp
                 JOIN class_sessions cs ON cs.id = csp.session_id
                 JOIN player_bonos pb ON pb.id = csp.bono_deducted_from_id
-                WHERE csp.bono_deducted_at IS NOT NULL AND cs.session_date BETWEEN ? AND ?";
-        $binds = [$from, $to];
+                WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?";
+        $binds = [$this->start, $this->from($from), $to];
         if ($sessionIds !== null) {
             if (!$sessionIds) {
                 return ['count' => 0, 'cents' => 0];
@@ -97,6 +146,8 @@ class FinanceReportService
     public function summary(string $from, string $to, ?string $today = null): array
     {
         $today = $today ?: date('Y-m-d');
+        $from  = $this->from($from);
+        $start = $this->start;
 
         $sold = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(amount_cents),0) v, COALESCE(SUM(discount_cents),0) d
                                   FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?", [$from, $to])->getRowArray();
@@ -119,16 +170,16 @@ class FinanceReportService
                               LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) paid FROM fin_payment_allocations a
                                          JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x
                                      ON x.charge_id = c.id
-                              WHERE c.voided_at IS NULL AND c.amount_cents > COALESCE(x.paid, 0)");
+                              WHERE c.voided_at IS NULL AND c.charged_at >= ? AND c.amount_cents > COALESCE(x.paid, 0)", [$start]);
         $prepaid = $this->db->query("SELECT COALESCE(SUM(sessions_remaining),0) s,
                                             COALESCE(SUM(price_cents * sessions_remaining / NULLIF(sessions_total,0)),0) v
-                                     FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0
-                                       AND (expires_at IS NULL OR expires_at >= ?)", [$today])->getRowArray();
+                                     FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ?
+                                       AND (expires_at IS NULL OR expires_at >= ?)", [$start, $today])->getRowArray();
         $expired = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(sessions_remaining),0) s,
                                             COALESCE(SUM(price_cents * sessions_remaining / NULLIF(sessions_total,0)),0) v
-                                     FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0
-                                       AND expires_at BETWEEN ? AND ? AND expires_at < ?", [$from, $to, $today])->getRowArray();
-        $avg = $this->db->query("SELECT COALESCE(SUM(price_cents),0) v, COALESCE(SUM(sessions_total),0) s FROM player_bonos WHERE voided_at IS NULL")->getRowArray();
+                                     FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ?
+                                       AND expires_at BETWEEN ? AND ? AND expires_at < ?", [$start, $from, $to, $today])->getRowArray();
+        $avg = $this->db->query("SELECT COALESCE(SUM(price_cents),0) v, COALESCE(SUM(sessions_total),0) s FROM player_bonos WHERE voided_at IS NULL AND created_at >= ?", [$start])->getRowArray();
 
         return [
             'sold'      => ['count' => (int) $sold['n'], 'cents' => (int) $sold['v'], 'discount' => (int) $sold['d']],
@@ -150,6 +201,7 @@ class FinanceReportService
      */
     public function attendance(string $from, string $to): array
     {
+        $from  = $this->from($from);
         $hours = $this->noticeHours();
         $r = $this->db->query(
             "SELECT SUM(csp.attendance = 'present') present, SUM(csp.attendance = 'absent') absent,
@@ -171,12 +223,12 @@ class FinanceReportService
         return $r ? max(1, (int) $r->setting_value) : 24;
     }
 
-    /** Evolución de los últimos N meses: vendido, cobrado, servicio prestado y gastos. */
+    /** Evolución de los últimos N meses (desde el mes de inicio): vendido, cobrado, servicio prestado y gastos. */
     public function monthly(int $n = 12, ?string $today = null): array
     {
         $out = [];
-        foreach (array_reverse(self::lastMonths($n, $today)) as $m) {
-            $from = $m . '-01';
+        foreach (array_reverse(self::monthsSince(self::lastMonths($n, $today), $this->start)) as $m) {
+            $from = $this->from($m . '-01');
             $to   = date('Y-m-t', strtotime($from));
             $out[] = [
                 'month'    => $m,
@@ -208,6 +260,7 @@ class FinanceReportService
     public function movements(string $from, string $to, ?string $type = null, ?string $today = null): array
     {
         $today = $today ?: date('Y-m-d');
+        $from  = $this->from($from);
         $rows  = [];
         $want  = static fn(string $t) => $type === null || $type === '' || $type === $t;
 
@@ -246,7 +299,7 @@ class FinanceReportService
                                        JOIN player_bonos pb ON pb.id = csp.bono_deducted_from_id
                                        LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
                                        LEFT JOIN users u ON u.id = csp.user_id
-                                       WHERE csp.bono_deducted_at IS NOT NULL AND cs.session_date BETWEEN ? AND ?", [$from, $to])->getResultArray() as $r) {
+                                       WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?", [$this->start, $from, $to])->getResultArray() as $r) {
                 $att = ['present' => 'asistió', 'unjustified' => 'falta sin justificar', 'confirmed' => 'confirmada', 'declined' => 'aviso tardío'][$r['attendance']] ?? $r['attendance'];
                 $rows[] = ['date' => $r['d'], 'type' => 'servicio', 'who' => $r['who'], 'player_id' => (int) $r['user_id'],
                            'detail' => ($r['bono'] ?? 'Bono') . ' · ' . $att, 'cents' => (int) round((float) $r['v']),
@@ -257,8 +310,8 @@ class FinanceReportService
             foreach ($this->db->query("SELECT pb.id, pb.expires_at d, pb.sessions_remaining, pb.sessions_total, pb.price_cents, u.name who, pb.player_id, bt.name bono
                                        FROM player_bonos pb LEFT JOIN users u ON u.id = pb.player_id
                                        LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
-                                       WHERE pb.voided_at IS NULL AND pb.sessions_remaining > 0
-                                         AND pb.expires_at BETWEEN ? AND ? AND pb.expires_at < ?", [$from, $to, $today])->getResultArray() as $r) {
+                                       WHERE pb.voided_at IS NULL AND pb.sessions_remaining > 0 AND pb.created_at >= ?
+                                         AND pb.expires_at BETWEEN ? AND ? AND pb.expires_at < ?", [$this->start, $from, $to, $today])->getResultArray() as $r) {
                 $rows[] = ['date' => $r['d'], 'type' => 'caducado', 'who' => $r['who'], 'player_id' => (int) $r['player_id'],
                            'detail' => ($r['bono'] ?? 'Bono') . ' · ' . (int) $r['sessions_remaining'] . ' de ' . (int) $r['sessions_total'] . ' sin usar',
                            'cents' => RevisionService::unusedValueCents((int) $r['price_cents'], (int) $r['sessions_remaining'], (int) $r['sessions_total']),
@@ -284,6 +337,7 @@ class FinanceReportService
 
     public function coaches(string $from, string $to): array
     {
+        $from  = $this->from($from);
         $staff = $this->db->table('users')->select('id, name, role, status')
             ->whereIn('role', ['coach', 'staff', 'admin', 'superadmin'])->orderBy('name')->get()->getResultArray();
         $out = [];
@@ -318,6 +372,7 @@ class FinanceReportService
 
     public function analysis(string $from, string $to): array
     {
+        $from   = $this->from($from);
         $byType = $this->db->query(
             "SELECT COALESCE(bt.name, c.concept) name, COUNT(*) n, SUM(c.amount_cents) v, SUM(c.discount_cents) d,
                     MAX(bt.sessions) sessions

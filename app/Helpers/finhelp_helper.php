@@ -76,6 +76,7 @@ if (!function_exists('fin_help_texts')) {
             'rev_caducados'=> 'Solo informativo: bonos que caducaron con sesiones sin usar.',
             'cfg_auto'     => 'Si está activado, una falta sin justificar o un aviso tardío descuenta la sesión solo al guardar la lista. Siempre se puede devolver.',
             'cfg_horas'    => 'Con cuántas horas de antelación tiene que avisar un alumno para no perder la sesión. Por defecto, 24.',
+            'cfg_desde'    => 'Todo lo anterior a esta fecha no cuenta en Finanzas: ventas, cobros, gastos, deudas, bonos vendidos antes y la Revisión. No se borra nada; solo deja de contarse. Por defecto, el 1 de octubre de 2026.',
 
             // Venta de bono
             'venta_pago'   => 'Márcalo si el alumno paga al momento. Si no, el bono queda pendiente de cobro en Finanzas.',

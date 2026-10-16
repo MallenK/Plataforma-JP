@@ -5,7 +5,7 @@ $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Cómo va la academia: lo vendido, lo cobrado, lo que se ha dado y lo que se ha gastado';
 helper(['money', 'finhelp']);
 $s   = $summary;
-$max = max(1, ...array_map(fn($m) => max($m['sold'], $m['service']), $monthly));
+$max = max([1, ...array_map(fn($m) => max($m['sold'], $m['service']), $monthly)]);
 $kpi = static function (string $label, string $value, string $sub, string $style = '', string $help = '') {
     return '<div class="col-6 col-lg-3"><div class="metric-card" style="height:100%;' . $style . '">'
          . '<div class="metric-card-header"><span class="metric-label">' . $label . ($help ? fin_help($help) : '') . '</span></div>'
