@@ -5,17 +5,30 @@ namespace App\Controllers;
 use App\Services\AuditService;
 use App\Services\BonoControlService;
 use App\Services\ExpenseService;
+use App\Services\FinanceAccessService;
 use App\Services\FinanceReportService;
 use App\Services\FinanceService;
 use App\Services\RevisionService;
 
 /**
- * Finanzas — solo superadmin y admin. Plan: docs/finanzas/PLAN-finanzas-v2.md.
+ * Finanzas. Plan: docs/finanzas/PLAN-finanzas-v2.md.
  * Controller fino: toda la lógica vive en FinanceService, ExpenseService,
  * FinanceReportService y RevisionService.
+ *
+ * Acceso POR PERSONA (FinanceFilter + FinanceAccessService):
+ *   - full   → todas las pestañas (superadmin raíz + quien él autorice).
+ *   - review → solo «Revisión de clases», sin ningún importe (resto de admin/superadmin).
+ * Las rutas ya lo imponen; aquí además se recorta lo que se calcula y se pasa a la vista
+ * para que un nivel «review» nunca reciba cifras de dinero ni escondidas en el HTML.
  */
 class FinanzasController extends BaseController
 {
+    /** ¿Quien consulta tiene acceso total a Finanzas? */
+    private function isFull(): bool
+    {
+        return FinanceAccessService::canFull();
+    }
+
     /** Periodo pedido, recortado a la fecha de inicio de las finanzas (lo anterior no cuenta). */
     private function period(): array
     {
@@ -35,14 +48,19 @@ class FinanzasController extends BaseController
             'months'  => FinanceReportService::monthsSince(FinanceReportService::lastMonths(18), FinanceService::startDate()),
             'finStart' => FinanceService::startDate(),
             'reviewCount' => $this->reviewCount(),
+            'finFull'  => $this->isFull(),
+            // Navegación y formularios de Finanzas sin recargar la página (assets/js/soft-nav.js)
+            'softRegion' => 'finanzas',
         ];
     }
 
+    /** Tareas pendientes en Revisión. Sin acceso total no se cuentan los precios por confirmar. */
     private function reviewCount(): int
     {
         try {
             $c = (new RevisionService())->counts();
-            return (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['estimated'] + (int) $c['incomplete'];
+            $n = (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['incomplete'];
+            return $this->isFull() ? $n + (int) $c['estimated'] : $n;
         } catch (\Throwable $e) {
             return 0;
         }
@@ -67,7 +85,8 @@ class FinanzasController extends BaseController
 
     public function index()
     {
-        return redirect()->to('/finanzas/resumen');
+        // Acceso total → Resumen; solo revisión → directo a la Revisión de clases.
+        return redirect()->to($this->isFull() ? '/finanzas/resumen' : '/finanzas/revision');
     }
 
     public function resumen()
@@ -265,11 +284,23 @@ class FinanzasController extends BaseController
         foreach ($db->table('academy_settings')->whereIn('setting_key', ['fin_notice_hours', 'fin_auto_deduct', 'fin_tax_enabled', 'fin_start_date'])->get()->getResultArray() as $s) {
             $settings[$s['setting_key']] = $s['setting_value'];
         }
+        $isMaster = FinanceAccessService::isCurrentMaster();
         return view('finanzas/config', $this->base('config', [
             'methods'    => $fin->methods(false),
             'categories' => $fin->categories(null, false),
             'settings'   => $settings,
+            'isMaster'   => $isMaster,
+            // La lista de accesos solo se envía a quien puede cambiarla.
+            'accessCandidates' => $isMaster ? (new FinanceAccessService())->candidates() : [],
         ]));
+    }
+
+    /** Guarda quién ve todas las finanzas (solo el superadmin raíz; la ruta lo exige con finance:master). */
+    public function saveAccess()
+    {
+        $ids = $this->request->getPost('user_ids');
+        $res = (new FinanceAccessService())->saveGranted(is_array($ids) ? $ids : [], (int) $this->currentUserId());
+        return $this->back('/finanzas/configuracion', $res, 'Acceso a las finanzas actualizado. Queda registrado.');
     }
 
     public function revision()
@@ -278,17 +309,25 @@ class FinanzasController extends BaseController
         $control = new BonoControlService();
         $unclosed   = $rev->unclosedSessions();
         $incomplete = $rev->incompleteSessions();
+        $full       = $this->isFull();
+
+        $counts = $rev->counts();
+        if (!$full) {
+            // Sin acceso total: ni se calculan ni se envían precios, caducados ni cierres masivos.
+            $counts['estimated'] = 0;
+            $counts['unused']    = 0;
+        }
 
         return view('finanzas/revision', $this->base('revision', [
-            'title'      => 'Finanzas · Revisión — JP Preparation',
-            'counts'     => $rev->counts(),
+            'title'      => $full ? 'Finanzas · Revisión — JP Preparation' : 'Revisión de clases — JP Preparation',
+            'counts'     => $counts,
             'unclosed'   => $unclosed,
             'debts'      => $control->openDebts(null, FinanceService::startDate()),
             'preControl' => $control->unreflected(null, FinanceService::startDate()),
-            'estimated'  => $rev->estimatedPriceBonos(),
-            'unused'     => $rev->expiredUnused(),
+            'estimated'  => $full ? $rev->estimatedPriceBonos() : [],
+            'unused'     => $full ? $rev->expiredUnused() : [],
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
-            'closePreview' => $rev->initialClose(false),
+            'closePreview' => $full ? $rev->initialClose(false) : ['sessions' => 0, 'debts' => 0, 'prices' => 0],
             'incomplete' => $incomplete,
             'buckets'    => RevisionService::classBuckets($unclosed, $incomplete),
         ]));

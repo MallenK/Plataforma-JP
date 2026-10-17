@@ -17,7 +17,7 @@ $finStartTxt  = $finStartDate ? date('d/m/Y', strtotime($finStartDate)) : '';
     <?php endforeach; ?>
     <div>
         <label for="fp-mes" class="form-label" style="margin-bottom:2px">Mes</label>
-        <select id="fp-mes" name="mes" class="form-control-jp" style="width:auto;min-width:180px" onchange="this.form.desde.value='';this.form.hasta.value='';this.form.submit()">
+        <select id="fp-mes" name="mes" class="form-control-jp" style="width:auto;min-width:180px" onchange="this.form.desde.value='';this.form.hasta.value='';this.form.requestSubmit()">
             <?php foreach ($months as $m): ?>
             <option value="<?= $m ?>" <?= !$isRange && $period['month'] === $m ? 'selected' : '' ?>><?= ucfirst($mNames[(int) substr($m, 5, 2)]) . ' ' . substr($m, 0, 4) ?></option>
             <?php endforeach; ?>

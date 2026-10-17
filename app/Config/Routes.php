@@ -11,8 +11,10 @@ use CodeIgniter\Router\RouteCollection;
 // ============================================================
 //
 //  superadmin → acceso total a todo
-//  admin      → gestión completa (alumnos, entrenadores, config, bonos,
-//               Finanzas /finanzas — v1.33.0: pestaña «Revisión»)
+//  admin      → gestión completa (alumnos, entrenadores, config, bonos).
+//               Finanzas: SOLO «Revisión de clases» (/finanzas/revision), sin importes.
+//  Finanzas completas → por PERSONA, no por rol (filtro 'finance:full', ver FinanceFilter):
+//               superadmin raíz (id 2) + quien él autorice en Finanzas › Configuración.
 //
 //  v1.33.0 «Nada se borra»: las rutas que antes eliminaban (bonos, tipos de
 //  bono, sedes, staff, sesiones, quitar alumno) ahora anulan, archivan, dan de
@@ -352,8 +354,9 @@ $routes->post('bonos/check-active', 'BonosController::checkActive', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
+// Informe de bonos: lleva importes (emitido / pendiente en €) → acceso total a Finanzas.
 $routes->get('bonos/informe', 'BonosController::informe', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 $routes->get('bonos/deudas', 'BonosController::deudas', [
     'filter' => ['auth', 'role:superadmin,admin'],
@@ -385,15 +388,34 @@ $routes->post('bonos/(:num)/update', 'BonosController::update/$1', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
-// Finanzas (v1.33.0: pestaña «Revisión»; el resto llega con la v2.0) — solo admin y superadmin.
+// ── Finanzas — acceso POR PERSONA, no solo por rol (FinanceFilter) ──────────
+//   finance:full   → todo Finanzas: solo el superadmin raíz y quien él autorice
+//                    (Finanzas › Configuración › «Quién ve las finanzas»).
+//   finance:review → además, el resto de admin/superadmin, SOLO la «Revisión de
+//                    clases» (si se dio la clase, lista, cierre, entrenador…), sin importes.
+//   finance:master → solo el superadmin raíz (gestionar esa lista).
 $routes->get('finanzas', 'FinanzasController::index', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
 ]);
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
 ]);
-// Finanzas 2.0 — pestañas y acciones (solo admin y superadmin)
-$routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], static function ($routes) {
+// Acciones de la Revisión que NO tocan dinero: las pueden hacer los dos niveles.
+$routes->post('finanzas/revision/cerrar-clases', 'FinanzasController::closeListedClasses', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+]);
+$routes->post('finanzas/revision/eliminar-vacias', 'FinanzasController::deleteEmptyClasses', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+]);
+$routes->get('pendientes', 'FinanzasController::legacyPendientes', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+]);
+// Gestionar quién ve todas las finanzas — solo el superadmin raíz.
+$routes->post('finanzas/configuracion/acceso', 'FinanzasController::saveAccess', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:master'],
+]);
+// Finanzas 2.0 — pestañas y acciones con importes (acceso total)
+$routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin', 'finance:full']], static function ($routes) {
     $routes->get('resumen',                 'FinanzasController::resumen');
     $routes->get('movimientos',             'FinanzasController::movimientos');
     $routes->get('cobros',                  'FinanzasController::cobros');
@@ -417,24 +439,13 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin']], stat
     $routes->get('ayuda/imprimir',          'FinanzasController::ayudaImprimir');
     $routes->get('ayuda/manual.pdf',        'FinanzasController::manualPdf');
     $routes->get('ayuda/img/(:segment)',    'FinanzasController::manualImg/$1');
+    // Cierre en bloque de la revisión inicial y precios: tocan dinero → acceso total
+    $routes->post('revision/cierre-inicial',    'FinanzasController::initialClose');
+    $routes->post('revision/confirmar-precios', 'FinanzasController::confirmAllPrices');
 });
-$routes->post('finanzas/revision/cierre-inicial', 'FinanzasController::initialClose', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('finanzas/revision/cerrar-clases', 'FinanzasController::closeListedClasses', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('finanzas/revision/confirmar-precios', 'FinanzasController::confirmAllPrices', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->post('finanzas/revision/eliminar-vacias', 'FinanzasController::deleteEmptyClasses', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
-$routes->get('pendientes', 'FinanzasController::legacyPendientes', [
-    'filter' => ['auth', 'role:superadmin,admin'],
-]);
+// Confirmar el precio pagado de un bono (toca dinero)
 $routes->post('bonos/(:num)/precio', 'FinanzasController::confirmPrice/$1', [
-    'filter' => ['auth', 'role:superadmin,admin'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 
 // v1.33.0 «Nada se borra»: los bonos se anulan (con motivo), no se eliminan.

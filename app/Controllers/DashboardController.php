@@ -45,6 +45,11 @@ class DashboardController extends BaseController
         if ($isAdminRole) {
             try {
                 $pendingReview = (new \App\Services\RevisionService())->counts();
+                // Sin acceso total a Finanzas no se enseñan cifras de dinero (precios por confirmar).
+                if (!\App\Services\FinanceAccessService::canFull()) {
+                    $pendingReview['estimated'] = 0;
+                    $pendingReview['unused']    = 0;
+                }
             } catch (\Throwable $e) {
                 log_message('error', 'Dashboard: RevisionService::counts falló: ' . $e->getMessage());
             }

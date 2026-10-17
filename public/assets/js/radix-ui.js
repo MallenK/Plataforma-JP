@@ -347,7 +347,14 @@
                 confirmLabel: form.getAttribute('data-ru-confirm-label') || 'Confirmar',
                 danger: form.hasAttribute('data-ru-confirm-danger'),
             }).then(function (ok) {
-                if (ok) form.submit(); // .submit() no vuelve a disparar 'submit' — sin bucle
+                if (!ok) return;
+                // Dentro de una región «blanda» (soft-nav.js) o con data-live-form (live.js) el envío
+                // se hace sin recargar la página.
+                if (window.JPSoft && window.JPSoft.handles(form)) { window.JPSoft.submit(form, null); return; }
+                if (form.hasAttribute('data-live-form') && window.JPLive && window.JPLive.submitForm) { window.JPLive.submitForm(form, null); return; }
+                // Envío normal: botón ocupado + barra de progreso mientras se recarga.
+                if (window.JPLoader) { window.JPLoader.busyForm(form, null, true); window.JPLoader.start(); }
+                form.submit(); // .submit() no vuelve a disparar 'submit' — sin bucle
             });
         });
     }

@@ -40,6 +40,10 @@ class Filters extends BaseFilters
         // Sintaxis: 'role:superadmin,admin'  →  solo esos roles pueden acceder.
         'role' => \App\Filters\RoleFilter::class,
 
+        // Acceso a Finanzas por persona (no solo por rol):
+        //   'finance:full' (todo) · 'finance:review' (solo Revisión de clases) · 'finance:master' (gestionar accesos).
+        'finance' => \App\Filters\FinanceFilter::class,
+
         // Cabeceras de seguridad en toda respuesta (sustituye a 'secureheaders').
         'securityheaders' => \App\Filters\SecurityHeadersFilter::class,
 

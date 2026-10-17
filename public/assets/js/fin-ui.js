@@ -15,7 +15,8 @@
 
     function initTables() {
         if (!window.JPList || !window.jQuery || !window.jQuery.fn.dataTable) return;
-        Array.prototype.forEach.call(document.querySelectorAll('table[data-fin-list]'), function (t) {
+        Array.prototype.forEach.call(document.querySelectorAll('table[data-fin-list]:not([data-fin-ready])'), function (t) {
+            t.setAttribute('data-fin-ready', '1');
             var key = 'fin-' + t.getAttribute('data-fin-list');
             var order = [];
             try { order = JSON.parse(t.getAttribute('data-fin-order') || '[]'); } catch (e) { order = []; }
@@ -63,8 +64,13 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function init() {
         initTables();
         initTooltips();
-    });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+    // Navegación sin recargar (soft-nav.js): el contenido nuevo trae tablas y ayudas por montar.
+    window.addEventListener('jp:soft-loaded', init);
+    window.JPFin = { init: init };
 })(window, document);

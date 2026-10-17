@@ -104,6 +104,8 @@
             if (!fresh || busyRegion(el)) return;
             if (el.innerHTML === fresh.innerHTML) return;
             el.innerHTML = fresh.innerHTML;
+            // Destello suave: se nota que algo cambió, sin tapar el contenido ni mover la pantalla.
+            el.classList.remove('jp-refreshed'); void el.offsetWidth; el.classList.add('jp-refreshed');
             el.dispatchEvent(new CustomEvent('jp:live-updated', { bubbles: true, detail: { id: id } }));
         });
     }
@@ -228,6 +230,8 @@
         var buttons = form.querySelectorAll('button, input[type=submit]');
         buttons.forEach(function (b) { b.disabled = true; });
         form.setAttribute('aria-busy', 'true');
+        // Indicador de carga: barra superior + spinner en el botón pulsado (si el cargador está disponible).
+        if (window.JPLoader) { window.JPLoader.start(); if (submitter) window.JPLoader.busy(submitter, true); }
         try {
             var res = await fetch(form.getAttribute('action') || location.href, {
                 method: (form.getAttribute('method') || 'POST').toUpperCase(),
@@ -263,6 +267,8 @@
         } catch (e) {
             toast('No se pudo completar la acción. Se recargará la página.', 'error');
             setTimeout(function () { nav.reload(); }, 1200);
+        } finally {
+            if (window.JPLoader) { window.JPLoader.done(); if (submitter) window.JPLoader.busy(submitter, false); }
         }
     }
 
@@ -281,5 +287,6 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
     window.JPLive.ping = ping;
-    window.JPLive._test = { wants: wants, normalize: normalize, busyRegion: busyRegion, changedKinds: changedKinds, flashFrom: flashFrom, nav: nav };
+    window.JPLive.submitForm = submitLiveForm;      // lo usa radix-ui.js al confirmar un formulario data-live-form
+    window.JPLive._test ={ wants: wants, normalize: normalize, busyRegion: busyRegion, changedKinds: changedKinds, flashFrom: flashFrom, nav: nav };
 })();
