@@ -1,0 +1,74 @@
+/* JP Preparation — indicadores de carga (loaders).
+ * Barra de progreso superior, botones «ocupados», esqueletos (skeleton) y
+ * estado de región en actualización. Lo manejan loaders.js y soft-nav.js.
+ * Todo respeta prefers-reduced-motion (sin animaciones: solo cambios de estado). */
+
+/* ── Barra de progreso superior ─────────────────────────────── */
+#jp-topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 3000;
+    pointer-events: none; opacity: 0; transition: opacity .2s ease;
+}
+#jp-topbar.is-on { opacity: 1; }
+#jp-topbar .jp-topbar-bar {
+    height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(0);
+    background: linear-gradient(90deg, #3b82f6, #60a5fa 55%, #84cc16);
+    box-shadow: 0 0 10px rgba(59, 130, 246, .65), 0 0 4px rgba(96, 165, 250, .8);
+    transition: transform .25s ease-out;
+    border-radius: 0 2px 2px 0;
+}
+
+/* ── Botones ocupados (envío de formulario) ─────────────────── */
+.is-loading { position: relative; cursor: progress !important; }
+.is-loading[disabled], button.is-loading, a.is-loading { opacity: .85; pointer-events: none; }
+.jp-btn-spin {
+    display: inline-block; width: 1em; height: 1em; margin-right: .5em; vertical-align: -.125em;
+    border: .16em solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: jp-spin .7s linear infinite;
+}
+@keyframes jp-spin { to { transform: rotate(360deg); } }
+
+/* ── Esqueletos (skeleton) ──────────────────────────────────── */
+.jp-skel {
+    display: block; border-radius: 8px; min-height: 12px;
+    background: linear-gradient(100deg, #e2e8f0 30%, #f1f5f9 48%, #e2e8f0 66%);
+    background-size: 220% 100%;
+    animation: jp-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes jp-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.jp-skel-line  { height: 12px; margin: 8px 0; }
+.jp-skel-title { height: 22px; width: 38%; margin-bottom: 14px; }
+.jp-skel-pill  { height: 34px; width: 120px; border-radius: 999px; }
+.jp-skel-card  { border: 1px solid var(--border, #e2e8f0); border-radius: var(--radius, 10px); background: var(--card-bg, #fff); padding: 18px; }
+.jp-skel-card .jp-skel { background-color: #e8edf4; }
+.jp-skel-metric { height: 84px; border-radius: var(--radius, 10px); }
+
+/* ── Región que se está actualizando ────────────────────────── */
+[data-soft-region] { position: relative; }
+.jp-busy { min-height: 160px; }
+.jp-busy > :not(.jp-skel-overlay) {
+    opacity: .28; filter: saturate(.6); pointer-events: none; user-select: none;
+    transition: opacity .18s ease;
+}
+.jp-skel-overlay {
+    position: absolute; inset: 0 0 auto 0; z-index: 5; padding: 2px 0 0;
+    animation: jp-fade-in .18s ease both; pointer-events: none;
+}
+@keyframes jp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Zonas data-live que se refrescan en segundo plano: un destello suave, sin tapar nada. */
+[data-live].jp-refreshed { animation: jp-refresh-flash .7s ease-out; }
+@keyframes jp-refresh-flash { from { background-color: rgba(59, 130, 246, .10); } to { background-color: transparent; } }
+
+/* ── Entrada de página / contenido nuevo ────────────────────── */
+.jp-enter { animation: jp-enter .28s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes jp-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── Mensajes de estado solo para lectores de pantalla ──────── */
+.jp-sr-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+    #jp-topbar, #jp-topbar .jp-topbar-bar { transition: none; }
+    .jp-btn-spin { animation-duration: 2s; }
+    .jp-skel { animation: none; }
+    .jp-skel-overlay, .jp-enter, [data-live].jp-refreshed { animation: none; }
+}

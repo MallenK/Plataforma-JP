@@ -1,8 +1,10 @@
 <?= $this->extend('layouts/app') ?>
 
 <?php
-$pageTitle    = 'Finanzas';
-$pageSubtitle = 'Revisión: lo que conviene mirar para que las cuentas cuadren';
+// Acceso total → Revisión dentro de Finanzas (con precios y dinero). Solo revisión → únicamente lo de las clases.
+$finFull      = !empty($finFull);
+$pageTitle    = $finFull ? 'Finanzas' : 'Revisión de clases';
+$pageSubtitle = $finFull ? 'Revisión: lo que conviene mirar para que las cuentas cuadren' : 'Comprobar que las clases se dieron, se pasó lista y se cerraron';
 $th  = 'padding:8px 12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:left;font-size:11px';
 $td  = 'padding:8px 12px';
 $eur = static fn(?int $c) => $c === null ? '—' : number_format($c / 100, 2, ',', '.') . ' €';
@@ -26,6 +28,10 @@ $groups = [
         ['#precios',        'Precio por confirmar', count($estimated),             'bi-question-circle-fill', '#92400e', '#fef3c7', 'Escribir lo que pagó'],
     ],
 ];
+if (!$finFull) {
+    // Sin acceso total: solo el bloque «Clases». Nada de bonos, precios ni dinero.
+    unset($groups['Bonos y dinero']);
+}
 $totalTasks = 0;
 foreach ($groups as $g) { foreach ($g as $c) { $totalTasks += $c[2]; } }
 
@@ -59,17 +65,17 @@ $openBtn = static fn(array $s, string $label) => '<a href="' . base_url('clases/
     <div class="card-jp-body" style="font-size:14px;line-height:1.6">
         <?php if ($totalTasks > 0): ?>
         <strong style="color:var(--text-h)"><i class="bi bi-clipboard-check me-1" style="color:#b45309"></i>Hay <?= (int) $totalTasks ?> cosa<?= $totalTasks === 1 ? '' : 's' ?> por revisar.</strong>
-        <span style="color:var(--text-muted)">Aquí se juntan las clases y los bonos que han quedado a medias. Hasta que se resuelvan, los números de Finanzas pueden no ser exactos.
+        <span style="color:var(--text-muted)">Aquí se juntan las clases<?= $finFull ? ' y los bonos' : '' ?> que han quedado a medias. <?= $finFull ? 'Hasta que se resuelvan, los números de Finanzas pueden no ser exactos.' : 'Hasta que se resuelvan, no se sabe con certeza si se dieron.' ?>
         Cada bloque te explica qué pasa y qué tienes que hacer; basta con ir de arriba abajo.</span>
         <?php else: ?>
         <strong style="color:var(--text-h)"><i class="bi bi-check-circle-fill me-1" style="color:var(--success)"></i>Todo en orden.</strong>
-        <span style="color:var(--text-muted)">No hay clases ni bonos pendientes de revisar. Los números de Finanzas son fiables.</span>
+        <span style="color:var(--text-muted)">No hay clases <?= $finFull ? 'ni bonos ' : '' ?>pendientes de revisar.<?= $finFull ? ' Los números de Finanzas son fiables.' : '' ?></span>
         <?php endif; ?>
     </div>
 </div>
 
 <?php $cp = $closePreview ?? ['sessions' => 0, 'debts' => 0, 'prices' => 0]; ?>
-<?php if ($cp['sessions'] + $cp['debts'] + $cp['prices'] > 0): ?>
+<?php if ($finFull && $cp['sessions'] + $cp['debts'] + $cp['prices'] > 0): ?>
 <div class="card-jp mb-3" style="border:2px solid #bfdbfe">
     <div class="card-jp-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
         <div style="font-size:13px;line-height:1.6;max-width:760px">
@@ -270,6 +276,7 @@ if ($deletableEmpty) {
     <?php endif; ?>
 </div>
 
+<?php if ($finFull): // bonos y dinero: solo con acceso total a Finanzas ?>
 <!-- ───────── BONOS Y DINERO ───────── -->
 
 <!-- 5. Clases sin bono descontado -->
@@ -367,5 +374,6 @@ if ($estimated) {
     </div>
     <?php endif; ?>
 </div>
+<?php endif; // $finFull ?>
 
 <?= $this->endSection() ?>

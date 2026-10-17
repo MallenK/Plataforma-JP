@@ -39,6 +39,11 @@ $navTitles = [
     'tickets'        => ['Soporte',         'Sistema de tickets'],
 ];
 
+// Finanzas sin acceso total: solo existe la revisión de clases.
+if ($uriSegment === 'finanzas' && !\App\Services\FinanceAccessService::canFull()) {
+    $navTitles['finanzas'] = ['Revisión de clases', 'Comprobar que las clases se dieron'];
+}
+
 // Si el controlador pasó $pageTitle/$pageSubtitle explícitamente, se usan esos
 if (!isset($pageTitle) || !isset($pageSubtitle)) {
     [$pageTitle, $pageSubtitle] = $navTitles[$uriSegment] ?? ['JP Preparation', ''];

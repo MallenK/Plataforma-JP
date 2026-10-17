@@ -107,7 +107,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)"><?= esc($bono['created_by_name']) ?></span>
                     </div>
                     <?php endif; ?>
-                    <?php if (isset($bono['price_cents']) && $bono['price_cents'] !== null): ?>
+                    <?php if (!empty($finFull) && isset($bono['price_cents']) && $bono['price_cents'] !== null): // el precio pagado: solo acceso total a Finanzas ?>
                     <div class="d-flex justify-content-between">
                         <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Precio</span>
                         <span style="font-size:13px;font-weight:600;color:var(--text-h)">

@@ -77,7 +77,7 @@ $total = array_sum(array_map(fn($e) => $e['voided_at'] ? 0 : (int) $e['amount_ce
         <span class="card-jp-title">Gastos del periodo (<?= count($expenses) ?>) · <?= eur($total) ?></span>
         <form method="get" class="d-flex gap-2" style="margin:0">
             <?php foreach (['mes', 'desde', 'hasta'] as $k): if (!empty($_GET[$k])): ?><input type="hidden" name="<?= $k ?>" value="<?= esc($_GET[$k], 'attr') ?>"><?php endif; endforeach; ?>
-            <select name="categoria" class="form-control-jp" style="width:auto" onchange="this.form.submit()" aria-label="Filtrar por categoría">
+            <select name="categoria" class="form-control-jp" style="width:auto" onchange="this.form.requestSubmit()" aria-label="Filtrar por categoría">
                 <option value="">Todas las categorías</option>
                 <?php foreach ($categories as $c): ?><option value="<?= (int) $c['id'] ?>" <?= $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= esc($c['name']) ?></option><?php endforeach; ?>
             </select>

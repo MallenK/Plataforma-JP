@@ -42,9 +42,11 @@ class PerfilController extends BaseController
             }
         }
 
-        // Finanzas 2.0: «Mis pagos» (lo ve el propio alumno y administración).
+        // Finanzas 2.0: «Mis pagos» (lo ve el propio alumno y quien tiene acceso total a Finanzas;
+        // el resto de administración no ve los pagos de un alumno).
         $finAccount = null;
-        if ($user['role'] === 'player') {
+        $viewerIsSelf = (int) $user['id'] === (int) $this->currentUserId();
+        if ($user['role'] === 'player' && ($viewerIsSelf || \App\Services\FinanceAccessService::canFull())) {
             try {
                 $finAccount = (new \App\Services\FinanceService())->account((int) $user['id']);
             } catch (\Throwable $e) {

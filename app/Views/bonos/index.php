@@ -24,9 +24,11 @@ $pageSubtitle = 'Gestión de bonos y membresías';
             <span class="badge-status inactive" style="font-size:10px;margin-left:4px"><?= (int) $debtCount ?></span>
             <?php endif; ?>
         </a>
+        <?php if (!empty($finFull)): // el informe lleva importes: solo con acceso total a Finanzas ?>
         <a href="<?= base_url('bonos/informe') ?>" class="btn-jp btn-jp-secondary" style="text-decoration:none">
             <i class="bi bi-bar-chart-line-fill"></i> Informe
         </a>
+        <?php endif; ?>
         <button class="btn-jp btn-jp-secondary" onclick="openModalTipos()">
             <i class="bi bi-grid-fill"></i> Tipos de bono
         </button>
@@ -349,7 +351,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         <input type="date" name="start_date" class="form-control-jp" value="<?= date('Y-m-d') ?>">
                     </div>
 
-                    <!-- Finanzas 2.0: precio, descuento y cobro opcional en el mismo paso -->
+                    <!-- Finanzas 2.0: precio, descuento y cobro opcional en el mismo paso (descuento y cobro: solo acceso total) -->
+                    <?php if (!empty($finFull)): ?>
                     <div class="col-6 col-md-3">
                         <label class="form-label" for="bnDiscount">Descuento<?= fin_help('descuento') ?> <span style="color:var(--text-muted);font-weight:400;font-size:12px">(opcional)</span></label>
                         <input type="text" id="bnDiscount" name="discount" class="form-control-jp" placeholder="10 o 10%" oninput="bnRecalc()">
@@ -358,12 +361,14 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                         <label class="form-label" for="bnDiscountReason">Motivo</label>
                         <input type="text" id="bnDiscountReason" name="discount_reason" class="form-control-jp" maxlength="120" placeholder="Hermanos, promo…">
                     </div>
+                    <?php endif; ?>
                     <div class="col-12">
                         <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px">
                             Precio: <strong id="bnPrice">—</strong>
                             <span id="bnFinalWrap" style="display:none"> · con descuento <strong id="bnFinal"></strong></span>
                         </div>
                     </div>
+                    <?php if (!empty($finFull)): ?>
                     <div class="col-12">
                         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
                             <input type="checkbox" id="bnPayNow" name="pay_now" value="1" onchange="document.getElementById('bnPayBox').style.display=this.checked?'block':'none'">
@@ -382,6 +387,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                             <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Puede ser una parte (pago a plazos). Requiere jugador asignado.</div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <div class="col-12">
                         <label class="form-label">Notas (opcional)</label>
@@ -755,7 +761,8 @@ function bnEur(c) { return (c / 100).toLocaleString('es-ES', { minimumFractionDi
 function bnRecalc() {
     var opt  = document.querySelector('#selectBonoType option:checked');
     var list = opt && opt.dataset.price ? parseInt(opt.dataset.price, 10) : 0;
-    var raw  = (document.getElementById('bnDiscount').value || '').trim();
+    var dEl  = document.getElementById('bnDiscount');   // no existe sin acceso total a Finanzas
+    var raw  = ((dEl && dEl.value) || '').trim();
     var disc = 0;
     if (raw.slice(-1) === '%') { disc = Math.round(list * Math.min(100, parseFloat(raw.replace(',', '.')) || 0) / 100); }
     else if (raw !== '') { disc = Math.round((parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0) * 100); }

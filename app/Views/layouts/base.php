@@ -27,6 +27,8 @@
     <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet">
     <!-- App design system -->
     <link href="<?= base_url('assets/css/app.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/app.css') ?: time() ?>" rel="stylesheet">
+    <!-- Indicadores de carga: barra superior, botones ocupados, esqueletos -->
+    <link href="<?= base_url('assets/css/loaders.css') ?>?v=<?= @filemtime(FCPATH . 'assets/css/loaders.css') ?: time() ?>" rel="stylesheet">
     <!-- Subidas con aviso previo y progreso: DEBE cargarse antes del contenido (scripts inline lo usan) -->
     <script src="<?= base_url('assets/js/attach-upload.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/attach-upload.js') ?: time() ?>"></script>
 
@@ -36,6 +38,8 @@
 
 <?= $this->renderSection('content') ?>
 
+<!-- Indicadores de carga (JPLoader): barra superior + botones ocupados. Antes que el resto: lo usan live.js y soft-nav.js -->
+<script src="<?= base_url('assets/js/loaders.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/loaders.js') ?: time() ?>"></script>
 <!-- jQuery -->
 <script src="<?= base_url('assets/js/vendor/jquery.min.js') ?>"></script>
 <!-- DataTables (paginación en cliente) + vista lista/cuadrícula -->
@@ -51,6 +55,8 @@
 <script src="<?= base_url('assets/js/pwa.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/pwa.js') ?: time() ?>" data-base="<?= base_url() ?>"></script>
 <!-- Actualización en vivo: refresca zonas data-live al llegar un aviso -->
 <script src="<?= base_url('assets/js/live.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/live.js') ?: time() ?>"></script>
+<!-- Navegación y formularios sin recargar dentro de las pantallas marcadas con data-soft-region -->
+<script src="<?= base_url('assets/js/soft-nav.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/soft-nav.js') ?: time() ?>"></script>
 <!-- Reporte de problemas desde alertas de error / permiso -->
 <script src="<?= base_url('assets/js/error-report.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/error-report.js') ?: time() ?>"></script>
 <!-- Componentes accesibles propios (Dialog / DropdownMenu / Tabs) -->

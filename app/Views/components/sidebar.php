@@ -117,12 +117,14 @@ if ($isAdmin) {
                     Bonos
                 </a>
             </li>
-            <!-- Finanzas (v1.33.0: pestaña «Revisión») — admin, superadmin -->
+            <!-- Finanzas — acceso por persona (FinanceAccessService): el superadmin raíz y
+                 quien él autorice ven todo; el resto de admin solo «Revisión de clases». -->
+            <?php $sbFinFull = \App\Services\FinanceAccessService::canFull(); ?>
             <li class="sidebar-nav-item">
-                <a href="<?= base_url('finanzas') ?>"
+                <a href="<?= base_url($sbFinFull ? 'finanzas' : 'finanzas/revision') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/finanzas', $currentUri) ?>">
-                    <i class="bi bi-cash-coin"></i>
-                    Finanzas
+                    <i class="bi <?= $sbFinFull ? 'bi-cash-coin' : 'bi-clipboard-check' ?>"></i>
+                    <?= $sbFinFull ? 'Finanzas' : 'Revisión de clases' ?>
                 </a>
             </li>
             <?php endif; ?>

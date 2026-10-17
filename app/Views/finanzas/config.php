@@ -46,6 +46,44 @@ $catalog = static function (string $kind, array $items, string $title, ?string $
 <?= view('finanzas/_tabs', ['tab' => $tab, 'reviewCount' => $reviewCount]) ?>
 
 <div class="row g-3">
+    <!-- Quién ve las finanzas: acceso por persona. Solo el administrador principal lo cambia. -->
+    <div class="col-12">
+        <div class="card-jp">
+            <div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-shield-lock me-2"></i>Quién ve las finanzas</span></div>
+            <div class="card-jp-body" style="font-size:13px;line-height:1.55">
+                <p style="margin:0 0 10px;color:var(--text-muted)">
+                    Las finanzas completas (cobros, gastos, resumen, análisis, historial de alumnos…) son solo para el administrador principal y las personas que marques aquí.
+                    El resto de administradores solo ve la <strong>Revisión de clases</strong>: si se dio la clase, si se pasó lista y si se cerró, sin ningún importe.
+                </p>
+                <?php if (!empty($isMaster)): ?>
+                <form action="<?= base_url('finanzas/configuracion/acceso') ?>" method="post">
+                    <?= csrf_field() ?>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2" style="padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
+                            <i class="bi bi-patch-check-fill" style="color:var(--success)"></i>
+                            <span><strong>Tú</strong> (administrador principal) — acceso siempre</span>
+                        </div>
+                        <?php foreach ($accessCandidates as $c): ?>
+                        <label class="d-flex align-items-center gap-2" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+                            <input type="checkbox" name="user_ids[]" value="<?= (int) $c['id'] ?>" <?= !empty($c['granted']) ? 'checked' : '' ?>>
+                            <span style="flex:1"><strong><?= esc($c['name']) ?></strong>
+                                <span style="color:var(--text-muted)"> · <?= esc($c['email']) ?> · <?= $c['role'] === 'superadmin' ? 'Super Admin' : 'Administrador' ?></span></span>
+                            <span style="font-size:12px;font-weight:700;color:<?= !empty($c['granted']) ? 'var(--success)' : 'var(--text-muted)' ?>"><?= !empty($c['granted']) ? 'Ve todo' : 'Solo revisión' ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                        <?php if (empty($accessCandidates)): ?>
+                        <p style="margin:0;color:var(--text-muted)">No hay más administradores activos.</p>
+                        <?php endif; ?>
+                    </div>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check2 me-1"></i>Guardar quién ve las finanzas</button>
+                    <span style="font-size:12px;color:var(--text-muted);margin-left:8px">Cada cambio queda en el registro de auditoría.</span>
+                </form>
+                <?php else: ?>
+                <p style="margin:0"><i class="bi bi-info-circle me-1"></i>Solo el administrador principal puede cambiar esta lista.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
     <div class="col-12 col-xl-6">
         <div class="card-jp h-100">
             <div class="card-jp-header"><span class="card-jp-title">Reglas de asistencia y bono</span></div>

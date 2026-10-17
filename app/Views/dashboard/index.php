@@ -15,12 +15,20 @@ $prTotal = $isAdmin && !empty($pendingReview)
 <?php if ($prTotal > 0): ?>
 <a href="<?= base_url('finanzas/revision') ?>" class="alert-jp mb-3" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;text-decoration:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e">
     <i class="bi bi-clipboard-check-fill" style="font-size:18px"></i>
-    <strong>Finanzas · pendiente de revisar:</strong>
+    <?php $dbFinFull = \App\Services\FinanceAccessService::canFull(); ?>
+    <strong><?= $dbFinFull ? 'Finanzas · pendiente de revisar:' : 'Revisión de clases · pendiente:' ?></strong>
     <span style="font-size:13px">
-        <?= (int) $pendingReview['unclosed'] ?> sesiones sin cerrar ·
-        <?= (int) $pendingReview['debts'] + (int) $pendingReview['pre_control'] ?> clases sin descontar ·
-        <?= (int) $pendingReview['estimated'] ?> precios estimados<?php if (!empty($pendingReview['incomplete'])): ?> ·
-        <?= (int) $pendingReview['incomplete'] ?> clases incompletas<?php endif; ?>
+        <?php
+        $prParts = [(int) $pendingReview['unclosed'] . ' sesiones sin cerrar'];
+        if ($dbFinFull) {
+            $prParts[] = ((int) $pendingReview['debts'] + (int) $pendingReview['pre_control']) . ' clases sin descontar';
+            $prParts[] = (int) $pendingReview['estimated'] . ' precios estimados';
+        }
+        if (!empty($pendingReview['incomplete'])) {
+            $prParts[] = (int) $pendingReview['incomplete'] . ' clases incompletas';
+        }
+        echo esc(implode(' · ', $prParts));
+        ?>
     </span>
     <span style="margin-left:auto;font-weight:700;font-size:13px">Revisar <i class="bi bi-arrow-right"></i></span>
 </a>

@@ -62,8 +62,16 @@ class BonosController extends BaseController
             'players'      => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
             'filtro'       => $filter,
             'debtCount'    => count((new BonoControlService())->openDebts()),
-            'finMethods'   => (new FinanceService())->methods(),
+            // Descuento, cobro al vender e informe con importes: solo con acceso total a Finanzas.
+            'finFull'      => $this->finFull(),
+            'finMethods'   => $this->finFull() ? (new FinanceService())->methods() : [],
         ]);
+    }
+
+    /** ¿Quien consulta tiene acceso total a Finanzas? (descuentos, cobros e importes). */
+    private function finFull(): bool
+    {
+        return \App\Services\FinanceAccessService::canFull();
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -107,7 +115,10 @@ class BonosController extends BaseController
         ] + BonoControlService::priceSnapshot($type);   // v1.33.0: precio congelado
 
         // Finanzas 2.0: descuento opcional → el precio congelado es el final (la tarifa queda en price_list_cents).
-        $discount = FinanceService::parseDiscount($this->request->getPost('discount'), (int) $row['price_list_cents']);
+        // Sin acceso total a Finanzas se ignora el descuento y el cobro: se vende a tarifa y el cobro lo registra
+        // quien tiene acceso (aunque el formulario venga manipulado).
+        $finFull  = $this->finFull();
+        $discount = $finFull ? FinanceService::parseDiscount($this->request->getPost('discount'), (int) $row['price_list_cents']) : 0;
         $row['price_cents'] = (int) $row['price_list_cents'] - $discount;
 
         $this->bonoModel->insert($row);
@@ -120,7 +131,7 @@ class BonosController extends BaseController
             $fin      = new FinanceService();
             $chargeId = $fin->chargeForBono($newBonoId, (int) $this->currentUserId(),
                 $discount > 0 ? (trim((string) $this->request->getPost('discount_reason')) ?: 'Descuento') : null);
-            if ($this->request->getPost('pay_now')) {
+            if ($finFull && $this->request->getPost('pay_now')) {
                 $payCents = RevisionService::parseEuroToCents($this->request->getPost('pay_amount'));
                 $pay = $fin->registerPayment($playerId, (int) $payCents, (int) $this->request->getPost('pay_method_id') ?: null,
                     date('Y-m-d'), $chargeId, null, 'Cobrado al vender el bono', (int) $this->currentUserId());
@@ -188,6 +199,7 @@ class BonosController extends BaseController
             'movements' => $movements,
             'debts'     => $debts,
             'history'   => $history,
+            'finFull'   => $this->finFull(),
             'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
         ]);
     }

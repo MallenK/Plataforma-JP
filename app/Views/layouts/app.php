@@ -32,6 +32,15 @@ window.JP_PUSH = <?= json_encode([
         <?= view('components/navbar') ?>
 
         <div class="page-body">
+            <?= view('partials/push_ui', ['mode' => 'banner']) ?>
+            <?php
+            // Región «blanda»: si el controlador pasa $softRegion (p. ej. 'finanzas'), la navegación y los
+            // formularios de esa zona se hacen sin recargar la página (assets/js/soft-nav.js).
+            $softAttrs = !empty($softRegion)
+                ? ' data-soft-region="' . esc($softRegion, 'attr') . '" data-soft-prefix="' . esc($softPrefix ?? $softRegion, 'attr') . '"'
+                : '';
+            ?>
+            <?php if ($softAttrs !== ''): ?><div<?= $softAttrs ?>><?php endif; ?>
             <?php if ($reportUrl = session()->getFlashdata('error_report_url')): ?>
             <div class="alert-jp error mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <span><i class="bi bi-exclamation-triangle-fill me-2"></i><?= esc(session()->getFlashdata('error_report_msg') ?? 'Ha ocurrido un error.') ?></span>
@@ -40,8 +49,8 @@ window.JP_PUSH = <?= json_encode([
                 </a>
             </div>
             <?php endif; ?>
-            <?= view('partials/push_ui', ['mode' => 'banner']) ?>
             <?= $this->renderSection('page_content') ?>
+            <?php if ($softAttrs !== ''): ?></div><?php endif; ?>
         </div>
 
     </div>
