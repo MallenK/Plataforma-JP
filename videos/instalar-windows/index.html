@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(1100px 800px at 18% 20%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 200px; }
+      .center img { width: 300px; margin-bottom: 36px; }
+      .big { font-size: 104px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 48px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .mid b { color: #fff; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; }
+      .tap { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 8px solid #fff; background: rgba(255,255,255,.28); opacity: 0; box-shadow: 0 0 0 6px rgba(239,68,68,.65); z-index: 60; pointer-events: none; }
+      .mark { position: absolute; border: 6px solid #ef4444; border-radius: 22px; opacity: 0; box-shadow: 0 0 0 4px rgba(255,255,255,.55), 0 0 40px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .swipe { position: absolute; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; border: 8px solid #fff; background: rgba(255,255,255,.3); opacity: 0; box-shadow: 0 0 0 6px rgba(239,68,68,.65); z-index: 60; pointer-events: none; }
+      .label-pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 26px; padding: 8px 18px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+
+      .cap { position: absolute; left: 70px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+      .cap .step { font-size: 30px; margin-bottom: 18px; }
+      .cap .txt { font-size: 60px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 20px; font-size: 32px; line-height: 1.25; }
+      .device { position: absolute; left: 700px; top: 160px; width: 1180px; height: 760px; border-radius: 26px; background: #05080f; padding: 14px;
+        box-shadow: 0 0 0 3px #27324a, 0 40px 100px rgba(0,0,0,.6), 0 0 140px rgba(59,130,246,.16); }
+      .screen { position: relative; width: 1152px; height: 720px; border-radius: 14px; overflow: hidden; background: #0f172a; font-family: "Segoe UI", Arial, sans-serif; }
+      #cam { position: absolute; left: 0; top: 0; width: 1152px; height: 720px; transform-origin: 0 0; }
+      .device-stand { position: absolute; left: 1140px; top: 920px; width: 260px; height: 22px; margin-left: 0; background: linear-gradient(#1c2538, #0b1220); border-radius: 0 0 24px 24px; box-shadow: 0 0 0 2px #27324a; }
+
+      .wdesk { background: radial-gradient(700px 420px at 28% 38%, #5db3ff 0%, #2b64d8 38%, #10256b 75%, #0a1236 100%); }
+      .bin { position: absolute; left: 18px; top: 14px; width: 80px; text-align: center; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .wwin { background: #fff; height: 672px; inset: 0 0 auto 0; }
+      .wtabs { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: #dee1e6; }
+      .wtab { position: absolute; left: 10px; top: 7px; width: 230px; height: 33px; background: #fff; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; color: #202124; }
+      .wtab .fav { width: 18px; height: 18px; border-radius: 4px; } .wtab i { margin-left: auto; color: #5f6368; display: flex; }
+      .wplus { position: absolute; left: 252px; top: 8px; font-size: 22px; color: #5f6368; font-weight: 400; }
+      .wctl { position: absolute; right: 0; top: 0; height: 36px; display: flex; color: #202124; }
+      .wctl i { width: 46px; height: 36px; display: flex; align-items: center; justify-content: center; }
+      .wctl.l { color: #fff; }
+      .wbar { position: absolute; left: 0; right: 0; top: 40px; height: 44px; background: #fff; display: flex; align-items: center; gap: 6px; padding: 0 12px; color: #5f6368; border-bottom: 1px solid #dadce0; }
+      .wbar > i { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; } .wbar i.dis { opacity: .35; }
+      .womni { flex: 1; height: 34px; border-radius: 17px; background: #eef0f3; display: flex; align-items: center; gap: 10px; padding: 0 14px; font-size: 14px; color: #202124; margin: 0 8px; }
+      .womni.foc { background: #fff; box-shadow: 0 0 0 2px #1a73e8; }
+      .womni .lk { display: flex; color: #5f6368; } .womni .u { flex: 1; }
+      .womni .oi { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: #5f6368; }
+      .womni .oi.inst { color: #1a73e8; }
+      .wprof { width: 28px !important; height: 28px !important; border-radius: 50%; background: #7b61ff; color: #fff !important; font-weight: 700; font-size: 13px; font-style: normal; }
+      .wcontent { position: absolute; left: 0; right: 0; top: 84px; bottom: 0; overflow: hidden; background: #fff; }
+      .wcontent > img { width: 100%; display: block; }
+      .ntp { position: absolute; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; }
+      .ntp-s { width: 560px; height: 46px; border-radius: 23px; border: 1px solid #dfe1e5; display: flex; align-items: center; gap: 12px; padding: 0 18px; color: #5f6368; font-size: 15px; }
+      .wdrop { position: absolute; left: 150px; top: 0; width: 868px; background: #fff; border-radius: 0 0 18px 18px; box-shadow: 0 8px 22px rgba(0,0,0,.25); padding: 8px 0; }
+      .wdrop .dr { display: flex; align-items: center; gap: 14px; padding: 8px 18px; font-size: 14px; color: #202124; } .wdrop .dr svg { color: #5f6368; } .wdrop .dr em { margin-left: auto; color: #5f6368; font-style: normal; font-size: 12px; }
+
+      .wapptitle { position: absolute; left: 0; right: 0; top: 0; height: 36px; background: #0f172a; display: flex; align-items: center; gap: 10px; padding: 0 12px; color: #fff; font-size: 13px; }
+      .wapptitle img { width: 18px; height: 18px; border-radius: 4px; }
+      .wapp { position: absolute; left: 0; right: 0; top: 36px; bottom: 0; overflow: hidden; background: #f1f5f9; } .wapp img { width: 100%; display: block; }
+
+      .wtask { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: rgba(28,34,52,.96); border-top: 1px solid rgba(255,255,255,.12); }
+      .wtask .tc { position: absolute; left: 0; right: 0; top: 0; height: 48px; display: flex; justify-content: center; align-items: center; gap: 6px; }
+      .tbi { min-width: 44px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; position: relative; }
+      .tbi.act::after, .tbi.jpi::after { content: ""; position: absolute; bottom: 2px; left: 50%; margin-left: -8px; width: 16px; height: 3px; border-radius: 2px; background: #60cdff; }
+      .tbi.jpi img { width: 26px; height: 26px; border-radius: 6px; }
+      .tbi .sp { background: rgba(255,255,255,.12); border-radius: 18px; height: 30px; padding: 0 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #ddd; width: 150px; }
+      .tray { position: absolute; right: 14px; top: 4px; color: #fff; font-size: 11px; text-align: right; line-height: 1.35; }
+
+      .wdlg { position: absolute; left: 680px; top: 92px; width: 360px; background: #fff; border-radius: 12px; box-shadow: 0 10px 34px rgba(0,0,0,.4); padding: 20px 22px 18px; color: #202124; }
+      .wdlg .dt { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
+      .wdlg .dr1 { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; } .wdlg .dr1 img { width: 48px; height: 48px; border-radius: 10px; }
+      .wdlg .dr1 b { display: block; font-size: 15px; } .wdlg .dr1 small { color: #5f6368; font-size: 13px; }
+      .wdlg .db { display: flex; justify-content: flex-end; gap: 10px; font-size: 14px; font-weight: 500; }
+      .wdlg .ok { background: #1a73e8; color: #fff; padding: 9px 22px; border-radius: 20px; } .wdlg .cn { color: #1a73e8; padding: 9px 14px; }
+
+      .wmenu { position: absolute; left: 818px; top: 74px; width: 322px; background: #fff; border-radius: 10px; box-shadow: 0 6px 26px rgba(0,0,0,.35); padding: 6px 0; font-size: 13px; color: #202124; }
+      .wmenu.fly { left: 478px; width: 330px; }
+      .wmenu .mi { height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; } .wmenu .mi em { color: #5f6368; font-style: normal; font-size: 12px; display: flex; }
+      .wmenu hr { margin: 5px 0; border: 0; border-top: 1px solid #e3e3e6; }
+
+      .wperm { position: absolute; left: 12px; top: 44px; width: 380px; background: #fff; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.4); padding: 16px 18px; color: #202124; }
+      .wperm .ph { display: flex; justify-content: space-between; font-size: 14px; color: #3c4043; margin-bottom: 14px; } .wperm .ph i { color: #5f6368; display: flex; }
+      .wperm .pr { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-bottom: 16px; color: #202124; }
+      .wperm .pbt { display: flex; gap: 10px; font-size: 14px; font-weight: 500; }
+      .wperm .pbt span { padding: 8px 22px; border-radius: 20px; border: 1px solid #dadce0; color: #1a73e8; } .wperm .pbt .a { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+      </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="91.2" data-width="1920" data-height="1080">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="4.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Instala la app<br />en tu ordenador <b>Windows</b></div>
+        <div class="mid">Te llevará unos 2 minutos.<br />Sigue los pasos uno a uno, sin prisa</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="4.6" data-duration="79.6" data-track-index="2" style="position:absolute;inset:0">
+        <div class="cap clip" data-start="4.6" data-duration="6.6" data-track-index="3"><div class="step">Paso 1 de 10</div><div class="txt">Abre <b>Chrome</b></div><div class="sub">El icono redondo de colores de la barra de abajo. También sirve Microsoft Edge</div></div>
+        <div class="cap clip" data-start="11.2" data-duration="8.2" data-track-index="3"><div class="step">Paso 2 de 10</div><div class="txt">Escribe esta dirección<br />y pulsa <b>Enter</b></div><div class="sub"><b style="color:#fff">app.jppreparation.com</b><br />en la barra de arriba</div></div>
+        <div class="cap clip" data-start="19.4" data-duration="7" data-track-index="3"><div class="step">Paso 3 de 10</div><div class="txt">Pulsa el icono<br /><b>de instalar</b></div><div class="sub">Un monitor con una flecha, a la derecha de la barra de arriba</div></div>
+        <div class="cap clip" data-start="26.4" data-duration="6.2" data-track-index="3"><div class="step">Paso 4 de 10</div><div class="txt">Pulsa <b>«Instalar»</b></div><div class="sub">El botón azul de la ventanita</div></div>
+        <div class="cap clip" data-start="32.6" data-duration="6.8" data-track-index="3"><div class="step">Paso 5 de 10</div><div class="txt">La app se abre<br />en su propia ventana</div><div class="sub">Y su icono queda en la barra de abajo</div></div>
+        <div class="cap clip" data-start="39.4" data-duration="7.1" data-track-index="3"><div class="step">Paso 6 de 10</div><div class="txt">Escribe tu <b>email</b><br />y tu <b>contraseña</b></div><div class="sub">Los de siempre</div></div>
+        <div class="cap clip" data-start="46.5" data-duration="4.5" data-track-index="3"><div class="step">Paso 7 de 10</div><div class="txt">Pulsa <b>«Entrar»</b></div></div>
+        <div class="cap clip" data-start="51" data-duration="6" data-track-index="3"><div class="step">Paso 8 de 10</div><div class="txt">Pulsa <b>«Configuración»</b></div><div class="sub">En el menú de la izquierda</div></div>
+        <div class="cap clip" data-start="57" data-duration="6.6" data-track-index="3"><div class="step">Paso 9 de 10</div><div class="txt">Pulsa <b>«Activar<br />notificaciones»</b></div><div class="sub">Así te avisaremos de clases y mensajes</div></div>
+        <div class="cap clip" data-start="63.6" data-duration="6.4" data-track-index="3"><div class="step">Paso 10 de 10</div><div class="txt">Pulsa <b>«Permitir»</b></div><div class="sub">Si pulsas «Bloquear», no te llegarán los avisos</div></div>
+        <div class="cap clip" data-start="70" data-duration="6" data-track-index="3"><div class="step">Hecho</div><div class="txt">¡Notificaciones<br />activadas!</div><div class="sub">Ya recibirás los avisos de clases, mensajes y bonos</div></div>
+        <div class="cap clip" data-start="76" data-duration="8" data-track-index="3"><div class="step">Truco</div><div class="txt">¿No ves el icono<br />de instalar?</div><div class="sub">Pulsa <b style="color:#fff">⋮</b> → «Guardar y compartir» →<br />«Instalar JP Preparation»</div></div>
+
+          <div class="device"><div class="screen"><div id="cam">
+          <div id="L-wdesk" data-layout-allow-overlap data-layout-allow-occlusion class="layer wdesk"><div class="bin"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 7h14l-1.2 13H6.2zM9 7V4h6v3M3 7h18"/></svg><span>Papelera de reciclaje</span></div></div>
+          <div id="L-wnew" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin">
+    <div class="wtabs"><div class="wtab"><img src="assets/jp-icon.png" class="fav" alt="" /><span>Nueva pestaña</span><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div><b class="wplus">+</b>
+      <div class="wctl"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+    <div class="wbar"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M19 12H5M11 6l-6 6 6 6"/></svg></i><i class="dis"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14M13 6l6 6-6 6"/></svg></i><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></svg></i><div class="womni foc"><span class="lk"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></span><span id="wtyped" class="u typed">app.jppreparation.com</span></div><i class="wprof">M</i><i id="x-wmenu" class="wdots"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg></i></div>
+    <div class="wcontent"><div class="ntp"><div class="ntp-s"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg> Buscar o escribir una dirección web</div></div><div class="wdrop"><div class="dr"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span><b>app.jppreparation.com</b></span><em>Abrir esta dirección</em></div></div></div></div>
+          <div id="L-wlogin" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin">
+    <div class="wtabs"><div class="wtab"><img src="assets/jp-icon.png" class="fav" alt="" /><span>JP Preparation</span><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div><b class="wplus">+</b>
+      <div class="wctl"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+    <div class="wbar"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M19 12H5M11 6l-6 6 6 6"/></svg></i><i class="dis"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14M13 6l6 6-6 6"/></svg></i><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></svg></i><div class="womni "><span class="lk"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span class="u">app.jppreparation.com</span><i id="p-winstall" class="oi inst"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 6.5v5.5M9.5 9.5L12 12l2.5-2.5"/></svg></i><i class="oi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg></i></div><i class="wprof">M</i><i id="p-wmenu" class="wdots"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg></i></div>
+    <div class="wcontent"><img src="assets/d-login.png" alt="" /></div></div>
+          <div id="L-wdlg" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="wdlg"><div class="dt">Instalar app</div>
+      <div class="dr1"><img src="assets/jp-icon.png" alt="" /><div><b>JP Preparation</b><small>app.jppreparation.com</small></div></div>
+      <div class="db"><span id="p-winst" class="ok">Instalar</span><span class="cn">Cancelar</span></div></div></div>
+          <div id="L-wmenu" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="wmenu"><div class="mi"><span>Nueva pestaña</span><em>Ctrl+T</em></div><div class="mi"><span>Nueva ventana</span><em>Ctrl+N</em></div><div class="mi"><span>Nueva ventana de incógnito</span><em>Ctrl+Mayús+N</em></div><hr /><div class="mi"><span>Historial</span><em>▸</em></div><div class="mi"><span>Descargas</span><em>Ctrl+J</em></div><div class="mi"><span>Marcadores y listas</span><em>▸</em></div><hr /><div class="mi"><span>Zoom</span><em>− 100 % +</em></div><hr /><div class="mi"><span>Imprimir…</span><em>Ctrl+P</em></div><div id="p-wsave" class="mi"><span>Guardar y compartir</span><em><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M9 5l7 7-7 7"/></svg></em></div><div class="mi"><span>Más herramientas</span><em>▸</em></div><hr /><div class="mi"><span>Configuración</span><em></em></div></div>
+      <div id="wfly" class="wmenu fly" style="top:361px"><div class="mi"><span>Guardar página como…</span><em>Ctrl+S</em></div><div class="mi"><span>Copiar enlace</span><em></em></div><div class="mi"><span>Crear acceso directo…</span><em></em></div><div id="p-wsubinst" class="mi"><span>Instalar JP Preparation…</span><em></em></div></div></div>
+          <div id="L-wapp" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin"><div class="wapptitle"><img src="assets/jp-icon.png" alt="" /><span>JP Preparation</span><div class="wctl l"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+  <div class="wapp"><img src="assets/d-login.png" alt="" /></div></div>
+          <div id="L-wapp2" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin"><div class="wapptitle"><img src="assets/jp-icon.png" alt="" /><span>JP Preparation</span><div class="wctl l"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+  <div class="wapp"><img src="assets/d-login-lleno.png" alt="" /></div></div>
+          <div id="L-wdash" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin"><div class="wapptitle"><img src="assets/jp-icon.png" alt="" /><span>JP Preparation</span><div class="wctl l"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+  <div class="wapp"><img src="assets/d-dash.png" alt="" /></div></div>
+          <div id="L-wnotif" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin"><div class="wapptitle"><img src="assets/jp-icon.png" alt="" /><span>JP Preparation</span><div class="wctl l"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+  <div class="wapp"><img src="assets/d-notif-off.png" alt="" /></div></div>
+          <div id="L-wperm" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="wperm"><div class="ph">app.jppreparation.com quiere<i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div>
+      <div class="pr"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg><span>Mostrar notificaciones</span></div><div class="pbt"><span id="p-wallow" class="a">Permitir</span><span class="b">Bloquear</span></div></div></div>
+          <div id="L-wnotif2" data-layout-allow-overlap data-layout-allow-occlusion class="layer wwin"><div class="wapptitle"><img src="assets/jp-icon.png" alt="" /><span>JP Preparation</span><div class="wctl l"><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14"/></svg></i><i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="6" width="12" height="12"/></svg></i><i><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 6l12 12M18 6L6 18"/></svg></i></div></div>
+  <div class="wapp"><img src="assets/d-notif-on.png" alt="" /></div></div>
+          <div id="L-wtask" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="wtask"><div class="tc">
+      <span class="tbi"><svg width="26" height="26" viewBox="0 0 24 24"><path fill="#4aa3ff" d="M2 4l9-1.2v8.4H2zM12 2.6L22 1v10.2H12zM2 12.8h9v8.4L2 20zM12 12.8h10V23l-10-1.4z"/></svg></span><span class="tbi"><span class="sp"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg> Buscar</span></span>
+      <span id="p-wedge" class="tbi"><svg viewBox="0 0 64 64" width="28" height="28"><defs><linearGradient id="eg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#35c1f1"/><stop offset="1" stop-color="#0f7dc9"/></linearGradient></defs><circle cx="32" cy="32" r="29" fill="url(#eg)"/><path d="M14 34c0-9 7-16 16-16 8 0 14 5 14 12 0 5-4 7-8 7H24c0 5 4 8 10 8 4 0 8-1 11-4-2 8-9 13-17 13-10 0-18-8-18-20z" fill="#0b4f8a" opacity=".55"/><path d="M20 30c1-7 7-12 14-12 7 0 12 4 12 10H20z" fill="#3ddc97"/></svg></span><span id="p-wchrome" class="tbi act"><svg viewBox="0 0 64 64" width="28" height="28"><circle cx="32" cy="32" r="30" fill="#fff"/><path d="M32 32L7.8 18A28 28 0 0 1 56.2 18z" fill="#ea4335"/><path d="M32 32L56.2 18A28 28 0 0 1 32 60z" fill="#fbbc05"/><path d="M32 32L32 60A28 28 0 0 1 7.8 18z" fill="#34a853"/><circle cx="32" cy="32" r="12" fill="#fff"/><circle cx="32" cy="32" r="9.5" fill="#4285f4"/></svg></span><span class="tbi"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#fcc419" stroke="none"/></svg></span>
+      <span id="p-wjp" class="tbi jpi"><img src="assets/jp-icon.png" alt="" /></span></div>
+      <div class="tray">ESP&nbsp; <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M3 9a14 14 0 0 1 18 0M6 12.5a9 9 0 0 1 12 0M9 16a4.5 4.5 0 0 1 6 0"/></svg>&nbsp; 9:41<br />17/10/2026</div></div></div>
+          <div id="rip0" class="ripple" style="left:654px;top:697px"></div>
+          <div id="rip1" class="ripple" style="left:994px;top:62px"></div>
+          <div id="rip2" class="ripple" style="left:881px;top:236px"></div>
+          <div id="rip3" class="ripple" style="left:576px;top:506px"></div>
+          <div id="rip4" class="ripple" style="left:96px;top:354px"></div>
+          <div id="rip5" class="ripple" style="left:808.8px;top:289.2px"></div>
+          <div id="rip6" class="ripple" style="left:78px;top:148px"></div>
+          <div id="rip7" class="ripple" style="left:1124px;top:62px"></div>
+          <div id="rip8" class="ripple" style="left:979px;top:385px"></div>
+          <div id="rip9" class="ripple" style="left:643px;top:479px"></div>
+          <div id="mk0" class="mark" style="left:626px;top:671px;width:56px;height:52px;border-radius:14px;"></div>
+          <div id="mk1" class="mark" style="left:974px;top:42px;width:40px;height:40px;border-radius:14px;"></div>
+          <div id="mk2" class="mark" style="left:828px;top:209px;width:106px;height:53px;border-radius:12px;"></div>
+          <div id="mk3" class="mark" style="left:728px;top:673px;width:52px;height:48px;border-radius:12px;"></div>
+          <div id="mk4" class="mark" style="left:436.4px;top:330.8px;width:279.2px;height:126px;border-radius:22px;"></div>
+          <div id="mk5" class="mark" style="left:442.4px;top:477.2px;width:267.2px;height:57.6px;border-radius:16px;"></div>
+          <div id="mk6" class="mark" style="left:3.5999999999999996px;top:331.2px;width:184.8px;height:45.6px;border-radius:14px;"></div>
+          <div id="mk7" class="mark" style="left:725.6px;top:268.8px;width:166.4px;height:40.8px;border-radius:12px;"></div>
+          <div id="mk8" class="mark" style="left:24px;top:123px;width:108px;height:49px;border-radius:12px;"></div>
+          <div id="pl0" class="label-pill" style="left:360px;top:124px">Enter ↵</div>
+          <svg id="cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.5L16 20l-3 1.2-3.5-7.6L4 18z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div></div></div>
+          <div class="device-stand"></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="84.2" data-duration="7" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">¡Ya está!</div>
+        <div class="mid">Abre siempre la app desde el <b>icono de JP Prep</b><br />de la barra de tareas o del menú Inicio</div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const FADE = 0.3;
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 4.25);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 84.4);
+      tl.fromTo(".device, .device-stand", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 4.6);
+      tl.to(".device, .device-stand", { opacity: 0, duration: 0.4 }, 83.8);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-wdesk", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 4.6);
+      tl.to("#L-wdesk", { opacity: 0, duration: 0.01 }, 85.8);
+      tl.fromTo("#L-wnew", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.8);
+      tl.to("#L-wnew", { opacity: 0, duration: 0.3 }, 19.6);
+      tl.fromTo("#L-wlogin", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 19.2);
+      tl.to("#L-wlogin", { opacity: 0, duration: 0.3 }, 32.8);
+      tl.fromTo("#L-wlogin", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 75.8);
+      tl.to("#L-wlogin", { opacity: 0, duration: 0.3 }, 84.4);
+      tl.fromTo("#L-wdlg", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 26);
+      tl.to("#L-wdlg", { opacity: 0, duration: 0.3 }, 32.8);
+      tl.fromTo("#L-wmenu", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 77.2);
+      tl.to("#L-wmenu", { opacity: 0, duration: 0.3 }, 84.4);
+      tl.fromTo("#L-wapp", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 32.4);
+      tl.to("#L-wapp", { opacity: 0, duration: 0.3 }, 46.9);
+      tl.fromTo("#L-wapp2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 43);
+      tl.to("#L-wapp2", { opacity: 0, duration: 0.3 }, 51.8);
+      tl.fromTo("#L-wdash", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 50.6);
+      tl.to("#L-wdash", { opacity: 0, duration: 0.3 }, 57.2);
+      tl.fromTo("#L-wnotif", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 56.8);
+      tl.to("#L-wnotif", { opacity: 0, duration: 0.3 }, 70.2);
+      tl.fromTo("#L-wperm", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 63.8);
+      tl.to("#L-wperm", { opacity: 0, duration: 0.3 }, 70.2);
+      tl.fromTo("#L-wnotif2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 69.9);
+      tl.to("#L-wnotif2", { opacity: 0, duration: 0.3 }, 76.2);
+      tl.fromTo("#L-wtask", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 4.6);
+      tl.to("#L-wtask", { opacity: 0, duration: 0.01 }, 85.8);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 5.8);
+      tl.to("#mk0", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, 6.3);
+      tl.to("#mk0", { opacity: 0, duration: 0.3 }, 9.2);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 20.4);
+      tl.to("#mk1", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 9, ease: "sine.inOut" }, 20.9);
+      tl.to("#mk1", { opacity: 0, duration: 0.3 }, 25.4);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 27.4);
+      tl.to("#mk2", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 27.9);
+      tl.to("#mk2", { opacity: 0, duration: 0.3 }, 31.2);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 34.2);
+      tl.to("#mk3", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 34.7);
+      tl.to("#mk3", { opacity: 0, duration: 0.3 }, 38.2);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 40.4);
+      tl.to("#mk4", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 9, ease: "sine.inOut" }, 40.9);
+      tl.to("#mk4", { opacity: 0, duration: 0.3 }, 45.6);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 47);
+      tl.to("#mk5", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, 47.5);
+      tl.to("#mk5", { opacity: 0, duration: 0.3 }, 50);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 51.8);
+      tl.to("#mk6", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 52.3);
+      tl.to("#mk6", { opacity: 0, duration: 0.3 }, 55.8);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 58);
+      tl.to("#mk7", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 58.5);
+      tl.to("#mk7", { opacity: 0, duration: 0.3 }, 62);
+      tl.fromTo("#mk8", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 64.8);
+      tl.to("#mk8", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 65.3);
+      tl.to("#mk8", { opacity: 0, duration: 0.3 }, 68.4);
+      tl.fromTo("#pl0", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35 }, 16.4);
+      tl.to("#pl0", { opacity: 0, duration: 0.3 }, 19);
+      gsap.set("#cursor", { x: 880, y: 560 });
+      tl.fromTo("#cursor", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.4);
+      tl.to("#cursor", { x: 648, y: 693, duration: 0.75, ease: "power2.inOut" }, 8.5);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 9.35);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 9.48);
+      tl.fromTo("#rip0", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 9.4);
+      tl.to("#cursor", { x: 988, y: 58, duration: 0.75, ease: "power2.inOut" }, 24.7);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 25.55);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 25.68);
+      tl.fromTo("#rip1", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 25.6);
+      tl.to("#cursor", { x: 875, y: 232, duration: 0.75, ease: "power2.inOut" }, 30.5);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 31.35);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 31.48);
+      tl.fromTo("#rip2", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 31.4);
+      tl.to("#cursor", { x: 570, y: 502, duration: 0.75, ease: "power2.inOut" }, 49.4);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 50.25);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 50.38);
+      tl.fromTo("#rip3", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 50.3);
+      tl.to("#cursor", { x: 90, y: 350, duration: 0.75, ease: "power2.inOut" }, 55.1);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 55.95);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 56.08);
+      tl.fromTo("#rip4", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 56);
+      tl.to("#cursor", { x: 802.8, y: 285.2, duration: 0.75, ease: "power2.inOut" }, 61.5);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 62.35);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 62.48);
+      tl.fromTo("#rip5", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 62.4);
+      tl.to("#cursor", { x: 72, y: 144, duration: 0.75, ease: "power2.inOut" }, 68.1);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 68.95);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 69.08);
+      tl.fromTo("#rip6", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 69);
+      tl.to("#cursor", { x: 1118, y: 58, duration: 1.45, ease: "power2.inOut" }, 76);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 77.55);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 77.68);
+      tl.fromTo("#rip7", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 77.6);
+      tl.to("#cursor", { x: 973, y: 381, duration: 0.75, ease: "power2.inOut" }, 79.1);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 79.95);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 80.08);
+      tl.fromTo("#rip8", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 80);
+      tl.to("#cursor", { x: 637, y: 475, duration: 0.75, ease: "power2.inOut" }, 81.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 82.75);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 82.88);
+      tl.fromTo("#rip9", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 82.8);
+      tl.to("#cam", { scale: 1.8, x: -432, y: -576, duration: 0.9, ease: "power2.inOut" }, 5);
+      tl.to("#cam", { scale: 1.9, x: -222, y: 0, duration: 0.9, ease: "power2.inOut" }, 11.6);
+      tl.to("#cam", { scale: 2.2, x: -1382.4, y: 0, duration: 0.9, ease: "power2.inOut" }, 19.8);
+      tl.to("#cam", { scale: 1.9, x: -1036.8, y: 0, duration: 0.9, ease: "power2.inOut" }, 26.1);
+      tl.to("#cam", { scale: 1, x: 0, y: 0, duration: 0.8, ease: "power2.inOut" }, 32.2);
+      tl.to("#cam", { scale: 1.8, x: -432, y: -576, duration: 0.9, ease: "power2.inOut" }, 33.8);
+      tl.to("#cam", { scale: 1.5, x: -288, y: -240, duration: 0.9, ease: "power2.inOut" }, 39.8);
+      tl.to("#cam", { scale: 1.7, x: 0, y: -252, duration: 0.9, ease: "power2.inOut" }, 51.4);
+      tl.to("#cam", { scale: 1.7, x: -784, y: -150, duration: 0.9, ease: "power2.inOut" }, 57.4);
+      tl.to("#cam", { scale: 1.8, x: 0, y: 0, duration: 0.9, ease: "power2.inOut" }, 64);
+      tl.to("#cam", { scale: 1, x: 0, y: 0, duration: 0.8, ease: "power2.inOut" }, 69.8);
+      tl.to("#cam", { scale: 1.6, x: -691.2, y: 0, duration: 0.9, ease: "power2.inOut" }, 76.6);
+      tl.to("#cam", { scale: 1.6, x: -640, y: -168, duration: 0.9, ease: "power2.inOut" }, 79);
+      tl.to("#cam", { scale: 1, x: 0, y: 0, duration: 0.8, ease: "power2.inOut" }, 83.6);
+      
+            gsap.set("#wtyped", { clipPath: "inset(0 100% 0 0)" });
+            tl.to("#wtyped", { clipPath: "inset(0 0% 0 0)", duration: 3.0, ease: "steps(21)" }, 12.4);
+            gsap.set("#wfly", { opacity: 0 });
+            tl.to("#wfly", { opacity: 1, duration: 0.25 }, 79.6);
+            gsap.set("#p-wjp", { opacity: 0, scale: 0.3 });
+            tl.to("#p-wjp", { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 33.0);
+        
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

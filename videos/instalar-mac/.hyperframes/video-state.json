@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "historyId": "41c549f7-ba0a-47f5-9a89-1ff20f8f85e0",
+  "currentRevision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+  "pendingChanges": false,
+  "files": {
+    "AGENTS.md": {
+      "hash": "1d4f0c8ca2507b94fd7c9df709fff01416adbd51a0f922b9d6ed2f40129147d5",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\1d\\1d4f0c8ca2507b94fd7c9df709fff01416adbd51a0f922b9d6ed2f40129147d5"
+    },
+    "CLAUDE.md": {
+      "hash": "1d4f0c8ca2507b94fd7c9df709fff01416adbd51a0f922b9d6ed2f40129147d5",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\1d\\1d4f0c8ca2507b94fd7c9df709fff01416adbd51a0f922b9d6ed2f40129147d5"
+    },
+    "assets/d-dash.png": {
+      "hash": "80176aec1ab7094adb01e67f46de82d07ddb544b2b516bdd63c11f4b14c03b01",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\80\\80176aec1ab7094adb01e67f46de82d07ddb544b2b516bdd63c11f4b14c03b01"
+    },
+    "assets/d-login-lleno.png": {
+      "hash": "fa017039b6a1f5cfe8c59bd8f4755252a3ba049324b8015a884d5f1a9211ed44",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\fa\\fa017039b6a1f5cfe8c59bd8f4755252a3ba049324b8015a884d5f1a9211ed44"
+    },
+    "assets/d-login.png": {
+      "hash": "de1de3ec46f470efa6fb729ea7b4965749f922d744fb85def22aa2dda6b80b28",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\de\\de1de3ec46f470efa6fb729ea7b4965749f922d744fb85def22aa2dda6b80b28"
+    },
+    "assets/d-notif-off.png": {
+      "hash": "fddd189ded4feb7dafac5a8784a25ac1f758739b115cecfe9dad6a4d06093eae",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\fd\\fddd189ded4feb7dafac5a8784a25ac1f758739b115cecfe9dad6a4d06093eae"
+    },
+    "assets/d-notif-on.png": {
+      "hash": "bb265cb28b253ffd1e76247d647956ade4268fc7c3d5520dc35103ab7e295f49",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\bb\\bb265cb28b253ffd1e76247d647956ade4268fc7c3d5520dc35103ab7e295f49"
+    },
+    "assets/jp-icon.png": {
+      "hash": "9a4cea0a1235faf57d700974541db6f2be386a0a1283f5548fcaccbfde7679c4",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\9a\\9a4cea0a1235faf57d700974541db6f2be386a0a1283f5548fcaccbfde7679c4"
+    },
+    "assets/logo.webp": {
+      "hash": "def18ded5fe785489fceb971c75648bf31f66e7dcbd005ea0fc30770b0fcbeee",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\de\\def18ded5fe785489fceb971c75648bf31f66e7dcbd005ea0fc30770b0fcbeee"
+    },
+    "hyperframes.json": {
+      "hash": "ad5dadeef78a520800a9e5cdd27a92ff5ac37f11b6a07f611b6b52b9f8c79a17",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\ad\\ad5dadeef78a520800a9e5cdd27a92ff5ac37f11b6a07f611b6b52b9f8c79a17"
+    },
+    "index.html": {
+      "hash": "1258eaeb08c42c998be7e4783b3089e0fdb3417d412b8064475907067c4dfd8a",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\12\\1258eaeb08c42c998be7e4783b3089e0fdb3417d412b8064475907067c4dfd8a"
+    },
+    "meta.json": {
+      "hash": "773be9e9aa24fc660526765af0b3506344e08cc57a98d9246034cb472619a2a2",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\77\\773be9e9aa24fc660526765af0b3506344e08cc57a98d9246034cb472619a2a2"
+    },
+    "package.json": {
+      "hash": "878f0e3c53a76aa7c259a3a3195139565659a2c45f2487538c9f8be0845a85f4",
+      "content": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\87\\878f0e3c53a76aa7c259a3a3195139565659a2c45f2487538c9f8be0845a85f4"
+    }
+  },
+  "revisions": {
+    "611670d3-a64c-486d-8a3a-9414ecad871b": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1792200480628,
+      "endedAt": 1792200480637,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\24\\249d6bb0680ba01592c30e1576b1594c68c06728bde02f528775ca15ef1612b3",
+          "after": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\54\\54b2c65351a97bd2ee1db3cb7309b51d0be3bcc7a7cded2951f24cae66e047ee"
+        }
+      }
+    },
+    "f36603d9-d8ce-4011-bbb6-5360f7da8ff8": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1792200714261,
+      "endedAt": 1792200714271,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\54\\54b2c65351a97bd2ee1db3cb7309b51d0be3bcc7a7cded2951f24cae66e047ee",
+          "after": "C:\\Users\\Mallen\\.cache\\hyperframes\\history\\41c549f7-ba0a-47f5-9a89-1ff20f8f85e0\\blobs\\12\\1258eaeb08c42c998be7e4783b3089e0fdb3417d412b8064475907067c4dfd8a"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+      "id": "a67c0b78-10e5-4852-9af1-0789174767f5"
+    },
+    "revisions": {
+      "f36603d9-d8ce-4011-bbb6-5360f7da8ff8": [
+        {
+          "id": "a67c0b78-10e5-4852-9af1-0789174767f5",
+          "scope": "project",
+          "report": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\checks\\a67c0b78-10e5-4852-9af1-0789174767f5.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 3000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1792200733083,
+          "contentHash": "51b1a131303a897b43b77493471ad67ec739db8940cca5d4de2cca753ee90d0a",
+          "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+          "inputFingerprint": "52d2dcfc8cad893632ae11f9e5e69ad89900305286dd76d9a7c2c74fd872c614",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "id": "a2908e92-fa5f-4e8f-93f7-c63478eb08d2",
+        "scope": "project",
+        "report": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\checks\\a2908e92-fa5f-4e8f-93f7-c63478eb08d2.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 3000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1792199811401,
+        "contentHash": "51b1a131303a897b43b77493471ad67ec739db8940cca5d4de2cca753ee90d0a",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+      "id": "d5ea4de6-9dc0-4ae0-b0fc-4613f178a01c-1"
+    },
+    "revisions": {
+      "f36603d9-d8ce-4011-bbb6-5360f7da8ff8": [
+        {
+          "scope": "full",
+          "id": "d5ea4de6-9dc0-4ae0-b0fc-4613f178a01c-0",
+          "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\83b95014-11f4-4210-838e-0c1894e62a16\\frame-00-at-28s.png",
+          "time": 28,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792200740869,
+          "contentHash": "b5ea1ffa17a11bf10c614500ad6b89999f9f3d5bbefb4233f23286a125279e94",
+          "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+          "inputFingerprint": "52d2dcfc8cad893632ae11f9e5e69ad89900305286dd76d9a7c2c74fd872c614",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d5ea4de6-9dc0-4ae0-b0fc-4613f178a01c-1",
+          "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\83b95014-11f4-4210-838e-0c1894e62a16\\frame-01-at-30s.png",
+          "time": 30,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792200740870,
+          "contentHash": "6136883c053e2477d343760eaaf04def4fbd05c9d23247d24bad9bafb5049fb8",
+          "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+          "inputFingerprint": "52d2dcfc8cad893632ae11f9e5e69ad89900305286dd76d9a7c2c74fd872c614",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-0",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-00-at-7s.png",
+        "time": 7,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822645,
+        "contentHash": "d825225438fc93727d7c4abccfb9ec067b135018c807b8388af5486aa1f96c17",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-1",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-01-at-15s.png",
+        "time": 15,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822645,
+        "contentHash": "58a0419426d7a2dbdbcec28accfc80fa0c416f68513b9a9f9762a388a53f6837",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-2",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-02-at-18s.png",
+        "time": 18,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822646,
+        "contentHash": "303cf71af43a83888724ec149615082562ac8813c68781112ab909d9a32b7123",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-3",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-03-at-22s.png",
+        "time": 22,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822646,
+        "contentHash": "b030e79919b08ca93b2ad7895dc19d1052e820e777de8273a262e6915dc13912",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-4",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-04-at-28s.png",
+        "time": 28,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822646,
+        "contentHash": "cf08e41f7e54ce0aa82612a88e4d5e10a9aef5cc0d3c63c335fc5b175f6ce137",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-5",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-05-at-35s.png",
+        "time": 35,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822646,
+        "contentHash": "7087f6903fa59c721157287bb80858cc5764bc701c17812bb0b357b86fdd08e0",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-6",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-06-at-41s.png",
+        "time": 41,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822647,
+        "contentHash": "3902a90ce9aefb4ca846d77c29c4959b219fce7094182695a3bb74910cb1ece2",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-7",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-07-at-47s.png",
+        "time": 47,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822647,
+        "contentHash": "a9389362a58968ae926fcd6475b140298cd2d8a56c223f559ae215704a5d2952",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-8",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-08-at-53s.png",
+        "time": 53,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822647,
+        "contentHash": "24e09362bb06a8249d6495f42cee02a342e1d76438a7200ffaac422296a388d8",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-9",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-09-at-58s.png",
+        "time": 58,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822648,
+        "contentHash": "43f6f371a462d2382a53e3296f71d521e4a3c90e7ad0242993ee1251cba75a3e",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-10",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-10-at-64s.png",
+        "time": 64,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822648,
+        "contentHash": "55304d1fa06801e62643f03856e4fecd9977ea4e36e73d521594b0f5b2a225b9",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-11",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-11-at-71s.png",
+        "time": 71,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822649,
+        "contentHash": "e5026323e94dc075d766b88cf4abb6c1fb50e583f600fb3f2633ee873cbd282b",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "6ef81dd8-d6b0-4065-b806-65d65fbe6e40-12",
+        "image": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\.hyperframes\\artifacts\\snapshots\\1ab2d744-31d6-43fa-9a4f-918a77e983db\\frame-12-at-80s.png",
+        "time": 80,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1792199822650,
+        "contentHash": "4b47ff9d34242e3ae9f461908d0ff7696dbf382a48ddff9a011c541b0ca46499",
+        "revision": null,
+        "inputFingerprint": "88b6890c3b7c706ba3fc2c7ab82275b0f4ec586f12fabbedf72efbf27b44a5cd",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "renders": {
+    "latest": {
+      "id": "0b878189-b74f-4d3f-b6d8-010f7941fd72",
+      "completedAt": 1792200959168,
+      "output": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\instalar-mac.mp4",
+      "status": "completed",
+      "revision": "f36603d9-d8ce-4011-bbb6-5360f7da8ff8"
+    },
+    "retainedRevisions": [
+      "f36603d9-d8ce-4011-bbb6-5360f7da8ff8",
+      "611670d3-a64c-486d-8a3a-9414ecad871b"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}

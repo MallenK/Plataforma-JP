@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(900px 700px at 50% 0%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 80px; }
+      .center img { width: 340px; margin-bottom: 50px; }
+      .big { font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 46px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .mid b { color: #fff; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; }
+      .tap { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 8px solid #fff; background: rgba(255,255,255,.28); opacity: 0; box-shadow: 0 0 0 6px rgba(239,68,68,.65); z-index: 60; pointer-events: none; }
+      .mark { position: absolute; border: 6px solid #ef4444; border-radius: 22px; opacity: 0; box-shadow: 0 0 0 4px rgba(255,255,255,.55), 0 0 40px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .swipe { position: absolute; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; border: 8px solid #fff; background: rgba(255,255,255,.3); opacity: 0; box-shadow: 0 0 0 6px rgba(239,68,68,.65); z-index: 60; pointer-events: none; }
+      .label-pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 26px; padding: 8px 18px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+
+      .cap { position: absolute; left: 60px; right: 60px; top: 100px; height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+      .cap .step { font-size: 34px; margin-bottom: 16px; }
+      .cap .txt { font-size: 64px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 16px; font-size: 35px; line-height: 1.2; }
+      .device { position: absolute; left: 50%; top: 470px; margin-left: -325px; width: 650px; height: 1406px; border-radius: 86px; background: #05080f; padding: 18px;
+        box-shadow: 0 0 0 4px #27324a, 0 50px 120px rgba(0,0,0,.6), 0 0 160px rgba(59,130,246,.18); }
+      .device.android { border-radius: 70px; }
+      .screen { position: relative; width: 100%; height: 100%; border-radius: 70px; overflow: hidden; background: #0f172a; font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif; }
+      .android .screen { border-radius: 54px; font-family: Roboto, "Segoe UI", Arial, sans-serif; }
+
+      .sba { position: absolute; left: 0; right: 0; top: 0; height: 46px; z-index: 30; display: flex; align-items: center; justify-content: space-between; padding: 4px 36px 0 40px; font-weight: 500; font-size: 22px; }
+      .sba .cam { position: absolute; left: 50%; top: 14px; margin-left: -11px; width: 22px; height: 22px; border-radius: 50%; background: #000; }
+      .sba .sg { display: flex; gap: 8px; align-items: center; }
+      .navp { position: absolute; left: 50%; bottom: 10px; margin-left: -90px; width: 180px; height: 7px; border-radius: 5px; z-index: 30; }
+      .full { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+      .splash { position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 44px; }
+      .dim { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+
+      .and-home { background: linear-gradient(170deg, #0a3550 0%, #16727f 55%, #d9a441 120%); }
+      .gsearch { position: absolute; left: 28px; right: 28px; top: 84px; height: 76px; border-radius: 40px; background: rgba(255,255,255,.95); display: flex; align-items: center; gap: 18px; padding: 0 28px; color: #5f6368; font-size: 26px; }
+      .gsearch b { font-size: 34px; color: #4285f4; }
+      .agrid { position: absolute; left: 16px; right: 16px; top: 220px; display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 44px; }
+      .aa { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff; font-size: 19px; font-weight: 500; }
+      .ac { width: 104px; height: 104px; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+      .ac img { width: 100%; height: 100%; display: block; }
+      .aa.nolabel span { display: none; }
+      .adock { position: absolute; left: 22px; right: 22px; bottom: 40px; height: 140px; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; justify-items: center; }
+
+      .cr { background: #fff; }
+      .ctop { position: absolute; left: 0; right: 0; top: 0; height: 152px; background: #fff; z-index: 5; border-bottom: 1px solid #e3e3e6; }
+      .ctb { position: absolute; left: 14px; right: 10px; top: 52px; height: 84px; display: flex; align-items: center; gap: 12px; }
+      .cpill { flex: 1; height: 72px; border-radius: 36px; background: #eef0f3; display: flex; align-items: center; gap: 14px; padding: 0 26px; font-size: 26px; color: #1f1f1f; }
+      .cpill.foc { background: #fff; box-shadow: 0 0 0 3px #1a73e8; }
+      .cpill .lk { color: #5f6368; display: flex; }
+      .tabsq { width: 44px; height: 44px; border: 3px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; font-size: 22px; color: #333; flex: 0 0 44px; }
+      .mdots { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; color: #444; flex: 0 0 56px; }
+      .cpg { position: absolute; left: 0; top: 152px; width: 100%; height: 1218px; object-fit: cover; object-position: top; }
+      .sugg { position: absolute; left: 0; right: 0; top: 152px; }
+      .sg1 { display: flex; align-items: center; gap: 22px; padding: 26px 28px; font-size: 26px; color: #1f1f1f; } .sg1 small { display: block; color: #5f6368; font-size: 20px; margin-top: 4px; } .sg1 span { color: #5f6368; display: flex; }
+      .kba { position: absolute; left: 0; right: 0; bottom: 0; height: 420px; background: #eceff1; padding: 16px 6px 0; }
+      .kr { display: flex; gap: 9px; justify-content: center; margin-bottom: 16px; }
+      .kr b { flex: 1; max-width: 52px; height: 74px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 400; color: #202124; }
+      .kr b.w { max-width: none; flex: 0 0 74px; background: #dfe3e8; font-size: 22px; }
+      .kr b.sp { max-width: none; flex: 1; font-size: 22px; color: #5f6368; }
+      .kr b.en { max-width: none; flex: 0 0 96px; background: #1a73e8; color: #fff; border-radius: 37px; }
+
+      .cmenu { position: absolute; right: 14px; top: 100px; width: 440px; background: #fff; border-radius: 20px; box-shadow: 0 10px 44px rgba(0,0,0,.45); padding: 8px 0; }
+      .cr1 { height: 76px; display: flex; align-items: center; gap: 24px; padding: 0 28px; font-size: 25px; color: #202124; }
+      .cr1 .ico { display: flex; color: #5f6368; }
+
+      .idlg { position: absolute; left: 24px; right: 24px; bottom: 120px; background: #fff; border-radius: 30px; padding: 34px 32px 26px; color: #202124; }
+      .idt { font-size: 30px; font-weight: 600; margin-bottom: 26px; }
+      .idr { display: flex; align-items: center; gap: 22px; margin-bottom: 36px; }
+      .idr img { width: 84px; height: 84px; border-radius: 20px; }
+      .idr b { display: block; font-size: 27px; font-weight: 600; } .idr small { color: #5f6368; font-size: 21px; }
+      .idb { display: flex; justify-content: flex-end; align-items: center; gap: 26px; font-size: 26px; font-weight: 500; }
+      .idb .cn { color: #1a73e8; padding: 16px 20px; }
+      .idb .ok { background: #1a73e8; color: #fff; padding: 18px 40px; border-radius: 40px; }
+
+      .pdlg { position: absolute; left: 62px; right: 62px; top: 470px; background: #f3f4f6; border-radius: 36px; padding: 34px 30px 30px; text-align: center; color: #202124; }
+      .pdlg .bell { display: flex; justify-content: center; color: #1a73e8; margin-bottom: 14px; }
+      .pdlg .pt { font-size: 27px; line-height: 1.28; margin-bottom: 28px; }
+      .pdlg .pb { height: 74px; border-radius: 38px; border: 2px solid #c8ccd2; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 500; color: #1a73e8; margin-top: 14px; background: #fff; }
+      .pdlg .pb.pa { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+      </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="91.2" data-width="1080" data-height="1920">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="4.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Instala la app<br />en tu móvil Android</div>
+        <div class="mid">Te llevará unos 2 minutos.<br />Sigue los pasos uno a uno, sin prisa</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="4.6" data-duration="79.4" data-track-index="2" style="position:absolute;inset:0">
+        <div class="cap clip" data-start="4.6" data-duration="5.8" data-track-index="3"><div class="step">Paso 1 de 12</div><div class="txt">Abre <b>Chrome</b></div><div class="sub">El icono redondo de colores:<br />rojo, amarillo, verde y azul</div></div>
+        <div class="cap clip" data-start="10.4" data-duration="7.6" data-track-index="3"><div class="step">Paso 2 de 12</div><div class="txt">Escribe esta dirección</div><div class="sub"><b style="color:#fff">app.jppreparation.com</b><br />y pulsa la flecha del teclado</div></div>
+        <div class="cap clip" data-start="18" data-duration="6.2" data-track-index="3"><div class="step">Paso 3 de 12</div><div class="txt">Pulsa los tres<br />puntitos <b>⋮</b></div><div class="sub">Arriba a la derecha</div></div>
+        <div class="cap clip" data-start="24.2" data-duration="6.8" data-track-index="3"><div class="step">Paso 4 de 12</div><div class="txt">Pulsa <b>«Instalar app»</b></div><div class="sub">Si no la ves, busca «Añadir a la<br />pantalla de inicio» y pulsa esa</div></div>
+        <div class="cap clip" data-start="31" data-duration="6" data-track-index="3"><div class="step">Paso 5 de 12</div><div class="txt">Pulsa <b>«Instalar»</b></div><div class="sub">Es el botón azul de abajo</div></div>
+        <div class="cap clip" data-start="37" data-duration="6" data-track-index="3"><div class="step">Paso 6 de 12</div><div class="txt">¡Ya tienes el icono!</div><div class="sub">Búscalo en tu pantalla de inicio.<br />Desde ahora abre la app desde aquí</div></div>
+        <div class="cap clip" data-start="43" data-duration="7.4" data-track-index="3"><div class="step">Paso 7 de 12</div><div class="txt">Escribe tu <b>email</b><br />y tu <b>contraseña</b></div><div class="sub">Los de siempre</div></div>
+        <div class="cap clip" data-start="50.4" data-duration="3.9" data-track-index="3"><div class="step">Paso 8 de 12</div><div class="txt">Pulsa <b>«Entrar»</b></div></div>
+        <div class="cap clip" data-start="54.3" data-duration="5.6" data-track-index="3"><div class="step">Paso 9 de 12</div><div class="txt">Pulsa las tres rayitas <b>☰</b></div><div class="sub">Arriba a la izquierda</div></div>
+        <div class="cap clip" data-start="59.9" data-duration="5.4" data-track-index="3"><div class="step">Paso 10 de 12</div><div class="txt">Pulsa <b>«Configuración»</b></div></div>
+        <div class="cap clip" data-start="65.3" data-duration="6.5" data-track-index="3"><div class="step">Paso 11 de 12</div><div class="txt">Pulsa <b>«Activar<br />notificaciones»</b></div><div class="sub">Así te avisaremos de clases y mensajes</div></div>
+        <div class="cap clip" data-start="71.8" data-duration="6" data-track-index="3"><div class="step">Paso 12 de 12</div><div class="txt">Pulsa <b>«Permitir»</b></div><div class="sub">Si pulsas «No permitir», no te llegarán los avisos</div></div>
+        <div class="cap clip" data-start="77.8" data-duration="6.2" data-track-index="3"><div class="step">Hecho</div><div class="txt">¡Notificaciones activadas!</div><div class="sub">Ya recibirás los avisos de clases, mensajes y bonos</div></div>
+
+          <div class="device android"><div class="screen">
+          <div id="L-ahome" data-layout-allow-overlap data-layout-allow-occlusion class="layer and-home"><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div>
+    <div class="gsearch"><b>G</b><span>Buscar</span></div>
+    <div class="agrid"><div class="aa "><div class="ac" style="background:#ea4335"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="2.6"/></svg></div><span>Fotos</span></div><div class="aa "><div class="ac" style="background:#34a853"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12 21s7-6.3 7-11a7 7 0 0 0-14 0c0 4.7 7 11 7 11z" fill="#fff" stroke="none"/><circle cx="12" cy="10" r="2.6" fill="#34a853" stroke="none"/></svg></div><span>Mapas</span></div><div class="aa "><div class="ac" style="background:#d93025"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="3" y="5" width="18" height="14" rx="2" stroke="#fff"/><path d="M4 7l8 6 8-6" stroke="#fff"/></svg></div><span>Gmail</span></div><div class="aa "><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="9" stroke="#fff"/><path d="M12 7v5l3.5 2" stroke="#fff"/></svg></div><span>Reloj</span></div><div class="aa "><div class="ac" style="background:#1a73e8"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="5" width="16" height="15" rx="2" stroke="#fff"/><path d="M4 10h16M8 3v4M16 3v4" stroke="#fff"/></svg></div><span>Calendario</span></div><div class="aa "><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="3.2" stroke="#fff"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="#fff"/></svg></div><span>Ajustes</span></div></div>
+    <div class="adock"><div class="aa nolabel"><div class="ac" style="background:#34a853"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6.5 3.5l3 .8 1 4-2 1.2a11 11 0 0 0 5 5l1.2-2 4 1 .8 3a2 2 0 0 1-2 2.5A15 15 0 0 1 4 5.5a2 2 0 0 1 2.5-2z" fill="#fff" stroke="none"/></svg></div><span></span></div><div class="aa nolabel"><div class="ac" style="background:#1a73e8"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 5h16v11H9l-5 4z" fill="#fff" stroke="none"/></svg></div><span></span></div><div id="p-chrome" class="aa nolabel"><div class="ac" style="background:#fff"><svg viewBox="0 0 64 64" width="84" height="84"><circle cx="32" cy="32" r="30" fill="#fff"/><path d="M32 32L7.8 18A28 28 0 0 1 56.2 18z" fill="#ea4335"/><path d="M32 32L56.2 18A28 28 0 0 1 32 60z" fill="#fbbc05"/><path d="M32 32L32 60A28 28 0 0 1 7.8 18z" fill="#34a853"/><circle cx="32" cy="32" r="12" fill="#fff"/><circle cx="32" cy="32" r="9.5" fill="#4285f4"/></svg></div><span></span></div><div class="aa nolabel"><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="6" stroke="#fff" stroke-width="2.4"/><circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/></svg></div><span></span></div></div>
+    <i class="navp" style="background:#fff"></i></div>
+          <div id="L-atype" data-layout-allow-overlap data-layout-allow-occlusion class="layer cr">
+      <div class="ctop"><div class="sba" style="color:#000"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><div class="ctb"><div id="p-pill" class="cpill foc"><span class="lk"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="atyped" class="typed">app.jppreparation.com</span></div><i class="tabsq">1</i><i id="p-menu" class="mdots"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg></i></div></div>
+      <div class="sugg"><div class="sg1"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></span><div><b>app.jppreparation.com</b><small>Abrir esta dirección</small></div></div></div>
+      <div class="kba"><div class="kr" style="padding:0 0px"><b>q</b><b>w</b><b>e</b><b>r</b><b>t</b><b>y</b><b>u</b><b>i</b><b>o</b><b>p</b></div><div class="kr" style="padding:0 6px"><b>a</b><b>s</b><b>d</b><b>f</b><b>g</b><b>h</b><b>j</b><b>k</b><b>l</b><b>ñ</b></div><div class="kr" style="padding:0 54px"><b>z</b><b>x</b><b>c</b><b>v</b><b>b</b><b>n</b><b>m</b></div><div class="kr"><b class="w">?123</b><b class="w">,</b><b class="sp">Español</b><b class="w">.</b><b id="p-enter" class="en"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14M13 6l6 6-6 6"/></svg></b></div></div><i class="navp" style="background:#000"></i></div>
+          <div id="L-achrome" data-layout-allow-overlap data-layout-allow-occlusion class="layer cr">
+      <div class="ctop"><div class="sba" style="color:#000"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><div class="ctb"><div class="cpill"><span class="lk"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>app.jppreparation.com</span></div><i class="tabsq">1</i><i id="p-menu" class="mdots"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg></i></div></div>
+      <img class="cpg" src="assets/m-login.png" alt="" /><i class="navp" style="background:#000"></i></div>
+          <div id="L-amenu" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="cmenu"><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></svg></span><span>Nueva pestaña</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 12h16M7 12l1.5-6h7L17 12"/><circle cx="8" cy="16.5" r="2.5"/><circle cx="16" cy="16.5" r="2.5"/></svg></span><span>Nueva pestaña de incógnito</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 12a8 8 0 1 0 2.6-5.9L4 8.5"/><path d="M4 4v4.5h4.5M12 8v4.5l3 1.5"/></svg></span><span>Historial</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></svg></span><span>Descargas</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg></span><span>Marcadores</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="6" cy="12" r="2.4"/><circle cx="17" cy="6" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M8.2 11l6.6-3.8M8.2 13l6.6 3.8"/></svg></span><span>Compartir…</span></div><div id="p-install" class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg></span><span>Instalar app</span></div><div class="cr1"><span class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span>Configuración</span></div></div></div>
+          <div id="L-ainst" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="dim"></div>
+      <div class="idlg"><div class="idt">Instalar app</div>
+        <div class="idr"><img src="assets/jp-icon.png" alt="" /><div><b>JP Preparation</b><small>app.jppreparation.com</small></div></div>
+        <div class="idb"><span class="cn">Cancelar</span><span id="p-instalar" class="ok">Instalar</span></div></div></div>
+          <div id="L-ahome2" data-layout-allow-overlap data-layout-allow-occlusion class="layer and-home"><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div>
+    <div class="gsearch"><b>G</b><span>Buscar</span></div>
+    <div class="agrid"><div class="aa "><div class="ac" style="background:#ea4335"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="2.6"/></svg></div><span>Fotos</span></div><div class="aa "><div class="ac" style="background:#34a853"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12 21s7-6.3 7-11a7 7 0 0 0-14 0c0 4.7 7 11 7 11z" fill="#fff" stroke="none"/><circle cx="12" cy="10" r="2.6" fill="#34a853" stroke="none"/></svg></div><span>Mapas</span></div><div class="aa "><div class="ac" style="background:#d93025"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="3" y="5" width="18" height="14" rx="2" stroke="#fff"/><path d="M4 7l8 6 8-6" stroke="#fff"/></svg></div><span>Gmail</span></div><div class="aa "><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="9" stroke="#fff"/><path d="M12 7v5l3.5 2" stroke="#fff"/></svg></div><span>Reloj</span></div><div class="aa "><div class="ac" style="background:#1a73e8"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="5" width="16" height="15" rx="2" stroke="#fff"/><path d="M4 10h16M8 3v4M16 3v4" stroke="#fff"/></svg></div><span>Calendario</span></div><div class="aa "><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="3.2" stroke="#fff"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="#fff"/></svg></div><span>Ajustes</span></div><div id="p-jp" class="aa jpapp"><div class="ac" style="background:#0f172a"><img src="assets/jp-icon.png" alt="" /></div><span>JP Prep</span></div></div>
+    <div class="adock"><div class="aa nolabel"><div class="ac" style="background:#34a853"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6.5 3.5l3 .8 1 4-2 1.2a11 11 0 0 0 5 5l1.2-2 4 1 .8 3a2 2 0 0 1-2 2.5A15 15 0 0 1 4 5.5a2 2 0 0 1 2.5-2z" fill="#fff" stroke="none"/></svg></div><span></span></div><div class="aa nolabel"><div class="ac" style="background:#1a73e8"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 5h16v11H9l-5 4z" fill="#fff" stroke="none"/></svg></div><span></span></div><div class="aa nolabel"><div class="ac" style="background:#fff"><svg viewBox="0 0 64 64" width="84" height="84"><circle cx="32" cy="32" r="30" fill="#fff"/><path d="M32 32L7.8 18A28 28 0 0 1 56.2 18z" fill="#ea4335"/><path d="M32 32L56.2 18A28 28 0 0 1 32 60z" fill="#fbbc05"/><path d="M32 32L32 60A28 28 0 0 1 7.8 18z" fill="#34a853"/><circle cx="32" cy="32" r="12" fill="#fff"/><circle cx="32" cy="32" r="9.5" fill="#4285f4"/></svg></div><span></span></div><div class="aa nolabel"><div class="ac" style="background:#5f6368"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="6" stroke="#fff" stroke-width="2.4"/><circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/></svg></div><span></span></div></div>
+    <i class="navp" style="background:#fff"></i></div>
+          <div id="L-asplash" data-layout-allow-overlap data-layout-allow-occlusion class="layer" style="background:#0f172a"><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><img class="splash" src="assets/jp-icon.png" alt="" /><i class="navp" style="background:#fff"></i></div>
+          <div id="L-alogin" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-login.png" alt="" /><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#fff"></i></div>
+          <div id="L-alogin2" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-login-lleno.png" alt="" /><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#fff"></i></div>
+          <div id="L-adash" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-dash.png" alt="" /><div class="sba" style="color:#000"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#000"></i></div>
+          <div id="L-amenu2" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-menu.png" alt="" /><div class="sba" style="color:#fff"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#fff"></i></div>
+          <div id="L-anotif" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-notif-off.png" alt="" /><div class="sba" style="color:#000"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#000"></i></div>
+          <div id="L-aperm" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><div class="dim"></div>
+      <div class="pdlg"><i class="bell"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg></i><div class="pt">¿Permitir que <b>JP Preparation</b> te envíe notificaciones?</div>
+        <div id="p-permitir" class="pb pa">Permitir</div><div class="pb">No permitir</div></div></div>
+          <div id="L-anotif2" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img class="full" src="assets/m-notif-on.png" alt="" /><div class="sba" style="color:#000"><span>9:41</span><i class="cam"></i><span class="sg"><svg width="26" height="20" viewBox="0 0 26 20" fill="currentColor"><path d="M13 19L1 6a17 17 0 0 1 24 0z"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="currentColor"><path d="M21 1v18H1z"/></svg><svg width="34" height="20" viewBox="0 0 34 20" fill="none"><rect x="1" y="3" width="28" height="14" rx="3.5" stroke="currentColor" stroke-width="2" opacity=".5"/><rect x="3.5" y="5.5" width="20" height="9" rx="2" fill="currentColor"/></svg></span></div><i class="navp" style="background:#000"></i></div>
+          <div id="tap0" class="tap" style="left:378px;top:1260px"></div>
+          <div id="tap1" class="tap" style="left:560px;top:1273px"></div>
+          <div id="tap2" class="tap" style="left:576px;top:94px"></div>
+          <div id="tap3" class="tap" style="left:380px;top:602px"></div>
+          <div id="tap4" class="tap" style="left:474px;top:1188px"></div>
+          <div id="tap5" class="tap" style="left:380px;top:461px"></div>
+          <div id="tap6" class="tap" style="left:308px;top:853px"></div>
+          <div id="tap7" class="tap" style="left:39px;top:103px"></div>
+          <div id="tap8" class="tap" style="left:185px;top:700px"></div>
+          <div id="tap9" class="tap" style="left:180px;top:622px"></div>
+          <div id="tap10" class="tap" style="left:307px;top:698px"></div>
+          <div id="mk0" class="mark" style="left:316px;top:1198px;width:124px;height:124px;border-radius:40px;"></div>
+          <div id="mk1" class="mark" style="left:10px;top:54px;width:474px;height:80px;border-radius:34px;"></div>
+          <div id="mk2" class="mark" style="left:508px;top:1232px;width:104px;height:82px;border-radius:40px;"></div>
+          <div id="mk3" class="mark" style="left:534px;top:52px;width:84px;height:84px;border-radius:34px;"></div>
+          <div id="mk4" class="mark" style="left:156px;top:560px;width:448px;height:84px;border-radius:16px;"></div>
+          <div id="mk5" class="mark" style="left:380px;top:1142px;width:188px;height:92px;border-radius:36px;"></div>
+          <div id="mk6" class="mark" style="left:318px;top:409px;width:124px;height:124px;border-radius:34px;"></div>
+          <div id="mk7" class="mark" style="left:36px;top:520px;width:542px;height:214px;border-radius:34px;"></div>
+          <div id="mk8" class="mark" style="left:38px;top:809px;width:540px;height:88px;border-radius:44px;"></div>
+          <div id="mk9" class="mark" style="left:4px;top:68px;width:70px;height:70px;border-radius:16px;"></div>
+          <div id="mk10" class="mark" style="left:10px;top:666px;width:351px;height:68px;border-radius:18px;"></div>
+          <div id="mk11" class="mark" style="left:22px;top:591px;width:317px;height:62px;border-radius:14px;"></div>
+          <div id="mk12" class="mark" style="left:86px;top:655px;width:442px;height:86px;border-radius:40px;"></div>
+          </div></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="84" data-duration="7.2" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">¡Ya está!</div>
+        <div class="mid">Abre siempre la app desde el <b>icono de JP Prep</b><br />y te llegarán los avisos de clases y mensajes<br /><span style="display:block;margin-top:26px;font-size:34px;color:#94a3b8">¿No te llegan avisos? Ajustes del móvil → Aplicaciones → JP Preparation → Notificaciones</span></div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const FADE = 0.3;
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 4.25);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 84.2);
+      tl.fromTo(".device", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 4.6);
+      tl.to(".device", { opacity: 0, duration: 0.4 }, 83.6);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-ahome", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 4.6);
+      tl.to("#L-ahome", { opacity: 0, duration: 0.3 }, 10.6);
+      tl.fromTo("#L-atype", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.4);
+      tl.to("#L-atype", { opacity: 0, duration: 0.3 }, 18.2);
+      tl.fromTo("#L-achrome", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 18);
+      tl.to("#L-achrome", { opacity: 0, duration: 0.3 }, 37.4);
+      tl.fromTo("#L-amenu", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 24.2);
+      tl.to("#L-amenu", { opacity: 0, duration: 0.3 }, 31.2);
+      tl.fromTo("#L-ainst", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 31);
+      tl.to("#L-ainst", { opacity: 0, duration: 0.3 }, 37.2);
+      tl.fromTo("#L-ahome2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 37);
+      tl.to("#L-ahome2", { opacity: 0, duration: 0.3 }, 43.3);
+      tl.fromTo("#L-asplash", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 43);
+      tl.to("#L-asplash", { opacity: 0, duration: 0.3 }, 44.7);
+      tl.fromTo("#L-alogin", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 44.4);
+      tl.to("#L-alogin", { opacity: 0, duration: 0.3 }, 47.3);
+      tl.fromTo("#L-alogin2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 47);
+      tl.to("#L-alogin2", { opacity: 0, duration: 0.3 }, 54.6);
+      tl.fromTo("#L-adash", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 54.3);
+      tl.to("#L-adash", { opacity: 0, duration: 0.3 }, 60.2);
+      tl.fromTo("#L-amenu2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 59.9);
+      tl.to("#L-amenu2", { opacity: 0, duration: 0.3 }, 65.6);
+      tl.fromTo("#L-anotif", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 65.3);
+      tl.to("#L-anotif", { opacity: 0, duration: 0.3 }, 77.9);
+      tl.fromTo("#L-aperm", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 71.8);
+      tl.to("#L-aperm", { opacity: 0, duration: 0.3 }, 78);
+      tl.fromTo("#L-anotif2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 77.8);
+      tl.to("#L-anotif2", { opacity: 0, duration: 0.3 }, 84.2);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 5.6);
+      tl.to("#mk0", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, 6.1);
+      tl.to("#mk0", { opacity: 0, duration: 0.3 }, 8.6);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 11);
+      tl.to("#mk1", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 1, ease: "sine.inOut" }, 11.5);
+      tl.to("#mk1", { opacity: 0, duration: 0.3 }, 12.2);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 15);
+      tl.to("#mk2", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, 15.5);
+      tl.to("#mk2", { opacity: 0, duration: 0.3 }, 16.8);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 19);
+      tl.to("#mk3", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 19.5);
+      tl.to("#mk3", { opacity: 0, duration: 0.3 }, 22.6);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 25.2);
+      tl.to("#mk4", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 25.7);
+      tl.to("#mk4", { opacity: 0, duration: 0.3 }, 29.2);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 32);
+      tl.to("#mk5", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, 32.5);
+      tl.to("#mk5", { opacity: 0, duration: 0.3 }, 35.4);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 38);
+      tl.to("#mk6", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 38.5);
+      tl.to("#mk6", { opacity: 0, duration: 0.3 }, 41.6);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 44.5);
+      tl.to("#mk7", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 45);
+      tl.to("#mk7", { opacity: 0, duration: 0.3 }, 49);
+      tl.fromTo("#mk8", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 51);
+      tl.to("#mk8", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, 51.5);
+      tl.to("#mk8", { opacity: 0, duration: 0.3 }, 53.4);
+      tl.fromTo("#mk9", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 55);
+      tl.to("#mk9", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 55.5);
+      tl.to("#mk9", { opacity: 0, duration: 0.3 }, 58.6);
+      tl.fromTo("#mk10", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 60.6);
+      tl.to("#mk10", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 5, ease: "sine.inOut" }, 61.1);
+      tl.to("#mk10", { opacity: 0, duration: 0.3 }, 63.8);
+      tl.fromTo("#mk11", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 66);
+      tl.to("#mk11", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 66.5);
+      tl.to("#mk11", { opacity: 0, duration: 0.3 }, 70.4);
+      tl.fromTo("#mk12", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 72.8);
+      tl.to("#mk12", { scale: 1.06, duration: 0.5, yoyo: true, repeat: 7, ease: "sine.inOut" }, 73.3);
+      tl.to("#mk12", { opacity: 0, duration: 0.3 }, 76.4);
+      tl.fromTo("#tap0", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 8.8);
+      tl.to("#tap0", { opacity: 0, scale: 0.8, duration: 0.35 }, 9.3);
+      tl.fromTo("#tap1", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 16.6);
+      tl.to("#tap1", { opacity: 0, scale: 0.8, duration: 0.35 }, 17.1);
+      tl.fromTo("#tap2", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 22.8);
+      tl.to("#tap2", { opacity: 0, scale: 0.8, duration: 0.35 }, 23.3);
+      tl.fromTo("#tap3", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 29.4);
+      tl.to("#tap3", { opacity: 0, scale: 0.8, duration: 0.35 }, 29.9);
+      tl.fromTo("#tap4", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 35.6);
+      tl.to("#tap4", { opacity: 0, scale: 0.8, duration: 0.35 }, 36.1);
+      tl.fromTo("#tap5", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 41.8);
+      tl.to("#tap5", { opacity: 0, scale: 0.8, duration: 0.35 }, 42.3);
+      tl.fromTo("#tap6", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 53.5);
+      tl.to("#tap6", { opacity: 0, scale: 0.8, duration: 0.35 }, 54);
+      tl.fromTo("#tap7", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 58.9);
+      tl.to("#tap7", { opacity: 0, scale: 0.8, duration: 0.35 }, 59.4);
+      tl.fromTo("#tap8", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 64.2);
+      tl.to("#tap8", { opacity: 0, scale: 0.8, duration: 0.35 }, 64.7);
+      tl.fromTo("#tap9", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 70.8);
+      tl.to("#tap9", { opacity: 0, scale: 0.8, duration: 0.35 }, 71.3);
+      tl.fromTo("#tap10", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 76.6);
+      tl.to("#tap10", { opacity: 0, scale: 0.8, duration: 0.35 }, 77.1);
+      
+            gsap.set("#atyped", { clipPath: "inset(0 100% 0 0)" });
+            tl.to("#atyped", { clipPath: "inset(0 0% 0 0)", duration: 3.0, ease: "steps(21)" }, 12.2);
+            tl.fromTo("#L-ahome2 .jpapp", { scale: 0.2, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2.2)" }, 37.6);
+        
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

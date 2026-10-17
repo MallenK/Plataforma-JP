@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JP Preparation</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="http://localhost:8080/assets/css/app.css" rel="stylesheet">
+<style>
+  /* Réplica estática de /configuracion/notificaciones (rol alumno) con el CSS y los textos reales de la app. */
+  .state-on  { display: none; }
+  body.on .state-on { display: inline-flex; }
+  body.on .state-off { display: none; }
+  body.on .status-off { display: none; }
+  .status-on { display: none; }
+  body.on .status-on { display: inline; }
+  .hl-ring { outline: 4px solid #ef4444; outline-offset: 4px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sb">
+    <a href="#" class="sidebar-logo">
+      <div class="sidebar-logo-icon"><img src="http://localhost:8080/assets/img/logo-jp-preparation.webp" alt="" width="48" height="36"></div>
+      <div class="sidebar-logo-text">JP Preparation<span>Plataforma</span></div>
+    </a>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menú</div>
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link" data-p="dash"><i class="bi bi-grid-1x2-fill"></i>Dashboard</a></li>
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link"><i class="bi bi-person-badge-fill"></i>Mi ficha</a></li>
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link"><i class="bi bi-collection-play-fill"></i>Clases</a></li>
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link"><i class="bi bi-question-circle-fill"></i>Ayuda</a></li>
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link"><i class="bi bi-chat-dots-fill"></i>Mensajes</a></li>
+        <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link"><i class="bi bi-folder2-open"></i>Documentos</a></li>
+        <li class="sidebar-nav-item"><a href="#" id="cfg-link" class="sidebar-nav-link"><i class="bi bi-gear-fill"></i>Configuración</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <a href="#" class="sidebar-user">
+        <div class="sidebar-avatar" style="display:flex;align-items:center;justify-content:center;background:#3b82f6;color:#fff;font-weight:700">MD</div>
+        <div class="sidebar-user-info"><div class="sidebar-user-name">Marc Díaz</div><div class="sidebar-user-role">player</div></div>
+      </a>
+      <form class="sidebar-logout-form"><button type="button" class="sidebar-logout"><i class="bi bi-box-arrow-left"></i>Cerrar sesión</button></form>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="ov"></div>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="mobile-menu-btn" id="menubtn" aria-label="Menú"><i class="bi bi-list"></i></button>
+      <div class="topbar-title"><h1 id="ttl">Notificaciones</h1><p id="sub">Tus avisos</p></div>
+      <div class="topbar-right">
+        <button class="topbar-btn"><i class="bi bi-ticket-perforated"></i></button>
+        <a class="topbar-btn topbar-btn-link"><i class="bi bi-chat-dots"></i></a>
+        <div class="topbar-notif-wrap"><button class="topbar-btn"><i class="bi bi-bell"></i></button></div>
+        <div class="topbar-avatar" style="width:36px;height:36px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px">MD</div>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- ===== vista: dashboard ===== -->
+      <div id="v-dash" style="display:none">
+        <div class="mb-4"><h2 class="fw-bold mb-1" style="font-size:1.25rem">Hola, Marc 👋</h2><p class="text-muted mb-0" style="font-size:13px">Esto es lo que tienes esta semana.</p></div>
+        <div class="card-jp mb-3"><div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-calendar3 me-2" style="color:#2563eb"></i>Próximas clases</span></div>
+          <div class="card-jp-body">
+            <div class="d-flex justify-content-between py-2 border-bottom"><div><div class="fw-semibold">Técnica individual</div><div class="text-muted" style="font-size:13px">Martes · 18:00</div></div><span class="badge bg-primary align-self-center">Confirmada</span></div>
+            <div class="d-flex justify-content-between py-2"><div><div class="fw-semibold">Porteros</div><div class="text-muted" style="font-size:13px">Jueves · 18:30</div></div><span class="badge bg-primary align-self-center">Confirmada</span></div>
+          </div></div>
+        <div class="card-jp mb-3"><div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-ticket-perforated me-2" style="color:#d97706"></i>Mi bono</span></div>
+          <div class="card-jp-body"><div class="fw-semibold" style="font-size:22px">8 clases</div><div class="text-muted" style="font-size:13px">Te quedan 8 sesiones disponibles.</div></div></div>
+      </div>
+
+      <!-- ===== vista: notificaciones ===== -->
+      <div id="v-notif">
+        <div class="mb-4"><h2 class="fw-bold mb-1" style="font-size:1.25rem">Configuración de notificaciones</h2>
+          <p class="text-muted mb-0" style="font-size:13px">Elige qué avisos quieres recibir y dónde.</p></div>
+        <div class="d-flex gap-2 flex-wrap mb-3" role="tablist">
+          <a href="#" class="btn-jp btn-jp-primary"><i class="bi bi-bell-fill me-1"></i>Notificaciones</a>
+          <a href="#" class="btn-jp btn-jp-secondary"><i class="bi bi-download me-1"></i>Instalar app</a>
+        </div>
+        <div style="max-width:860px">
+          <div class="card-jp mb-3">
+            <div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-phone-vibrate me-2" style="color:#2563eb"></i>Este dispositivo</span></div>
+            <div class="card-jp-body">
+              <div id="push-card">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                  <div>
+                    <div class="fw-semibold"><i class="bi bi-phone-vibrate me-2"></i>Avisos en este dispositivo</div>
+                    <div class="text-muted" style="font-size:13px">
+                      <span class="status-off">Desactivadas en este dispositivo. Actívalas para recibir los avisos al instante.</span>
+                      <span class="status-on">Activadas: recibirás los avisos de la plataforma aunque no tengas la web abierta.</span>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-primary state-off" id="enable-btn"><i class="bi bi-bell me-1"></i>Activar notificaciones</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary state-on"><i class="bi bi-send me-1"></i>Enviar prueba</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger state-on"><i class="bi bi-bell-slash me-1"></i>Desactivar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-jp">
+            <div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-bell-fill me-2" style="color:#d97706"></i>Qué notificaciones quiero recibir</span></div>
+            <div class="card-jp-body"><p class="text-muted mb-0" style="font-size:13px"><strong>En la plataforma</strong>: aparecen en la campanita y en el Centro de notificaciones. <strong>Aviso en el dispositivo</strong>: te llega al móvil u ordenador aunque no tengas la web abierta.</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+  // ?view=dash|notif  &on=1  &menu=1  &hl=cfg|enable
+  const q = new URLSearchParams(location.search);
+  const view = q.get('view') || 'notif';
+  document.getElementById('v-dash').style.display = view === 'dash' ? '' : 'none';
+  document.getElementById('v-notif').style.display = view === 'notif' ? '' : 'none';
+  document.getElementById('ttl').textContent = view === 'dash' ? 'Dashboard' : 'Configuración';
+  document.getElementById('sub').textContent = view === 'dash' ? 'Alumno · Panel de control' : 'Ajustes de la plataforma';
+  if (view === 'dash') document.querySelector('[data-p=dash]').classList.add('active'); else document.getElementById('cfg-link').classList.add('active');
+  if (q.get('safe') === '1') { const st = document.createElement('style'); st.textContent = '.topbar{height:calc(var(--navbar-h) + 36px) !important;padding-top:36px !important}.sidebar{padding-top:36px !important}'; document.head.appendChild(st); }
+  if (q.get('on') === '1') document.body.classList.add('on');
+  if (q.get('menu') === '1') { document.getElementById('sb').classList.add('open'); document.getElementById('ov').classList.add('active'); }
+  if (q.get('hl') === 'cfg') document.getElementById('cfg-link').classList.add('hl-ring');
+  if (q.get('hl') === 'enable') document.getElementById('enable-btn').classList.add('hl-ring');
+  if (q.get('hl') === 'menubtn') document.getElementById('menubtn').classList.add('hl-ring');
+</script>
+</body>
+</html>

@@ -1,0 +1,1776 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 19,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"4.6\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"11\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"19\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"25.2\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"32\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"38.4\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"44.4\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"51.5\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"56\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"62\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"68.5\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"75\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "studio_missing_editable_id",
+        "severity": "warning",
+        "message": "<div class=\"cap\" data-start=\"81\" data-track-index=\"3\"> has no id, so Studio cannot use a stable edit target for its timeline and canvas controls.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add a stable, human-readable id such as id=\"hero-title\" or id=\"scene-1-card\" to every timeline-visible element you want agents or Studio to edit."
+      },
+      {
+        "code": "duplicate_media_discovery_risk",
+        "severity": "warning",
+        "message": "Detected 2 matching img entries with the same source/start/duration.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Avoid duplicated media nodes that can be discovered twice during compilation."
+      },
+      {
+        "code": "duplicate_media_discovery_risk",
+        "severity": "warning",
+        "message": "Detected 3 matching img entries with the same source/start/duration.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Avoid duplicated media nodes that can be discovered twice during compilation."
+      },
+      {
+        "code": "timeline_track_too_dense",
+        "severity": "warning",
+        "message": "Track 3 has 13 timed elements in this HTML file. Smaller sub-compositions keep timelines easier to read, iterate on, and diff.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move coherent scene groups into separate .html files under compositions/ and mount them from the parent with data-composition-src so the timeline stays easier to inspect, revise, and validate."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"intro\"> is a timeline element that contains nested <img>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#intro",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"intro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"stage\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#stage",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"stage\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"outro\"> is a timeline element that contains nested <img>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#outro",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Mallen\\Desktop\\Plataforma-JP\\WEB\\Plataforma-JP\\videos\\instalar-mac\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"outro\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 31,
+    "findings": [
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 5.289,
+        "selector": "#cam",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 666.05,
+          "top": 114.16,
+          "right": 1913.9,
+          "bottom": 894.06,
+          "width": 1247.85,
+          "height": 779.9
+        },
+        "containerSelector": "div.screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 714,
+          "top": 174.09,
+          "right": 1866,
+          "bottom": 894.09,
+          "width": 1152,
+          "height": 720
+        },
+        "overflow": {
+          "left": 47.95,
+          "right": 47.9,
+          "top": 59.93
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 666.05,
+          "y": 114.16,
+          "width": 1247.85,
+          "height": 779.9
+        },
+        "firstSeen": 5.289,
+        "lastSeen": 68.756,
+        "occurrences": 7,
+        "heldMs": 0,
+        "times": [
+          5.289,
+          15.867,
+          26.444,
+          37.022,
+          47.6,
+          58.178,
+          68.756
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#L-mbars > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 2447.1,
+          "top": 186.35,
+          "right": 2616.2,
+          "bottom": 214.85,
+          "width": 169.1,
+          "height": 28.5
+        },
+        "containerSelector": "#root",
+        "text": "sáb 17 oct 9:41",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 696.2
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 2447.1,
+          "y": 186.35,
+          "width": 169.1,
+          "height": 28.5
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 37.022,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          15.867,
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#L-mbars > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1157.95,
+          "top": 1428,
+          "right": 1209.25,
+          "bottom": 1486.9,
+          "width": 51.3,
+          "height": 58.9
+        },
+        "containerSelector": "#root",
+        "text": "☻",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "bottom": 406.9
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1157.95,
+          "y": 1428,
+          "width": 51.3,
+          "height": 58.9
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 37.022,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          15.867,
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#L-mbars > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(5) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1641.5,
+          "top": 1428.95,
+          "right": 1698.5,
+          "bottom": 1487.85,
+          "width": 57,
+          "height": 58.9
+        },
+        "containerSelector": "#root",
+        "text": "17",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "bottom": 407.85
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1641.5,
+          "y": 1428.95,
+          "width": 57,
+          "height": 58.9
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 37.022,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          15.867,
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "escaped_container",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#cam",
+        "message": "Positioned element renders far outside its offset parent — its coordinates were likely computed in a different frame (canvas/viewport pixels).",
+        "rect": {
+          "left": 454,
+          "top": 174,
+          "right": 2642.8,
+          "bottom": 1542,
+          "width": 2188.8,
+          "height": 1368
+        },
+        "containerSelector": "div.screen",
+        "text": "app.jppreparation.com Favoritos A B C D app.jppreparation.com Nueva ventana ⌘N Nueva ventana privada ⇧⌘N Nueva pestaña ⌘T Abrir archivo… ⌘O Abrir ubicación… ⌘L Cerrar ventana ⇧⌘W Cerrar pestañas ⌘W Guardar como… ⌘S Compartir ▸ Añadir al Dock… Imprimir… ⌘P Añadir al Dock Nombre JP Preparation Dirección https://app.jppreparation.com/ Cancelar Añadir JP Preparation JP Preparation JP Preparation JP Preparation ¿Quieres permitir que «JP Preparation» te envíe notificaciones? Podrás cambiarlo cuando quieras en Ajustes del Sistema. No permitir Permitir JP Preparation Safari Archivo Edición Visualización Historial Marcadores Ventana Ayuda sáb 17 oct 9:41 ☻ 17 Safari Archivo Edición Visualización Historial Marcadores Ventana Ayuda sáb 17 oct 9:41 ☻ 17 Intro ↵",
+        "fixHint": "Compute left/top in the offset parent's frame (subtract its rect), or mark intentional placement with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 714,
+          "top": 174,
+          "right": 1866,
+          "bottom": 894,
+          "width": 1152,
+          "height": 720
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 454,
+          "y": 174,
+          "width": 2188.8,
+          "height": 1368
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 15.867,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.867
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#L-mnew > div:nth-of-type(1) > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 530,
+          "top": 250,
+          "right": 2566.8,
+          "bottom": 348.8,
+          "width": 2036.8,
+          "height": 98.8
+        },
+        "containerSelector": "#root",
+        "text": "app.jppreparation.com",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 646.8
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 530,
+          "y": 250,
+          "width": 2036.8,
+          "height": 98.8
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 15.867,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.867
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 15.867,
+        "selector": "#L-mbars > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 454,
+          "top": 174,
+          "right": 2642.8,
+          "bottom": 227.2,
+          "width": 2188.8,
+          "height": 53.2
+        },
+        "containerSelector": "#root",
+        "text": "Safari Archivo Edición Visualización Historial M",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 722.8
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 454,
+          "y": 174,
+          "width": 2188.8,
+          "height": 53.2
+        },
+        "firstSeen": 15.867,
+        "lastSeen": 37.022,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          15.867,
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 26.444,
+        "selector": "div.scn > img:nth-of-type(1)",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 782,
+          "top": 265.4,
+          "right": 2604.4,
+          "bottom": 1277.83,
+          "width": 1822.4,
+          "height": 1012.43
+        },
+        "containerSelector": "#L-msaf > div:nth-of-type(1) > div:nth-of-type(2)",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 782,
+          "top": 265.4,
+          "right": 2604.4,
+          "bottom": 1180,
+          "width": 1822.4,
+          "height": 914.6
+        },
+        "overflow": {
+          "bottom": 97.83
+        },
+        "dataAttributes": {
+          "data-hf-authored-opacity": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 782,
+          "y": 265.4,
+          "width": 1822.4,
+          "height": 1012.43
+        },
+        "firstSeen": 26.444,
+        "lastSeen": 37.022,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 26.444,
+        "selector": "#L-msaf > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 782,
+          "top": 177,
+          "right": 2604.4,
+          "bottom": 1180,
+          "width": 1822.4,
+          "height": 1003
+        },
+        "containerSelector": "#root",
+        "text": "app.jppreparation.com",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 684.4,
+          "bottom": 100
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 782,
+          "y": 177,
+          "width": 1822.4,
+          "height": 1003
+        },
+        "firstSeen": 26.444,
+        "lastSeen": 37.022,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          26.444,
+          37.022
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 37.022,
+        "selector": "#L-mbars > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 915.6,
+          "top": 1078,
+          "right": 1664.4,
+          "bottom": 1193.2,
+          "width": 748.8,
+          "height": 115.2
+        },
+        "containerSelector": "#root",
+        "text": "☻ 17",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "bottom": 113.2
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 915.6,
+          "y": 1078,
+          "width": 748.8,
+          "height": 115.2
+        },
+        "firstSeen": 37.022,
+        "lastSeen": 37.022,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          37.022
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 47.6,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1999.5,
+          "top": 33.75,
+          "right": 2133,
+          "bottom": 56.25,
+          "width": 133.5,
+          "height": 22.5
+        },
+        "containerSelector": "#root",
+        "text": "sáb 17 oct 9:41",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 213
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1999.5,
+          "y": 33.75,
+          "width": 133.5,
+          "height": 22.5
+        },
+        "firstSeen": 47.6,
+        "lastSeen": 58.178,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          47.6,
+          58.178
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 47.6,
+        "selector": "#L-mapp > div:nth-of-type(1) > div:nth-of-type(2) > img:nth-of-type(1)",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 516,
+          "top": 141,
+          "right": 2064,
+          "bottom": 1000.99,
+          "width": 1548,
+          "height": 859.99
+        },
+        "containerSelector": "#L-mapp > div:nth-of-type(1) > div:nth-of-type(2)",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 516,
+          "top": 141,
+          "right": 2064,
+          "bottom": 936,
+          "width": 1548,
+          "height": 795
+        },
+        "overflow": {
+          "bottom": 64.99
+        },
+        "dataAttributes": {
+          "data-hf-authored-opacity": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 516,
+          "y": 141,
+          "width": 1548,
+          "height": 859.99
+        },
+        "firstSeen": 47.6,
+        "lastSeen": 47.6,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          47.6
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 47.6,
+        "selector": "#L-mdesk",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 426,
+          "top": 24,
+          "right": 2154,
+          "bottom": 1104,
+          "width": 1728,
+          "height": 1080
+        },
+        "containerSelector": "#root",
+        "text": "",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 234
+        },
+        "dataAttributes": {
+          "data-layout-allow-overlap": "",
+          "data-layout-allow-occlusion": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 426,
+          "y": 24,
+          "width": 1728,
+          "height": 1080
+        },
+        "firstSeen": 47.6,
+        "lastSeen": 47.6,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          47.6
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 47.6,
+        "selector": "#L-mapp > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 516,
+          "top": 96,
+          "right": 2064,
+          "bottom": 936,
+          "width": 1548,
+          "height": 840
+        },
+        "containerSelector": "#root",
+        "text": "JP Preparation",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 144
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 516,
+          "y": 96,
+          "width": 1548,
+          "height": 840
+        },
+        "firstSeen": 47.6,
+        "lastSeen": 47.6,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          47.6
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 47.6,
+        "selector": "#L-mbars2 > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 426,
+          "top": 24,
+          "right": 2154,
+          "bottom": 66,
+          "width": 1728,
+          "height": 42
+        },
+        "containerSelector": "#root",
+        "text": "Safari Archivo Edición Visualización Historial M",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 234
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 426,
+          "y": 24,
+          "width": 1728,
+          "height": 42
+        },
+        "firstSeen": 47.6,
+        "lastSeen": 68.756,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          47.6,
+          68.756
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mdash > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1620.95,
+          "top": -18.5,
+          "right": 1765.45,
+          "bottom": 7,
+          "width": 144.5,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "JP Preparation",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 18.5
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1620.95,
+          "y": -18.5,
+          "width": 144.5,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 804.1,
+          "top": -100.95,
+          "right": 863.6,
+          "bottom": -75.45,
+          "width": 59.5,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Safari",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 804.1,
+          "y": -100.95,
+          "width": 59.5,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(3)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 901,
+          "top": -100.95,
+          "right": 972.4,
+          "bottom": -75.45,
+          "width": 71.4,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Archivo",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 901,
+          "y": -100.95,
+          "width": 71.4,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(4)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1009.8,
+          "top": -100.95,
+          "right": 1079.5,
+          "bottom": -75.45,
+          "width": 69.7,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Edición",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1009.8,
+          "y": -100.95,
+          "width": 69.7,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(5)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1116.9,
+          "top": -100.95,
+          "right": 1244.4,
+          "bottom": -75.45,
+          "width": 127.5,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Visualización",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1116.9,
+          "y": -100.95,
+          "width": 127.5,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(6)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1281.8,
+          "top": -100.95,
+          "right": 1361.7,
+          "bottom": -75.45,
+          "width": 79.9,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Historial",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1281.8,
+          "y": -100.95,
+          "width": 79.9,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(7)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1399.1,
+          "top": -100.95,
+          "right": 1514.7,
+          "bottom": -75.45,
+          "width": 115.6,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Marcadores",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1399.1,
+          "y": -100.95,
+          "width": 115.6,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(8)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1552.1,
+          "top": -100.95,
+          "right": 1632,
+          "bottom": -75.45,
+          "width": 79.9,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Ventana",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1552.1,
+          "y": -100.95,
+          "width": 79.9,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(1) > span:nth-of-type(9)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1669.4,
+          "top": -100.95,
+          "right": 1728.9,
+          "bottom": -75.45,
+          "width": 59.5,
+          "height": 25.5
+        },
+        "containerSelector": "#root",
+        "text": "Ayuda",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "top": 100.95
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1669.4,
+          "y": -100.95,
+          "width": 59.5,
+          "height": 25.5
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mdash > div:nth-of-type(1) > div:nth-of-type(2) > img:nth-of-type(1)",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 816,
+          "top": 20.6,
+          "right": 2570.4,
+          "bottom": 995.26,
+          "width": 1754.4,
+          "height": 974.66
+        },
+        "containerSelector": "#L-mdash > div:nth-of-type(1) > div:nth-of-type(2)",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 816,
+          "top": 20.6,
+          "right": 2570.4,
+          "bottom": 921.6,
+          "width": 1754.4,
+          "height": 901
+        },
+        "overflow": {
+          "bottom": 73.66
+        },
+        "dataAttributes": {
+          "data-hf-authored-opacity": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 816,
+          "y": 20.6,
+          "width": 1754.4,
+          "height": 974.66
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mdash > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 816,
+          "top": -30.4,
+          "right": 2570.4,
+          "bottom": 921.6,
+          "width": 1754.4,
+          "height": 952
+        },
+        "containerSelector": "#root",
+        "text": "JP Preparation",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 650.4,
+          "top": 30.4
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 816,
+          "y": -30.4,
+          "width": 1754.4,
+          "height": 952
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 58.178,
+        "selector": "#L-mbars2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": 1241,
+          "top": 976,
+          "right": 2145.4,
+          "bottom": 1098.4,
+          "width": 904.4,
+          "height": 122.4
+        },
+        "containerSelector": "#root",
+        "text": "☻ 17",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "right": 225.4
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1241,
+          "y": 976,
+          "width": 904.4,
+          "height": 122.4
+        },
+        "firstSeen": 58.178,
+        "lastSeen": 58.178,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          58.178
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 68.756,
+        "selector": "#L-mbars2 > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 539.45,
+          "top": 1146,
+          "right": 585.35,
+          "bottom": 1198.7,
+          "width": 45.9,
+          "height": 52.7
+        },
+        "containerSelector": "#root",
+        "text": "☻",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "bottom": 118.7
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 539.45,
+          "y": 1146,
+          "width": 45.9,
+          "height": 52.7
+        },
+        "firstSeen": 68.756,
+        "lastSeen": 68.756,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          68.756
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 68.756,
+        "selector": "#L-mbars2 > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(5) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 972.1,
+          "top": 1146.85,
+          "right": 1023.1,
+          "bottom": 1199.55,
+          "width": 51,
+          "height": 52.7
+        },
+        "containerSelector": "#root",
+        "text": "17",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1920,
+          "bottom": 1080,
+          "width": 1920,
+          "height": 1080
+        },
+        "overflow": {
+          "bottom": 119.55
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 972.1,
+          "y": 1146.85,
+          "width": 51,
+          "height": 52.7
+        },
+        "firstSeen": 68.756,
+        "lastSeen": 68.756,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          68.756
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 68.756,
+        "selector": "#L-mnotif > div:nth-of-type(1) > div:nth-of-type(2) > img:nth-of-type(1)",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 66,
+          "top": 156.6,
+          "right": 1820.4,
+          "bottom": 1131.26,
+          "width": 1754.4,
+          "height": 974.66
+        },
+        "containerSelector": "#L-mnotif > div:nth-of-type(1) > div:nth-of-type(2)",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 66,
+          "top": 156.6,
+          "right": 1820.4,
+          "bottom": 1057.6,
+          "width": 1754.4,
+          "height": 901
+        },
+        "overflow": {
+          "bottom": 73.66
+        },
+        "dataAttributes": {
+          "data-hf-authored-opacity": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 66,
+          "y": 156.6,
+          "width": 1754.4,
+          "height": 974.66
+        },
+        "firstSeen": 68.756,
+        "lastSeen": 68.756,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          68.756
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 79.333,
+        "selector": "#L-mnotif2 > div:nth-of-type(1) > div:nth-of-type(2) > img:nth-of-type(1)",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 774,
+          "top": 252,
+          "right": 1806,
+          "bottom": 825.33,
+          "width": 1032,
+          "height": 573.33
+        },
+        "containerSelector": "#L-mnotif2 > div:nth-of-type(1) > div:nth-of-type(2)",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 774,
+          "top": 252,
+          "right": 1806,
+          "bottom": 782,
+          "width": 1032,
+          "height": 530
+        },
+        "overflow": {
+          "bottom": 43.33
+        },
+        "dataAttributes": {
+          "data-hf-authored-opacity": ""
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 774,
+          "y": 252,
+          "width": 1032,
+          "height": 573.33
+        },
+        "firstSeen": 79.333,
+        "lastSeen": 79.333,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          79.333
+        ]
+      }
+    ],
+    "duration": 95.2,
+    "samples": [
+      5.289,
+      15.867,
+      26.444,
+      37.022,
+      47.6,
+      58.178,
+      68.756,
+      79.333,
+      89.911
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 31,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      5.289,
+      26.444,
+      47.6,
+      68.756,
+      89.911
+    ],
+    "checked": 19,
+    "passed": 19
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

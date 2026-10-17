@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; color: #fff;
+        background: radial-gradient(900px 700px at 50% 0%, #17305f 0%, #0b1220 70%); }
+      .cap { position: absolute; left: 60px; right: 60px; top: 110px; height: 330px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+      .step { font-size: 34px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; margin-bottom: 18px; }
+      .txt { font-size: 66px; font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { margin-top: 18px; font-size: 36px; color: #cbd5e1; font-weight: 500; }
+      .phone { position: absolute; left: 50%; top: 470px; margin-left: -325px; width: 650px; height: 1406px; border-radius: 86px; background: #05080f; padding: 18px;
+        box-shadow: 0 0 0 4px #27324a, 0 50px 120px rgba(0,0,0,.6), 0 0 160px rgba(59,130,246,.18); }
+      .screen { position: relative; width: 100%; height: 100%; border-radius: 70px; overflow: hidden; background: #0f172a; }
+      .shot { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; }
+      .ring { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 8px solid #fff; background: rgba(255,255,255,.25); opacity: 0; box-shadow: 0 0 0 6px rgba(239,68,68,.55); }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 80px; }
+      .center img { width: 340px; margin-bottom: 50px; }
+      .big { font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 46px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="39" data-width="1080" data-height="1920">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="3.4" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">¿No puedes ir<br />a clase?</div>
+        <div class="mid">Avísalo desde el móvil en menos de un minuto</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="3.4" data-duration="30.6" data-track-index="2" style="position:absolute;inset:0">
+        <div class="cap clip" data-start="3.4" data-duration="3.4" data-track-index="3"><div class="step">Paso 1</div><div class="txt">Entra con tu email<br />y tu contraseña</div></div>
+        <div class="cap clip" data-start="6.8" data-duration="3.4" data-track-index="3"><div class="step">Paso 2</div><div class="txt">Abre tu próxima clase</div><div class="sub">Está en tu calendario</div></div>
+        <div class="cap clip" data-start="10.2" data-duration="3.8" data-track-index="3"><div class="step">Paso 3</div><div class="txt">Toca el botón rojo<br />«No puedo ir»</div></div>
+        <div class="cap clip" data-start="14" data-duration="3.6" data-track-index="3"><div class="step">Paso 4</div><div class="txt">Elige el motivo</div><div class="sub">Y si quieres, añade una nota</div></div>
+        <div class="cap clip" data-start="17.6" data-duration="4.4" data-track-index="3"><div class="step">Antes de enviar</div><div class="txt">La app te explica<br />qué va a pasar</div><div class="sub">Avisas con tiempo: tu bono no se toca</div></div>
+        <div class="cap clip" data-start="22" data-duration="3.8" data-track-index="3"><div class="step">Hecho</div><div class="txt">Tu entrenador y la<br />administración ya lo saben</div></div>
+        <div class="cap clip" data-start="25.8" data-duration="4.6" data-track-index="3"><div class="step">¿Faltan menos de 24 h?</div><div class="txt">Te lo dice antes<br />de confirmar</div><div class="sub">Será un aviso tardío</div></div>
+        <div class="cap clip" data-start="30.4" data-duration="3.6" data-track-index="3"><div class="step">Aviso tardío</div><div class="txt">Tu entrenador decidirá<br />al cerrar la clase</div></div>
+
+        <div class="phone">
+          <div class="screen">
+            <img id="s1" class="shot" src="assets/02-login-lleno.png" alt="" />
+            <img id="s2" class="shot" src="assets/04-clases.png" alt="" />
+            <img id="s3" class="shot" src="assets/05-clase-ficha.png" alt="" />
+            <img id="s4" class="shot" src="assets/07-motivo.png" alt="" />
+            <img id="s5" class="shot" src="assets/08-que-pasara.png" alt="" />
+            <img id="s5b" class="shot" src="assets/09-botones.png" alt="" />
+            <img id="s6" class="shot" src="assets/10-aviso-enviado.png" alt="" />
+            <img id="s7" class="shot" src="assets/12-tardio-aviso.png" alt="" />
+            <img id="s8" class="shot" src="assets/13-tardio-enviado.png" alt="" />
+            <div id="ring1" class="ring" style="left:50%;top:20.5%"></div>
+            <div id="ring2" class="ring" style="left:50%;top:46%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="34" data-duration="5" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Así de fácil</div>
+        <div class="mid">Avisa a tiempo y tu entrenador<br />puede organizar la clase</div>
+      </div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 3.05);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 34.2);
+
+      tl.fromTo(".phone", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 3.4);
+
+      document.querySelectorAll(".cap").forEach((c) => {
+        const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+        tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+        tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+      });
+
+      const shots = [["s1",3.4,6.8],["s2",6.8,10.2],["s3",10.2,14],["s4",14,17.6],["s5",17.6,20.2],["s5b",20.2,22],["s6",22,25.8],["s7",25.8,30.4],["s8",30.4,34]];
+      shots.forEach(([id, a], i) => {
+        tl.fromTo("#" + id, { opacity: 0 }, { opacity: 1, duration: 0.45 }, a);
+        tl.fromTo("#" + id, { scale: 1.04 }, { scale: 1, duration: 0.8, ease: "power2.out" }, a);
+      });
+
+      const tap = (sel, t) => {
+        tl.fromTo(sel, { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, t);
+        tl.to(sel, { opacity: 0, scale: 0.8, duration: 0.35 }, t + 0.5);
+      };
+      tap("#ring1", 12.2);
+      tap("#ring2", 20.9);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
