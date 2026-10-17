@@ -391,11 +391,12 @@ $routes->post('bonos/(:num)/update', 'BonosController::update/$1', [
 // ── Finanzas — acceso POR PERSONA, no solo por rol (FinanceFilter) ──────────
 //   finance:full   → todo Finanzas: solo el superadmin raíz y quien él autorice
 //                    (Finanzas › Configuración › «Quién ve las finanzas»).
-//   finance:review → además, el resto de admin/superadmin, SOLO la «Revisión de
-//                    clases» (si se dio la clase, lista, cierre, entrenador…), sin importes.
+//   finance:review → además, el resto de admin/superadmin, SOLO /finanzas/revision
+//                    y únicamente el bloque «Clases» (si se dio la clase, lista, cierre,
+//                    entrenador…), sin importes ni bonos. NO pueden abrir /finanzas.
 //   finance:master → solo el superadmin raíz (gestionar esa lista).
 $routes->get('finanzas', 'FinanzasController::index', [
-    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
@@ -408,7 +409,7 @@ $routes->post('finanzas/revision/eliminar-vacias', 'FinanzasController::deleteEm
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
 ]);
 $routes->get('pendientes', 'FinanzasController::legacyPendientes', [
-    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 // Gestionar quién ve todas las finanzas — solo el superadmin raíz.
 $routes->post('finanzas/configuracion/acceso', 'FinanzasController::saveAccess', [

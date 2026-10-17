@@ -54,13 +54,15 @@ class FinanzasController extends BaseController
         ];
     }
 
-    /** Tareas pendientes en Revisión. Sin acceso total no se cuentan los precios por confirmar. */
+    /** Tareas pendientes en Revisión. Sin acceso total solo cuentan las de clases (sin bonos ni precios). */
     private function reviewCount(): int
     {
         try {
             $c = (new RevisionService())->counts();
-            $n = (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['incomplete'];
-            return $this->isFull() ? $n + (int) $c['estimated'] : $n;
+            if (!$this->isFull()) {
+                return (int) $c['unclosed'] + (int) $c['incomplete'];
+            }
+            return (int) $c['unclosed'] + (int) $c['debts'] + (int) $c['pre_control'] + (int) $c['incomplete'] + (int) $c['estimated'];
         } catch (\Throwable $e) {
             return 0;
         }
@@ -313,17 +315,20 @@ class FinanzasController extends BaseController
 
         $counts = $rev->counts();
         if (!$full) {
-            // Sin acceso total: ni se calculan ni se envían precios, caducados ni cierres masivos.
-            $counts['estimated'] = 0;
-            $counts['unused']    = 0;
+            // Sin acceso total: solo el bloque «Clases». Ni se calculan ni se envían
+            // bonos, precios, caducados ni cierres masivos.
+            $counts['estimated']   = 0;
+            $counts['unused']      = 0;
+            $counts['debts']       = 0;
+            $counts['pre_control'] = 0;
         }
 
         return view('finanzas/revision', $this->base('revision', [
             'title'      => $full ? 'Finanzas · Revisión — JP Preparation' : 'Revisión de clases — JP Preparation',
             'counts'     => $counts,
             'unclosed'   => $unclosed,
-            'debts'      => $control->openDebts(null, FinanceService::startDate()),
-            'preControl' => $control->unreflected(null, FinanceService::startDate()),
+            'debts'      => $full ? $control->openDebts(null, FinanceService::startDate()) : [],
+            'preControl' => $full ? $control->unreflected(null, FinanceService::startDate()) : [],
             'estimated'  => $full ? $rev->estimatedPriceBonos() : [],
             'unused'     => $full ? $rev->expiredUnused() : [],
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),

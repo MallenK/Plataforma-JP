@@ -109,10 +109,32 @@ final class FinanceAccessTest extends CIUnitTestCase
         preg_match_all("#\\\$routes->(?:get|post)\\('([^']+)'[^;]*?'finance:review'#s", $src, $m);
         sort($m[1]);
         $this->assertSame(
-            ['finanzas', 'finanzas/revision', 'finanzas/revision/cerrar-clases', 'finanzas/revision/eliminar-vacias', 'pendientes'],
+            ['finanzas/revision', 'finanzas/revision/cerrar-clases', 'finanzas/revision/eliminar-vacias'],
             $m[1],
-            'Solo la revisión de clases puede abrirse sin acceso total: cualquier otra ruta con importes debe ser finance:full'
+            'Solo /finanzas/revision (y sus dos acciones de clases) puede abrirse sin acceso total: '
+            . '/finanzas y cualquier otra ruta con importes deben ser finance:full'
         );
+    }
+
+    public function testElIndiceDeFinanzasExigeAccesoTotal(): void
+    {
+        $src = $this->routesSource();
+        $this->assertMatchesRegularExpression("#get\\('finanzas',\\s*'FinanzasController::index',\\s*\\[[^\\]]*'finance:full'#s", $src);
+        $this->assertMatchesRegularExpression("#get\\('pendientes',[^;]*?'finance:full'#s", $src);
+    }
+
+    public function testSinAccesoTotalLaRevisionSoloMuestraClases(): void
+    {
+        $ctl = file_get_contents(APPPATH . 'Controllers/FinanzasController.php');
+        $this->assertStringContainsString("'debts'      => \$full ? \$control->openDebts(", $ctl);
+        $this->assertStringContainsString("'preControl' => \$full ? \$control->unreflected(", $ctl);
+
+        $view = file_get_contents(APPPATH . 'Views/finanzas/revision.php');
+        $this->assertStringContainsString("<?php if (\$finFull): // bonos y dinero", $view);
+        $this->assertStringNotContainsString("\$groups['Bonos']", $view);
+
+        $dash = file_get_contents(APPPATH . 'Controllers/DashboardController.php');
+        $this->assertStringContainsString("\$pendingReview['debts']       = 0;", $dash);
     }
 
     public function testElCambioDeAccesosEsSoloDelSuperadminRaiz(): void

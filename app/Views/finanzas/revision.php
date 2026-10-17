@@ -29,8 +29,7 @@ $groups = [
     ],
 ];
 if (!$finFull) {
-    // Sin acceso total: nada de precios ni dinero, solo si las clases cuadran con los bonos.
-    $groups['Bonos'] = [$groups['Bonos y dinero'][0]];
+    // Sin acceso total: solo el bloque «Clases». Nada de bonos, precios ni dinero.
     unset($groups['Bonos y dinero']);
 }
 $totalTasks = 0;
@@ -277,6 +276,7 @@ if ($deletableEmpty) {
     <?php endif; ?>
 </div>
 
+<?php if ($finFull): // bonos y dinero: solo con acceso total a Finanzas ?>
 <!-- ───────── BONOS Y DINERO ───────── -->
 
 <!-- 5. Clases sin bono descontado -->
@@ -293,7 +293,6 @@ if ($deletableEmpty) {
     </div>
 </div>
 
-<?php if ($finFull): // precios y dinero: solo con acceso total a Finanzas ?>
 <!-- 6. Bonos con precio por confirmar -->
 <?php
 $priceAll = '';

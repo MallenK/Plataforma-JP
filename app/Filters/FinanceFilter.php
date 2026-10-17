@@ -14,7 +14,8 @@ use CodeIgniter\HTTP\ResponseInterface;
  *   ['filter' => ['auth', 'role:superadmin,admin', 'finance:full']]
  *
  *   finance:full    → solo quien tiene acceso total (superadmin raíz + los autorizados por él).
- *   finance:review  → además, el resto de admin/superadmin (solo «Revisión de clases»).
+ *   finance:review  → además, el resto de admin/superadmin, y SOLO en /finanzas/revision
+ *                     (bloque «Clases»). /finanzas y el resto de pestañas son finance:full.
  *   finance:master  → solo el superadmin raíz (gestionar quién ve las finanzas).
  *
  * El nivel sale de la fila ACTUAL del usuario en BD (FinanceAccessService), no de

@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.0.5",
+        "date": "2026-10-17 00:00:00",
+        "description": "Finanzas por persona: las finanzas completas son solo para el administrador principal y quien él autorice; el resto de administradores solo entra en la revisión de clases (únicamente el bloque de clases: lista, cierre, entrenador y clases vacías), sin bonos, precios ni importes, y el aviso del panel respeta lo mismo. Páginas de error nuevas con un único diseño, y carga más ágil en Finanzas: navegación entre pestañas sin recargar la página y barras de progreso al enviar formularios."
+    },
+    {
         "version": "2.0.4",
         "date": "2026-10-15 00:00:00",
         "description": "Las notificaciones llegan antes al móvil bloqueado: los avisos se envían con prioridad alta, para que Android los entregue al momento en lugar de retrasarlos. Sin cambios en pantalla."
