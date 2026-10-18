@@ -60,6 +60,11 @@ body {
     line-height: 1.5;
     overflow-x: hidden;
 }
+/* `hidden` convierte el body en contenedor de scroll y en tablets táctiles puede bloquear el
+   desplazamiento vertical; `clip` recorta igual sin crear contenedor. */
+@supports (overflow: clip) {
+    body { overflow-x: clip; }
+}
 
 /* ── Layout principal ───────────────────────────────────── */
 .app-layout {
@@ -70,7 +75,10 @@ body {
 /* ── Sidebar ────────────────────────────────────────────── */
 .sidebar {
     width: var(--sidebar-width);
-    min-height: 100vh;
+    /* Altura acotada a la zona visible: con solo min-height el menú crecía más que la pantalla
+       (en tablet 100vh incluye las barras del navegador) y su final no se podía alcanzar. */
+    height: 100vh;
+    height: 100dvh;
     background: var(--bg-sidebar);
     display: flex;
     flex-direction: column;
@@ -79,6 +87,8 @@ body {
     left: 0;
     z-index: 100;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-logo {
@@ -1224,7 +1234,7 @@ textarea.form-control-jp { resize: vertical; min-height: 90px; }
     .notif-dropdown { width: 320px; }
 
     /* ── Chat: ajuste altura con nuevo padding ────────────────── */
-    .chat-layout { height: calc(100vh - var(--navbar-h) - 48px); }
+    .chat-layout { height: calc(100vh - var(--navbar-h) - 48px); height: calc(100dvh - var(--navbar-h) - 48px); }
 }
 
 /* ── Móvil (≤ 768px) ────────────────────────────────────────── */
@@ -1606,6 +1616,7 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
     position: relative;
     display: flex;
     height: calc(100vh - var(--navbar-h) - 32px);
+    height: calc(100dvh - var(--navbar-h) - 32px);
     gap: 0;
     background: var(--bg-card);
     border-radius: var(--radius);
@@ -1935,7 +1946,7 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
 
 /* ── Responsive chat ────────────────────────────────────────── */
 @media (max-width: 768px) {
-    .chat-layout { height: calc(100vh - var(--navbar-h)); border-radius: 0; border: none; }
+    .chat-layout { height: calc(100vh - var(--navbar-h)); height: calc(100dvh - var(--navbar-h)); border-radius: 0; border: none; }
     .chat-sidebar { width: 100%; border-right: none; position: absolute; z-index: 10; top: 0; left: 0; height: 100%; }
     .chat-sidebar-hidden { display: none; }
     .chat-main { display: none; }
@@ -2041,7 +2052,9 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
     width: 100%;
     max-width: 480px;
     max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
     overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateY(8px) scale(.98);
     transition: transform .15s ease;
 }

@@ -51,6 +51,8 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <!-- App JS -->
 <script src="<?= base_url('assets/js/app.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/app.js') ?: time() ?>"></script>
+<!-- Red de seguridad: libera el scroll si un modal/menú lo dejó bloqueado (tablet) -->
+<script src="<?= base_url('assets/js/scroll-guard.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/scroll-guard.js') ?: time() ?>"></script>
 <!-- PWA: service worker, instalación y notificaciones push -->
 <script src="<?= base_url('assets/js/pwa.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/pwa.js') ?: time() ?>" data-base="<?= base_url() ?>"></script>
 <!-- Actualización en vivo: refresca zonas data-live al llegar un aviso -->
