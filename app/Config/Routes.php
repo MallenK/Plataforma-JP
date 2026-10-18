@@ -415,6 +415,10 @@ $routes->get('pendientes', 'FinanzasController::legacyPendientes', [
 $routes->post('finanzas/configuracion/acceso', 'FinanzasController::saveAccess', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:master'],
 ]);
+// Qué usuarios no cuentan en las finanzas (cuentas de prueba) — solo el superadmin raíz.
+$routes->post('finanzas/configuracion/excluidos', 'FinanzasController::saveExclusion', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:master'],
+]);
 // Finanzas 2.0 — pestañas y acciones con importes (acceso total)
 $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin', 'finance:full']], static function ($routes) {
     $routes->get('resumen',                 'FinanzasController::resumen');

@@ -84,6 +84,51 @@ $catalog = static function (string $kind, array $items, string $title, ?string $
             </div>
         </div>
     </div>
+    <!-- Usuarios que no cuentan en Finanzas (cuentas de prueba). Solo el administrador principal lo cambia. -->
+    <div class="col-12">
+        <div class="card-jp" id="fin-excluidos">
+            <div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-person-slash me-2"></i>Usuarios que no cuentan en las finanzas</span></div>
+            <div class="card-jp-body" style="font-size:13px;line-height:1.55">
+                <p style="margin:0 0 10px;color:var(--text-muted)">
+                    Para operar con cuentas de prueba sin ensuciar las cifras. Un usuario marcado aquí <strong>desaparece de Finanzas</strong>
+                    (ventas, cobros, bonos, caducados, deuda, alumnos) y también las <strong>clases en las que participe</strong> como alumno o entrenador
+                    (servicio prestado, asistencia, análisis, entrenadores y Revisión). En el resto de la plataforma sigue funcionando igual.
+                    No depende de que esté de baja. Es reversible: al quitarlo vuelve a contar.
+                </p>
+                <?php if (!empty($isMaster)): ?>
+                <form action="<?= base_url('finanzas/configuracion/excluidos') ?>" method="post">
+                    <?= csrf_field() ?>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <?php foreach ($excluded as $u): ?>
+                        <label class="d-flex align-items-center gap-2" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+                            <input type="checkbox" name="user_ids[]" value="<?= (int) $u['id'] ?>" checked>
+                            <span style="flex:1"><strong><?= esc($u['name']) ?></strong>
+                                <span style="color:var(--text-muted)"> · <?= esc($u['email']) ?> · <?= esc($u['role']) ?><?= $u['status'] !== 'active' ? ' · ' . esc($u['status']) : '' ?></span></span>
+                            <span style="font-size:12px;font-weight:700;color:var(--text-muted)">No cuenta · desmarca para quitarlo</span>
+                        </label>
+                        <?php endforeach; ?>
+                        <?php if (empty($excluded)): ?>
+                        <p style="margin:0;color:var(--text-muted)">Ningún usuario excluido: todos cuentan.</p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <label for="fx-add" class="form-label" style="margin:0">Añadir usuario</label>
+                        <select id="fx-add" name="add_user_id" class="form-control-jp" style="max-width:420px">
+                            <option value="">— elige a quién —</option>
+                            <?php foreach ($exclusionCandidates as $c): ?>
+                            <option value="<?= (int) $c['id'] ?>"><?= esc($c['name']) ?> · <?= esc($c['email']) ?> · <?= esc($c['role']) ?><?= $c['status'] !== 'active' ? ' (' . esc($c['status']) . ')' : '' ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-check2 me-1"></i>Guardar la lista</button>
+                    <span style="font-size:12px;color:var(--text-muted);margin-left:8px">Cada cambio queda en el registro de auditoría.</span>
+                </form>
+                <?php else: ?>
+                <p style="margin:0"><i class="bi bi-info-circle me-1"></i>Solo el administrador principal puede cambiar esta lista.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
     <div class="col-12 col-xl-6">
         <div class="card-jp h-100">
             <div class="card-jp-header"><span class="card-jp-title">Reglas de asistencia y bono</span></div>

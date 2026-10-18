@@ -96,12 +96,13 @@ class RevisionService
         $sessionIds = array_map('intval', array_column($this->db->query(
             "SELECT DISTINCT cs.id FROM class_sessions cs
              JOIN class_session_players csp ON csp.session_id = cs.id AND csp.attendance <> 'pending'
-             WHERE cs.status = 'scheduled' AND cs.session_date < ? AND cs.session_date >= ?",
+             WHERE cs.status = 'scheduled' AND cs.session_date < ? AND cs.session_date >= ?" . FinanceExclusion::sessionSql('cs'),
             [$today, $this->start]
         )->getResultArray(), 'id'));
 
         $priceIds = array_map('intval', array_column($this->db->table('player_bonos')
             ->select('id')->where('voided_at IS NULL')->where('price_estimated', 1)->where('created_at >=', $this->start)
+            ->where(FinanceExclusion::playerCond('player_id') ?: '1=1', null, false)
             ->get()->getResultArray(), 'id'));
 
         if (!$apply) {
@@ -112,7 +113,7 @@ class RevisionService
                  WHERE (cs.status = 'completed' OR cs.id IN (" . ($sessionIds ? implode(',', $sessionIds) : '0') . "))
                    AND cs.session_date >= ?
                    AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
-                   AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL",
+                   AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL" . FinanceExclusion::sessionSql('cs'),
                 [$this->start]
             )->getRow()->n;
             return ['sessions' => count($sessionIds), 'debts' => $debts, 'prices' => count($priceIds), 'applied' => false];
@@ -129,7 +130,7 @@ class RevisionService
              JOIN class_sessions cs ON cs.id = csp.session_id
              WHERE cs.status = 'completed' AND cs.session_date >= ?
                AND csp.attendance IN ('" . implode("','", ClasesService::BONO_CONSUMING_ATTENDANCE) . "')
-               AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL",
+               AND csp.bono_deducted_at IS NULL AND csp.bono_resolution IS NULL" . FinanceExclusion::sessionSql('cs'),
             [$this->start]
         )->getResultArray();
         foreach ($debtRows as $d) {
@@ -260,7 +261,7 @@ class RevisionService
                        JOIN users u ON u.id = p.user_id WHERE p.session_id = cs.id) AS player_names,
                     " . ($hasFiles ? "(SELECT COUNT(*) FROM class_session_attachments a WHERE a.session_id = cs.id)" : '0') . " AS files
              FROM class_sessions cs
-             WHERE cs.session_date >= ?
+             WHERE cs.session_date >= ?" . FinanceExclusion::sessionSql('cs') . "
                AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
                     OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))
              ORDER BY cs.session_date ASC, cs.start_time ASC",
@@ -339,20 +340,23 @@ class RevisionService
             'unclosed'  => (int) $this->db->table('class_sessions cs')->where('cs.status', 'scheduled')->where('cs.session_date <', $today)
                                     ->where('cs.session_date >=', $this->start)
                                     ->where('EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)', null, false)
+                                    ->where(FinanceExclusion::sessionCond('cs') ?: '1=1', null, false)
                                     ->countAllResults(),
             'incomplete' => (int) $this->db->query(
                 "SELECT COUNT(*) AS n FROM class_sessions cs
-                 WHERE cs.session_date >= ?
+                 WHERE cs.session_date >= ?" . FinanceExclusion::sessionSql('cs') . "
                    AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
                         OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))",
                 [$this->start]
             )->getRow()->n,
-            'debts'     => count($control->openDebts(null, $this->start)),
-            'pre_control' => count($control->unreflected(null, $this->start)),
+            'debts'     => count(FinanceExclusion::filterRows($control->openDebts(null, $this->start))),
+            'pre_control' => count(FinanceExclusion::filterRows($control->unreflected(null, $this->start))),
             'estimated' => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('price_estimated', 1)
-                                    ->where('created_at >=', $this->start)->countAllResults(),
+                                    ->where('created_at >=', $this->start)
+                                    ->where(FinanceExclusion::playerCond('player_id') ?: '1=1', null, false)->countAllResults(),
             'unused'    => (int) $this->db->table('player_bonos')->where('voided_at IS NULL')->where('sessions_remaining >', 0)
-                                    ->where('created_at >=', $this->start)->where('expires_at <', $today)->countAllResults(),
+                                    ->where('created_at >=', $this->start)->where('expires_at <', $today)
+                                    ->where(FinanceExclusion::playerCond('player_id') ?: '1=1', null, false)->countAllResults(),
         ];
     }
 
@@ -374,6 +378,7 @@ class RevisionService
             ->where('cs.status', 'scheduled')
             ->where('cs.session_date <', $today)
             ->where('cs.session_date >=', $this->start)
+            ->where(FinanceExclusion::sessionCond('cs') ?: '1=1', null, false)
             ->groupBy('cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at')
             ->orderBy('cs.session_date', 'ASC')->orderBy('cs.start_time', 'ASC')
             ->get()->getResultArray();
@@ -390,6 +395,7 @@ class RevisionService
             ->where('pb.voided_at IS NULL')
             ->where('pb.price_estimated', 1)
             ->where('pb.created_at >=', $this->start)
+            ->where(FinanceExclusion::playerCond('pb.player_id') ?: '1=1', null, false)
             ->orderBy('pb.created_at', 'ASC')
             ->get()->getResultArray();
     }
@@ -407,6 +413,7 @@ class RevisionService
             ->where('pb.sessions_remaining >', 0)
             ->where('pb.created_at >=', $this->start)
             ->where('pb.expires_at <', $today)
+            ->where(FinanceExclusion::playerCond('pb.player_id') ?: '1=1', null, false)
             ->orderBy('pb.expires_at', 'DESC')
             ->get()->getResultArray();
         foreach ($rows as &$r) {

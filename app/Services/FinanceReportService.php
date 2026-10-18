@@ -127,7 +127,7 @@ class FinanceReportService
                 FROM class_session_players csp
                 JOIN class_sessions cs ON cs.id = csp.session_id
                 JOIN player_bonos pb ON pb.id = csp.bono_deducted_from_id
-                WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?";
+                WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs');
         $binds = [$this->start, $this->from($from), $to];
         if ($sessionIds !== null) {
             if (!$sessionIds) {
@@ -150,12 +150,12 @@ class FinanceReportService
         $start = $this->start;
 
         $sold = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(amount_cents),0) v, COALESCE(SUM(discount_cents),0) d
-                                  FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?", [$from, $to])->getRowArray();
+                                  FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to])->getRowArray();
         $paid = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(amount_cents),0) v
-                                  FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?", [$from, $to])->getRowArray();
+                                  FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to])->getRowArray();
         $byMethod = $this->db->query("SELECT COALESCE(m.name, 'Sin medio') name, SUM(p.amount_cents) v
                                       FROM fin_payments p LEFT JOIN fin_payment_methods m ON m.id = p.method_id
-                                      WHERE p.voided_at IS NULL AND p.paid_at BETWEEN ? AND ?
+                                      WHERE p.voided_at IS NULL AND p.paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('p.player_id') . "
                                       GROUP BY m.name ORDER BY v DESC", [$from, $to])->getResultArray();
         $exp  = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(amount_cents),0) v
                                   FROM fin_expenses WHERE voided_at IS NULL AND spent_at BETWEEN ? AND ?", [$from, $to])->getRowArray();
@@ -170,16 +170,16 @@ class FinanceReportService
                               LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) paid FROM fin_payment_allocations a
                                          JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x
                                      ON x.charge_id = c.id
-                              WHERE c.voided_at IS NULL AND c.charged_at >= ? AND c.amount_cents > COALESCE(x.paid, 0)", [$start]);
+                              WHERE c.voided_at IS NULL AND c.charged_at >= ? AND c.amount_cents > COALESCE(x.paid, 0)" . FinanceExclusion::playerSql('c.player_id'), [$start]);
         $prepaid = $this->db->query("SELECT COALESCE(SUM(sessions_remaining),0) s,
                                             COALESCE(SUM(price_cents * sessions_remaining / NULLIF(sessions_total,0)),0) v
                                      FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ?
-                                       AND (expires_at IS NULL OR expires_at >= ?)", [$start, $today])->getRowArray();
+                                       AND (expires_at IS NULL OR expires_at >= ?)" . FinanceExclusion::playerSql('player_id'), [$start, $today])->getRowArray();
         $expired = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(sessions_remaining),0) s,
                                             COALESCE(SUM(price_cents * sessions_remaining / NULLIF(sessions_total,0)),0) v
                                      FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ?
-                                       AND expires_at BETWEEN ? AND ? AND expires_at < ?", [$start, $from, $to, $today])->getRowArray();
-        $avg = $this->db->query("SELECT COALESCE(SUM(price_cents),0) v, COALESCE(SUM(sessions_total),0) s FROM player_bonos WHERE voided_at IS NULL AND created_at >= ?", [$start])->getRowArray();
+                                       AND expires_at BETWEEN ? AND ? AND expires_at < ?" . FinanceExclusion::playerSql('player_id'), [$start, $from, $to, $today])->getRowArray();
+        $avg = $this->db->query("SELECT COALESCE(SUM(price_cents),0) v, COALESCE(SUM(sessions_total),0) s FROM player_bonos WHERE voided_at IS NULL AND created_at >= ?" . FinanceExclusion::playerSql('player_id'), [$start])->getRowArray();
 
         return [
             'sold'      => ['count' => (int) $sold['n'], 'cents' => (int) $sold['v'], 'discount' => (int) $sold['d']],
@@ -211,7 +211,7 @@ class FinanceReportService
                     SUM(csp.student_noted_at IS NOT NULL AND csp.attendance IN ('declined','absent')
                         AND TIMESTAMPDIFF(MINUTE, csp.student_noted_at, TIMESTAMP(cs.session_date, cs.start_time)) >= ? * 60) early_notice
              FROM class_session_players csp JOIN class_sessions cs ON cs.id = csp.session_id
-             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?",
+             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs'),
             [$hours, $hours, $from, $to]
         )->getRowArray();
         return array_map('intval', $r ?? []) + ['notice_hours' => $hours];
@@ -233,8 +233,8 @@ class FinanceReportService
             $out[] = [
                 'month'    => $m,
                 'label'    => ucfirst(mb_substr(self::MONTHS[(int) substr($m, 5, 2)], 0, 3)) . ' ' . substr($m, 2, 2),
-                'sold'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?", [$from, $to]),
-                'paid'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?", [$from, $to]),
+                'sold'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to]),
+                'paid'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to]),
                 'service'  => $this->serviceValue($from, $to)['cents'],
                 'expenses' => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_expenses WHERE voided_at IS NULL AND spent_at BETWEEN ? AND ?", [$from, $to]),
             ];
@@ -268,7 +268,7 @@ class FinanceReportService
             foreach ($this->db->query("SELECT c.id, c.charged_at d, c.concept, c.amount_cents, c.discount_cents, c.discount_reason, c.voided_at, c.void_reason,
                                               c.player_id, u.name who
                                        FROM fin_charges c LEFT JOIN users u ON u.id = c.player_id
-                                       WHERE c.charged_at BETWEEN ? AND ?", [$from, $to])->getResultArray() as $r) {
+                                       WHERE c.charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('c.player_id'), [$from, $to])->getResultArray() as $r) {
                 $rows[] = ['date' => $r['d'], 'type' => 'venta', 'who' => $r['who'], 'player_id' => (int) $r['player_id'],
                            'detail' => $r['concept'] . ($r['discount_cents'] > 0 ? ' · descuento ' . number_format($r['discount_cents'] / 100, 2, ',', '.') . ' € (' . ($r['discount_reason'] ?: '—') . ')' : ''),
                            'cents' => (int) $r['amount_cents'], 'voided' => (bool) $r['voided_at'], 'void_reason' => $r['void_reason'], 'ref' => 'C' . $r['id']];
@@ -278,7 +278,7 @@ class FinanceReportService
             foreach ($this->db->query("SELECT p.id, p.paid_at d, p.amount_cents, p.voided_at, p.void_reason, p.note, p.player_id, u.name who, m.name method
                                        FROM fin_payments p LEFT JOIN users u ON u.id = p.player_id
                                        LEFT JOIN fin_payment_methods m ON m.id = p.method_id
-                                       WHERE p.paid_at BETWEEN ? AND ?", [$from, $to])->getResultArray() as $r) {
+                                       WHERE p.paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('p.player_id'), [$from, $to])->getResultArray() as $r) {
                 $rows[] = ['date' => $r['d'], 'type' => 'cobro', 'who' => $r['who'], 'player_id' => (int) $r['player_id'],
                            'detail' => ($r['method'] ?? 'Sin medio') . ($r['note'] ? ' · ' . $r['note'] : ''),
                            'cents' => (int) $r['amount_cents'], 'voided' => (bool) $r['voided_at'], 'void_reason' => $r['void_reason'], 'ref' => 'P' . $r['id']];
@@ -299,7 +299,7 @@ class FinanceReportService
                                        JOIN player_bonos pb ON pb.id = csp.bono_deducted_from_id
                                        LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
                                        LEFT JOIN users u ON u.id = csp.user_id
-                                       WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?", [$this->start, $from, $to])->getResultArray() as $r) {
+                                       WHERE csp.bono_deducted_at IS NOT NULL AND pb.created_at >= ? AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs'), [$this->start, $from, $to])->getResultArray() as $r) {
                 $att = ['present' => 'asistió', 'unjustified' => 'falta sin justificar', 'confirmed' => 'confirmada', 'declined' => 'aviso tardío'][$r['attendance']] ?? $r['attendance'];
                 $rows[] = ['date' => $r['d'], 'type' => 'servicio', 'who' => $r['who'], 'player_id' => (int) $r['user_id'],
                            'detail' => ($r['bono'] ?? 'Bono') . ' · ' . $att, 'cents' => (int) round((float) $r['v']),
@@ -311,7 +311,7 @@ class FinanceReportService
                                        FROM player_bonos pb LEFT JOIN users u ON u.id = pb.player_id
                                        LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
                                        WHERE pb.voided_at IS NULL AND pb.sessions_remaining > 0 AND pb.created_at >= ?
-                                         AND pb.expires_at BETWEEN ? AND ? AND pb.expires_at < ?", [$this->start, $from, $to, $today])->getResultArray() as $r) {
+                                         AND pb.expires_at BETWEEN ? AND ? AND pb.expires_at < ?" . FinanceExclusion::playerSql('pb.player_id'), [$this->start, $from, $to, $today])->getResultArray() as $r) {
                 $rows[] = ['date' => $r['d'], 'type' => 'caducado', 'who' => $r['who'], 'player_id' => (int) $r['player_id'],
                            'detail' => ($r['bono'] ?? 'Bono') . ' · ' . (int) $r['sessions_remaining'] . ' de ' . (int) $r['sessions_total'] . ' sin usar',
                            'cents' => RevisionService::unusedValueCents((int) $r['price_cents'], (int) $r['sessions_remaining'], (int) $r['sessions_total']),
@@ -338,13 +338,17 @@ class FinanceReportService
     public function coaches(string $from, string $to): array
     {
         $from  = $this->from($from);
-        $staff = $this->db->table('users')->select('id, name, role, status')
-            ->whereIn('role', ['coach', 'staff', 'admin', 'superadmin'])->orderBy('name')->get()->getResultArray();
+        $staffQ = $this->db->table('users')->select('id, name, role, status')
+            ->whereIn('role', ['coach', 'staff', 'admin', 'superadmin'])->orderBy('name');
+        if ($excluded = FinanceExclusion::ids()) {
+            $staffQ->whereNotIn('id', $excluded);   // cuentas que no cuentan en Finanzas
+        }
+        $staff = $staffQ->get()->getResultArray();
         $out = [];
         foreach ($staff as $s) {
             $sids = array_map('intval', array_column($this->db->query(
                 "SELECT cs.id FROM class_session_coaches csc JOIN class_sessions cs ON cs.id = csc.session_id
-                 WHERE csc.user_id = ? AND cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?",
+                 WHERE csc.user_id = ? AND cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs'),
                 [(int) $s['id'], $from, $to]
             )->getResultArray(), 'id'));
             $present = $sids ? $this->scalar("SELECT COUNT(*) FROM class_session_players WHERE attendance = 'present' AND session_id IN (" . implode(',', $sids) . ")") : 0;
@@ -379,19 +383,19 @@ class FinanceReportService
              FROM fin_charges c
              LEFT JOIN player_bonos pb ON pb.id = c.bono_id
              LEFT JOIN bono_types bt ON bt.id = pb.bono_type_id
-             WHERE c.voided_at IS NULL AND c.charged_at BETWEEN ? AND ?
+             WHERE c.voided_at IS NULL AND c.charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('c.player_id') . "
              GROUP BY COALESCE(bt.name, c.concept) ORDER BY v DESC", [$from, $to])->getResultArray();
 
         $byFormat = $this->db->query(
             "SELECT cs.class_format f, COUNT(DISTINCT cs.id) sessions, SUM(csp.attendance = 'present') present
              FROM class_sessions cs LEFT JOIN class_session_players csp ON csp.session_id = cs.id
-             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?
+             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs') . "
              GROUP BY cs.class_format", [$from, $to])->getResultArray();
 
         $byLocation = $this->db->query(
             "SELECT COALESCE(l.name, 'Sin sede') name, COUNT(*) sessions
              FROM class_sessions cs LEFT JOIN locations l ON l.id = cs.location_id
-             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?
+             WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs') . "
              GROUP BY l.name ORDER BY sessions DESC", [$from, $to])->getResultArray();
 
         $byCategory = $this->db->query(
@@ -399,7 +403,7 @@ class FinanceReportService
              FROM class_session_players csp
              JOIN class_sessions cs ON cs.id = csp.session_id
              LEFT JOIN player_profiles pp ON pp.player_id = csp.user_id
-             WHERE cs.status = 'completed' AND csp.attendance = 'present' AND cs.session_date BETWEEN ? AND ?
+             WHERE cs.status = 'completed' AND csp.attendance = 'present' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs') . "
              GROUP BY pp.category ORDER BY attended DESC", [$from, $to])->getResultArray();
 
         return [
