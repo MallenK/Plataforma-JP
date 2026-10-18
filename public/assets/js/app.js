@@ -64,6 +64,17 @@ $(document).ready(function () {
     window.addEventListener('resize', function () {
         if (window.innerWidth > 1024) closeSidebar();
     });
+
+    // Al elegir una opción del menú se cierra: en las pantallas con navegación sin recargar
+    // (Finanzas) la página no se recarga y el menú, con su bloqueo de scroll, se quedaba abierto.
+    sidebar.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('a[href]') && sidebar.classList.contains('open')) closeSidebar();
+    });
+
+    // Volver con «atrás» puede restaurar la página con el menú abierto y el scroll bloqueado.
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted && sidebar.classList.contains('open')) closeSidebar();
+    });
 })();
 // Filas clicables: <tr class="row-link" data-href="..."> navega al hacer clic en la fila,
 // salvo que el clic sea en un enlace, botón o control de formulario, o se esté seleccionando texto.
