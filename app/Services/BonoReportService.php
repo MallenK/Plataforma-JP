@@ -108,7 +108,7 @@ class BonoReportService
                 FROM {$us} u
                 JOIN {$pb} pb ON pb.player_id = u.id AND pb.voided_at IS NULL
                 LEFT JOIN {$bt} bt ON bt.id = pb.bono_type_id
-                WHERE u.role = 'player'
+                WHERE u.role = 'player'" . FinanceExclusion::playerSql('u.id') . "
                 GROUP BY u.id, u.name, u.email, u.status
                 ORDER BY u.name ASC";
         $rows = $this->db->query($sql, [$today, $today, $today, $today])->getResultArray();

@@ -126,8 +126,8 @@ final class FinanceAccessTest extends CIUnitTestCase
     public function testSinAccesoTotalLaRevisionSoloMuestraClases(): void
     {
         $ctl = file_get_contents(APPPATH . 'Controllers/FinanzasController.php');
-        $this->assertStringContainsString("'debts'      => \$full ? \$control->openDebts(", $ctl);
-        $this->assertStringContainsString("'preControl' => \$full ? \$control->unreflected(", $ctl);
+        $this->assertStringContainsString("'debts'      => \$full ? FinanceExclusion::filterRows(\$control->openDebts(", $ctl);
+        $this->assertStringContainsString("'preControl' => \$full ? FinanceExclusion::filterRows(\$control->unreflected(", $ctl);
 
         $view = file_get_contents(APPPATH . 'Views/finanzas/revision.php');
         $this->assertStringContainsString("<?php if (\$finFull): // bonos y dinero", $view);

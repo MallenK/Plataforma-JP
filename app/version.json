@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.1.0",
+        "date": "2026-10-19 00:00:00",
+        "description": "Nuevo en Finanzas › Configuración: «Usuarios que no cuentan en las finanzas». Permite marcar cuentas de prueba (o cualquier usuario) para que no cuenten en ninguna cifra: ventas, cobros, bonos, caducados, deuda, alumnos, informe de bonos y Revisión. Las clases en las que participe un usuario marcado, como alumno o como entrenador, también quedan fuera del servicio prestado, la asistencia, el análisis y la Revisión. No depende de que esté de baja, solo lo cambia el administrador principal, queda en el registro de auditoría y es reversible. En el resto de la plataforma esos usuarios siguen funcionando igual."
+    },
+    {
         "version": "2.0.6",
         "date": "2026-10-18 00:00:00",
         "description": "Corregido el aviso «Pendiente de bono» en las clases: salía en alumnos que sí tenían bono cuando se les apuntaba a la clase antes de darles el bono. Ahora se calcula siempre con el saldo de ese momento, sin depender de cuándo se creó la clase."

@@ -467,7 +467,7 @@ class FinanceService
              LEFT JOIN (SELECT player_id, SUM(amount_cents) paid FROM fin_payments WHERE voided_at IS NULL AND paid_at >= ? GROUP BY player_id) pa ON pa.player_id = u.id
              LEFT JOIN (SELECT player_id, SUM(sessions_remaining) left_s FROM player_bonos
                         WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ? AND (expires_at IS NULL OR expires_at >= ?) GROUP BY player_id) bo ON bo.player_id = u.id
-             WHERE u.role = 'player'
+             WHERE u.role = 'player'" . FinanceExclusion::playerSql('u.id') . "
              ORDER BY due DESC, u.name ASC",
             [$start, $start, $start, $today]
         )->getResultArray();

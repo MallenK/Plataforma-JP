@@ -6,6 +6,7 @@ use App\Services\AuditService;
 use App\Services\BonoControlService;
 use App\Services\ExpenseService;
 use App\Services\FinanceAccessService;
+use App\Services\FinanceExclusion;
 use App\Services\FinanceReportService;
 use App\Services\FinanceService;
 use App\Services\RevisionService;
@@ -131,6 +132,7 @@ class FinanzasController extends BaseController
             ->join('fin_payment_methods m', 'm.id = p.method_id', 'left')
             ->join('users cb', 'cb.id = p.created_by', 'left')
             ->where('p.paid_at >=', $p['from'])->where('p.paid_at <=', $p['to'])
+            ->where(FinanceExclusion::playerCond('p.player_id') ?: '1=1', null, false)
             ->orderBy('p.paid_at', 'DESC')->orderBy('p.id', 'DESC')->get()->getResultArray();
         $debtors = array_values(array_filter($fin->playersOverview(), fn($r) => (int) $r['due'] > 0));
 
@@ -138,7 +140,8 @@ class FinanzasController extends BaseController
             'payments' => $payments,
             'debtors'  => $debtors,
             'methods'  => $fin->methods(),
-            'players'  => $db->table('users')->select('id, name, status')->where('role', 'player')->orderBy('name')->get()->getResultArray(),
+            'players'  => $db->table('users')->select('id, name, status')->where('role', 'player')
+                                ->where(FinanceExclusion::playerCond('id') ?: '1=1', null, false)->orderBy('name')->get()->getResultArray(),
             'preselect'=> (int) $this->request->getGet('alumno'),
         ]));
     }
@@ -294,6 +297,9 @@ class FinanzasController extends BaseController
             'isMaster'   => $isMaster,
             // La lista de accesos solo se envía a quien puede cambiarla.
             'accessCandidates' => $isMaster ? (new FinanceAccessService())->candidates() : [],
+            // Usuarios que no cuentan en Finanzas (cuentas de prueba…): lista y candidatos solo para el raíz.
+            'excluded'           => (new FinanceExclusion())->listExcluded(),
+            'exclusionCandidates' => $isMaster ? (new FinanceExclusion())->candidates() : [],
         ]));
     }
 
@@ -303,6 +309,19 @@ class FinanzasController extends BaseController
         $ids = $this->request->getPost('user_ids');
         $res = (new FinanceAccessService())->saveGranted(is_array($ids) ? $ids : [], (int) $this->currentUserId());
         return $this->back('/finanzas/configuracion', $res, 'Acceso a las finanzas actualizado. Queda registrado.');
+    }
+
+    /** Guarda qué usuarios no cuentan en las finanzas (solo el superadmin raíz; la ruta lo exige con finance:master). */
+    public function saveExclusion()
+    {
+        $ids = $this->request->getPost('user_ids');
+        $add = (int) $this->request->getPost('add_user_id');
+        $ids = is_array($ids) ? $ids : [];
+        if ($add > 0) {
+            $ids[] = $add;
+        }
+        $res = (new FinanceExclusion())->save($ids, (int) $this->currentUserId());
+        return $this->back('/finanzas/configuracion', $res, 'Lista actualizada. Esos usuarios ya no cuentan en las finanzas. Queda registrado.');
     }
 
     public function revision()
@@ -327,8 +346,8 @@ class FinanzasController extends BaseController
             'title'      => $full ? 'Finanzas · Revisión — JP Preparation' : 'Revisión de clases — JP Preparation',
             'counts'     => $counts,
             'unclosed'   => $unclosed,
-            'debts'      => $full ? $control->openDebts(null, FinanceService::startDate()) : [],
-            'preControl' => $full ? $control->unreflected(null, FinanceService::startDate()) : [],
+            'debts'      => $full ? FinanceExclusion::filterRows($control->openDebts(null, FinanceService::startDate())) : [],
+            'preControl' => $full ? FinanceExclusion::filterRows($control->unreflected(null, FinanceService::startDate())) : [],
             'estimated'  => $full ? $rev->estimatedPriceBonos() : [],
             'unused'     => $full ? $rev->expiredUnused() : [],
             'since'      => (new \App\Services\BonoCoverageService())->controlSince(),
