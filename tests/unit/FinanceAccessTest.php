@@ -33,9 +33,9 @@ final class FinanceAccessTest extends CIUnitTestCase
         $this->assertSame(FA::LEVEL_REVIEW, FA::levelFor($this->user(7, 'admin'), []));
     }
 
-    public function testUnSuperadminQueNoEsElRaizTampocoVeTodoPorDefecto(): void
+    public function testCualquierSuperadminVeTodo(): void
     {
-        $this->assertSame(FA::LEVEL_REVIEW, FA::levelFor($this->user(8, 'superadmin'), [5]));
+        $this->assertSame(FA::LEVEL_FULL, FA::levelFor($this->user(8, 'superadmin'), [5]));
     }
 
     public function testQuienEstaEnLaListaVeTodo(): void

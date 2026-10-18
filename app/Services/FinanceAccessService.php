@@ -62,13 +62,17 @@ class FinanceAccessService
         return array_keys($ids);
     }
 
-    /** ¿Es el superadmin raíz? (por id o por email) */
+    /**
+     * ¿Es administrador principal? Todo `superadmin` lo es (los ids y emails
+     * cambian entre entornos: prod, PPR, local), además del id/email raíz.
+     */
     public static function isMaster(?array $user): bool
     {
         if (!$user) {
             return false;
         }
-        return (int) ($user['id'] ?? 0) === self::MASTER_ID
+        return ($user['role'] ?? '') === 'superadmin'
+            || (int) ($user['id'] ?? 0) === self::MASTER_ID
             || strtolower(trim((string) ($user['email'] ?? ''))) === self::MASTER_EMAIL;
     }
 
