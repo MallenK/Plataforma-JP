@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.1.1",
+        "date": "2026-10-19 00:00:00",
+        "description": "Ayuda de Finanzas actualizada. El manual explica ahora quién ve cada parte (el administrador principal y quien él autorice ven las finanzas completas; el resto de administradores ve solo la Revisión de clases), que el descuento automático de sesiones viene desactivado, los cuatro apartados de clases de la Revisión, la nueva opción de excluir cuentas de prueba y las pantallas de Configuración, con capturas y PDF nuevos. Además, los administradores sin acceso total tienen ahora su propia pestaña «Ayuda» dentro de la Revisión de clases, solo con texto y sin ningún importe."
+    },
+    {
         "version": "2.1.0",
         "date": "2026-10-19 00:00:00",
         "description": "Nuevo en Finanzas › Configuración: «Usuarios que no cuentan en las finanzas». Permite marcar cuentas de prueba (o cualquier usuario) para que no cuenten en ninguna cifra: ventas, cobros, bonos, caducados, deuda, alumnos, informe de bonos y Revisión. Las clases en las que participe un usuario marcado, como alumno o como entrenador, también quedan fuera del servicio prestado, la asistencia, el análisis y la Revisión. No depende de que esté de baja, solo lo cambia el administrador principal, queda en el registro de auditoría y es reversible. En el resto de la plataforma esos usuarios siguen funcionando igual."

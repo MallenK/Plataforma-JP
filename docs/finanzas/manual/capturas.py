@@ -4,6 +4,8 @@ import http.cookiejar, os, re, subprocess, sys, time, urllib.parse, urllib.reque
 from PIL import Image
 
 OUT, WORK = sys.argv[1], sys.argv[2]
+# Opcional: 3er argumento = capturas a regenerar (p. ej. "config,revision"); por defecto, todas.
+ONLY = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else None
 os.makedirs(OUT, exist_ok=True); os.makedirs(WORK, exist_ok=True)
 B = "http://localhost:8080"
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
@@ -34,9 +36,14 @@ pages = [
     ("entrenadores", "/finanzas/entrenadores?mes=2026-09", 950,  False),
     ("analisis",     "/finanzas/analisis?mes=2026-09",     1150, False),
     ("revision",     "/finanzas/revision",                 1150, False),
+    ("config",       "/finanzas/configuracion",            1900, False),
 ]
 for name, path, h, tip in pages:
+    if ONLY and name not in ONLY:
+        continue
     page = get(path)
+    # La copia local aún trae algún correo real de personal: en el manual, siempre datos de ejemplo.
+    page = page.replace("Gina Moré", "Marta Ejemplo").replace("ginamoref@gmail.com", "admin.ejemplo@prodlike.local")
     page = page.replace("<head>", "<head>" + QUIET, 1) if "<head>" in page else QUIET + page
     if tip:
         page = page.replace("</body>", TOOLTIP + "</body>", 1)

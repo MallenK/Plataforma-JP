@@ -401,6 +401,10 @@ $routes->get('finanzas', 'FinanzasController::index', [
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
 ]);
+// Ayuda de la Revisión de clases (solo texto, sin importes): también para los administradores sin acceso total.
+$routes->get('finanzas/ayuda-revision', 'FinanzasController::ayudaRevision', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
+]);
 // Acciones de la Revisión que NO tocan dinero: las pueden hacer los dos niveles.
 $routes->post('finanzas/revision/cerrar-clases', 'FinanzasController::closeListedClasses', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],

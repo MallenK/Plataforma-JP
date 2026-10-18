@@ -11,6 +11,10 @@ python -I -X utf8 docs/finanzas/manual/capturas.py app/Data/manual_finanzas <car
 python -I -X utf8 docs/finanzas/manual/generar_pdf.py app/Data/manual_finanzas <carpeta_temporal>
 ```
 
+Para regenerar solo algunas capturas, pasa un tercer argumento a `capturas.py` (p. ej. `config,revision`).
+La ayuda de la Revisión para administradores sin acceso total (`app/Views/finanzas/_manual_revision.php`)
+es solo texto: no lleva capturas ni PDF a propósito, porque llevan importes.
+
 Requisitos: Google Chrome (modo sin ventana), Python con Pillow y PyMuPDF.
 Ojo: las cifras de las capturas salen de la copia de prod (nombres ficticios, importes reales
 de la academia): el PDF es para JP Preparation, no para enseñarlo a otras academias.

@@ -401,6 +401,15 @@ class FinanzasController extends BaseController
         return view('finanzas/ayuda', $this->base('ayuda', ['hasPdf' => is_file(self::MANUAL_DIR . self::MANUAL_PDF)]));
     }
 
+    /**
+     * Ayuda de la «Revisión de clases»: SOLO TEXTO, sin importes ni capturas del
+     * manual completo. La abren los dos niveles (la ruta es finance:review).
+     */
+    public function ayudaRevision()
+    {
+        return view('finanzas/ayuda_revision', $this->base('ayuda_revision'));
+    }
+
     public function ayudaImprimir()
     {
         return view('finanzas/manual_print', ['date' => date('d/m/Y')]);

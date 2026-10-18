@@ -109,11 +109,35 @@ final class FinanceAccessTest extends CIUnitTestCase
         preg_match_all("#\\\$routes->(?:get|post)\\('([^']+)'[^;]*?'finance:review'#s", $src, $m);
         sort($m[1]);
         $this->assertSame(
-            ['finanzas/revision', 'finanzas/revision/cerrar-clases', 'finanzas/revision/eliminar-vacias'],
+            ['finanzas/ayuda-revision', 'finanzas/revision', 'finanzas/revision/cerrar-clases', 'finanzas/revision/eliminar-vacias'],
             $m[1],
-            'Solo /finanzas/revision (y sus dos acciones de clases) puede abrirse sin acceso total: '
+            'Solo /finanzas/revision (sus dos acciones de clases y su ayuda de solo texto) puede abrirse sin acceso total: '
             . '/finanzas y cualquier otra ruta con importes deben ser finance:full'
         );
+    }
+
+    public function testLaAyudaDeRevisionNoLlevaImportesNiCapturas(): void
+    {
+        // La ayuda que ven los administradores sin acceso total es solo texto: sin capturas
+        // del manual completo (llevan cifras reales) ni importes.
+        $v = file_get_contents(APPPATH . 'Views/finanzas/_manual_revision.php');
+        $this->assertStringNotContainsString('<img', $v);
+        $this->assertStringNotContainsString('$shot(', $v);
+        $this->assertStringNotContainsString('€', $v);
+        $this->assertStringNotContainsString('manual_finanzas', $v);
+        $this->assertStringNotContainsString('ayuda/img', $v);
+
+        // El manual completo (capturas y PDF) sigue siendo solo de acceso total: lo garantiza
+        // testSoloLaRevisionDeClasesAdmiteElNivelRevision (lista cerrada de rutas finance:review).
+
+        // El controlador de la ayuda de revisión no manda capturas ni PDF
+        $ctl = file_get_contents(APPPATH . 'Controllers/FinanzasController.php');
+        $this->assertStringContainsString("return view('finanzas/ayuda_revision', \$this->base('ayuda_revision'));", $ctl);
+
+        // La pestaña de ayuda para el nivel «review» apunta a esa ruta y no a la del manual completo
+        $tabs = file_get_contents(APPPATH . 'Views/finanzas/_tabs.php');
+        $this->assertStringContainsString("'ayuda_revision' => ['Ayuda',", $tabs);
+        $this->assertStringContainsString("'finanzas/ayuda-revision'", $tabs);
     }
 
     public function testElIndiceDeFinanzasExigeAccesoTotal(): void
