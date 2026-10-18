@@ -133,10 +133,10 @@ SELECT v.kind, v.name, v.sort, NOW() FROM (
 ) v
 WHERE NOT EXISTS (SELECT 1 FROM `fin_categories` c WHERE c.kind = v.kind AND c.name = v.name);
 
--- Ajustes (regla de descuento automático activa, 24 h de aviso, IVA apagado)
+-- Ajustes (descuento automático APAGADO hasta que se active a propósito, 24 h de aviso, IVA apagado)
 INSERT INTO `academy_settings` (`setting_key`, `setting_value`, `setting_type`, `updated_at`)
 SELECT v.k, v.val, 'string', NOW() FROM (
-    SELECT 'fin_notice_hours' k, '24' val UNION ALL SELECT 'fin_auto_deduct', '1' UNION ALL SELECT 'fin_tax_enabled', '0'
+    SELECT 'fin_notice_hours' k, '24' val UNION ALL SELECT 'fin_auto_deduct', '0' UNION ALL SELECT 'fin_tax_enabled', '0'
 ) v
 WHERE NOT EXISTS (SELECT 1 FROM `academy_settings` s WHERE s.setting_key = v.k);
 
