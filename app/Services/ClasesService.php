@@ -665,6 +665,15 @@ class ClasesService
             ->limit($limit)
             ->get()->getResultArray();
 
+        // Cobertura en vivo (saldo de hoy), no la marca guardada.
+        $live = (new BonoCoverageService($this->db))->liveMarks([$playerId], $today)[$playerId] ?? [];
+        foreach ($items as &$it) {
+            if (isset($live[(int) $it['id']])) {
+                $it['bono_coverage'] = $live[(int) $it['id']];
+            }
+        }
+        unset($it);
+
         return ['items' => $items, 'total' => $total];
     }
 
@@ -1020,8 +1029,16 @@ class ClasesService
         foreach ($this->attachmentModel->where('session_id', $id)->where('player_id IS NOT NULL')->findAll() as $att) {
             $attachmentsByPlayer[(int) $att['player_id']][] = $att;
         }
+        // La cobertura de bono se calcula con el saldo de hoy, no se lee la marca guardada
+        // (podía quedar vieja si el bono se emitió después de apuntar al alumno).
+        $live = ($session['status'] ?? '') === 'scheduled' && $session['players']
+            ? (new BonoCoverageService($this->db))->liveMarks(array_map('intval', array_column($session['players'], 'user_id')))
+            : [];
         foreach ($session['players'] as &$p) {
             $p['attachments'] = $attachmentsByPlayer[(int) $p['id']] ?? [];
+            if (isset($live[(int) $p['user_id']][$id])) {
+                $p['bono_coverage'] = $live[(int) $p['user_id']][$id];
+            }
         }
         unset($p);
 
