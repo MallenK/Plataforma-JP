@@ -423,6 +423,72 @@ class BonoCoverageService
     }
 
     /**
+     * Cobertura EN VIVO de las clases futuras de unos alumnos, calculada con el
+     * saldo de hoy (no con la marca guardada en `bono_coverage`, que solo se
+     * refresca cuando cambia el saldo y puede quedar vieja: p. ej. clases creadas
+     * antes de emitir el bono). Es lo que debe leer cualquier pantalla.
+     *
+     * Misma regla que refreshMarks(): bonos vigentes en FIFO, las deudas abiertas
+     * consumen saldo primero y dos clases del mismo día comparten estado.
+     *
+     * @param  int[] $playerIds
+     * @return array<int,array<int,string>> [playerId => [sessionId => covered|at_risk|uncovered]]
+     */
+    public function liveMarks(array $playerIds, ?string $today = null): array
+    {
+        $playerIds = array_values(array_unique(array_filter(array_map('intval', $playerIds))));
+        if (empty($playerIds)) {
+            return [];
+        }
+        try {
+            $today = $today ?: date('Y-m-d');
+
+            $sessionsBy = [];
+            foreach ($this->db->table('class_session_players csp')
+                ->select('csp.user_id, cs.id AS session_id, cs.session_date')
+                ->join('class_sessions cs', 'cs.id = csp.session_id')
+                ->whereIn('csp.user_id', $playerIds)
+                ->where('cs.status', 'scheduled')
+                ->where('cs.session_date >=', $today)
+                ->where('csp.bono_deducted_at IS NULL', null, false)
+                ->get()->getResultArray() as $r) {
+                $sessionsBy[(int) $r['user_id']][] = ['sid' => (int) $r['session_id'], 'date' => $r['session_date']];
+            }
+            if (empty($sessionsBy)) {
+                return [];
+            }
+
+            $bonosBy = [];
+            foreach ($this->db->table('player_bonos')
+                ->select('id, player_id, sessions_remaining, expires_at')
+                ->whereIn('player_id', array_keys($sessionsBy))
+                ->where('sessions_remaining >', 0)
+                ->groupStart()->where('expires_at IS NULL')->orWhere('expires_at >=', $today)->groupEnd()
+                ->orderBy('created_at', 'ASC')->orderBy('id', 'ASC')->get()->getResultArray() as $b) {
+                $bonosBy[(int) $b['player_id']][] = [
+                    'id' => (int) $b['id'], 'remaining' => (int) $b['sessions_remaining'], 'expires_at' => $b['expires_at'],
+                ];
+            }
+
+            $debts = $this->debtCounts(array_keys($sessionsBy));
+
+            $out = [];
+            foreach ($sessionsBy as $pid => $sessions) {
+                $dates = array_values(array_unique(array_column($sessions, 'date')));
+                sort($dates);
+                $alloc = self::allocate($dates, [], $bonosBy[$pid] ?? [], $debts[$pid] ?? 0);
+                foreach ($sessions as $s) {
+                    $out[$pid][$s['sid']] = $alloc[$s['date']]['status'] ?? self::UNCOVERED;
+                }
+            }
+            return $out;
+        } catch (\Throwable $e) {
+            log_message('error', 'BonoCoverageService::liveMarks falló: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Clases programadas por ENCIMA del saldo de bono, por alumno (aviso simple
      * en la pantalla de Bonos). over = clases futuras sin descontar + deudas −
      * saldo vigente; solo se devuelven los alumnos con over > 0.
