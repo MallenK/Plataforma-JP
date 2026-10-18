@@ -151,8 +151,9 @@ class FinanzasCore extends Migration
             }
         }
 
-        // Ajustes
-        foreach (['fin_notice_hours' => '24', 'fin_auto_deduct' => '1', 'fin_tax_enabled' => '0'] as $k => $v) {
+        // Ajustes. El descuento automático arranca APAGADO: lo activa el administrador
+        // principal en Finanzas › Configuración cuando el equipo y las familias lo conozcan.
+        foreach (['fin_notice_hours' => '24', 'fin_auto_deduct' => '0', 'fin_tax_enabled' => '0'] as $k => $v) {
             if (!$this->db->table('academy_settings')->where('setting_key', $k)->countAllResults()) {
                 $this->db->table('academy_settings')->insert(['setting_key' => $k, 'setting_value' => $v, 'setting_type' => 'string', 'updated_at' => $now]);
             }

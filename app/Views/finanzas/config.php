@@ -5,7 +5,7 @@ $pageTitle    = 'Finanzas';
 $pageSubtitle = 'Configuración: medios de pago, categorías y reglas';
 helper(['money', 'finhelp']);
 $hours = (int) ($settings['fin_notice_hours'] ?? 24);
-$auto  = ($settings['fin_auto_deduct'] ?? '1') === '1';
+$auto  = ($settings['fin_auto_deduct'] ?? '0') === '1';
 $catalog = static function (string $kind, array $items, string $title, ?string $catKind = null) {
     ob_start(); ?>
     <div class="card-jp h-100">
