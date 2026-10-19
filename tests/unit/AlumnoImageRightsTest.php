@@ -5,10 +5,9 @@ use App\Models\PlayerProfileModel;
 
 /**
  * "Derechos de imagen firmados" — booleano por alumno (player_profiles).
- * Se cambia SOLO desde la pantalla de edición del alumno (admin /
- * superadmin). En la ficha se muestra como una fila más de la tarjeta de
- * identidad, con la casilla siempre deshabilitada y un tooltip que remite
- * a la pantalla de edición.
+ * Lo puede cambiar cualquier rol (el alumno, solo el suyo) con un interruptor
+ * que guarda al instante (POST /alumnos/:id/derechos-imagen), en la ficha y
+ * en el perfil; el checkbox de la pantalla de edición sigue existiendo.
  *
  * @internal
  */
@@ -39,13 +38,36 @@ final class AlumnoImageRightsTest extends CIUnitTestCase
         );
     }
 
-    public function testNoHayToggleRapidoNiRutaPropia(): void
+    public function testHayEndpointDeInterruptorParaCualquierRol(): void
     {
-        // El único punto de cambio es /alumnos/:id/editar; no hay endpoint
-        // suelto para el toggle desde la ficha.
-        $this->assertStringNotContainsString('updateImageRights', $this->file('Controllers/AlumnosController.php'));
-        $this->assertStringNotContainsString('derechos-imagen', $this->file('Config/Routes.php'));
-        $this->assertStringNotContainsString('setImageRights', $this->file('Services/PlayerService.php'));
+        $routes = $this->file('Config/Routes.php');
+        $pos = strpos($routes, "'AlumnosController::setImageRights/");
+        $this->assertNotFalse($pos, 'falta la ruta del interruptor');
+        $slice = preg_replace('/\s+/', ' ', substr($routes, $pos, 120));
+        $this->assertStringContainsString("'filter' => 'auth', ]", $slice,
+            'la ruta solo exige sesión (auth): cualquier rol puede cambiarlo');
+        $this->assertStringContainsString('function setImageRights', $this->file('Services/PlayerService.php'));
+    }
+
+    public function testElAlumnoSoloCambiaElSuyo(): void
+    {
+        $c = $this->file('Controllers/AlumnosController.php');
+        $pos = strpos($c, 'function setImageRights');
+        $this->assertNotFalse($pos);
+        $body = substr($c, $pos, 900);
+        $this->assertStringContainsString("currentRole() === 'player'", $body);
+        $this->assertStringContainsString('(int) $this->currentUserId()', $body);
+        $this->assertStringContainsString('setStatusCode(403)', $body);
+    }
+
+    public function testServicioAuditaYCreaElPerfilSiNoExiste(): void
+    {
+        $svc = $this->file('Services/PlayerService.php');
+        $pos = strpos($svc, 'function setImageRights');
+        $body = substr($svc, $pos, 1400);
+        $this->assertStringContainsString('profileModel->insert', $body);
+        $this->assertStringContainsString('AuditService::record', $body);
+        $this->assertStringContainsString("role', 'player'", $body);
     }
 
     // ── Vista de edición ─────────────────────────────────────────
@@ -63,26 +85,28 @@ final class AlumnoImageRightsTest extends CIUnitTestCase
         $this->assertStringContainsString('max-width:', $label);
     }
 
-    // ── Ficha del alumno ─────────────────────────────────────────
+    // ── Ficha y perfil: interruptor que guarda solo ──────────────
 
-    public function testShowPintaLaFilaDeshabilitadaConTooltip(): void
+    public function testElParcialEsUnInterruptorSinBotonDeGuardar(): void
     {
-        $v = $this->file('Views/alumnos/show.php');
+        $v = $this->file('Views/alumnos/_derechos_imagen.php');
+        $this->assertStringContainsString('class="img-rights-check"', $v);
+        $this->assertStringNotContainsString(' disabled', substr($v, 0, strpos($v, '<script')));
+        $this->assertStringNotContainsString('type="submit"', $v);
+        $this->assertStringContainsString("addEventListener('change'", $v);
+        $this->assertStringContainsString('csrf_field()', $v);
+        $this->assertStringContainsString('derechos-imagen', $v);
+    }
 
-        // La fila va DENTRO de la tarjeta de identidad, no en un banner aparte.
-        $posFila = strpos($v, 'id="derechos-imagen"');
-        $posRow  = strpos($v, '<div class="row g-3">');
+    public function testShowYPerfilUsanElInterruptor(): void
+    {
+        $show = $this->file('Views/alumnos/show.php');
+        $posFila = strpos($show, 'id="derechos-imagen"');
         $this->assertNotFalse($posFila);
-        $this->assertGreaterThan($posRow, $posFila, 'la fila va dentro del contenido, no en un banner arriba');
+        $this->assertStringContainsString("view('alumnos/_derechos_imagen'", substr($show, $posFila, 700));
+        $this->assertStringNotContainsString('<input type="checkbox" disabled', $show);
 
-        $slice = substr($v, $posFila, 1000);
-        $this->assertStringContainsString('d-flex justify-content-between align-items-center', $slice);
-        $this->assertStringContainsString('text-transform:uppercase', $slice);
-
-        // casilla SIEMPRE deshabilitada (también para admin) + tooltip a edición
-        $this->assertStringContainsString('<input type="checkbox" disabled', $slice);
-        $this->assertStringNotContainsString('onchange="this.form.submit()"', $slice);
-        $this->assertStringNotContainsString('<form', $slice);
-        $this->assertMatchesRegularExpression('/title="[^"]*edici[oó]n/u', $slice);
+        $perfil = $this->file('Views/perfil/index.php');
+        $this->assertStringContainsString("view('alumnos/_derechos_imagen'", $perfil);
     }
 }

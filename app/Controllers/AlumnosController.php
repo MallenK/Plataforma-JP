@@ -17,6 +17,28 @@ namespace App\Controllers;
 class AlumnosController extends BaseController
 {
     // ----------------------------------------------------------------
+    // Derechos de imagen (interruptor que guarda al instante)
+    // ----------------------------------------------------------------
+
+    /**
+     * POST /alumnos/:id/derechos-imagen — JSON. Cualquier rol con sesión; el
+     * alumno solo puede cambiar el suyo. Entrada: signed=1|0.
+     */
+    public function setImageRights(int $id)
+    {
+        if ($this->currentRole() === 'player' && $id !== (int) $this->currentUserId()) {
+            return $this->response->setStatusCode(403)
+                ->setJSON(['error' => 'Solo puedes cambiar tus propios derechos de imagen.', 'csrf' => csrf_hash()]);
+        }
+
+        return $this->guard('alumnos.setImageRights', function () use ($id) {
+            $signed = (bool) $this->request->getPost('signed');
+            $this->playerService->setImageRights($id, $signed);
+            return $this->response->setJSON(['success' => true, 'signed' => $signed, 'csrf' => csrf_hash()]);
+        });
+    }
+
+    // ----------------------------------------------------------------
     // Listado
     // ----------------------------------------------------------------
 

@@ -80,6 +80,7 @@ $routes->post('dashboard/stats', 'DashboardController::getStats', [
 //  /alumnos/:id          → perfil completo de un alumno — admin, superadmin, coach
 //  /alumnos/:id/editar   → formulario edición — admin, superadmin
 //  /alumnos/:id/eliminar → baja lógica (POST) — admin, superadmin
+//  /alumnos/:id/derechos-imagen → interruptor (POST, JSON) — todos los roles; el alumno solo el suyo
 //  /alumno               → perfil propio — alumno + admin/superadmin para editar
 //  /alumno/save          → guardar perfil — alumno + admin/superadmin
 // ------------------------------------------------------------
@@ -97,6 +98,11 @@ $routes->post('/alumnos/nuevo', 'AlumnosController::store', [
 
 $routes->get('/alumnos/(:num)', 'AlumnosController::show/$1', [
     'filter' => ['auth', 'role:superadmin,admin,coach'],
+]);
+
+// Derechos de imagen: lo cambia cualquier rol con sesión (el alumno, solo el suyo: lo valida el controller).
+$routes->post('/alumnos/(:num)/derechos-imagen', 'AlumnosController::setImageRights/$1', [
+    'filter' => 'auth',
 ]);
 
 $routes->get('/alumnos/(:num)/editar', 'AlumnosController::edit/$1', [

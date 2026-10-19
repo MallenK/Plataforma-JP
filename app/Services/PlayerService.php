@@ -57,6 +57,35 @@ class PlayerService
     }
 
 
+    /**
+     * Marca/desmarca «Derechos de imagen firmados». Lo puede hacer cualquier rol
+     * (el alumno, solo sobre sí mismo: lo comprueba el controller). Si el alumno
+     * aún no tiene fila en player_profiles, se crea.
+     *
+     * @throws \DomainException si el usuario no es un alumno
+     */
+    public function setImageRights(int $playerId, bool $signed): bool
+    {
+        $player = $this->userModel->where('role', 'player')->find($playerId);
+        if (!$player) {
+            throw new \DomainException('Alumno no encontrado.');
+        }
+
+        $profile = $this->profileModel->where('player_id', $playerId)->first();
+        $before  = $profile ? (int) ($profile['image_rights_signed'] ?? 0) : 0;
+
+        if ($profile) {
+            $this->profileModel->update($profile['id'], ['image_rights_signed' => $signed ? 1 : 0]);
+        } else {
+            $this->profileModel->insert(['player_id' => $playerId, 'image_rights_signed' => $signed ? 1 : 0]);
+        }
+
+        AuditService::record('player_profile', $playerId, AuditService::UPDATE,
+            ['image_rights_signed' => $before], ['image_rights_signed' => $signed ? 1 : 0]);
+
+        return $signed;
+    }
+
     public function hasProfile($playerId)
     {
         return $this->profileModel
