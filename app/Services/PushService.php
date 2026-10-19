@@ -16,7 +16,9 @@ use Config\Database;
  * Cada fila de `notifications` creada con NotificationModel::createWithRecipients()
  * se empuja automáticamente a los dispositivos suscritos de sus destinatarios;
  * al pulsarla se abre el mismo destino que la campanita (GET /notificaciones/:id/ir).
- * El envío se aplaza a post_system (la respuesta HTTP ya salió) y nunca lanza.
+ * El envío se aplaza a un shutdown function (la respuesta HTTP ya salió) y nunca lanza.
+ * OJO: `post_system` de CI4 se dispara ANTES de enviar la respuesta; usarlo con
+ * litespeed_finish_request() cortaba la respuesta vacía ("headers already sent").
  *
  * Piezas: SubscriptionStore (BD) · DeliveryPolicy (qué hacer con cada respuesta) ·
  * PushTransport (WebPush en producción, un falso en los tests) · PushLogger (logs).
@@ -156,7 +158,7 @@ class PushService
                 self::flush();
             } elseif (!self::$hooked) {
                 self::$hooked = true;
-                \CodeIgniter\Events\Events::on('post_system', static fn () => self::flush());
+                register_shutdown_function(static fn () => self::flush());
             }
         } catch (\Throwable $e) {
             PushLogger::error('queue_failed', ['notif' => $notifId], $e);
@@ -382,6 +384,13 @@ class PushService
      */
     private static function releaseClient(): void
     {
+        // Los buffers de salida de PHP se vuelcan DESPUÉS de los shutdown functions: sin esto
+        // finish_request cerraría la conexión con el cuerpo todavía retenido.
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+        @flush();
+
         if (function_exists('litespeed_finish_request')) {
             @litespeed_finish_request();
             $via = 'litespeed';

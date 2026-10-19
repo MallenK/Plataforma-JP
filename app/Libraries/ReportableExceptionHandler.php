@@ -25,7 +25,7 @@ final class ReportableExceptionHandler extends BaseExceptionHandler implements E
         ResponseInterface $response,
         int $statusCode,
         int $exitCode,
-    ) {
+    ): void {
         $ref = strtoupper(bin2hex(random_bytes(3)));
 
         log_message('critical', sprintf(
