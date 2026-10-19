@@ -1945,6 +1945,15 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
 .contact-role { font-size: 11px; color: var(--text-muted); }
 
 /* ── Responsive chat ────────────────────────────────────────── */
+/* iOS Safari hace zoom al enfocar un campo con fuente < 16px y NO lo deshace
+   solo (ni al enviar). Con 16px en pantallas táctiles no hay zoom. */
+@media (max-width: 768px), (pointer: coarse) {
+    .chat-input,
+    .chat-search,
+    #contact-search,
+    #reauth-password,
+    #report-error-comment { font-size: 16px; }
+}
 @media (max-width: 768px) {
     .chat-layout { height: calc(100vh - var(--navbar-h)); height: calc(100dvh - var(--navbar-h)); border-radius: 0; border: none; }
     .chat-sidebar { width: 100%; border-right: none; position: absolute; z-index: 10; top: 0; left: 0; height: 100%; }
