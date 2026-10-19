@@ -6,10 +6,10 @@ $pageSubtitle = 'Cómo va la academia: lo vendido, lo cobrado, lo que se ha dado
 helper(['money', 'finhelp']);
 $s   = $summary;
 $max = max([1, ...array_map(fn($m) => max($m['sold'], $m['service']), $monthly)]);
-$kpi = static function (string $label, string $value, string $sub, string $style = '', string $help = '') {
+$kpi = static function (string $label, string $value, string $sub, string $style = '', string $help = '', string $valueStyle = '') {
     return '<div class="col-6 col-lg-3"><div class="metric-card" style="height:100%;' . $style . '">'
          . '<div class="metric-card-header"><span class="metric-label">' . $label . ($help ? fin_help($help) : '') . '</span></div>'
-         . '<div class="metric-value" style="font-size:26px">' . $value . '</div>'
+         . '<div class="metric-value" style="font-size:26px;' . $valueStyle . '">' . $value . '</div>'
          . '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">' . $sub . '</div></div></div>';
 };
 $a = $s['attendance'];
@@ -26,7 +26,7 @@ $a = $s['attendance'];
     <?= $kpi('Gastos', eur($s['expenses']['cents']), $s['expenses']['count'] ? $s['expenses']['count'] . ' gastos' : '<a href="' . base_url('finanzas/gastos') . '">Registrar un gasto</a>', '', 'gastos') ?>
 </div>
 <div class="row g-3 mb-3">
-    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda en el periodo', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0', 'resultado') ?>
+    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda en el periodo', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0', 'resultado', 'color:#f8fafc') ?>
     <?= $kpi('Pendiente de cobro (hoy)', eur($s['due']), '<a href="' . base_url('finanzas/alumnos?ver=deben') . '">Ver quién debe</a>', '', 'pendiente') ?>
     <?= $kpi('Sesiones pagadas sin dar (hoy)', eur($s['prepaid']['cents']), $s['prepaid']['sessions'] . ' sesiones por dar', '', 'pagado_sin_dar') ?>
     <?= $kpi('Caducado sin usar', eur($s['expired']['cents']), $s['expired']['sessions'] . ' sesiones de ' . $s['expired']['count'] . ' bonos', '', 'caducado') ?>
