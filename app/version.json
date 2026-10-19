@@ -1,6 +1,6 @@
 [
     {
-        "version": "2.1.1",
+        "version": "2.1.2",
         "date": "2026-10-19 00:00:00",
         "description": "Corregido el error «Respuesta inválida del servidor» al enviar un mensaje (y fallos parecidos al reportar un problema, cambiar el estado de un ticket o enviar una notificación). El mensaje sí se guardaba, pero la respuesta llegaba vacía porque el aviso al móvil se enviaba antes de responder. Ahora se envía después. También se corrige la página de error, que fallaba a su vez y tapaba el problema."
     },
