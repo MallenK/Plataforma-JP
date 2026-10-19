@@ -261,6 +261,10 @@ $studentsCount  = (int)($user['students_count']  ?? 0);
                         <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= (int)($user['upcoming_count'] ?? 0) ?></span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-camera me-2"></i>Derechos de imagen</span>
+                        <?= view('alumnos/_derechos_imagen', ['playerId' => (int) $user['id'], 'signed' => !empty($pfp['image_rights_signed'])]) ?>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
                         <span style="font-size:13px;color:var(--text-muted)"><i class="bi bi-ticket-perforated-fill me-2"></i>Bonos activos</span>
                         <span style="font-size:20px;font-weight:700;color:var(--text-h)"><?= (int)($user['active_bonos'] ?? 0) ?></span>
                     </div>

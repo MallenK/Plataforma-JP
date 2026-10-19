@@ -203,14 +203,7 @@ $formatTime = static function (?string $hms): string {
 
                     <div id="derechos-imagen" class="d-flex justify-content-between align-items-center">
                         <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Derechos de imagen</span>
-                        <span style="display:inline-flex;align-items:center;gap:7px"
-                              title="<?= $isAdminUser ? 'Solo se puede cambiar desde la pantalla de edición del alumno' : 'Solo un administrador puede cambiarlo, desde la pantalla de edición' ?>">
-                            <span style="font-size:13px;font-weight:600;color:<?= $imgSigned ? 'var(--success)' : 'var(--text-muted)' ?>">
-                                <?= $imgSigned ? 'Firmados' : 'Pendientes' ?>
-                            </span>
-                            <input type="checkbox" disabled <?= $imgSigned ? 'checked' : '' ?>
-                                   style="width:16px;height:16px;accent-color:var(--accent)">
-                        </span>
+                        <?= view('alumnos/_derechos_imagen', ['playerId' => (int) $alumno['id'], 'signed' => $imgSigned]) ?>
                     </div>
                 </div>
             </div>
