@@ -582,7 +582,10 @@ $roleLabels = [
             document.getElementById('chat-main').classList.add('chat-main-active');
 
             scrollToBottom();
-            document.getElementById('msg-body').focus();
+            // En táctil no se enfoca solo: abriría el teclado y desplazaría la vista.
+            if (!window.matchMedia('(pointer: coarse)').matches) {
+                document.getElementById('msg-body').focus();
+            }
             startPolling();
             // Si el primer bloque no llena la pantalla no habría scroll con
             // el que pedir más: se completa ya.
@@ -637,6 +640,7 @@ $roleLabels = [
 
             bodyInput.value = '';
             bodyInput.style.height = 'auto';
+            resetViewportAfterInput();
             clearFileInput();
             appendMessage(data.message);
             scrollToBottom();
@@ -661,6 +665,19 @@ $roleLabels = [
             document.getElementById('form-message').dispatchEvent(new Event('submit'));
         }
     });
+
+    // Al cerrar el teclado (blur) o enviar, el navegador puede dejar la página
+    // desplazada: se devuelve el viewport a su sitio.
+    function resetViewportAfterInput() {
+        if (!window.matchMedia('(pointer: coarse)').matches) return;
+        setTimeout(function () {
+            if (document.activeElement && document.activeElement.id === 'msg-body') return;
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }, 100);
+    }
+    document.getElementById('msg-body')?.addEventListener('blur', resetViewportAfterInput);
 
     // Auto-resize del textarea
     document.getElementById('msg-body')?.addEventListener('input', function () {
