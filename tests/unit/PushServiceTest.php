@@ -71,4 +71,22 @@ final class PushServiceTest extends CIUnitTestCase
         $this->assertSame('general', $p['kind']);
         $this->assertSame('JP Preparation', $p['title']);
     }
+
+    /**
+     * Regresión (2026-10-19): en CI4 `post_system` se dispara ANTES de enviar la respuesta.
+     * Enganchar el push ahí + litespeed_finish_request() dejaba el cuerpo vacío en Hostinger
+     * («headers already sent», «Respuesta inválida del servidor» al enviar un mensaje).
+     */
+    public function testPushIsNotHookedToPostSystem(): void
+    {
+        $src = file_get_contents(APPPATH . 'Services/PushService.php');
+        $this->assertStringNotContainsString("Events::on('post_system'", $src);
+        $this->assertStringContainsString('register_shutdown_function', $src);
+    }
+
+    public function testExceptionHandlerMatchesInterfaceReturnType(): void
+    {
+        $m = new \ReflectionMethod(\App\Libraries\ReportableExceptionHandler::class, 'handle');
+        $this->assertSame('void', (string) $m->getReturnType());
+    }
 }
