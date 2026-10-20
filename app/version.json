@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.1.5",
+        "date": "2026-10-21 00:00:00",
+        "description": "Nuevo apartado «Rankings» dentro de Entrenadores (solo administradores): clases, horas, asistencia de los alumnos, alumnos fieles, cierre de listas a tiempo, mapa de horarios y evolución mensual, con filtros por periodo, sede y entrenador individual. Todas las cifras salen de las clases y la asistencia registradas, sin importes."
+    },
+    {
         "version": "2.1.4",
         "date": "2026-10-20 00:00:00",
         "description": "Corregido: ya se pueden adjuntar archivos al crear un ticket o al responderlo (antes daba un error al enviar con cualquier adjunto). Y en la ficha del entrenador, «Últimas sesiones dirigidas» ya no muestra clases futuras: solo las pasadas, de la más reciente a la más antigua; las futuras salen en «Próximas sesiones»."
