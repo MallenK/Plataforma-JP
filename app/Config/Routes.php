@@ -142,6 +142,7 @@ $routes->post('/alumno/save', 'AlumnosController::saveProfile', [
 // ENTRENADORES
 //
 //  /entrenadores              → listado — admin, superadmin
+//  /entrenadores/rankings     → rankings y estadísticas de entrenadores — admin, superadmin (sin dinero)
 //  /entrenadores/nuevo        → formulario nuevo entrenador — admin, superadmin
 //  /entrenadores/:id          → perfil completo — admin, superadmin
 //  /entrenadores/:id/editar   → formulario edición — admin, superadmin
@@ -149,6 +150,10 @@ $routes->post('/alumno/save', 'AlumnosController::saveProfile', [
 // ------------------------------------------------------------
 
 $routes->get('entrenadores', 'EntrenadoresController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('entrenadores/rankings', 'EntrenadoresController::rankings', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 

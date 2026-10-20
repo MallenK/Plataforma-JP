@@ -32,6 +32,38 @@ class EntrenadoresController extends BaseController
     }
 
     // ----------------------------------------------------------------
+    // Rankings y estadísticas (solo lectura, sin dinero)
+    // ----------------------------------------------------------------
+
+    private const RANKING_TABS = ['resumen', 'actividad', 'asistencia', 'alumnos', 'cierre', 'horarios'];
+
+    public function rankings()
+    {
+        $svc    = new \App\Services\CoachRankingService();
+        $period = \App\Services\CoachRankingService::period($this->request->getGet() ?? [], date('Y-m-d'));
+        $tab    = (string) $this->request->getGet('tab');
+        $tab    = in_array($tab, self::RANKING_TABS, true) ? $tab : 'resumen';
+        $locId  = (int) $this->request->getGet('sede') ?: null;
+        $options = $svc->coachOptions();
+        $coachId = (int) $this->request->getGet('entrenador') ?: null;
+        // Un id que no es de ningún entrenador se ignora (nada de pantallas vacías por URL manipulada).
+        if ($coachId && !in_array($coachId, array_column($options, 'id'), true)) {
+            $coachId = null;
+        }
+
+        return view('entrenadores/rankings', [
+            'title'     => 'Rankings de entrenadores — JP Preparation',
+            'tab'       => $tab,
+            'period'    => $period,
+            'locId'     => $locId,
+            'coachId'   => $coachId,
+            'coachOpts' => $options,
+            'locations' => $svc->locations(),
+            'report'    => $svc->report($period['from'], $period['to'], $locId, null, $coachId),
+        ]);
+    }
+
+    // ----------------------------------------------------------------
     // Crear
     // ----------------------------------------------------------------
 
