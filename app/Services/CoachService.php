@@ -207,13 +207,19 @@ class CoachService
         $coach['upcoming_count'] = $stats['upcoming_count'];
         $coach['players_count']  = $stats['students_count'];
 
-        // Últimas sesiones dirigidas (cualquier estado, hasta 10)
+        // Últimas sesiones dirigidas (hasta 10): las ya pasadas, más las de hoy que
+        // ya están cerradas. Las futuras programadas van en «Próximas» (antes se
+        // colaban aquí y salían arriba, con la fecha más lejana primero).
         $coach['sessions'] = $db->table('class_session_coaches csc')
             ->select('cs.id, cs.title, cs.session_date, cs.start_time, cs.end_time,
                       cs.status, l.name AS location_name, cs.location_custom')
             ->join('class_sessions cs', 'cs.id = csc.session_id')
             ->join('locations l', 'l.id = cs.location_id', 'left')
             ->where('csc.user_id', $id)
+            ->groupStart()
+                ->where('cs.session_date <', $today)
+                ->orWhere('cs.status', 'completed')
+            ->groupEnd()
             ->orderBy('cs.session_date', 'DESC')
             ->orderBy('cs.start_time', 'DESC')
             ->limit(10)

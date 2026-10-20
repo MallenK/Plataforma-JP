@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.1.4",
+        "date": "2026-10-20 00:00:00",
+        "description": "Corregido: ya se pueden adjuntar archivos al crear un ticket o al responderlo (antes daba un error al enviar con cualquier adjunto). Y en la ficha del entrenador, «Últimas sesiones dirigidas» ya no muestra clases futuras: solo las pasadas, de la más reciente a la más antigua; las futuras salen en «Próximas sesiones»."
+    },
+    {
         "version": "2.1.3",
         "date": "2026-10-20 00:00:00",
         "description": "Los derechos de imagen del alumno ahora se pueden marcar o desmarcar directamente desde su ficha y desde su perfil, sin botón de guardar: el cambio se guarda al instante. Pueden hacerlo todos los roles; el alumno, solo el suyo."
