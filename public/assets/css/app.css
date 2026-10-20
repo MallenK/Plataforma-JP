@@ -2844,3 +2844,18 @@ a.row-link-anchor:focus-visible { outline: 2px solid var(--accent); outline-offs
                        display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
 .ay-note { background:#fffbeb; color:#92400e; border-radius:10px; padding:10px 12px; font-size:15px; margin-top:8px; }
 .ay-ok   { background:#ecfdf5; color:#065f46; border-radius:10px; padding:10px 12px; font-size:15px; margin-top:8px; }
+
+
+/* ── Tablet táctil: objetivos de toque ≥ 40-44 px ─────────────────────
+   Solo pantallas táctiles (pointer:coarse) MÁS anchas que el móvil (>768px):
+   iPad/Android en horizontal (1280×800) que usan el layout de escritorio.
+   No afecta a ratón/trackpad ni al móvil (que tiene sus propias reglas). */
+@media (pointer: coarse) and (min-width: 769px) {
+    .btn-jp           { min-height: 44px; }
+    .btn-jp-sm        { min-height: 40px; padding: 8px 14px; }
+    .btn-jp-icon      { width: 44px; height: 44px; }
+    .btn-jp-sm.btn-jp-icon { width: 40px; height: 40px; }
+    .form-control-jp  { min-height: 44px; font-size: 16px; }   /* 16px: Safari no hace zoom al enfocar */
+    .sidebar-nav-link { min-height: 44px; }
+    .mobile-menu-btn  { width: 44px; height: 44px; }
+}
