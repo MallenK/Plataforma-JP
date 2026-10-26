@@ -268,10 +268,35 @@ class AlumnosController extends BaseController
         return redirect()->back();
     }
 
+    /**
+     * Pantalla para volver a habilitar alumnos dados de baja.
+     * Solo admin / superadmin (filtro en Routes.php).
+     */
+    public function inactivos()
+    {
+        return view('alumnos/inactivos', [
+            'title'   => 'Alumnos inactivos — JP Preparation',
+            'players' => $this->playerService->getInactivePlayers(),
+        ]);
+    }
+
     public function reactivate(int $id)
     {
+        $target = (new \App\Models\UserModel())->find($id);
+
+        if (! $target || ($target['role'] ?? '') !== 'player') {
+            session()->setFlashdata('error', 'Alumno no encontrado.');
+            return redirect()->to('/alumnos/inactivos');
+        }
+        if (($target['status'] ?? '') !== 'inactive') {
+            session()->setFlashdata('error', 'Este alumno no está dado de baja.');
+            return redirect()->back();
+        }
+
         $this->playerService->reactivateAlumno($id);
-        session()->setFlashdata('success', 'Alumno reactivado correctamente.');
+        \App\Services\AuditService::record('user', $id, \App\Services\AuditService::RESTORE,
+            ['status' => 'inactive'], ['status' => 'active'], 'Alumno reactivado desde Alumnos inactivos');
+        session()->setFlashdata('success', 'Alumno "' . $target['name'] . '" reactivado correctamente.');
 
         return redirect()->back();
     }
