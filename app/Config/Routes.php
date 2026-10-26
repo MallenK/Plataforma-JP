@@ -81,6 +81,7 @@ $routes->post('dashboard/stats', 'DashboardController::getStats', [
 //  /alumnos/:id/editar   → formulario edición — admin, superadmin
 //  /alumnos/:id/eliminar → baja lógica (POST) — admin, superadmin
 //  /alumnos/:id/derechos-imagen → interruptor (POST, JSON) — todos los roles; el alumno solo el suyo
+//  /alumnos/inactivos    → alumnos dados de baja + reactivar (POST /alumnos/:id/reactivar) — admin, superadmin
 //  /alumno               → perfil propio — alumno + admin/superadmin para editar
 //  /alumno/save          → guardar perfil — alumno + admin/superadmin
 // ------------------------------------------------------------
@@ -93,6 +94,10 @@ $routes->get('/alumnos/nuevo', 'AlumnosController::create', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 $routes->post('/alumnos/nuevo', 'AlumnosController::store', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('/alumnos/inactivos', 'AlumnosController::inactivos', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 

@@ -37,6 +37,19 @@ class PlayerService
             ->findAll();
     }
 
+    /** Alumnos dados de baja (status 'inactive'), los más recientes primero. */
+    public function getInactivePlayers(): array
+    {
+        return $this->userModel
+            ->select('users.*, player_profiles.id as profile_id')
+            ->join('player_profiles', 'player_profiles.player_id = users.id', 'left')
+            ->where('users.role', 'player')
+            ->where('users.status', 'inactive')
+            ->orderBy('users.updated_at', 'DESC')
+            ->orderBy('users.name', 'ASC')
+            ->findAll();
+    }
+
     public function getProfile($playerId)
     {
         return $this->profileModel
