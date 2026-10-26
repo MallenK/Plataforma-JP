@@ -21,7 +21,10 @@ $tab = $tab ?? '';
 // Sin acceso total a Finanzas solo existe la «Revisión de clases» (FinanceAccessService).
 $finFullAccess = \App\Services\FinanceAccessService::canFull();
 if (!$finFullAccess) {
-    $finTabs = ['revision' => ['Revisión de clases', 'bi-clipboard-check', 'finanzas/revision', false]];
+    $finTabs = [
+        'revision'       => ['Revisión de clases', 'bi-clipboard-check', 'finanzas/revision',       false],
+        'ayuda_revision' => ['Ayuda',              'bi-life-preserver',  'finanzas/ayuda-revision', false],
+    ];
 }
 $keep = array_filter([
     'mes'   => $_GET['mes']   ?? null,

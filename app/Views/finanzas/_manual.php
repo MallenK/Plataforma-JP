@@ -9,35 +9,7 @@ $shot = static function (string $file, string $caption) use ($img) {
     return '<figure class="fm-shot"><img src="' . esc($img($file), 'attr') . '" alt="' . esc($caption, 'attr') . '" loading="lazy"><figcaption>' . esc($caption) . '</figcaption></figure>';
 };
 ?>
-<style>
-.fin-manual { color:#1e293b; font-size:15px; line-height:1.65; max-width:900px; }
-.fin-manual h2 { font-size:24px; font-weight:800; color:#0f172a; margin:36px 0 10px; padding-top:8px; border-top:2px solid #e2e8f0; }
-.fin-manual h2:first-of-type { border-top:0; margin-top:8px; }
-.fin-manual h3 { font-size:18px; font-weight:700; color:#0f172a; margin:24px 0 8px; }
-.fin-manual p { margin:0 0 12px; }
-.fin-manual ul, .fin-manual ol { margin:0 0 14px; padding-left:22px; }
-.fin-manual li { margin-bottom:6px; }
-.fin-manual .fm-box { border-radius:10px; padding:14px 16px; margin:14px 0; font-size:14.5px; }
-.fin-manual .fm-tip { background:#eff6ff; border:1px solid #bfdbfe; }
-.fin-manual .fm-warn { background:#fffbeb; border:1px solid #fde68a; }
-.fin-manual .fm-ok { background:#ecfdf5; border:1px solid #a7f3d0; }
-.fin-manual .fm-box strong:first-child { display:block; margin-bottom:4px; color:#0f172a; }
-.fin-manual table { width:100%; border-collapse:collapse; margin:10px 0 16px; font-size:14px; }
-.fin-manual th, .fin-manual td { border:1px solid #e2e8f0; padding:8px 10px; text-align:left; vertical-align:top; }
-.fin-manual th { background:#f1f5f9; font-weight:700; color:#0f172a; }
-.fin-manual .fm-shot { margin:14px 0 20px; }
-.fin-manual .fm-shot img { width:100%; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 2px 8px rgba(15,23,42,.08); }
-.fin-manual .fm-shot figcaption { font-size:12.5px; color:#64748b; margin-top:6px; text-align:center; }
-.fin-manual .fm-steps { counter-reset:step; list-style:none; padding-left:0; }
-.fin-manual .fm-steps > li { counter-increment:step; position:relative; padding-left:38px; margin-bottom:10px; }
-.fin-manual .fm-steps > li::before { content:counter(step); position:absolute; left:0; top:1px; width:26px; height:26px; border-radius:50%;
-    background:#1d4ed8; color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
-.fin-manual .fm-toc { columns:2; column-gap:32px; font-size:14px; }
-.fin-manual .fm-toc a { color:#1d4ed8; text-decoration:none; }
-.fin-manual kbd, .fin-manual .fm-btn { display:inline-block; font-family:inherit; font-size:13px; font-weight:700; padding:1px 8px; border-radius:6px; background:#f1f5f9; border:1px solid #cbd5e1; color:#0f172a; white-space:nowrap; }
-.fin-manual .fm-q { font-weight:700; color:#0f172a; margin:16px 0 4px; }
-@media (max-width: 640px) { .fin-manual .fm-toc { columns:1; } .fin-manual { font-size:14.5px; } }
-</style>
+<?= view('finanzas/_manual_css') ?>
 
 <div class="fin-manual">
 
@@ -68,7 +40,7 @@ $shot = static function (string $file, string $caption) use ($img) {
 <h2 id="fm-que-es">1. Qué es Finanzas</h2>
 <p>Finanzas es el lugar donde se ve y se controla <strong>todo el dinero de la academia</strong>: lo que se vende, lo que se cobra, lo que se gasta y lo que todavía se debe.</p>
 <ul>
-    <li>Solo lo ven las personas de <strong>administración</strong>. Entrenadores, staff y alumnos no tienen acceso.</li>
+    <li>Solo lo ve <strong>el administrador principal y las personas que él autorice</strong> (Configuración › «Quién ve las finanzas»). El resto de administradores solo ve la <strong>Revisión de clases</strong>, sin ningún importe. Entrenadores, staff y alumnos no tienen acceso.</li>
     <li>Se alimenta sola con lo que ya hacéis en la plataforma: vender bonos, pasar lista, descontar sesiones. Solo hay que añadir a mano los <strong>cobros</strong> y los <strong>gastos</strong>.</li>
     <li><strong>Nada se borra.</strong> Si algo está mal, se <em>anula</em> indicando el motivo: queda tachado y visible, y las cuentas se recalculan solas.</li>
 </ul>
@@ -102,6 +74,7 @@ $shot = static function (string $file, string $caption) use ($img) {
     <li>En el menú de la izquierda, pulsa <span class="fm-btn">Finanzas</span>.</li>
     <li>Arriba verás las <strong>pestañas</strong>: Resumen, Movimientos, Cobros, Gastos, Alumnos, Entrenadores, Análisis, Revisión, Configuración y Ayuda.</li>
 </ol>
+<div class="fm-box fm-tip"><strong>¿Solo ves dos pestañas?</strong>Si eres administrador pero no tienes acceso total a las finanzas, verás únicamente <span class="fm-btn">Revisión de clases</span> y <span class="fm-btn">Ayuda</span>. Es lo normal: solo el administrador principal (y quien él autorice) ve los importes.</div>
 <p>En las pestañas que muestran datos de un periodo hay un selector de <strong>Mes</strong> (o un rango <em>desde / hasta</em>). Por defecto se ve el mes en curso.</p>
 <p>Las listas largas aparecen <strong>por páginas</strong> (25 filas), con un <strong>buscador</strong> encima para encontrar cualquier cosa (un nombre, un importe, un concepto…). Pulsando en el título de una columna se ordena por ella. Con los botones <span class="fm-btn">☰</span> y <span class="fm-btn">▦</span> cambias entre vista de lista y de tarjetas.</p>
 
@@ -111,7 +84,7 @@ $shot = static function (string $file, string $caption) use ($img) {
 <ul>
     <li><strong>Primera fila:</strong> vendido, cobrado, servicio prestado y gastos del periodo.</li>
     <li><strong>Segunda fila:</strong> resultado (cobrado − gastos) y la foto de hoy: pendiente de cobro, sesiones pagadas sin dar y caducado sin usar.</li>
-    <li><strong>Gráfico:</strong> lo vendido (azul) y el servicio prestado (verde) de los últimos 12 meses. Abre <em>Ver como tabla</em> para ver las cifras.</li>
+    <li><strong>Gráfico:</strong> lo vendido (azul) y el servicio prestado (verde) de los últimos 12 meses, contando desde el mes de inicio de las finanzas (octubre de 2026): al principio solo verás los meses ya transcurridos. Abre <em>Ver como tabla</em> para ver las cifras.</li>
     <li><strong>A la derecha:</strong> cuánto se ha cobrado por cada medio de pago y los gastos por categoría.</li>
     <li><strong>Asistencia:</strong> cuántas veces los alumnos vinieron, faltaron o avisaron, y qué gasta sesión.</li>
 </ul>
@@ -190,19 +163,27 @@ $shot = static function (string $file, string $caption) use ($img) {
 
 <h2 id="fm-revision">11. Revisión</h2>
 <p>La lista de <strong>cosas pendientes de revisar a mano</strong> para que las cuentas cuadren. El número de la pestaña te dice cuántas quedan.</p>
+<div class="fm-box fm-tip"><strong>Quién ve qué</strong>Los administradores sin acceso total ven solo el bloque <em>Clases</em> (los cuatro primeros apartados de la tabla), sin ningún importe, y tienen su propia pestaña <span class="fm-btn">Ayuda</span> con esa parte explicada. Los apartados de bonos y dinero son solo para el acceso total.</div>
 <?= $shot('revision.png', 'Finanzas › Revisión') ?>
 <table>
     <tr><th style="width:34%">Apartado</th><th>Qué hacer</th></tr>
-    <tr><td><strong>Sesiones pasadas sin cerrar</strong></td><td>Ábrela: si se dio, pasa lista y ciérrala; si no se dio, cancélala.</td></tr>
-    <tr><td><strong>Clases dadas sin descontar</strong></td><td>Pulsa <em>Revisarlas</em> y elige: saldar con un bono, «ya está pagada» (se cobró aparte) o «no cobrar».</td></tr>
-    <tr><td><strong>Bonos con precio estimado</strong></td><td>Escribe lo que pagó de verdad el alumno y pulsa <em>Confirmar</em>.</td></tr>
-    <tr><td><strong>Caducados sin usar</strong></td><td>Solo es un aviso. Si quieres darle más tiempo al alumno, amplía la caducidad desde la ficha del bono.</td></tr>
+    <tr><td><strong>Falta pasar lista</strong></td><td>La clase ya pasó y nadie marcó quién vino. Ábrela y marca la asistencia; si en realidad no se dio, cancélala.</td></tr>
+    <tr><td><strong>Falta cerrar la clase</strong></td><td>Ya se marcó quién vino, pero la clase sigue abierta y no cuenta en Finanzas. Ciérralas todas de golpe con el botón del apartado, o ábrelas una a una.</td></tr>
+    <tr><td><strong>Sin entrenador</strong></td><td>Tiene alumnos pero nadie la da. Ábrela y elige el entrenador. Ya no se pueden crear clases así.</td></tr>
+    <tr><td><strong>Clases vacías</strong></td><td>Sin ningún alumno: casi seguro un error o una prueba. Elimínalas (queda registrado). Si alguna sirve, apunta a un alumno.</td></tr>
+    <tr><td><strong>Clases sin bono descontado</strong> <em>(acceso total)</em></td><td>Pulsa <em>Revisarlas</em> y elige: saldar con un bono, «ya está pagada» (se cobró aparte) o «no cobrar».</td></tr>
+    <tr><td><strong>Bonos con precio estimado</strong> <em>(acceso total)</em></td><td>Escribe lo que pagó de verdad el alumno y pulsa <em>Confirmar</em>.</td></tr>
+    <tr><td><strong>Caducados sin usar</strong> <em>(acceso total)</em></td><td>Solo es un aviso. Si quieres darle más tiempo al alumno, amplía la caducidad desde la ficha del bono.</td></tr>
 </table>
+<p>Con acceso total también ves el aviso del <strong>cierre de la revisión inicial</strong>, que da por buenas en bloque las clases y precios anteriores a empezar con Finanzas. Úsalo una sola vez, después de revisar que las cifras tienen sentido.</p>
 
 <h2 id="fm-config">12. Configuración</h2>
+<?= $shot('config.png', 'Finanzas › Configuración') ?>
 <ul>
-    <li><strong>Reglas de asistencia:</strong> activar o desactivar el descuento automático y fijar con cuántas horas debe avisar un alumno (por defecto, 24).</li>
+    <li><strong>Reglas de asistencia:</strong> activar o desactivar el descuento automático (<strong>viene desactivado</strong>) y fijar con cuántas horas debe avisar un alumno (por defecto, 24).</li>
     <li><strong>Las finanzas cuentan desde:</strong> fecha a partir de la cual cuenta todo en Finanzas (por defecto, el 1 de octubre de 2026). Lo anterior —ventas, cobros, gastos, clases y los bonos vendidos antes— no sale en ninguna cifra, lista ni en Revisión. No se borra nada.</li>
+    <li><strong>Quién ve las finanzas:</strong> las personas con acceso total, además del administrador principal. Solo el administrador principal puede cambiar esta lista y cada cambio queda en el registro de auditoría. Quien no esté marcado solo ve la Revisión de clases.</li>
+    <li><strong>Usuarios que no cuentan en las finanzas:</strong> para operar con cuentas de prueba sin ensuciar las cifras. Un usuario marcado aquí desaparece de ventas, cobros, bonos, caducados, deudas, Alumnos, Entrenadores y Revisión, y <strong>también las clases en las que participe</strong>, como alumno o como entrenador. No depende de que esté de baja. En el resto de la plataforma sigue funcionando igual, y al quitarlo de la lista vuelve a contar. Solo lo cambia el administrador principal, y queda registrado.</li>
     <li><strong>Medios de pago</strong> y <strong>categorías</strong> de gasto e ingreso: añadir, cambiar el nombre o archivar. Archivar no borra lo ya registrado.</li>
     <li><strong>IVA y facturas:</strong> por ahora está desactivado; se activará cuando el gestor lo confirme.</li>
 </ul>
@@ -217,6 +198,7 @@ $shot = static function (string $file, string $caption) use ($img) {
     <li>Si paga en ese momento, marca <strong>Cobrado ahora</strong>, elige cómo paga y revisa el importe. Si no paga, déjalo sin marcar: quedará pendiente de cobro.</li>
     <li>Pulsa <span class="fm-btn">Crear bono</span>. La venta (y el cobro, si lo marcaste) ya aparecen en Finanzas.</li>
 </ol>
+<div class="fm-box fm-warn"><strong>Solo con acceso total</strong>Los campos de descuento y «Cobrado ahora» solo aparecen para quien tiene acceso total a las finanzas. Un administrador sin ese acceso puede asignar el bono, pero sin descuento ni cobro.</div>
 
 <h3>Registrar un pago de un alumno</h3>
 <ol class="fm-steps">
@@ -244,7 +226,8 @@ $shot = static function (string $file, string $caption) use ($img) {
 <div class="fm-box fm-warn"><strong>Importante</strong>No hay botón de borrar a propósito: así siempre queda constancia de qué pasó, cuándo y quién lo hizo.</div>
 
 <h3>Cuando un alumno falta o avisa tarde</h3>
-<p>Al <strong>pasar lista</strong>, si marcas a un alumno como <em>falta sin justificar</em>, o como <em>avisó ausencia</em> y avisó con menos de 24 horas, la plataforma <strong>descuenta la sesión sola</strong> de su bono (del que caduca antes) y te lo dice en un mensaje.</p>
+<div class="fm-box fm-warn"><strong>El descuento automático viene desactivado</strong>Se activa en <em>Configuración › Reglas de asistencia</em>. Mientras esté desactivado, la plataforma no descuenta nada sola: registra la falta o el aviso tardío y quien pasa lista decide si descuenta la sesión, a mano, desde Pasar lista.</div>
+<p>Con el descuento automático <strong>activado</strong>, al <strong>pasar lista</strong>, si marcas a un alumno como <em>falta sin justificar</em>, o como <em>avisó ausencia</em> y avisó con menos de 24 horas, la plataforma <strong>descuenta la sesión sola</strong> de su bono (del que caduca antes) y te lo dice en un mensaje.</p>
 <p>Si en ese caso concreto no quieres cobrarle la sesión, en la misma lista pulsa <span class="fm-btn">Devolver bono</span> o cambia su estado a <em>ausencia justificada</em>.</p>
 
 <h3>Mandar los números al gestor</h3>
@@ -255,11 +238,12 @@ $shot = static function (string $file, string $caption) use ($img) {
 
 <h2 id="fm-reglas">14. Reglas importantes</h2>
 <h3>Qué gasta una sesión del bono</h3>
+<div class="fm-box fm-warn"><strong>Ojo con el descuento automático</strong>En la tabla, «automáticamente» significa <em>si el descuento automático está activado</em>. Por defecto está desactivado: entonces esas situaciones quedan registradas y la sesión se descuenta a mano.</div>
 <table>
     <tr><th>Situación al pasar lista</th><th>¿Gasta sesión?</th></tr>
     <tr><td>Presente</td><td>Sí</td></tr>
-    <tr><td>Falta sin justificar</td><td>Sí, automáticamente</td></tr>
-    <tr><td>Avisó ausencia con menos de 24 horas (o sin hora de aviso)</td><td>Sí, automáticamente</td></tr>
+    <tr><td>Falta sin justificar</td><td>Sí (automáticamente si está activado; si no, a mano)</td></tr>
+    <tr><td>Avisó ausencia con menos de 24 horas (o sin hora de aviso)</td><td>Sí (automáticamente si está activado; si no, a mano)</td></tr>
     <tr><td>Avisó ausencia con 24 horas o más</td><td>No</td></tr>
     <tr><td>Ausencia justificada</td><td>No</td></tr>
 </table>
@@ -291,8 +275,12 @@ $shot = static function (string $file, string $caption) use ($img) {
 <p>Son los pagos anteriores a Finanzas, de los que no se sabe cómo se pagaron. Los nuevos siempre llevan su medio de pago.</p>
 <p class="fm-q">Se ha descontado una sesión a un alumno que avisó a tiempo.</p>
 <p>Abre Pasar lista de esa clase y pulsa <em>Devolver bono</em> en ese alumno, o cambia su estado a «ausencia justificada».</p>
-<p class="fm-q">¿Los entrenadores ven estas cifras?</p>
-<p>No. Finanzas solo lo ve administración. Los alumnos solo ven sus propios pagos.</p>
+<p class="fm-q">¿Quién ve estas cifras?</p>
+<p>Solo el administrador principal y las personas que él autorice. Los demás administradores ven únicamente la Revisión de clases, sin importes. Los entrenadores y el staff no tienen acceso, y los alumnos solo ven sus propios pagos.</p>
+<p class="fm-q">Soy administrador y no veo las finanzas, ¿es un fallo?</p>
+<p>No: es lo previsto. Tienes la pestaña <em>Revisión de clases</em> (para comprobar que las clases se dieron, se pasó lista y se cerraron) y su <em>Ayuda</em>. Si necesitas ver los importes, pídeselo al administrador principal.</p>
+<p class="fm-q">¿Puedo probar cosas con una cuenta de prueba sin ensuciar las cifras?</p>
+<p>Sí. El administrador principal marca esa cuenta en <em>Configuración › Usuarios que no cuentan en las finanzas</em>. Desde ese momento ni ella ni sus clases cuentan en ninguna cifra, aunque siga funcionando en la plataforma. Se puede quitar de la lista cuando se quiera.</p>
 <p class="fm-q">¿Puedo ver meses anteriores?</p>
 <p>Sí: usa el selector de mes, o un rango «desde / hasta», en la parte de arriba de cada pestaña.</p>
 

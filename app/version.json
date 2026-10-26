@@ -1,13 +1,8 @@
 [
     {
-        "version": "2.1.5",
-        "date": "2026-10-21 00:00:00",
-        "description": "Nuevo apartado «Rankings» dentro de Entrenadores (solo administradores): clases, horas, asistencia de los alumnos, alumnos fieles, cierre de listas a tiempo, mapa de horarios y evolución mensual, con filtros por periodo, sede y entrenador individual. Todas las cifras salen de las clases y la asistencia registradas, sin importes."
-    },
-    {
-        "version": "2.1.4",
-        "date": "2026-10-20 00:00:00",
-        "description": "Corregido: ya se pueden adjuntar archivos al crear un ticket o al responderlo (antes daba un error al enviar con cualquier adjunto). Y en la ficha del entrenador, «Últimas sesiones dirigidas» ya no muestra clases futuras: solo las pasadas, de la más reciente a la más antigua; las futuras salen en «Próximas sesiones»."
+        "version": "2.1.6",
+        "date": "2026-10-26 00:00:00",
+        "description": "Nueva pantalla «Alumnos inactivos» (solo administradores): lista los alumnos dados de baja y permite volver a habilitarlos con un botón. Desde Alumnos hay un acceso directo."
     },
     {
         "version": "2.1.3",
@@ -18,6 +13,11 @@
         "version": "2.1.2",
         "date": "2026-10-19 00:00:00",
         "description": "Corregido el error «Respuesta inválida del servidor» al enviar un mensaje (y fallos parecidos al reportar un problema, cambiar el estado de un ticket o enviar una notificación). El mensaje sí se guardaba, pero la respuesta llegaba vacía porque el aviso al móvil se enviaba antes de responder. Ahora se envía después. También se corrige la página de error, que fallaba a su vez y tapaba el problema."
+    },
+    {
+        "version": "2.1.1",
+        "date": "2026-10-19 00:00:00",
+        "description": "Ayuda de Finanzas actualizada. El manual explica ahora quién ve cada parte (el administrador principal y quien él autorice ven las finanzas completas; el resto de administradores ve solo la Revisión de clases), que el descuento automático de sesiones viene desactivado, los cuatro apartados de clases de la Revisión, la nueva opción de excluir cuentas de prueba y las pantallas de Configuración, con capturas y PDF nuevos. Además, los administradores sin acceso total tienen ahora su propia pestaña «Ayuda» dentro de la Revisión de clases, solo con texto y sin ningún importe."
     },
     {
         "version": "2.1.0",
