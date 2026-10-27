@@ -19,7 +19,9 @@ use CodeIgniter\Router\RouteCollection;
 //  v1.33.0 «Nada se borra»: las rutas que antes eliminaban (bonos, tipos de
 //  bono, sedes, staff, sesiones, quitar alumno) ahora anulan, archivan, dan de
 //  baja o se niegan si hay histórico. Todo queda en `audit_log`.
-//  coach      → sus grupos, alumnos asignados, organizador, clases
+//  coach      → sus grupos, alumnos asignados, clases
+//  Organización (/organizacion*) → superadmin, admin, staff, coach (NO player).
+//               Cada ítem es del equipo o personal (solo su creador; ver OrganizacionService).
 //  alumno     → su propio perfil y documentación
 //  staff      → documentación
 //
@@ -253,6 +255,18 @@ $routes->get('clases/(:num)', 'ClasesController::show/$1', [
 $routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
     'filter' => 'auth',
 ]);
+
+// ── Organización interna (TICKET-014): tareas por estados, planificador y agenda ──
+// Todos los roles salvo el alumno. La visibilidad (equipo/personal) la aplica el servicio.
+$routes->group('organizacion', ['filter' => ['auth', 'role:superadmin,admin,staff,coach']], static function ($routes) {
+    $routes->get('/',                          'OrganizacionController::index');
+    $routes->get('data',                       'OrganizacionController::data');
+    $routes->post('tareas/guardar',            'OrganizacionController::taskSave');
+    $routes->post('tareas/(:num)/mover',       'OrganizacionController::taskMove/$1');
+    $routes->post('tareas/(:num)/archivar',    'OrganizacionController::taskArchive/$1');
+    $routes->post('eventos/guardar',           'OrganizacionController::eventSave');
+    $routes->post('eventos/(:num)/archivar',   'OrganizacionController::eventArchive/$1');
+});
 
 // ── Ayuda / cómo funciona (pensada para alumnos y familias; cualquier usuario con sesión) ──
 $routes->get('ayuda', 'AyudaController::index', ['filter' => 'auth']);

@@ -18,7 +18,7 @@ class AjustesNotificacionesController extends BaseController
 
         return view('configuracion/notificaciones', [
             'title'      => 'Notificaciones — JP Preparation',
-            'categories' => NotificationPreferenceModel::categories(),
+            'categories' => NotificationPreferenceModel::categories($this->currentRole()),
             'prefs'      => $prefs->forUser((int) $this->currentUserId()),
         ]);
     }

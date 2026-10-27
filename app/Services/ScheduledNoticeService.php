@@ -36,11 +36,11 @@ class ScheduledNoticeService
     /**
      * Pasada completa, sin freno.
      *
-     * @return array{reminders:int, expiry:int}
+     * @return array{reminders:int, expiry:int, org:int}
      */
     public static function run(bool $forceExpiry = false): array
     {
-        $out = ['reminders' => 0, 'expiry' => 0];
+        $out = ['reminders' => 0, 'expiry' => 0, 'org' => 0];
         try {
             $out['reminders'] = (new ClassNoticeService())->sendReminders();
         } catch (\Throwable $e) {
@@ -50,6 +50,11 @@ class ScheduledNoticeService
             $out['expiry'] = (new BonoControlService())->runExpiryAlerts($forceExpiry);
         } catch (\Throwable $e) {
             log_message('error', 'ScheduledNoticeService expiry: ' . $e->getMessage());
+        }
+        try {
+            $out['org'] = (new OrgNoticeService())->sendReminders();
+        } catch (\Throwable $e) {
+            log_message('error', 'ScheduledNoticeService org: ' . $e->getMessage());
         }
         return $out;
     }

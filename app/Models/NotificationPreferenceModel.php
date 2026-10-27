@@ -24,11 +24,12 @@ class NotificationPreferenceModel extends Model
     public const CAT_BONOS    = 'bonos';
     public const CAT_TICKETS  = 'tickets';
     public const CAT_AVISOS   = 'avisos';
+    public const CAT_ORGANIZACION = 'organizacion';
 
     /** @return array<string, array{label: string, desc: string, icon: string}> */
-    public static function categories(): array
+    public static function categories(?string $role = null): array
     {
-        return [
+        $all = [
             self::CAT_MENSAJES => ['label' => 'Mensajes', 'icon' => 'bi-chat-dots',
                 'desc' => 'Cuando alguien te escribe en el chat.'],
             self::CAT_CLASES   => ['label' => 'Clases', 'icon' => 'bi-calendar3',
@@ -39,7 +40,15 @@ class NotificationPreferenceModel extends Model
                 'desc' => 'Respuestas, cambios de estado y asignaciones de tus tickets.'],
             self::CAT_AVISOS   => ['label' => 'Avisos de la academia', 'icon' => 'bi-megaphone',
                 'desc' => 'Comunicados y notificaciones enviados por el equipo de JP Preparation.'],
+            self::CAT_ORGANIZACION => ['label' => 'Organización', 'icon' => 'bi-kanban',
+                'desc' => 'Tareas que te asignan, eventos a los que te invitan y recordatorios de fechas límite y eventos.'],
         ];
+
+        // El alumno no tiene la pantalla de Organización: no se le ofrece la categoría.
+        if (in_array($role, ['player', 'alumno'], true)) {
+            unset($all[self::CAT_ORGANIZACION]);
+        }
+        return $all;
     }
 
     /**
@@ -58,6 +67,8 @@ class NotificationPreferenceModel extends Model
             NotificationModel::SOURCE_CLASS        => self::CAT_CLASES,
             NotificationModel::SOURCE_BONO         => self::CAT_BONOS,
             NotificationModel::SOURCE_TICKET       => self::CAT_TICKETS,
+            NotificationModel::SOURCE_ORG_TASK,
+            NotificationModel::SOURCE_ORG_EVENT    => self::CAT_ORGANIZACION,
             default                                => self::CAT_AVISOS,
         };
     }
