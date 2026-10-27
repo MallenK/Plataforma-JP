@@ -130,6 +130,17 @@ if ($isAdmin) {
             <?php endif; ?>
 
 
+            <!-- Organización — todos los roles salvo el alumno (agenda, planificador, tareas) -->
+            <?php if (!$isAlumno): ?>
+            <li class="sidebar-nav-item">
+                <a href="<?= base_url('organizacion') ?>"
+                   class="sidebar-nav-link <?= sidebarActive('/organizacion', $currentUri) ?>">
+                    <i class="bi bi-kanban-fill"></i>
+                    Organización
+                </a>
+            </li>
+            <?php endif; ?>
+
             <!-- Mensajes — todos los roles -->
             <li class="sidebar-nav-item">
                 <a href="<?= base_url('mensajes') ?>"

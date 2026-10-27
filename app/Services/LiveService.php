@@ -44,6 +44,7 @@ class LiveService
                 'class'  => $this->safe(fn () => $this->classStamp($userId, $role), null),
                 'bono'   => $this->safe(fn () => $this->bonoStamp($userId, $role), null),
                 'ticket' => $this->safe(fn () => $this->ticketStamp($userId, $role), null),
+                'org'    => $this->safe(fn () => $this->orgStamp($userId, $role), null),
             ],
         ];
     }
@@ -139,6 +140,23 @@ class LiveService
             return self::stamp($r['m'] ?? null, $r['n'] ?? 0);
         }
         return null;
+    }
+
+    /** Organización: tareas y eventos visibles para esta persona (equipo + propios). Null si su rol no la tiene. */
+    private function orgStamp(int $userId, string $role): ?string
+    {
+        if (!OrganizacionService::canAccess($role) || !$this->db->tableExists('org_tasks')) {
+            return null;
+        }
+        $t = $this->db->query(
+            "SELECT MAX(updated_at) AS m, COUNT(*) AS n FROM org_tasks WHERE archived_at IS NULL AND (visibility = 'team' OR created_by = ?)",
+            [$userId]
+        )->getRowArray();
+        $e = $this->db->query(
+            "SELECT MAX(updated_at) AS m, COUNT(*) AS n FROM org_events WHERE archived_at IS NULL AND (visibility = 'team' OR created_by = ?)",
+            [$userId]
+        )->getRowArray();
+        return self::stamp($t['m'] ?? null, $t['n'] ?? 0, $e['m'] ?? null, $e['n'] ?? 0);
     }
 
     /** Tickets: admin = todos; el resto, los que abrió. Incluye sus respuestas. */

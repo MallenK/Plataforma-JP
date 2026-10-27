@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.2.0",
+        "date": "2026-10-27 00:00:00",
+        "description": "Nueva pantalla «Organización» para todos los roles salvo el alumno: tablero de tareas por estados (Pendiente, En curso, En revisión, Hecho) y agenda con eventos del equipo y tus clases. Cada tarea o evento puede ser del equipo o «Solo yo» (privado). Avisos al asignarte una tarea, invitarte a un evento o cambiarlo, y recordatorios de eventos y fechas límite; nueva categoría «Organización» en las preferencias de notificación."
+    },
+    {
         "version": "2.1.5",
         "date": "2026-10-21 00:00:00",
         "description": "Nuevo apartado «Rankings» dentro de Entrenadores (solo administradores): clases, horas, asistencia de los alumnos, alumnos fieles, cierre de listas a tiempo, mapa de horarios y evolución mensual, con filtros por periodo, sede y entrenador individual. Todas las cifras salen de las clases y la asistencia registradas, sin importes."
