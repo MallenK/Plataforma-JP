@@ -165,12 +165,15 @@ class FinanceReportService
                                    GROUP BY c.name ORDER BY v DESC", [$from, $to])->getResultArray();
         $service = $this->serviceValue($from, $to);
 
-        $due = $this->scalar("SELECT COALESCE(SUM(c.amount_cents - COALESCE(x.paid, 0)), 0)
-                              FROM fin_charges c
-                              LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) paid FROM fin_payment_allocations a
-                                         JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x
-                                     ON x.charge_id = c.id
-                              WHERE c.voided_at IS NULL AND c.charged_at >= ? AND c.amount_cents > COALESCE(x.paid, 0)" . FinanceExclusion::playerSql('c.player_id'), [$start]);
+        // Pendiente a hoy: todo lo vendido desde el arranque (due) y, aparte, solo lo vendido dentro del periodo (due_period).
+        $dueSql = "SELECT COALESCE(SUM(c.amount_cents - COALESCE(x.paid, 0)), 0)
+                   FROM fin_charges c
+                   LEFT JOIN (SELECT a.charge_id, SUM(a.amount_cents) paid FROM fin_payment_allocations a
+                              JOIN fin_payments p ON p.id = a.payment_id AND p.voided_at IS NULL GROUP BY a.charge_id) x
+                          ON x.charge_id = c.id
+                   WHERE c.voided_at IS NULL AND c.amount_cents > COALESCE(x.paid, 0)" . FinanceExclusion::playerSql('c.player_id');
+        $due       = $this->scalar($dueSql . " AND c.charged_at >= ?", [$start]);
+        $duePeriod = $this->scalar($dueSql . " AND c.charged_at BETWEEN ? AND ?", [$from, $to]);
         $prepaid = $this->db->query("SELECT COALESCE(SUM(sessions_remaining),0) s,
                                             COALESCE(SUM(price_cents * sessions_remaining / NULLIF(sessions_total,0)),0) v
                                      FROM player_bonos WHERE voided_at IS NULL AND sessions_remaining > 0 AND created_at >= ?
@@ -188,6 +191,7 @@ class FinanceReportService
             'expenses'  => ['count' => (int) $exp['n'], 'cents' => (int) $exp['v'], 'by_category' => $byCat],
             'result'    => (int) $paid['v'] - (int) $exp['v'],
             'due'       => $due,
+            'due_period' => $duePeriod,
             'prepaid'   => ['sessions' => (int) $prepaid['s'], 'cents' => (int) round((float) $prepaid['v'])],
             'expired'   => ['count' => (int) $expired['n'], 'sessions' => (int) $expired['s'], 'cents' => (int) round((float) $expired['v'])],
             'avg_session_cents' => (int) $avg['s'] > 0 ? (int) round((int) $avg['v'] / (int) $avg['s']) : 0,
