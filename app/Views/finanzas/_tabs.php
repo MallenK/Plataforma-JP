@@ -15,7 +15,8 @@ $finTabs = [
     'analisis'     => ['Análisis',      'bi-graph-up',        'finanzas/analisis',     true],
     'revision'     => ['Revisión',      'bi-clipboard-check', 'finanzas/revision',     false],
     'config'       => ['Configuración', 'bi-sliders',         'finanzas/configuracion', false],
-    'ayuda'        => ['Ayuda',         'bi-life-preserver',  'finanzas/ayuda',        false],
+    'exportar'     => ['Exportar',      'bi-download',        'finanzas/exportar',     true],
+    'ayuda'        => ['Ayuda',        'bi-life-preserver',  'finanzas/ayuda',        false],
 ];
 $tab = $tab ?? '';
 // Sin acceso total a Finanzas solo existe la «Revisión de clases» (FinanceAccessService).
@@ -30,6 +31,14 @@ $keep = array_filter([
 ], fn($v) => is_string($v) && preg_match('/^[0-9-]{7,10}$/', $v));
 $qs = $keep ? '?' . http_build_query($keep) : '';
 ?>
+<style>
+.fin-section{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:4px 0 10px}
+.fin-more>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent-dark);padding:8px 0;list-style:none}
+.fin-more>summary::before{content:"▸";display:inline-block;margin-right:6px;transition:transform .15s}
+.fin-more[open]>summary::before{transform:rotate(90deg)}
+.fin-tabs{overflow-x:auto;flex-wrap:nowrap!important}
+.fin-tabs .calendar-view-tab{white-space:nowrap}
+</style>
 <nav class="calendar-view-tabs fin-tabs mb-3" aria-label="<?= $finFullAccess ? 'Secciones de Finanzas' : 'Revisión de clases' ?>" style="flex-wrap:wrap;gap:4px">
     <?php foreach ($finTabs as $key => [$label, $icon, $url, $periodic]): ?>
     <a href="<?= base_url($url) . ($periodic ? $qs : '') ?>" class="calendar-view-tab <?= $tab === $key ? 'active' : '' ?>"

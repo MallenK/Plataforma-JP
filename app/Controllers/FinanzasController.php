@@ -605,6 +605,80 @@ class FinanzasController extends BaseController
     }
 
     // ────────────────────────────────────────────────────────────────
+    //  Exportar todos los datos (solo acceso total: la ruta exige finance:full)
+    // ────────────────────────────────────────────────────────────────
+
+    public function exportar()
+    {
+        return view('finanzas/exportar', $this->base('exportar', [
+            'canZip' => class_exists(\ZipArchive::class),
+        ]));
+    }
+
+    /** Descarga: `alcance=todo` (desde el inicio de las finanzas hasta hoy) o el periodo elegido; `formato=json|zip`; `anonimo=1`. */
+    public function exportarDescargar()
+    {
+        $scope = $this->request->getGet('alcance') === 'periodo' ? 'periodo' : 'todo';
+        $anon  = (bool) $this->request->getGet('anonimo');
+        $zip   = $this->request->getGet('formato') === 'zip' && class_exists(\ZipArchive::class);
+        $start = FinanceService::startDate();
+        $p     = $this->period();
+        $from  = $scope === 'todo' ? $start : $p['from'];
+        $to    = $scope === 'todo' ? date('Y-m-d') : $p['to'];
+
+        $sets   = (new \App\Services\FinanceExportService())->build($from, $to, $anon);
+        $readme = \App\Services\FinanceExportService::readme($from, $to, $anon, $sets);
+        $name   = 'finanzas_' . $from . '_' . $to . ($anon ? '_anonimo' : '');
+        $rows   = array_sum(array_map(fn($s) => count($s['rows']), $sets));
+
+        AuditService::record('finance_export', 0, AuditService::VIEW, null, [
+            'from' => $from, 'to' => $to, 'anonimo' => $anon, 'formato' => $zip ? 'zip' : 'json', 'filas' => $rows,
+        ]);
+
+        if ($zip) {
+            $tmp = tempnam(sys_get_temp_dir(), 'finexp');
+            $za  = new \ZipArchive();
+            $za->open($tmp, \ZipArchive::OVERWRITE);
+            $za->addFromString('LEEME.txt', $readme);
+            foreach ($sets as $key => $s) {
+                $za->addFromString($key . '.csv', $this->csvString($s['columns'], $s['rows']));
+            }
+            $za->close();
+            $body = (string) file_get_contents($tmp);
+            @unlink($tmp);
+            return $this->response->setHeader('Content-Type', 'application/zip')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $name . '.zip"')
+                ->setHeader('Cache-Control', 'no-store')->setBody($body);
+        }
+
+        $json = [
+            'leeme'   => $readme,
+            'periodo' => ['desde' => $from, 'hasta' => $to],
+            'datos'   => array_map(fn($s) => [
+                'titulo' => $s['title'],
+                'filas'  => array_map(fn($r) => array_combine($s['columns'], array_pad($r, count($s['columns']), null)), $s['rows']),
+            ], $sets),
+        ];
+        return $this->response->setHeader('Content-Type', 'application/json; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $name . '.json"')
+            ->setHeader('Cache-Control', 'no-store')
+            ->setBody(json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_PARTIAL_OUTPUT_ON_ERROR));
+    }
+
+    /** CSV (UTF-8 con BOM, separador «;») como texto. */
+    private function csvString(array $header, array $rows): string
+    {
+        $fh = fopen('php://temp', 'w+');
+        fwrite($fh, "\xEF\xBB\xBF");
+        fputcsv($fh, $header, ';');
+        foreach ($rows as $r) {
+            fputcsv($fh, array_map(fn($v) => is_float($v) ? number_format($v, 2, ',', '') : $v, $r), ';');
+        }
+        rewind($fh);
+        $out = stream_get_contents($fh);
+        fclose($fh);
+        return $out;
+    }
 
     private function csv(string $filename, array $header, array $rows)
     {

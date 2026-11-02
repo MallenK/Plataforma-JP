@@ -470,6 +470,8 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin', 'finan
     $routes->get('configuracion',           'FinanzasController::config');
     $routes->post('configuracion',          'FinanzasController::saveConfig');
     $routes->post('configuracion/(metodo|categoria)', 'FinanzasController::saveCatalog/$1');
+    $routes->get('exportar',                'FinanzasController::exportar');
+    $routes->get('exportar/descargar',      'FinanzasController::exportarDescargar');
     $routes->get('ayuda',                   'FinanzasController::ayuda');
     $routes->get('ayuda/imprimir',          'FinanzasController::ayudaImprimir');
     $routes->get('ayuda/manual.pdf',        'FinanzasController::manualPdf');

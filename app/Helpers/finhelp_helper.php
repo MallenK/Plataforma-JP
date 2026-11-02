@@ -15,7 +15,7 @@ if (!function_exists('fin_help_texts')) {
             'servicio'     => 'Las clases que ya se han dado y descontado de un bono, valoradas a lo que costó cada sesión de ese bono. Es lo que la academia ya ha «entregado».',
             'gastos'       => 'Lo que la academia ha gastado en el periodo: material, reparaciones, alquiler de campos, entrenadores…',
             'resultado'    => 'Cobrado menos gastos del periodo: el dinero que queda.',
-            'pendiente'    => 'Lo vendido que todavía no se ha pagado, a día de hoy. Pulsa para ver quién debe.',
+            'pendiente'    => 'De lo vendido en el periodo elegido, lo que a día de hoy sigue sin pagarse. Debajo aparece el total pendiente a hoy, que además incluye las ventas posteriores al periodo (por ejemplo, las del mes siguiente) y por eso puede ser mayor. Pulsa «Ver quién debe» para el detalle por alumno.',
             'pagado_sin_dar' => 'Sesiones que los alumnos ya han comprado y aún no han usado. Es lo que la academia todavía debe dar.',
             'caducado'     => 'Sesiones de bonos que caducaron sin usarse en el periodo. Ese dinero se da por ganado, pero se señala aparte.',
             'precio_medio' => 'Lo que se cobra de media por cada sesión, sumando todos los bonos vendidos.',

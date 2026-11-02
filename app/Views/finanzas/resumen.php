@@ -19,15 +19,25 @@ $a = $s['attendance'];
 <?= view('finanzas/_tabs', ['tab' => $tab, 'reviewCount' => $reviewCount]) ?>
 <?= view('finanzas/_period', ['period' => $period, 'months' => $months]) ?>
 
-<div class="row g-3 mb-3">
+<?php $rv = (int) $review['unclosed'] + (int) $review['debts'] + (int) $review['pre_control'] + (int) $review['estimated']; ?>
+<?php if ($rv > 0): ?>
+<a href="<?= base_url('finanzas/revision') ?>" class="d-flex align-items-center gap-2 mb-3" style="text-decoration:none;padding:10px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px">
+    <i class="bi bi-clipboard-check"></i><span><strong><?= $rv ?></strong> cosas pendientes de revisar: pueden cambiar las cifras de abajo</span><i class="bi bi-chevron-right ms-auto"></i>
+</a>
+<?php endif; ?>
+
+<h2 class="fin-section">Dinero del periodo</h2>
+<div class="row g-3 mb-4">
     <?= $kpi('Vendido', eur($s['sold']['cents']), $s['sold']['count'] . ' cargos' . ($s['sold']['discount'] ? ' · ' . eur($s['sold']['discount']) . ' en descuentos' : ''), '', 'vendido') ?>
     <?= $kpi('Cobrado', eur($s['paid']['cents']), $s['paid']['count'] . ' cobros', '', 'cobrado') ?>
-    <?= $kpi('Servicio prestado', eur($s['service']['cents']), $s['service']['count'] . ' sesiones consumidas', '', 'servicio') ?>
     <?= $kpi('Gastos', eur($s['expenses']['cents']), $s['expenses']['count'] ? $s['expenses']['count'] . ' gastos' : '<a href="' . base_url('finanzas/gastos') . '">Registrar un gasto</a>', '', 'gastos') ?>
+    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda · si se cobra todo lo pendiente del periodo: <strong>' . eur($s['result'] + $s['due_period']) . '</strong>', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0', 'resultado', 'color:#f8fafc') ?>
 </div>
-<div class="row g-3 mb-3">
-    <?= $kpi('Resultado (cobrado − gastos)', eur($s['result']), 'Dinero que queda en el periodo', 'background:#0f172a;border-color:#0f172a;color:#e2e8f0', 'resultado', 'color:#f8fafc') ?>
-    <?= $kpi('Pendiente de cobro (hoy)', eur($s['due']), '<a href="' . base_url('finanzas/alumnos?ver=deben') . '">Ver quién debe</a>', '', 'pendiente') ?>
+
+<h2 class="fin-section">Pendiente y servicio</h2>
+<div class="row g-3 mb-4">
+    <?= $kpi('Pendiente del periodo (a hoy)', eur($s['due_period']), 'Total a hoy, con ventas posteriores: <strong>' . eur($s['due']) . '</strong> · <a href="' . base_url('finanzas/alumnos?ver=deben') . '">Ver quién debe</a>', '', 'pendiente') ?>
+    <?= $kpi('Servicio prestado', eur($s['service']['cents']), $s['service']['count'] . ' sesiones consumidas', '', 'servicio') ?>
     <?= $kpi('Sesiones pagadas sin dar (hoy)', eur($s['prepaid']['cents']), $s['prepaid']['sessions'] . ' sesiones por dar', '', 'pagado_sin_dar') ?>
     <?= $kpi('Caducado sin usar', eur($s['expired']['cents']), $s['expired']['sessions'] . ' sesiones de ' . $s['expired']['count'] . ' bonos', '', 'caducado') ?>
 </div>
@@ -95,13 +105,14 @@ $a = $s['attendance'];
         <div class="card-jp">
             <div class="card-jp-body" style="font-size:13px">
                 <div style="display:flex;justify-content:space-between"><span>Precio medio por sesión<?= fin_help('precio_medio') ?></span><strong style="color:var(--text-h)"><?= eur($s['avg_session_cents']) ?></strong></div>
-                <?php $rv = (int) $review['unclosed'] + (int) $review['debts'] + (int) $review['pre_control'] + (int) $review['estimated']; ?>
-                <div style="display:flex;justify-content:space-between;margin-top:8px"><span>Pendiente de revisar</span><a href="<?= base_url('finanzas/revision') ?>" style="font-weight:700"><?= $rv ?></a></div>
             </div>
         </div>
     </div>
 </div>
 
+<details class="fin-more mb-3">
+    <summary>Asistencia y qué significa cada cifra</summary>
+    <div style="margin-top:12px">
 <div class="row g-3 mb-3">
     <div class="col-12 col-lg-6">
         <div class="card-jp h-100">
@@ -137,5 +148,8 @@ $a = $s['attendance'];
         </div>
     </div>
 </div>
+
+    </div>
+</details>
 
 <?= $this->endSection() ?>
