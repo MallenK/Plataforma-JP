@@ -1,6 +1,6 @@
 [
     {
-        "version": "2.3.0",
+        "version": "2.2.1",
         "date": "2026-11-02 00:00:00",
         "description": "Finanzas: nueva pestaña «Exportar» (solo con acceso total) para descargar todos los datos en un JSON o en un ZIP de CSV, con opción de ocultar nombres de alumnos. El Resumen se reordena en «Dinero del periodo» y «Pendiente y servicio», con aviso de revisiones pendientes y el glosario plegado. «Pendiente de cobro» pasa a mostrar lo pendiente del periodo y, aparte, el total a hoy; el Resultado indica cuánto sería si se cobra todo lo pendiente."
     },
