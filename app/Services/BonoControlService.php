@@ -143,6 +143,133 @@ class BonoControlService
     }
 
     /**
+     * Clases que se pueden saldar con un bono (elige el admin, nunca solo):
+     *  - 'past'   → ya dadas (cerradas) y sin bono: las deudas de siempre.
+     *  - 'future' → programadas aún sin cerrar (sea cual sea su fecha) en las que
+     *               el alumno consta como Confirmado/Presente y sin descontar.
+     * Ambas de más antigua a más reciente.
+     *
+     * @return array<int,array{csp_id:int,session_id:int,title:string,date:string,time:?string,kind:string}>
+     */
+    public function settleCandidates(int $playerId): array
+    {
+        $out = [];
+        foreach ($this->openDebts($playerId) as $d) {
+            $out[] = [
+                'csp_id' => (int) $d['csp_id'], 'session_id' => (int) $d['session_id'],
+                'title'  => (string) $d['title'], 'date' => (string) $d['session_date'],
+                'time'   => $d['start_time'] ?? null, 'kind' => 'past',
+            ];
+        }
+
+        try {
+            $rows = $this->db->table('class_session_players csp')
+                ->select('csp.id AS csp_id, cs.id AS session_id, cs.title, cs.session_date, cs.start_time')
+                ->join('class_sessions cs', 'cs.id = csp.session_id')
+                ->where('csp.user_id', $playerId)
+                ->where('cs.status', 'scheduled')
+                ->whereIn('csp.attendance', ClasesService::BONO_CONSUMING_ATTENDANCE)
+                ->where('csp.bono_deducted_at IS NULL', null, false)
+                ->where('csp.bono_resolution IS NULL', null, false)
+                ->orderBy('cs.session_date', 'ASC')->orderBy('cs.start_time', 'ASC')
+                ->limit(100)->get()->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('error', 'BonoControlService::settleCandidates (futuras) falló: ' . $e->getMessage());
+            $rows = [];
+        }
+        foreach ($rows as $r) {
+            $out[] = [
+                'csp_id' => (int) $r['csp_id'], 'session_id' => (int) $r['session_id'],
+                'title'  => (string) $r['title'], 'date' => (string) $r['session_date'],
+                'time'   => $r['start_time'] ?? null, 'kind' => 'future',
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Salda con UN bono las clases que el admin ha marcado (ya dadas y/o futuras).
+     * Se para al quedarse el bono sin saldo. Las futuras posteriores a la
+     * caducidad del bono se saltan (no podría cubrirlas).
+     *
+     * @param int[] $cspIds ids de class_session_players elegidos
+     * @return array{settled_past:int,settled_future:int,skipped:int,stopped:bool,bono_id:int}
+     */
+    public function settleSelected(int $playerId, int $bonoId, array $cspIds, ?int $actorId = null): array
+    {
+        $res  = ['settled_past' => 0, 'settled_future' => 0, 'skipped' => 0, 'stopped' => false, 'bono_id' => $bonoId];
+        $want = array_flip(array_map('intval', $cspIds));
+        if (!$want) {
+            return $res;
+        }
+
+        $bono = $this->db->table('player_bonos')->where('id', $bonoId)->where('player_id', $playerId)->get()->getRowArray();
+        if (!$bono || !empty($bono['voided_at'])) {
+            $res['stopped'] = true;
+            return $res;
+        }
+        $expires = $bono['expires_at'] ?? null;
+
+        try {
+            $svc = new ClasesService();
+            foreach ($this->settleCandidates($playerId) as $c) {
+                if (!isset($want[$c['csp_id']])) {
+                    continue;
+                }
+                if ($c['kind'] === 'future' && $expires && $c['date'] > $expires) {
+                    $res['skipped']++;
+                    continue;
+                }
+                $r = $svc->deductBonoForPlayer($c['session_id'], $playerId, null, $bonoId);
+                if (empty($r['success'])) {
+                    $res['stopped'] = true; // sin saldo (u otro motivo): se para, no se fuerza
+                    break;
+                }
+                if ($c['kind'] === 'past') {
+                    $res['settled_past']++;
+                    BonoLedgerService::log($playerId, BonoLedgerService::DEBT_SETTLED, 0, $bonoId, $c['session_id'],
+                        'Saldada al dar el bono (elegida por el admin)', $actorId);
+                } else {
+                    $res['settled_future']++;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'BonoControlService::settleSelected falló: ' . $e->getMessage());
+            $res['stopped'] = true;
+        }
+
+        (new BonoCoverageService($this->db))->refreshMarks($playerId);
+        return $res;
+    }
+
+    /** Texto de resultado de settleSelected para el flash. Pura. */
+    public static function settledMessage(array $r): string
+    {
+        $p = (int) $r['settled_past'];
+        $f = (int) $r['settled_future'];
+        if ($p + $f === 0) {
+            return !empty($r['stopped'])
+                ? ' No se saldó ninguna clase: el bono no tiene saldo disponible.'
+                : '';
+        }
+        $parts = [];
+        if ($p) {
+            $parts[] = $p . ' clase' . ($p === 1 ? '' : 's') . ' ya dada' . ($p === 1 ? '' : 's');
+        }
+        if ($f) {
+            $parts[] = $f . ' clase' . ($f === 1 ? '' : 's') . ' programada' . ($f === 1 ? '' : 's');
+        }
+        $msg = ' Se saldaron ' . implode(' y ', $parts) . ' con este bono.';
+        if (!empty($r['skipped'])) {
+            $msg .= ' ' . (int) $r['skipped'] . ' quedaron fuera por ser posteriores a la caducidad.';
+        }
+        if (!empty($r['stopped'])) {
+            $msg .= ' El bono se quedó sin saldo: el resto sigue pendiente.';
+        }
+        return $msg;
+    }
+
+    /**
      * Resuelve una deuda sin bono: 'external' (pagada fuera) o 'waived' (condonada).
      * Queda en la fila y en el libro; nunca se borra nada.
      *

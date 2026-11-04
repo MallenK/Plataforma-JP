@@ -307,7 +307,7 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 
                     <div class="col-12">
                         <label class="form-label">Tipo de bono <span style="color:var(--danger)">*</span></label>
-                        <select name="bono_type_id" id="selectBonoType" class="form-control-jp" required onchange="renderAvisoDeudas()">
+                        <select name="bono_type_id" id="selectBonoType" class="form-control-jp" required onchange="resumenSaldar()">
                             <option value="">— Selecciona un tipo —</option>
                             <?php foreach ($bonoTypes as $bt): ?>
                             <option value="<?= $bt['id'] ?>" data-sessions="<?= (int) $bt['sessions'] ?>" data-price="<?= (int) round(((float) $bt['price']) * 100) ?>">
@@ -340,9 +340,11 @@ $pageSubtitle = 'Gestión de bonos y membresías';
                             <span id="alertaBonoDetalles"></span>
                             <br><small>Podrá tener varios bonos a la vez: al pasar lista se <strong>elige a mano</strong> de cuál se descuenta cada sesión.</small>
                         </div>
-                        <div id="alertaDeudas" style="display:none;margin-top:8px;padding:10px 12px;background:#fee2e2;border-radius:6px;font-size:13px;color:#7f1d1d;border:1px solid #fca5a5">
+                        <div id="alertaDeudas" style="display:none;margin-top:8px;padding:10px 12px;background:#fff7ed;border-radius:6px;font-size:13px;color:#7c2d12;border:1px solid #fdba74">
                             <i class="bi bi-receipt me-2"></i><strong id="alertaDeudasTitulo"></strong>
-                            <div id="alertaDeudasCuerpo" style="margin-top:4px"></div>
+                            <div style="font-size:12px;margin:4px 0 6px">Opcional: marca las clases que quieras saldar con este bono (1 sesión por clase). Nada se descuenta si no marcas nada.</div>
+                            <div id="alertaDeudasLista" style="max-height:200px;overflow:auto;background:#fff;border:1px solid #fed7aa;border-radius:6px;padding:4px 8px"></div>
+                            <div id="alertaDeudasResumen" style="margin-top:6px;font-size:12px"></div>
                         </div>
                     </div>
 
@@ -753,7 +755,7 @@ document.addEventListener('keydown', e => {
     closeModalEmitir();
 });
 
-// Clases ya dadas sin bono del jugador elegido (se rellena en checkBonoActivo)
+// Clases saldables del jugador elegido: ya dadas ('past') y programadas ('future'). Se rellena en checkBonoActivo
 let deudasJugador = [];
 
 // Finanzas 2.0: precio del tipo elegido, descuento y sugerencia de importe cobrado.
@@ -783,29 +785,53 @@ document.addEventListener('DOMContentLoaded', function () {
 function renderAvisoDeudas() {
     const box   = document.getElementById('alertaDeudas');
     const btn   = document.getElementById('btnEmitir');
-    const opt   = document.getElementById('selectBonoType').selectedOptions[0];
-    const total = parseInt(opt && opt.dataset.sessions ? opt.dataset.sessions : '0', 10);
+    const lista = document.getElementById('alertaDeudasLista');
     const n     = deudasJugador.length;
 
     btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear bono';
-    if (!n) { box.style.display = 'none'; return; }
+    if (!n) { box.style.display = 'none'; lista.innerHTML = ''; return; }
 
-    const aSaldar = total > 0 ? Math.min(n, total) : n;
-    const quedan  = total > 0 ? Math.max(0, total - aSaldar) : null;
-    const lista   = deudasJugador.slice(0, 5).map(d => d.title + ' (' + d.date.split('-').reverse().join('/') + ')').join(', ')
-                  + (n > 5 ? '…' : '');
-
+    const past = deudasJugador.filter(d => d.kind === 'past').length;
+    const fut  = n - past;
     document.getElementById('alertaDeudasTitulo').textContent =
-        'Este jugador tiene ' + n + ' clase' + (n === 1 ? '' : 's') + ' dada' + (n === 1 ? '' : 's') + ' sin bono.';
-    document.getElementById('alertaDeudasCuerpo').innerHTML =
-        'Al crear el bono se <strong>descontará 1 sesión por cada clase</strong> (no el bono entero) y quedarán saldadas: <em>' + lista + '</em>.'
-        + (total > 0
-            ? '<br>Ejemplo: bono de ' + total + ' sesiones − ' + aSaldar + ' clase' + (aSaldar === 1 ? '' : 's') + ' pendiente' + (aSaldar === 1 ? '' : 's')
-              + ' = le quedarán <strong>' + quedan + '</strong>.'
-              + (n > total ? '<br>Como son más clases que sesiones, quedarán ' + (n - total) + ' pendientes.' : '')
-            : '<br>Elige un tipo de bono para ver cuántas sesiones le quedarán.');
+        'Este jugador tiene ' + (past ? past + ' clase' + (past === 1 ? '' : 's') + ' dada' + (past === 1 ? '' : 's') + ' sin bono' : '')
+        + (past && fut ? ' y ' : '')
+        + (fut ? fut + ' programada' + (fut === 1 ? '' : 's') + ' confirmada' + (fut === 1 ? '' : 's') + ' sin descontar' : '') + '.';
+
+    // Ya dadas marcadas por defecto; las programadas, no (se eligen a propósito).
+    let html = '', grupo = '';
+    deudasJugador.forEach(d => {
+        if (d.kind !== grupo) {
+            grupo = d.kind;
+            html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9a3412;margin:6px 0 2px">'
+                  + (grupo === 'past' ? 'Ya dadas, sin bono' : 'Programadas (confirmadas, sin descontar)') + '</div>';
+        }
+        const f = d.date.split('-').reverse().join('/');
+        html += '<label style="display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer">'
+              + '<input type="checkbox" class="chk-saldar" name="settle[]" value="' + d.csp_id + '"' + (d.kind === 'past' ? ' checked' : '') + ' onchange="resumenSaldar()">'
+              + '<span>' + _esc(d.title) + ' <span style="color:#9a3412">· ' + f + (d.time ? ' ' + _esc(String(d.time).slice(0, 5)) : '') + '</span></span></label>';
+    });
+    lista.innerHTML = html;
     box.style.display = 'block';
-    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear bono y saldar ' + aSaldar + ' clase' + (aSaldar === 1 ? '' : 's');
+    resumenSaldar();
+}
+
+// Cuenta las marcadas frente al saldo del tipo de bono elegido y ajusta el botón.
+function resumenSaldar() {
+    const opt    = document.getElementById('selectBonoType').selectedOptions[0];
+    const total  = parseInt(opt && opt.dataset.sessions ? opt.dataset.sessions : '0', 10);
+    const marked = document.querySelectorAll('#alertaDeudasLista .chk-saldar:checked').length;
+    const btn    = document.getElementById('btnEmitir');
+    const res    = document.getElementById('alertaDeudasResumen');
+    const aSaldar = total > 0 ? Math.min(marked, total) : marked;
+
+    if (!marked) { res.textContent = 'No se saldará ninguna clase.'; }
+    else if (total > 0) {
+        res.innerHTML = 'Se saldarán <strong>' + aSaldar + '</strong> de ' + marked + ' marcadas: al bono de ' + total
+            + ' sesiones le quedarán <strong>' + Math.max(0, total - aSaldar) + '</strong>.'
+            + (marked > total ? ' El resto sigue pendiente.' : '');
+    } else { res.textContent = 'Elige un tipo de bono para ver cuántas sesiones le quedarán.'; }
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Crear bono' + (aSaldar ? ' y saldar ' + aSaldar + ' clase' + (aSaldar === 1 ? '' : 's') : '');
 }
 
 async function checkBonoActivo(playerId) {
@@ -829,7 +855,7 @@ async function checkBonoActivo(playerId) {
     try {
         const res  = await fetch('<?= base_url('bonos/check-active') ?>', { method:'POST', body:fd });
         const data = await res.json();
-        deudasJugador = Array.isArray(data.debts) ? data.debts : [];
+        deudasJugador = Array.isArray(data.candidates) ? data.candidates : [];
         renderAvisoDeudas();
         if (data.has_active && data.bono) {
             const lista = Array.isArray(data.bonos) && data.bonos.length ? data.bonos : [data.bono];

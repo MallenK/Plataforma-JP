@@ -199,4 +199,120 @@ final class BonoSaldarDeudasTest extends CIUnitTestCase
         $this->assertStringContainsString('function saldarDeudas', $src);
         $this->assertStringNotContainsString('settleDebtsMessage', $src);
     }
+
+    /** Clases programadas (sin cerrar) de Ana: 3 y 4 confirmadas, 5 pendiente, 6 rechazada; 7 de otra alumna sin tocar. */
+    private function futureClasses(): void
+    {
+        $rows = [
+            [3, '2099-01-10', 'confirmed'], [4, '2099-02-10', 'confirmed'],
+            [5, '2099-03-10', 'pending'],   [6, '2099-04-10', 'declined'],
+        ];
+        foreach ($rows as [$id, $date, $att]) {
+            $this->db->table('class_sessions')->insert(['id' => $id, 'status' => 'scheduled', 'title' => "Clase {$id}", 'session_date' => $date, 'start_time' => '17:00']);
+            $this->db->table('class_session_players')->insert(['session_id' => $id, 'user_id' => 10, 'attendance' => $att]);
+        }
+    }
+
+    public function testCandidatasIncluyenDadasYProgramadasConfirmadas(): void
+    {
+        $this->futureClasses();
+
+        $c = (new BonoControlService())->settleCandidates(10);
+
+        $this->assertSame(['past', 'past', 'future', 'future'], array_column($c, 'kind'));
+        $this->assertSame([1, 2, 3, 4], array_column($c, 'session_id'), 'sin la pendiente ni la rechazada');
+    }
+
+    public function testSaldaLasMarcadasDadasYFuturasYNoLasDemas(): void
+    {
+        $this->futureClasses();
+        $this->bono(1, 1, 5);
+        $svc = new BonoControlService();
+        $byS = array_column($svc->settleCandidates(10), 'csp_id', 'session_id');
+
+        $r = $svc->settleSelected(10, 1, [$byS[1], $byS[4]]);   // una dada + una futura; la 2 y la 3 no
+
+        $this->assertSame(1, $r['settled_past']);
+        $this->assertSame(1, $r['settled_future']);
+        $this->assertFalse($r['stopped']);
+        $this->assertSame(3, $this->remaining(1));
+        $left = array_column($svc->settleCandidates(10), 'session_id');
+        $this->assertSame([2, 3], $left, 'las no marcadas siguen pendientes');
+    }
+
+    public function testSinNingunaMarcadaNoDescuentaNada(): void
+    {
+        $this->futureClasses();
+        $this->bono(1, 1, 5);
+
+        $r = (new BonoControlService())->settleSelected(10, 1, []);
+
+        $this->assertSame(0, $r['settled_past'] + $r['settled_future']);
+        $this->assertSame(5, $this->remaining(1));
+    }
+
+    public function testSeParaCuandoSeAcabaElSaldo(): void
+    {
+        $this->futureClasses();
+        $this->bono(1, 1, 2);
+        $svc = new BonoControlService();
+        $ids = array_column($svc->settleCandidates(10), 'csp_id');
+
+        $r = $svc->settleSelected(10, 1, $ids);
+
+        $this->assertSame(2, $r['settled_past'], 'primero las más antiguas');
+        $this->assertSame(0, $r['settled_future']);
+        $this->assertTrue($r['stopped']);
+        $this->assertSame(0, $this->remaining(1));
+    }
+
+    public function testLasFuturasPosterioresALaCaducidadSeSaltan(): void
+    {
+        $this->futureClasses();
+        $this->bono(1, 1, 5);
+        $this->db->table('player_bonos')->where('id', 1)->update(['expires_at' => '2099-01-31']);
+        $svc = new BonoControlService();
+        $byS = array_column($svc->settleCandidates(10), 'csp_id', 'session_id');
+
+        $r = $svc->settleSelected(10, 1, [$byS[3], $byS[4]]);   // 10/01 entra, 10/02 es posterior
+
+        $this->assertSame(1, $r['settled_future']);
+        $this->assertSame(1, $r['skipped']);
+        $this->assertSame(4, $this->remaining(1));
+    }
+
+    public function testNoSaldaConElBonoDeOtroAlumno(): void
+    {
+        $this->futureClasses();
+        $this->db->table('users')->insert(['id' => 11, 'name' => 'Luis']);
+        $this->db->table('player_bonos')->insert([
+            'id' => 9, 'player_id' => 11, 'bono_type_id' => 1, 'sessions_total' => 5, 'sessions_remaining' => 5,
+            'start_date' => date('Y-m-d'), 'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $svc = new BonoControlService();
+
+        $r = $svc->settleSelected(10, 9, array_column($svc->settleCandidates(10), 'csp_id'));
+
+        $this->assertSame(0, $r['settled_past'] + $r['settled_future']);
+        $this->assertSame(5, $this->remaining(9));
+    }
+
+    public function testMensajeDeResultado(): void
+    {
+        $this->assertSame(' Se saldaron 2 clases ya dadas y 1 clase programada con este bono.',
+            BonoControlService::settledMessage(['settled_past' => 2, 'settled_future' => 1, 'skipped' => 0, 'stopped' => false]));
+        $this->assertStringContainsString('no tiene saldo', BonoControlService::settledMessage(['settled_past' => 0, 'settled_future' => 0, 'skipped' => 0, 'stopped' => true]));
+        $this->assertSame('', BonoControlService::settledMessage(['settled_past' => 0, 'settled_future' => 0, 'skipped' => 0, 'stopped' => false]));
+    }
+
+    public function testEmitirSoloSaldaLoQueElAdminMarca(): void
+    {
+        $src = file_get_contents(APPPATH . 'Controllers/BonosController.php');
+
+        $this->assertStringContainsString('postedSettleIds', $src);
+        $this->assertSame(2, substr_count($src, '->settleSelected('), 'store() y saldarDeudas(), siempre con la selección');
+        $this->assertStringContainsString('name="settle[]"', file_get_contents(APPPATH . 'Views/bonos/index.php'));
+        // Las ya dadas llevan la casilla marcada; las programadas, no (se eligen a propósito).
+        $this->assertStringContainsString("(d.kind === 'past' ? ' checked' : '')", file_get_contents(APPPATH . 'Views/bonos/index.php'));
+    }
 }

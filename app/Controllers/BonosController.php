@@ -147,7 +147,14 @@ class BonosController extends BaseController
         if ($playerId) {
             BonoLedgerService::log($playerId, BonoLedgerService::GRANTED, (int)$type['sessions'], $newBonoId, null, $type['name'] ?? null);
             (new BonoControlService())->notifyBonoGranted($newBonoId, (int) $this->currentUserId());
-            $settledMsg = $this->pendingDebtsHint($playerId);
+            // Saldar clases al dar el bono es una OPCIÓN del admin: solo las que marca en el formulario.
+            $chosen = $this->postedSettleIds();
+            if ($chosen) {
+                $settledMsg = BonoControlService::settledMessage(
+                    (new BonoControlService())->settleSelected($playerId, $newBonoId, $chosen, (int) $this->currentUserId())
+                );
+            }
+            $settledMsg .= $this->pendingDebtsHint($playerId);
         }
 
         if (!$playerId) {
@@ -182,6 +189,7 @@ class BonosController extends BaseController
         $control   = new BonoControlService();
         $movements = !empty($bono['player_id']) ? (new BonoLedgerService())->forPlayer((int)$bono['player_id'], 60) : [];
         $debts     = !empty($bono['player_id']) ? $control->openDebts((int)$bono['player_id']) : [];
+        $settleCandidates = !empty($bono['player_id']) ? $control->settleCandidates((int)$bono['player_id']) : [];
 
         $overbooked = !empty($bono['player_id'])
             ? ((new BonoCoverageService())->overbooked([(int) $bono['player_id']])[(int) $bono['player_id']] ?? null)
@@ -198,6 +206,7 @@ class BonosController extends BaseController
             'bono'      => $bono,
             'movements' => $movements,
             'debts'     => $debts,
+            'settleCandidates' => $settleCandidates,
             'history'   => $history,
             'finFull'   => $this->finFull(),
             'players' => $this->userModel->where('role', 'player')->where('status', 'active')->orderBy('name')->findAll(),
@@ -378,6 +387,13 @@ class BonosController extends BaseController
             : '';
     }
 
+    /** Ids de class_session_players marcados en el formulario (`settle[]`). */
+    private function postedSettleIds(): array
+    {
+        $raw = $this->request->getPost('settle');
+        return is_array($raw) ? array_values(array_filter(array_map('intval', $raw))) : [];
+    }
+
     /** POST /bonos/:id/saldar-deudas — salda con ESTE bono las clases sin bono del alumno (tras confirmar). */
     public function saldarDeudas(int $id)
     {
@@ -385,6 +401,16 @@ class BonosController extends BaseController
         if (!$bono || empty($bono['player_id'])) {
             session()->setFlashdata('error', 'Bono no encontrado o sin alumno asignado.');
             return redirect()->to('/bonos');
+        }
+
+        // Con selección (casillas de la ficha): se saldan solo las marcadas, ya dadas y/o programadas.
+        $chosen = $this->postedSettleIds();
+        if ($chosen) {
+            $r = (new BonoControlService())->settleSelected((int) $bono['player_id'], $id, $chosen, (int) $this->currentUserId());
+            $msg = trim(BonoControlService::settledMessage($r));
+            session()->setFlashdata(($r['settled_past'] + $r['settled_future']) > 0 ? 'success' : 'error',
+                $msg !== '' ? $msg : 'No se saldó ninguna clase.');
+            return redirect()->to('/bonos/' . $id);
         }
 
         $r = (new BonoControlService())->settleWithBono((int) $bono['player_id'], (int) $this->currentUserId(), $id);
@@ -430,9 +456,10 @@ class BonosController extends BaseController
 
         // TICKET-013: clases ya dadas sin bono. Al emitir un bono se descuenta
         // 1 sesión por cada una, así que se avisa ANTES de crearlo.
+        $candidates = (new BonoControlService())->settleCandidates($playerId);
         $debts = array_map(
-            fn($d) => ['title' => $d['title'], 'date' => $d['session_date']],
-            (new BonoControlService())->openDebts($playerId)
+            fn($d) => ['title' => $d['title'], 'date' => $d['date']],
+            array_values(array_filter($candidates, fn($c) => $c['kind'] === 'past'))
         );
 
         return $this->response->setJSON([
@@ -440,6 +467,7 @@ class BonosController extends BaseController
             'bono'       => $bono,
             'bonos'      => $usable,
             'debts'      => $debts,
+            'candidates' => $candidates,
         ]);
     }
 
