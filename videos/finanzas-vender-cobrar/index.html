@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(1100px 800px at 18% 20%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 200px; }
+      .center img { width: 300px; margin-bottom: 36px; }
+      .big { font-size: 104px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 48px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; background: #f1f5f9; }
+      .layer img { width: 1152px; height: auto; display: block; }
+      .mark { position: absolute; border: 5px solid #ef4444; border-radius: 12px; opacity: 0; box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 30px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 22px; padding: 6px 16px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+      .cap { position: absolute; left: 70px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+      .cap .step { font-size: 28px; margin-bottom: 18px; }
+      .cap .txt { font-size: 56px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 20px; font-size: 31px; line-height: 1.28; }
+      .cap .sub b { color: #fff; }
+      .device { position: absolute; left: 700px; top: 160px; width: 1180px; height: 760px; border-radius: 26px; background: #05080f; padding: 14px;
+        box-shadow: 0 0 0 3px #27324a, 0 40px 100px rgba(0,0,0,.6), 0 0 140px rgba(59,130,246,.16); }
+      .screen { position: relative; width: 1152px; height: 720px; border-radius: 14px; overflow: hidden; background: #0f172a; }
+      #cam { position: absolute; left: 0; top: 0; width: 1152px; height: 720px; transform-origin: 0 0; }
+      .device-stand { position: absolute; left: 1140px; top: 920px; width: 260px; height: 22px; background: linear-gradient(#1c2538, #0b1220); border-radius: 0 0 24px 24px; box-shadow: 0 0 0 2px #27324a; }
+      .progress { position: absolute; left: 0; bottom: 0; height: 8px; width: 100%; background: #1e293b; z-index: 80; }
+      .progress i { display: block; height: 100%; width: 0; background: #3b82f6; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="67.3" data-width="1920" data-height="1080">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="3.2" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Vender un bono y cobrarlo</div>
+        <div class="mid">Asignar el bono, aplicar descuento y apuntar el pago</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="3.2" data-duration="60.5" data-track-index="2" style="position:absolute;inset:0">
+        <div id="cap-bonos" class="cap clip" data-start="3.2" data-duration="6" data-track-index="3"><div class="step">Paso 1 de 9</div><div class="txt">Entra en <b>Bonos</b></div><div class="sub">En el menú de la izquierda, pulsa <b>Bonos</b> y después <b>Asignar bono</b>.</div></div>
+        <div id="cap-tipo" class="cap clip" data-start="9.2" data-duration="6.5" data-track-index="3"><div class="step">Paso 2 de 9</div><div class="txt">Elige el <b>tipo</b> de bono</div><div class="sub">Al elegirlo ves su <b>precio</b> debajo.</div></div>
+        <div id="cap-jugador" class="cap clip" data-start="15.7" data-duration="6" data-track-index="3"><div class="step">Paso 3 de 9</div><div class="txt">Elige al <b>jugador</b></div><div class="sub">Si ya tiene bonos o clases pendientes, la plataforma te avisa aquí mismo.</div></div>
+        <div id="cap-descuento" class="cap clip" data-start="21.7" data-duration="7.5" data-track-index="3"><div class="step">Paso 4 de 9</div><div class="txt">¿Hay <b>descuento</b>?</div><div class="sub">Escribe un importe (<b>10</b>) o un porcentaje (<b>10%</b>) y el motivo. El precio final se recalcula al instante.</div></div>
+        <div id="cap-cobro" class="cap clip" data-start="29.2" data-duration="7.5" data-track-index="3"><div class="step">Paso 5 de 9</div><div class="txt">¿Paga <b>ahora</b>?</div><div class="sub">Marca <b>Cobrado ahora</b>, elige cómo paga y revisa el importe. Puede ser solo una parte. Si no paga, déjalo sin marcar.</div></div>
+        <div id="cap-crear" class="cap clip" data-start="36.7" data-duration="6" data-track-index="3"><div class="step">Paso 6 de 9</div><div class="txt">Pulsa <b>Crear bono</b></div><div class="sub">El alumno recibe un aviso de «Tienes un bono nuevo».</div></div>
+        <div id="cap-movs" class="cap clip" data-start="42.7" data-duration="6.5" data-track-index="3"><div class="step">Paso 7 de 9</div><div class="txt">Mira la venta en <b>Finanzas</b></div><div class="sub">En <b>Movimientos</b> aparece la venta y, si cobraste, el cobro. Si no, queda como <b>pendiente de cobro</b>.</div></div>
+        <div id="cap-cobrar" class="cap clip" data-start="49.2" data-duration="8" data-track-index="3"><div class="step">Paso 8 de 9</div><div class="txt">Cuando <b>pague</b> el resto</div><div class="sub">En <b>Cobros</b> elige alumno, importe, fecha y medio de pago, y pulsa <b>Guardar cobro</b>. Se aplica a lo más antiguo que deba.</div></div>
+        <div id="cap-deben" class="cap clip" data-start="57.2" data-duration="6.5" data-track-index="3"><div class="step">Paso 9 de 9</div><div class="txt">¿Quién <b>debe</b> aún?</div><div class="sub">A la derecha, <b>Quién debe ahora</b>: de más a menos, con un botón para cobrar.</div></div>
+
+          <div class="device"><div class="screen"><div id="cam">
+          <div id="L-bonos" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/bonos.png" alt="" /></div>
+          <div id="L-tipo" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/tipo.png" alt="" /></div>
+          <div id="L-jugador" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/jugador.png" alt="" /></div>
+          <div id="L-descuento" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/descuento.png" alt="" /></div>
+          <div id="L-cobro" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/cobro.png" alt="" /></div>
+          <div id="L-crear" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/crear.png" alt="" /></div>
+          <div id="L-movs" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/movs.png" alt="" /></div>
+          <div id="L-cobrar" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/cobrar.png" alt="" /></div>
+          <div id="L-deben" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/deben.png" alt="" /></div>
+          <div id="mk0" class="mark" style="left:588px;top:70.4px;width:129.6px;height:38.6px"></div>
+          <div id="pl0" class="pill" style="left:588px;top:26.4px">Asignar bono</div>
+          <div id="rip0" class="ripple" style="left:652.8px;top:89.7px"></div>
+          <div id="mk1" class="mark" style="left:381.6px;top:173.6px;width:388.8px;height:38.4px"></div>
+          <div id="pl1" class="pill" style="left:381.6px;top:129.6px">Tipo de bono</div>
+          <div id="mk2" class="mark" style="left:429.6px;top:389.8px;width:48px;height:19.2px"></div>
+          <div id="pl2" class="pill" style="left:429.6px;top:345.8px">Precio</div>
+          <div id="mk3" class="mark" style="left:381.6px;top:237.6px;width:388.8px;height:38.4px"></div>
+          <div id="pl3" class="pill" style="left:381.6px;top:193.6px">Jugador</div>
+          <div id="mk4" class="mark" style="left:579.2px;top:333.6px;width:92.4px;height:40.2px"></div>
+          <div id="pl4" class="pill" style="left:579.2px;top:289.6px">Descuento</div>
+          <div id="mk5" class="mark" style="left:473.6px;top:389.8px;width:132px;height:19.2px"></div>
+          <div id="pl5" class="pill" style="left:473.6px;top:345.8px">Precio final</div>
+          <div id="mk6" class="mark" style="left:381.6px;top:377px;width:16.8px;height:16.8px"></div>
+          <div id="pl6" class="pill" style="left:381.6px;top:333px">Cobrado ahora</div>
+          <div id="rip6" class="ripple" style="left:390px;top:385.4px"></div>
+          <div id="mk7" class="mark" style="left:381.6px;top:397.4px;width:388.8px;height:142.2px"></div>
+          <div id="mk8" class="mark" style="left:650.4px;top:671.6px;width:120px;height:38.6px"></div>
+          <div id="pl8" class="pill" style="left:650.4px;top:627.6px">Crear bono</div>
+          <div id="rip8" class="ripple" style="left:710.4px;top:690.9px"></div>
+          <div id="mk9" class="mark" style="left:306.4px;top:74.4px;width:112.8px;height:33.2px"></div>
+          <div id="pl9" class="pill" style="left:306.4px;top:30.4px">Movimientos</div>
+          <div id="mk10" class="mark" style="left:211.2px;top:118px;width:380.263px;height:487px"></div>
+          <div id="pl10" class="pill" style="left:211.2px;top:74px">Registrar cobro</div>
+          <div id="mk11" class="mark" style="left:230.4px;top:550.4px;width:341.863px;height:37px"></div>
+          <div id="pl11" class="pill" style="left:230.4px;top:506.4px">Guardar</div>
+          <div id="rip11" class="ripple" style="left:401.331px;top:568.9px"></div>
+          <div id="mk12" class="mark" style="left:597.863px;top:118px;width:534.925px;height:487px"></div>
+          <div id="pl12" class="pill" style="left:597.863px;top:74px">Quién debe ahora</div>
+          <svg id="cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.5L16 20l-3 1.2-3.5-7.6L4 18z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div></div></div>
+          <div class="device-stand"></div>
+          <div class="progress"><i></i></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="63.7" data-duration="3.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Venta y cobro, hechos</div>
+        <div class="mid">Lo que falte por pagar queda en <b>Cobros › Quién debe</b></div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 2.85);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 63.9);
+      tl.fromTo(".device, .device-stand", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 3.2);
+      tl.to(".device, .device-stand", { opacity: 0, duration: 0.4 }, 63.3);
+      tl.fromTo(".progress i", { width: "0%" }, { width: "100%", duration: 60.5, ease: "none" }, 3.2);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-bonos", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 3.2);
+      tl.to("#L-bonos", { opacity: 0, duration: 0.3 }, 9.2);
+      tl.fromTo("#L-tipo", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.2);
+      tl.to("#L-tipo", { opacity: 0, duration: 0.3 }, 15.7);
+      tl.fromTo("#L-jugador", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 15.7);
+      tl.to("#L-jugador", { opacity: 0, duration: 0.3 }, 21.7);
+      tl.fromTo("#L-descuento", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 21.7);
+      tl.to("#L-descuento", { opacity: 0, duration: 0.3 }, 29.2);
+      tl.fromTo("#L-cobro", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 29.2);
+      tl.to("#L-cobro", { opacity: 0, duration: 0.3 }, 36.7);
+      tl.fromTo("#L-crear", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 36.7);
+      tl.to("#L-crear", { opacity: 0, duration: 0.3 }, 42.7);
+      tl.fromTo("#L-movs", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 42.7);
+      tl.to("#L-movs", { opacity: 0, duration: 0.3 }, 49.2);
+      tl.fromTo("#L-cobrar", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 49.2);
+      tl.to("#L-cobrar", { opacity: 0, duration: 0.3 }, 57.2);
+      tl.fromTo("#L-deben", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 57.2);
+      tl.to("#L-deben", { opacity: 0, duration: 0.3 }, 63.7);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 4.2);
+      tl.to("#mk0", { opacity: 0, duration: 0.25 }, 9.1);
+      tl.fromTo("#pl0", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 4.35);
+      tl.to("#pl0", { opacity: 0, duration: 0.25 }, 9.1);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 10.2);
+      tl.to("#mk1", { opacity: 0, duration: 0.25 }, 15.6);
+      tl.fromTo("#pl1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 10.35);
+      tl.to("#pl1", { opacity: 0, duration: 0.25 }, 15.6);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 12.55);
+      tl.to("#mk2", { opacity: 0, duration: 0.25 }, 15.6);
+      tl.fromTo("#pl2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 12.7);
+      tl.to("#pl2", { opacity: 0, duration: 0.25 }, 15.6);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 16.7);
+      tl.to("#mk3", { opacity: 0, duration: 0.25 }, 21.6);
+      tl.fromTo("#pl3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 16.85);
+      tl.to("#pl3", { opacity: 0, duration: 0.25 }, 21.6);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 22.7);
+      tl.to("#mk4", { opacity: 0, duration: 0.25 }, 29.1);
+      tl.fromTo("#pl4", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 22.85);
+      tl.to("#pl4", { opacity: 0, duration: 0.25 }, 29.1);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 25.55);
+      tl.to("#mk5", { opacity: 0, duration: 0.25 }, 29.1);
+      tl.fromTo("#pl5", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 25.7);
+      tl.to("#pl5", { opacity: 0, duration: 0.25 }, 29.1);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 30.2);
+      tl.to("#mk6", { opacity: 0, duration: 0.25 }, 36.6);
+      tl.fromTo("#pl6", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 30.35);
+      tl.to("#pl6", { opacity: 0, duration: 0.25 }, 36.6);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 33.05);
+      tl.to("#mk7", { opacity: 0, duration: 0.25 }, 36.6);
+      tl.fromTo("#mk8", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 37.7);
+      tl.to("#mk8", { opacity: 0, duration: 0.25 }, 42.6);
+      tl.fromTo("#pl8", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 37.85);
+      tl.to("#pl8", { opacity: 0, duration: 0.25 }, 42.6);
+      tl.fromTo("#mk9", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 43.7);
+      tl.to("#mk9", { opacity: 0, duration: 0.25 }, 49.1);
+      tl.fromTo("#pl9", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 43.85);
+      tl.to("#pl9", { opacity: 0, duration: 0.25 }, 49.1);
+      tl.fromTo("#mk10", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 50.2);
+      tl.to("#mk10", { opacity: 0, duration: 0.25 }, 57.1);
+      tl.fromTo("#pl10", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 50.35);
+      tl.to("#pl10", { opacity: 0, duration: 0.25 }, 57.1);
+      tl.fromTo("#mk11", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 53.3);
+      tl.to("#mk11", { opacity: 0, duration: 0.25 }, 57.1);
+      tl.fromTo("#pl11", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 53.45);
+      tl.to("#pl11", { opacity: 0, duration: 0.25 }, 57.1);
+      tl.fromTo("#mk12", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 58.2);
+      tl.to("#mk12", { opacity: 0, duration: 0.25 }, 63.6);
+      tl.fromTo("#pl12", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 58.35);
+      tl.to("#pl12", { opacity: 0, duration: 0.25 }, 63.6);
+      
+      gsap.set("#cursor", { x: 900, y: 640 });
+      tl.fromTo("#cursor", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.3);
+      tl.to("#cursor", { x: 646.8, y: 85.7, duration: 0.7, ease: "power2.inOut" }, 3.4);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 4.3);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 4.42);
+      tl.fromTo("#rip0", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 4.3);
+      tl.to("#cursor", { x: 570, y: 188.8, duration: 0.7, ease: "power2.inOut" }, 9.4);
+      tl.to("#cursor", { x: 447.6, y: 395.4, duration: 0.7, ease: "power2.inOut" }, 11.75);
+      tl.to("#cursor", { x: 570, y: 252.8, duration: 0.7, ease: "power2.inOut" }, 15.9);
+      tl.to("#cursor", { x: 619.4, y: 349.7, duration: 0.7, ease: "power2.inOut" }, 21.9);
+      tl.to("#cursor", { x: 533.6, y: 395.4, duration: 0.7, ease: "power2.inOut" }, 24.75);
+      tl.to("#cursor", { x: 384, y: 381.4, duration: 0.7, ease: "power2.inOut" }, 29.4);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 30.3);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 30.42);
+      tl.fromTo("#rip6", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 30.3);
+      tl.to("#cursor", { x: 570, y: 464.5, duration: 0.7, ease: "power2.inOut" }, 32.25);
+      tl.to("#cursor", { x: 704.4, y: 686.9, duration: 0.7, ease: "power2.inOut" }, 36.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 37.8);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 37.92);
+      tl.fromTo("#rip8", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 37.8);
+      tl.to("#cursor", { x: 356.8, y: 87, duration: 0.7, ease: "power2.inOut" }, 42.9);
+      tl.to("#cursor", { x: 357.305, y: 164, duration: 0.7, ease: "power2.inOut" }, 49.4);
+      tl.to("#cursor", { x: 395.331, y: 564.9, duration: 0.7, ease: "power2.inOut" }, 52.5);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 53.4);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 53.52);
+      tl.fromTo("#rip11", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 53.4);
+      tl.to("#cursor", { x: 751.863, y: 164, duration: 0.7, ease: "power2.inOut" }, 57.4);
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 63.2);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

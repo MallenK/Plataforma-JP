@@ -74,7 +74,7 @@ if (!function_exists('fin_help_texts')) {
             'rev_sin_bono' => 'Clases dadas que no se descontaron de ningún bono. Se pueden saldar con un bono, marcar como pagadas aparte o no cobrar.',
             'rev_precios'  => 'Bonos de antes de esta versión cuyo precio pagado no se guardaba.',
             'rev_caducados'=> 'Solo informativo: bonos que caducaron con sesiones sin usar.',
-            'cfg_auto'     => 'Si está activado, una falta sin justificar o un aviso tardío descuenta la sesión solo al guardar la lista. Siempre se puede devolver.',
+            'cfg_auto'     => 'Si está activado, al guardar la lista una falta sin justificar o un aviso con menos horas de las indicadas gasta 1 sesión del bono que caduca antes, sin que nadie tenga que descontarla. Si el alumno no tiene bono con saldo no se descuenta nada. Se puede devolver con «Devolver bono» en Pasar lista.',
             'cfg_horas'    => 'Con cuántas horas de antelación tiene que avisar un alumno para no perder la sesión. Por defecto, 24.',
             'cfg_desde'    => 'Todo lo anterior a esta fecha no cuenta en Finanzas: ventas, cobros, gastos, deudas, bonos vendidos antes y la Revisión. No se borra nada; solo deja de contarse. Por defecto, el 1 de octubre de 2026.',
 

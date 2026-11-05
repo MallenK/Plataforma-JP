@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(1100px 800px at 18% 20%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 200px; }
+      .center img { width: 300px; margin-bottom: 36px; }
+      .big { font-size: 104px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 48px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; background: #f1f5f9; }
+      .layer img { width: 1152px; height: auto; display: block; }
+      .mark { position: absolute; border: 5px solid #ef4444; border-radius: 12px; opacity: 0; box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 30px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 22px; padding: 6px 16px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+      .cap { position: absolute; left: 70px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+      .cap .step { font-size: 28px; margin-bottom: 18px; }
+      .cap .txt { font-size: 56px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 20px; font-size: 31px; line-height: 1.28; }
+      .cap .sub b { color: #fff; }
+      .device { position: absolute; left: 700px; top: 160px; width: 1180px; height: 760px; border-radius: 26px; background: #05080f; padding: 14px;
+        box-shadow: 0 0 0 3px #27324a, 0 40px 100px rgba(0,0,0,.6), 0 0 140px rgba(59,130,246,.16); }
+      .screen { position: relative; width: 1152px; height: 720px; border-radius: 14px; overflow: hidden; background: #0f172a; }
+      #cam { position: absolute; left: 0; top: 0; width: 1152px; height: 720px; transform-origin: 0 0; }
+      .device-stand { position: absolute; left: 1140px; top: 920px; width: 260px; height: 22px; background: linear-gradient(#1c2538, #0b1220); border-radius: 0 0 24px 24px; box-shadow: 0 0 0 2px #27324a; }
+      .progress { position: absolute; left: 0; bottom: 0; height: 8px; width: 100%; background: #1e293b; z-index: 80; }
+      .progress i { display: block; height: 100%; width: 0; background: #3b82f6; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="51.3" data-width="1920" data-height="1080">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="3.2" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Saldar clases al dar un bono</div>
+        <div class="mid">Cuando el alumno ya vino (o está apuntado) sin tener bono</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="3.2" data-duration="44.5" data-track-index="2" style="position:absolute;inset:0">
+        <div id="cap-problema" class="cap clip" data-start="3.2" data-duration="7.5" data-track-index="3"><div class="step">El problema</div><div class="txt">Clases dadas <b>sin bono</b></div><div class="sub">Si un alumno viene sin tener bono con saldo, la clase queda pendiente en <b>Revisión</b> hasta que se le da uno.</div></div>
+        <div id="cap-abrir" class="cap clip" data-start="10.7" data-duration="5.5" data-track-index="3"><div class="step">Paso 2 de 6</div><div class="txt">Entra en <b>Bonos › Asignar bono</b></div><div class="sub">Es el mismo paso de siempre para dar un bono.</div></div>
+        <div id="cap-alumno" class="cap clip" data-start="16.2" data-duration="8" data-track-index="3"><div class="step">Paso 3 de 6</div><div class="txt">Elige tipo y <b>alumno</b></div><div class="sub">Si el alumno tiene clases pendientes, aparece un recuadro naranja con <b>casillas</b>.</div></div>
+        <div id="cap-grupos" class="cap clip" data-start="24.2" data-duration="8.5" data-track-index="3"><div class="step">Paso 4 de 6</div><div class="txt">Dos <b>grupos</b> de clases</div><div class="sub"><b>Ya dadas, sin bono</b> (vienen marcadas) y <b>programadas</b> confirmadas sin descontar (sin marcar), pasadas de fecha o no.</div></div>
+        <div id="cap-marcar" class="cap clip" data-start="32.7" data-duration="8" data-track-index="3"><div class="step">Paso 5 de 6</div><div class="txt">Marca las que <b>quieras</b></div><div class="sub">Abajo ves el resumen: cuántas se saldan y cuántas sesiones le quedarán al bono.</div></div>
+        <div id="cap-crear" class="cap clip" data-start="40.7" data-duration="7" data-track-index="3"><div class="step">Paso 6 de 6</div><div class="txt">Pulsa <b>Crear bono y saldar</b></div><div class="sub">Se gasta <b>1 sesión por clase</b>, de la más antigua a la más reciente. Si no marcas ninguna, no se descuenta nada.</div></div>
+
+          <div class="device"><div class="screen"><div id="cam">
+          <div id="L-problema" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/problema.png" alt="" /></div>
+          <div id="L-abrir" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/abrir.png" alt="" /></div>
+          <div id="L-alumno" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/alumno.png" alt="" /></div>
+          <div id="L-grupos" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/grupos.png" alt="" /></div>
+          <div id="L-marcar" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/marcar.png" alt="" /></div>
+          <div id="L-crear" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/crear.png" alt="" /></div>
+          <div id="mk0" class="mark" style="left:211.2px;top:537.238px;width:225.6px;height:126.55px"></div>
+          <div id="pl0" class="pill" style="left:211.2px;top:493.238px">Clases sin bono</div>
+          <div id="mk1" class="mark" style="left:616.8px;top:70.4px;width:129.6px;height:39.2px"></div>
+          <div id="pl1" class="pill" style="left:616.8px;top:26.4px">Asignar bono</div>
+          <div id="rip1" class="ripple" style="left:681.6px;top:90px"></div>
+          <div id="mk2" class="mark" style="left:381.6px;top:184.8px;width:388.8px;height:38.4px"></div>
+          <div id="pl2" class="pill" style="left:381.6px;top:140.8px">Alumno</div>
+          <div id="mk3" class="mark" style="left:381.6px;top:223.2px;width:388.8px;height:254.4px"></div>
+          <div id="pl3" class="pill" style="left:381.6px;top:179.2px">Clases pendientes</div>
+          <div id="mk4" class="mark" style="left:392px;top:300px;width:368px;height:135.2px"></div>
+          <div id="pl4" class="pill" style="left:392px;top:256px">Marca las que quieras</div>
+          <div id="mk5" class="mark" style="left:399.2px;top:389px;width:16.8px;height:16.8px"></div>
+          <div id="rip5" class="ripple" style="left:407.6px;top:397.4px"></div>
+          <div id="mk6" class="mark" style="left:392px;top:433.6px;width:368px;height:35.2px"></div>
+          <div id="pl6" class="pill" style="left:392px;top:389.6px">Resumen</div>
+          <div id="mk7" class="mark" style="left:561.6px;top:783.8px;width:208.8px;height:38.6px"></div>
+          <div id="pl7" class="pill" style="left:561.6px;top:739.8px">Crear bono y saldar</div>
+          <div id="rip7" class="ripple" style="left:666px;top:803.1px"></div>
+          <svg id="cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.5L16 20l-3 1.2-3.5-7.6L4 18z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div></div></div>
+          <div class="device-stand"></div>
+          <div class="progress"><i></i></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="47.7" data-duration="3.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Clases saldadas</div>
+        <div class="mid">Las que no marques siguen pendientes · todo se puede <b>devolver</b></div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 2.85);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 47.9);
+      tl.fromTo(".device, .device-stand", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 3.2);
+      tl.to(".device, .device-stand", { opacity: 0, duration: 0.4 }, 47.3);
+      tl.fromTo(".progress i", { width: "0%" }, { width: "100%", duration: 44.5, ease: "none" }, 3.2);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-problema", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 3.2);
+      tl.to("#L-problema", { opacity: 0, duration: 0.3 }, 10.7);
+      tl.fromTo("#L-abrir", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.7);
+      tl.to("#L-abrir", { opacity: 0, duration: 0.3 }, 16.2);
+      tl.fromTo("#L-alumno", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 16.2);
+      tl.to("#L-alumno", { opacity: 0, duration: 0.3 }, 24.2);
+      tl.fromTo("#L-grupos", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 24.2);
+      tl.to("#L-grupos", { opacity: 0, duration: 0.3 }, 32.7);
+      tl.fromTo("#L-marcar", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 32.7);
+      tl.to("#L-marcar", { opacity: 0, duration: 0.3 }, 40.7);
+      tl.fromTo("#L-crear", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 40.7);
+      tl.to("#L-crear", { opacity: 0, duration: 0.3 }, 47.7);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 4.2);
+      tl.to("#mk0", { opacity: 0, duration: 0.25 }, 10.6);
+      tl.fromTo("#pl0", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 4.35);
+      tl.to("#pl0", { opacity: 0, duration: 0.25 }, 10.6);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 11.7);
+      tl.to("#mk1", { opacity: 0, duration: 0.25 }, 16.1);
+      tl.fromTo("#pl1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 11.85);
+      tl.to("#pl1", { opacity: 0, duration: 0.25 }, 16.1);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 17.2);
+      tl.to("#mk2", { opacity: 0, duration: 0.25 }, 24.1);
+      tl.fromTo("#pl2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 17.35);
+      tl.to("#pl2", { opacity: 0, duration: 0.25 }, 24.1);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 20.3);
+      tl.to("#mk3", { opacity: 0, duration: 0.25 }, 24.1);
+      tl.fromTo("#pl3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 20.45);
+      tl.to("#pl3", { opacity: 0, duration: 0.25 }, 24.1);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 25.2);
+      tl.to("#mk4", { opacity: 0, duration: 0.25 }, 32.6);
+      tl.fromTo("#pl4", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 25.35);
+      tl.to("#pl4", { opacity: 0, duration: 0.25 }, 32.6);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 33.7);
+      tl.to("#mk5", { opacity: 0, duration: 0.25 }, 40.6);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 36.8);
+      tl.to("#mk6", { opacity: 0, duration: 0.25 }, 40.6);
+      tl.fromTo("#pl6", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 36.95);
+      tl.to("#pl6", { opacity: 0, duration: 0.25 }, 40.6);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 41.7);
+      tl.to("#mk7", { opacity: 0, duration: 0.25 }, 47.6);
+      tl.fromTo("#pl7", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 41.85);
+      tl.to("#pl7", { opacity: 0, duration: 0.25 }, 47.6);
+      tl.to("#cam", { scale: 1.3, x: -172.8, y: -117.88, duration: 0.9, ease: "power2.inOut" }, 24.8);
+      tl.to("#cam", { scale: 1, x: 0, y: 0, duration: 0.5, ease: "power2.inOut" }, 32.15);
+      gsap.set("#cursor", { x: 900, y: 640 });
+      tl.fromTo("#cursor", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.3);
+      tl.to("#cursor", { x: 318, y: 596.513, duration: 0.7, ease: "power2.inOut" }, 3.4);
+      tl.to("#cursor", { x: 675.6, y: 86, duration: 0.7, ease: "power2.inOut" }, 10.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 11.8);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 11.92);
+      tl.fromTo("#rip1", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 11.8);
+      tl.to("#cursor", { x: 570, y: 200, duration: 0.7, ease: "power2.inOut" }, 16.4);
+      tl.to("#cursor", { x: 531.12, y: 269.2, duration: 0.7, ease: "power2.inOut" }, 19.5);
+      tl.to("#cursor", { x: 570, y: 363.6, duration: 0.7, ease: "power2.inOut" }, 24.4);
+      tl.to("#cursor", { x: 401.6, y: 393.4, duration: 0.7, ease: "power2.inOut" }, 32.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 33.8);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 33.92);
+      tl.fromTo("#rip5", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 33.8);
+      tl.to("#cursor", { x: 570, y: 447.2, duration: 0.7, ease: "power2.inOut" }, 36);
+      tl.to("#cursor", { x: 660, y: 799.1, duration: 0.7, ease: "power2.inOut" }, 40.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 41.8);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 41.92);
+      tl.fromTo("#rip7", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 41.8);
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 47.2);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

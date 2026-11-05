@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(1100px 800px at 18% 20%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 200px; }
+      .center img { width: 300px; margin-bottom: 36px; }
+      .big { font-size: 104px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 48px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; background: #f1f5f9; }
+      .layer img { width: 1152px; height: auto; display: block; }
+      .mark { position: absolute; border: 5px solid #ef4444; border-radius: 12px; opacity: 0; box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 30px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 22px; padding: 6px 16px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+      .cap { position: absolute; left: 70px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+      .cap .step { font-size: 28px; margin-bottom: 18px; }
+      .cap .txt { font-size: 56px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 20px; font-size: 31px; line-height: 1.28; }
+      .cap .sub b { color: #fff; }
+      .device { position: absolute; left: 700px; top: 160px; width: 1180px; height: 760px; border-radius: 26px; background: #05080f; padding: 14px;
+        box-shadow: 0 0 0 3px #27324a, 0 40px 100px rgba(0,0,0,.6), 0 0 140px rgba(59,130,246,.16); }
+      .screen { position: relative; width: 1152px; height: 720px; border-radius: 14px; overflow: hidden; background: #0f172a; }
+      #cam { position: absolute; left: 0; top: 0; width: 1152px; height: 720px; transform-origin: 0 0; }
+      .device-stand { position: absolute; left: 1140px; top: 920px; width: 260px; height: 22px; background: linear-gradient(#1c2538, #0b1220); border-radius: 0 0 24px 24px; box-shadow: 0 0 0 2px #27324a; }
+      .progress { position: absolute; left: 0; bottom: 0; height: 8px; width: 100%; background: #1e293b; z-index: 80; }
+      .progress i { display: block; height: 100%; width: 0; background: #3b82f6; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="102.3" data-width="1920" data-height="1080">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="3.2" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Finanzas</div>
+        <div class="mid">Recorrido general en 2 minutos</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="3.2" data-duration="95.5" data-track-index="2" style="position:absolute;inset:0">
+        <div id="cap-menu" class="cap clip" data-start="3.2" data-duration="6.5" data-track-index="3"><div class="step">Para qué sirve</div><div class="txt">Todo el <b>dinero</b> de la academia</div><div class="sub">Lo que se vende, se cobra, se gasta y se debe. Se llena casi solo con lo que ya hacéis en la plataforma.</div></div>
+        <div id="cap-pestanas" class="cap clip" data-start="9.7" data-duration="6.5" data-track-index="3"><div class="step">Paso 2 de 14</div><div class="txt">Una <b>pestaña</b> por pregunta</div><div class="sub">Resumen, Movimientos, Cobros, Gastos, Alumnos, Entrenadores, Análisis, Revisión, Configuración, Exportar y Ayuda.</div></div>
+        <div id="cap-resumen1" class="cap clip" data-start="16.2" data-duration="8.5" data-track-index="3"><div class="step">Paso 3 de 14</div><div class="txt">Resumen: el <b>mes</b> de un vistazo</div><div class="sub"><b>Vendido</b> lo que compran los alumnos. <b>Cobrado</b> lo que entra de verdad. <b>Gastos</b> lo que sale. <b>Resultado</b> = cobrado − gastos.</div></div>
+        <div id="cap-resumen2" class="cap clip" data-start="24.7" data-duration="7.5" data-track-index="3"><div class="step">Paso 4 de 14</div><div class="txt">Lo que <b>falta</b> por cobrar o dar</div><div class="sub"><b>Pendiente de cobro</b>: vendido y aún sin pagar. <b>Sesiones pagadas sin dar</b>: lo que la academia todavía debe a los alumnos.</div></div>
+        <div id="cap-movs" class="cap clip" data-start="32.2" data-duration="6.5" data-track-index="3"><div class="step">Paso 5 de 14</div><div class="txt">Movimientos: cada <b>operación</b></div><div class="sub">Ventas, cobros, gastos y sesiones, una por fila. Se puede buscar, filtrar y exportar a Excel.</div></div>
+        <div id="cap-cobros" class="cap clip" data-start="38.7" data-duration="8" data-track-index="3"><div class="step">Paso 6 de 14</div><div class="txt">Cobros: apunta cada <b>pago</b></div><div class="sub">A la izquierda registras un cobro. A la derecha ves <b>quién debe</b> ahora y puedes cobrarle.</div></div>
+        <div id="cap-gastos" class="cap clip" data-start="46.7" data-duration="7" data-track-index="3"><div class="step">Paso 7 de 14</div><div class="txt">Gastos: lo que <b>paga</b> la academia</div><div class="sub">Importe, categoría y, si quieres, entrenador, sede y foto del ticket.</div></div>
+        <div id="cap-alumnos" class="cap clip" data-start="53.7" data-duration="6.5" data-track-index="3"><div class="step">Paso 8 de 14</div><div class="txt">Alumnos: la <b>cuenta</b> de cada uno</div><div class="sub">Qué ha comprado, qué ha pagado y qué debe. Filtra «solo los que deben».</div></div>
+        <div id="cap-cuenta" class="cap clip" data-start="60.2" data-duration="7" data-track-index="3"><div class="step">Paso 9 de 14</div><div class="txt">Su <b>historial</b> completo</div><div class="sub">Bonos, clases, pagos y avisos de ese alumno, con alertas si algo no cuadra.</div></div>
+        <div id="cap-entrenadores" class="cap clip" data-start="67.2" data-duration="5.5" data-track-index="3"><div class="step">Paso 10 de 14</div><div class="txt">Entrenadores y <b>análisis</b></div><div class="sub">Cuántas clases da cada entrenador y qué bonos y sedes funcionan mejor.</div></div>
+        <div id="cap-revision" class="cap clip" data-start="72.7" data-duration="7.5" data-track-index="3"><div class="step">Paso 11 de 14</div><div class="txt">Revisión: lo que hay que <b>arreglar</b></div><div class="sub">Clases sin cerrar, sin entrenador o sin bono descontado. Objetivo: dejarla <b>a cero</b> cada semana.</div></div>
+        <div id="cap-config" class="cap clip" data-start="80.2" data-duration="6.5" data-track-index="3"><div class="step">Paso 12 de 14</div><div class="txt">Configuración: las <b>reglas</b></div><div class="sub">Descuento automático de sesiones, horas de aviso, medios de pago y categorías.</div></div>
+        <div id="cap-exportar" class="cap clip" data-start="86.7" data-duration="6" data-track-index="3"><div class="step">Paso 13 de 14</div><div class="txt">Exportar para el <b>gestor</b></div><div class="sub">Descarga todos los datos en Excel o JSON. Puedes ocultar los nombres de los alumnos.</div></div>
+        <div id="cap-ayuda" class="cap clip" data-start="92.7" data-duration="6" data-track-index="3"><div class="step">Paso 14 de 14</div><div class="txt">¿Dudas? <b>Ayuda</b></div><div class="sub">Manual paso a paso y vídeos de cada tarea.</div></div>
+
+          <div class="device"><div class="screen"><div id="cam">
+          <div id="L-menu" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/menu.png" alt="" /></div>
+          <div id="L-pestanas" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/pestanas.png" alt="" /></div>
+          <div id="L-resumen1" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/resumen1.png" alt="" /></div>
+          <div id="L-resumen2" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/resumen2.png" alt="" /></div>
+          <div id="L-movs" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/movs.png" alt="" /></div>
+          <div id="L-cobros" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/cobros.png" alt="" /></div>
+          <div id="L-gastos" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/gastos.png" alt="" /></div>
+          <div id="L-alumnos" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/alumnos.png" alt="" /></div>
+          <div id="L-cuenta" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/cuenta.png" alt="" /></div>
+          <div id="L-entrenadores" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/entrenadores.png" alt="" /></div>
+          <div id="L-revision" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/revision.png" alt="" /></div>
+          <div id="L-config" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/config.png" alt="" /></div>
+          <div id="L-exportar" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/exportar.png" alt="" /></div>
+          <div id="L-ayuda" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/ayuda.png" alt="" /></div>
+          <div id="mk0" class="mark" style="left:6.4px;top:262.8px;width:179.2px;height:40px"></div>
+          <div id="pl0" class="pill" style="left:8px;top:218.8px">Menú Finanzas</div>
+          <div id="rip0" class="ripple" style="left:96px;top:282.8px"></div>
+          <div id="mk1" class="mark" style="left:211.2px;top:70.4px;width:921.6px;height:41.2px"></div>
+          <div id="pl1" class="pill" style="left:211.2px;top:26.4px">Pestañas</div>
+          <div id="mk2" class="mark" style="left:211.2px;top:268.113px;width:225.6px;height:156.113px"></div>
+          <div id="pl2" class="pill" style="left:211.2px;top:224.113px">Vendido</div>
+          <div id="mk3" class="mark" style="left:443.2px;top:268.113px;width:225.6px;height:156.113px"></div>
+          <div id="pl3" class="pill" style="left:443.2px;top:224.113px">Cobrado</div>
+          <div id="mk4" class="mark" style="left:675.2px;top:268.113px;width:225.6px;height:156.113px"></div>
+          <div id="pl4" class="pill" style="left:675.2px;top:224.113px">Gastos</div>
+          <div id="mk5" class="mark" style="left:907.2px;top:268.113px;width:225.6px;height:156.113px"></div>
+          <div id="pl5" class="pill" style="left:907.2px;top:224.113px">Resultado</div>
+          <div id="mk6" class="mark" style="left:211.2px;top:456.538px;width:225.6px;height:141.713px"></div>
+          <div id="pl6" class="pill" style="left:211.2px;top:412.538px">Pendiente de cobro</div>
+          <div id="mk7" class="mark" style="left:675.2px;top:456.538px;width:225.6px;height:141.713px"></div>
+          <div id="pl7" class="pill" style="left:675.2px;top:412.538px">Sesiones sin dar</div>
+          <div id="mk8" class="mark" style="left:211.2px;top:202.6px;width:184.313px;height:103.8px"></div>
+          <div id="pl8" class="pill" style="left:211.2px;top:158.6px">Pulsa para filtrar</div>
+          <div id="mk9" class="mark" style="left:211.2px;top:118px;width:380.263px;height:487px"></div>
+          <div id="pl9" class="pill" style="left:211.2px;top:74px">Registrar cobro</div>
+          <div id="mk10" class="mark" style="left:597.863px;top:118px;width:534.925px;height:487px"></div>
+          <div id="pl10" class="pill" style="left:597.863px;top:74px">Quién debe</div>
+          <div id="mk11" class="mark" style="left:211.2px;top:118px;width:921.6px;height:283.2px"></div>
+          <div id="pl11" class="pill" style="left:211.2px;top:74px">Registrar gasto</div>
+          <div id="mk12" class="mark" style="left:545.6px;top:164px;width:71.2px;height:38.6px"></div>
+          <div id="pl12" class="pill" style="left:545.6px;top:120px">Filtros</div>
+          <div id="mk13" class="mark" style="left:1056.8px;top:328.7px;width:62.4px;height:30.4px"></div>
+          <div id="pl13" class="pill" style="left:1056.8px;top:284.7px">Abrir cuenta</div>
+          <div id="rip13" class="ripple" style="left:1088px;top:343.9px"></div>
+          <div id="mk14" class="mark" style="left:446.4px;top:195.513px;width:134.4px;height:30.4px"></div>
+          <div id="pl14" class="pill" style="left:446.4px;top:151.513px">Historial completo</div>
+          <div id="mk15" class="mark" style="left:211.2px;top:251.025px;width:225.6px;height:126.55px"></div>
+          <div id="mk16" class="mark" style="left:211.2px;top:404.775px;width:225.6px;height:126.55px"></div>
+          <div id="pl16" class="pill" style="left:211.2px;top:360.775px">Sin bono descontado</div>
+          <div id="mk17" class="mark" style="left:211.2px;top:723.113px;width:921.6px;height:1381.188px"></div>
+          <div id="pl17" class="pill" style="left:211.2px;top:679.113px">Reglas</div>
+          <div id="mk18" class="mark" style="left:211.2px;top:202.6px;width:534.925px;height:294.2px"></div>
+          <div id="pl18" class="pill" style="left:211.2px;top:158.6px">Descargar datos</div>
+          <div id="mk19" class="mark" style="left:229.6px;top:238.625px;width:774.4px;height:125.763px"></div>
+          <div id="pl19" class="pill" style="left:229.6px;top:194.625px">Manual y vídeos</div>
+          <svg id="cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.5L16 20l-3 1.2-3.5-7.6L4 18z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div></div></div>
+          <div class="device-stand"></div>
+          <div class="progress"><i></i></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="98.7" data-duration="3.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Ya sabes moverte por Finanzas</div>
+        <div class="mid">Guías y vídeos en <b>Finanzas › Ayuda</b></div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 2.85);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 98.9);
+      tl.fromTo(".device, .device-stand", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 3.2);
+      tl.to(".device, .device-stand", { opacity: 0, duration: 0.4 }, 98.3);
+      tl.fromTo(".progress i", { width: "0%" }, { width: "100%", duration: 95.5, ease: "none" }, 3.2);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-menu", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 3.2);
+      tl.to("#L-menu", { opacity: 0, duration: 0.3 }, 9.7);
+      tl.fromTo("#L-pestanas", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.7);
+      tl.to("#L-pestanas", { opacity: 0, duration: 0.3 }, 16.2);
+      tl.fromTo("#L-resumen1", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 16.2);
+      tl.to("#L-resumen1", { opacity: 0, duration: 0.3 }, 24.7);
+      tl.fromTo("#L-resumen2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 24.7);
+      tl.to("#L-resumen2", { opacity: 0, duration: 0.3 }, 32.2);
+      tl.fromTo("#L-movs", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 32.2);
+      tl.to("#L-movs", { opacity: 0, duration: 0.3 }, 38.7);
+      tl.fromTo("#L-cobros", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 38.7);
+      tl.to("#L-cobros", { opacity: 0, duration: 0.3 }, 46.7);
+      tl.fromTo("#L-gastos", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 46.7);
+      tl.to("#L-gastos", { opacity: 0, duration: 0.3 }, 53.7);
+      tl.fromTo("#L-alumnos", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 53.7);
+      tl.to("#L-alumnos", { opacity: 0, duration: 0.3 }, 60.2);
+      tl.fromTo("#L-cuenta", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 60.2);
+      tl.to("#L-cuenta", { opacity: 0, duration: 0.3 }, 67.2);
+      tl.fromTo("#L-entrenadores", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 67.2);
+      tl.to("#L-entrenadores", { opacity: 0, duration: 0.3 }, 72.7);
+      tl.fromTo("#L-revision", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 72.7);
+      tl.to("#L-revision", { opacity: 0, duration: 0.3 }, 80.2);
+      tl.fromTo("#L-config", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 80.2);
+      tl.to("#L-config", { opacity: 0, duration: 0.3 }, 86.7);
+      tl.fromTo("#L-exportar", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 86.7);
+      tl.to("#L-exportar", { opacity: 0, duration: 0.3 }, 92.7);
+      tl.fromTo("#L-ayuda", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 92.7);
+      tl.to("#L-ayuda", { opacity: 0, duration: 0.3 }, 98.7);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 4.2);
+      tl.to("#mk0", { opacity: 0, duration: 0.25 }, 9.6);
+      tl.fromTo("#pl0", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 4.35);
+      tl.to("#pl0", { opacity: 0, duration: 0.25 }, 9.6);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 10.7);
+      tl.to("#mk1", { opacity: 0, duration: 0.25 }, 16.1);
+      tl.fromTo("#pl1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 10.85);
+      tl.to("#pl1", { opacity: 0, duration: 0.25 }, 16.1);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 17.2);
+      tl.to("#mk2", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#pl2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 17.35);
+      tl.to("#pl2", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 18.875);
+      tl.to("#mk3", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#pl3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 19.025);
+      tl.to("#pl3", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 20.55);
+      tl.to("#mk4", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#pl4", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 20.7);
+      tl.to("#pl4", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 22.225);
+      tl.to("#mk5", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#pl5", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 22.375);
+      tl.to("#pl5", { opacity: 0, duration: 0.25 }, 24.6);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 25.7);
+      tl.to("#mk6", { opacity: 0, duration: 0.25 }, 32.1);
+      tl.fromTo("#pl6", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 25.85);
+      tl.to("#pl6", { opacity: 0, duration: 0.25 }, 32.1);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 28.55);
+      tl.to("#mk7", { opacity: 0, duration: 0.25 }, 32.1);
+      tl.fromTo("#pl7", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 28.7);
+      tl.to("#pl7", { opacity: 0, duration: 0.25 }, 32.1);
+      tl.fromTo("#mk8", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 33.2);
+      tl.to("#mk8", { opacity: 0, duration: 0.25 }, 38.6);
+      tl.fromTo("#pl8", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 33.35);
+      tl.to("#pl8", { opacity: 0, duration: 0.25 }, 38.6);
+      tl.fromTo("#mk9", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 39.7);
+      tl.to("#mk9", { opacity: 0, duration: 0.25 }, 46.6);
+      tl.fromTo("#pl9", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 39.85);
+      tl.to("#pl9", { opacity: 0, duration: 0.25 }, 46.6);
+      tl.fromTo("#mk10", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 42.8);
+      tl.to("#mk10", { opacity: 0, duration: 0.25 }, 46.6);
+      tl.fromTo("#pl10", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 42.95);
+      tl.to("#pl10", { opacity: 0, duration: 0.25 }, 46.6);
+      tl.fromTo("#mk11", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 47.7);
+      tl.to("#mk11", { opacity: 0, duration: 0.25 }, 53.6);
+      tl.fromTo("#pl11", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 47.85);
+      tl.to("#pl11", { opacity: 0, duration: 0.25 }, 53.6);
+      tl.fromTo("#mk12", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 54.7);
+      tl.to("#mk12", { opacity: 0, duration: 0.25 }, 60.1);
+      tl.fromTo("#pl12", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 54.85);
+      tl.to("#pl12", { opacity: 0, duration: 0.25 }, 60.1);
+      tl.fromTo("#mk13", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 57.05);
+      tl.to("#mk13", { opacity: 0, duration: 0.25 }, 60.1);
+      tl.fromTo("#pl13", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 57.2);
+      tl.to("#pl13", { opacity: 0, duration: 0.25 }, 60.1);
+      tl.fromTo("#mk14", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 61.2);
+      tl.to("#mk14", { opacity: 0, duration: 0.25 }, 67.1);
+      tl.fromTo("#pl14", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 61.35);
+      tl.to("#pl14", { opacity: 0, duration: 0.25 }, 67.1);
+      tl.fromTo("#mk15", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 73.7);
+      tl.to("#mk15", { opacity: 0, duration: 0.25 }, 80.1);
+      tl.fromTo("#mk16", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 76.55);
+      tl.to("#mk16", { opacity: 0, duration: 0.25 }, 80.1);
+      tl.fromTo("#pl16", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 76.7);
+      tl.to("#pl16", { opacity: 0, duration: 0.25 }, 80.1);
+      tl.fromTo("#mk17", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 81.2);
+      tl.to("#mk17", { opacity: 0, duration: 0.25 }, 86.6);
+      tl.fromTo("#pl17", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 81.35);
+      tl.to("#pl17", { opacity: 0, duration: 0.25 }, 86.6);
+      tl.fromTo("#mk18", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 87.7);
+      tl.to("#mk18", { opacity: 0, duration: 0.25 }, 92.6);
+      tl.fromTo("#pl18", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 87.85);
+      tl.to("#pl18", { opacity: 0, duration: 0.25 }, 92.6);
+      tl.fromTo("#mk19", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 93.7);
+      tl.to("#mk19", { opacity: 0, duration: 0.25 }, 98.6);
+      tl.fromTo("#pl19", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 93.85);
+      tl.to("#pl19", { opacity: 0, duration: 0.25 }, 98.6);
+      
+      gsap.set("#cursor", { x: 900, y: 640 });
+      tl.fromTo("#cursor", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.3);
+      tl.to("#cursor", { x: 90, y: 278.8, duration: 0.7, ease: "power2.inOut" }, 3.4);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 4.3);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 4.42);
+      tl.fromTo("#rip0", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 4.3);
+      tl.to("#cursor", { x: 666, y: 87, duration: 0.7, ease: "power2.inOut" }, 9.9);
+      tl.to("#cursor", { x: 318, y: 342.169, duration: 0.7, ease: "power2.inOut" }, 16.4);
+      tl.to("#cursor", { x: 550, y: 342.169, duration: 0.7, ease: "power2.inOut" }, 18.075);
+      tl.to("#cursor", { x: 782, y: 342.169, duration: 0.7, ease: "power2.inOut" }, 19.75);
+      tl.to("#cursor", { x: 1014, y: 342.169, duration: 0.7, ease: "power2.inOut" }, 21.425);
+      tl.to("#cursor", { x: 318, y: 523.394, duration: 0.7, ease: "power2.inOut" }, 24.9);
+      tl.to("#cursor", { x: 782, y: 523.394, duration: 0.7, ease: "power2.inOut" }, 27.75);
+      tl.to("#cursor", { x: 297.356, y: 250.5, duration: 0.7, ease: "power2.inOut" }, 32.4);
+      tl.to("#cursor", { x: 357.305, y: 164, duration: 0.7, ease: "power2.inOut" }, 38.9);
+      tl.to("#cursor", { x: 751.863, y: 164, duration: 0.7, ease: "power2.inOut" }, 42);
+      tl.to("#cursor", { x: 365.2, y: 164, duration: 0.7, ease: "power2.inOut" }, 46.9);
+      tl.to("#cursor", { x: 575.2, y: 179.3, duration: 0.7, ease: "power2.inOut" }, 53.9);
+      tl.to("#cursor", { x: 1082, y: 339.9, duration: 0.7, ease: "power2.inOut" }, 56.25);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 57.15);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 57.27);
+      tl.fromTo("#rip13", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 57.15);
+      tl.to("#cursor", { x: 507.6, y: 206.713, duration: 0.7, ease: "power2.inOut" }, 60.4);
+      tl.to("#cursor", { x: 318, y: 310.3, duration: 0.7, ease: "power2.inOut" }, 72.9);
+      tl.to("#cursor", { x: 318, y: 464.05, duration: 0.7, ease: "power2.inOut" }, 75.75);
+      tl.to("#cursor", { x: 365.2, y: 769.113, duration: 0.7, ease: "power2.inOut" }, 80.4);
+      tl.to("#cursor", { x: 365.2, y: 248.6, duration: 0.7, ease: "power2.inOut" }, 86.9);
+      tl.to("#cursor", { x: 383.6, y: 272.354, duration: 0.7, ease: "power2.inOut" }, 92.9);
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 98.2);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

@@ -30,3 +30,8 @@ writable/*.sh
 # JS de tests (jsdom) — se instala con: npm --prefix tests/js install
 node_modules/
 tests/js/package-lock.json
+
+# Vídeos de Finanzas: artefactos de HyperFrames y capturas intermedias (se regeneran, ver videos/_finanzas-generador/LEEME.md)
+videos/finanzas-*/.hyperframes/
+videos/finanzas-*/renders/
+videos/_finanzas-generador/shots/

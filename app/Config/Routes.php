@@ -476,6 +476,7 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin', 'finan
     $routes->get('ayuda/imprimir',          'FinanzasController::ayudaImprimir');
     $routes->get('ayuda/manual.pdf',        'FinanzasController::manualPdf');
     $routes->get('ayuda/img/(:segment)',    'FinanzasController::manualImg/$1');
+    $routes->get('ayuda/video/(:segment)',  'FinanzasController::manualVideo/$1');
     // Cierre en bloque de la revisión inicial y precios: tocan dinero → acceso total
     $routes->post('revision/cierre-inicial',    'FinanzasController::initialClose');
     $routes->post('revision/confirmar-precios', 'FinanzasController::confirmAllPrices');
