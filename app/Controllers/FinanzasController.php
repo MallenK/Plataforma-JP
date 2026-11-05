@@ -396,9 +396,65 @@ class FinanzasController extends BaseController
     private const MANUAL_DIR = APPPATH . 'Data/manual_finanzas/';
     private const MANUAL_PDF = 'Manual-Finanzas-JP-Preparation.pdf';
 
+    /** Vídeos tutoriales del manual (archivo => título y descripción). Solo se listan los que existen. */
+    private const MANUAL_VIDEOS = [
+        'finanzas-general.mp4'         => ['Finanzas: recorrido general',            'Qué es cada pestaña y para qué sirve, en menos de 2 minutos.'],
+        'finanzas-vender-cobrar.mp4'   => ['Vender un bono y cobrarlo',           'Asignar un bono, aplicar descuento, cobrar y ver quién debe.'],
+        'finanzas-saldar-clases.mp4'   => ['Saldar clases al dar un bono',        'Elegir qué clases pendientes se descuentan del bono nuevo.'],
+        'finanzas-gastos.mp4'          => ['Registrar gastos',                    'Apuntar un gasto con categoría, entrenador y foto del ticket.'],
+        'finanzas-alumnos.mp4'         => ['La cuenta de un alumno',              'Qué ha comprado, pagado y usado, y su historial completo.'],
+        'finanzas-descuento-auto.mp4'  => ['Descuento automático de sesiones',    'Qué hace, cuándo se descuenta, y cómo devolver una sesión.'],
+        'finanzas-revision-cierre.mp4' => ['Revisión semanal y cierre del mes',   'Dejar la revisión a cero y exportar los números.'],
+    ];
+
     public function ayuda()
     {
-        return view('finanzas/ayuda', $this->base('ayuda', ['hasPdf' => is_file(self::MANUAL_DIR . self::MANUAL_PDF)]));
+        $videos = [];
+        foreach (self::MANUAL_VIDEOS as $file => [$title, $desc]) {
+            if (is_file(self::MANUAL_DIR . 'videos/' . $file)) {
+                $videos[] = ['file' => $file, 'title' => $title, 'desc' => $desc];
+            }
+        }
+        return view('finanzas/ayuda', $this->base('ayuda', ['hasPdf' => is_file(self::MANUAL_DIR . self::MANUAL_PDF), 'videos' => $videos]));
+    }
+
+    /** Vídeos del manual (solo admin, nunca públicos). Admite rangos para poder avanzar y retroceder. */
+    public function manualVideo(string $name)
+    {
+        if (!isset(self::MANUAL_VIDEOS[$name]) || !is_file($path = self::MANUAL_DIR . 'videos/' . $name)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        $size  = filesize($path);
+        $start = 0;
+        $end   = $size - 1;
+        $code  = 200;
+        if (preg_match('/^bytes=(\d*)-(\d*)$/', (string) $this->request->getHeaderLine('Range'), $m) && ($m[1] !== '' || $m[2] !== '')) {
+            if ($m[1] === '') {
+                $start = max(0, $size - (int) $m[2]);
+            } else {
+                $start = (int) $m[1];
+                $end   = $m[2] !== '' ? min((int) $m[2], $size - 1) : $end;
+            }
+            if ($start > $end || $start >= $size) {
+                return $this->response->setStatusCode(416)->setHeader('Content-Range', 'bytes */' . $size);
+            }
+            $code = 206;
+        }
+        $fh = fopen($path, 'rb');
+        fseek($fh, $start);
+        $body = (string) fread($fh, $end - $start + 1);
+        fclose($fh);
+
+        $res = $this->response->setStatusCode($code)
+            ->setHeader('Content-Type', 'video/mp4')
+            ->setHeader('Accept-Ranges', 'bytes')
+            ->setHeader('Content-Length', (string) strlen($body))
+            ->setHeader('Cache-Control', 'private, max-age=86400')
+            ->setHeader('X-Content-Type-Options', 'nosniff');
+        if ($code === 206) {
+            $res->setHeader('Content-Range', 'bytes ' . $start . '-' . $end . '/' . $size);
+        }
+        return $res->setBody($body);
     }
 
     public function ayudaImprimir()
