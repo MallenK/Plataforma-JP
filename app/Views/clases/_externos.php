@@ -50,7 +50,11 @@ if ($bare && $cancelled) { return; }
     <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
             <div>
-                <div style="font-weight:600;color:var(--text-h)"><?= esc($e['name']) ?></div>
+                <div style="font-weight:600;color:var(--text-h)">
+                    <?php if ($canSeePersonal): ?>
+                        <a href="<?= base_url('externos/' . (int) $e['guest_id']) ?>" class="row-link-anchor" title="Ver su ficha e historial"><?= esc($e['name']) ?></a>
+                    <?php else: ?><?= esc($e['name']) ?><?php endif; ?>
+                </div>
                 <?php if ($canSeePersonal && !empty($e['is_minor'])): ?>
                     <span style="font-size:11px;color:#b45309"><i class="bi bi-exclamation-circle me-1"></i>Menor (<?= (int) $e['age'] ?> años)</span>
                 <?php elseif ($canSeePersonal && $e['age'] !== null): ?>

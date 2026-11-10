@@ -34,6 +34,9 @@ $pageSubtitle = 'Gestión de alumnos registrados';
 <div class="page-header">
     <?php if (in_array(session('role'), ['superadmin', 'admin'])): ?>
     <div class="d-flex gap-2">
+        <a href="<?= base_url('externos') ?>" class="btn-jp btn-jp-secondary">
+            <i class="bi bi-person-badge"></i> Personas externas
+        </a>
         <a href="<?= base_url('alumnos/inactivos') ?>" class="btn-jp btn-jp-secondary">
             <i class="bi bi-person-x"></i> Alumnos inactivos
         </a>
