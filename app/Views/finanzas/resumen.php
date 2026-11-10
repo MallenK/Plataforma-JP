@@ -42,6 +42,27 @@ $a = $s['attendance'];
     <?= $kpi('Caducado sin usar', eur($s['expired']['cents']), $s['expired']['sessions'] . ' sesiones de ' . $s['expired']['count'] . ' bonos', '', 'caducado') ?>
 </div>
 
+<?php $x = $s['externos'] ?? null; ?>
+<?php if ($x && ($x['sold']['count'] || $x['paid']['count'] || $x['due'] || $x['unpriced'])): ?>
+<!-- Personas externas: ya están sumadas en las cifras de arriba; aquí se ve cuánto aportan -->
+<div class="card-jp mb-3" style="border-left:3px solid #0ea5e9">
+    <div class="card-jp-body" style="font-size:13px">
+        <div style="font-weight:700;color:var(--text-h);margin-bottom:6px"><i class="bi bi-person-badge-fill me-1" style="color:#0ea5e9"></i>Incluye personas externas
+            <span style="font-weight:400;color:var(--text-muted)">· clase de prueba o suelta, sin cuenta de alumno (ya sumadas arriba)</span></div>
+        <div class="d-flex flex-wrap gap-4">
+            <span>Vendido: <b><?= eur($x['sold']['cents']) ?></b> <small style="color:var(--text-muted)">(<?= (int) $x['sold']['count'] ?> clases)</small></span>
+            <span>Cobrado: <b><?= eur($x['paid']['cents']) ?></b> <small style="color:var(--text-muted)">(<?= (int) $x['paid']['count'] ?> cobros)</small></span>
+            <span>Servicio prestado: <b><?= eur($x['service']['cents']) ?></b> <small style="color:var(--text-muted)">(<?= (int) $x['service']['count'] ?> clases)</small></span>
+            <span>Pendiente de cobro: <b style="color:<?= $x['due'] > 0 ? '#dc2626' : 'inherit' ?>"><?= eur($x['due']) ?></b></span>
+        </div>
+        <?php if ($x['unpriced'] > 0): ?>
+            <div style="margin-top:8px;color:#b45309"><i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <?= (int) $x['unpriced'] ?> clase<?= $x['unpriced'] > 1 ? 's' : '' ?> de externos <b>sin precio fijado</b>: no cuentan en el dinero hasta que se ponga (ábrela y fija el precio en «Externos»).</div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row g-3 mb-3">
     <div class="col-12 col-xl-8">
         <div class="card-jp h-100">

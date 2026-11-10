@@ -81,27 +81,32 @@
             });
         });
 
-        // Add coach
-        $('cm-coach-sel').addEventListener('change', function () {
-            const id = parseInt(this.value);
-            if (!id || selectedCoaches.has(id)) { this.value = ''; return; }
-            const name = this.options[this.selectedIndex].dataset.name || '';
-            selectedCoaches.set(id, name);
-            this.value = '';
-            renderTags('cm-coach-list', selectedCoaches);
-            updateWarning();
+        // Buscadores de entrenador y de alumno (sustituyen a los desplegables)
+        PersonPicker.attach({
+            root:       $('cm-coach-picker'),
+            getOptions: () => coachOptions,
+            isTaken:    id => selectedCoaches.has(parseInt(id)),
+            onPick:     o => {
+                selectedCoaches.set(parseInt(o.id), o.name);
+                renderTags('cm-coach-list', selectedCoaches);
+                updateWarning();
+            }
+        });
+        PersonPicker.attach({
+            root:       $('cm-player-picker'),
+            getOptions: () => playerOptions,
+            isTaken:    id => selectedPlayers.has(parseInt(id)),
+            onPick:     o => {
+                selectedPlayers.set(parseInt(o.id), o.name);
+                renderTags('cm-player-list', selectedPlayers);
+                updateWarning();
+                refreshCov();
+            }
         });
 
-        // Add player
-        $('cm-player-sel').addEventListener('change', function () {
-            const id = parseInt(this.value);
-            if (!id || selectedPlayers.has(id)) { this.value = ''; return; }
-            const name = this.options[this.selectedIndex].dataset.name || '';
-            selectedPlayers.set(id, name);
-            this.value = '';
-            renderTags('cm-player-list', selectedPlayers);
-            updateWarning();
-            refreshCov();
+        // Alumno registrado / Externo (clase puntual de prueba o suelta)
+        overlay.querySelectorAll('[data-cm-who]').forEach(btn => {
+            btn.addEventListener('click', () => setWho(btn.dataset.cmWho));
         });
 
         // Submit
@@ -159,20 +164,9 @@
             coachOptions  = d.coaches  || [];
             playerOptions = d.players  || [];
 
-            const cSel = $('cm-coach-sel');
-            const pSel = $('cm-player-sel');
             const lSel = $('cm-location-id');
 
-            coachOptions.forEach(c => {
-                const o = document.createElement('option');
-                o.value = c.id; o.textContent = c.name; o.dataset.name = c.name;
-                cSel.appendChild(o);
-            });
-            playerOptions.forEach(p => {
-                const o = document.createElement('option');
-                o.value = p.id; o.textContent = p.name; o.dataset.name = p.name;
-                pSel.appendChild(o);
-            });
+            // Entrenadores y jugadores los consultan los buscadores (PersonPicker) desde estas listas.
             (d.locations || []).forEach(l => {
                 const o = document.createElement('option');
                 o.value = l.id; o.textContent = l.name;
@@ -185,9 +179,39 @@
         }
     }
 
+    // ── Alumno registrado / Externo ─────────────────────────────
+    let externoMode = false;
+
+    function setWho(mode) {
+        const hasExt = !!$('cm-ext-block');
+        externoMode = hasExt && mode === 'ext';
+        document.querySelectorAll('[data-cm-who]').forEach(b =>
+            b.classList.toggle('active', b.dataset.cmWho === (externoMode ? 'ext' : 'reg')));
+        $('cm-reg-block')?.classList.toggle('d-none', externoMode);
+        $('cm-ext-block')?.classList.toggle('d-none', !externoMode);
+        $('cm-ext-hint')?.classList.toggle('d-none', !externoMode);
+        refreshCov();
+    }
+
+    function resetExterno() {
+        const root = $('cm-ext-block')?.querySelector('[data-ex-root]');
+        if (root && window.ExternosList) ExternosList.attach(root).reset();
+        setWho('reg');
+    }
+
+    // Una clase recurrente no admite externos (es una clase puntual de una persona).
+    function syncWho() {
+        const wrap = $('cm-who');
+        if (!wrap) return;
+        const recurring = currentType === 'recurring';
+        wrap.classList.toggle('d-none', recurring);
+        if (recurring && externoMode) setWho('reg');
+    }
+
     // ── Tipo (puntual / recurrente) ─────────────────────────────
     function setType(t) {
         currentType = (t === 'recurring') ? 'recurring' : 'single';
+        syncWho();
         document.querySelectorAll('.cm-type-tab').forEach(b => {
             b.classList.toggle('active', b.dataset.cmType === currentType);
         });
@@ -261,6 +285,7 @@
         }
         renderTags('cm-coach-list', selectedCoaches);
         renderTags('cm-player-list', selectedPlayers);
+        resetExterno();
         hide($('cm-error'));
         hide($('cm-warning'));
 
@@ -361,7 +386,14 @@
         }
 
         selectedCoaches.forEach((_, id) => fd.append('coach_ids[]', id));
-        selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+        if (externoMode && currentType === 'single') {
+            // Persona externa: sus datos viajan como externo[...] y el servidor valida y crea clase + ficha juntas.
+            fd.append('externo_mode', '1');
+            const exErr = window.ExternosList ? ExternosList.appendTo($('cm-ext-block').querySelector('[data-ex-root]'), fd, 'externos') : 'No se pudo cargar el formulario de externos. Recarga la página.';
+            if (exErr) { errEl.textContent = exErr; show(errEl); return; }
+        } else {
+            selectedPlayers.forEach((_, id) => fd.append('player_ids[]', id));
+        }
 
         // Botón
         const btn = $('cm-submit');

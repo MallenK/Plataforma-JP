@@ -34,10 +34,29 @@ class FinanceReportService
     private const MONTHS = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
                             'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
+    /** Personas externas (clase de prueba / suelta): se suman a cada cifra. */
+    private ExternosFinanceService $ext;
+
     public function __construct(?\CodeIgniter\Database\BaseConnection $db = null)
     {
         $this->db    = $db ?? \Config\Database::connect();
         $this->start = FinanceService::startDate($this->db);
+        $this->ext   = new ExternosFinanceService($this->db);
+    }
+
+    /** Suma dos listas «medio de pago → importe» y las ordena de mayor a menor. Pura. */
+    public static function mergeByMethod(array $a, array $b): array
+    {
+        $acc = [];
+        foreach (array_merge($a, $b) as $r) {
+            $acc[$r['name']] = ($acc[$r['name']] ?? 0) + (int) $r['v'];
+        }
+        arsort($acc);
+        $out = [];
+        foreach ($acc as $name => $v) {
+            $out[] = ['name' => $name, 'v' => $v];
+        }
+        return $out;
     }
 
     /**
@@ -184,14 +203,26 @@ class FinanceReportService
                                        AND expires_at BETWEEN ? AND ? AND expires_at < ?" . FinanceExclusion::playerSql('player_id'), [$start, $from, $to, $today])->getRowArray();
         $avg = $this->db->query("SELECT COALESCE(SUM(price_cents),0) v, COALESCE(SUM(sessions_total),0) s FROM player_bonos WHERE voided_at IS NULL AND created_at >= ?" . FinanceExclusion::playerSql('player_id'), [$start])->getRowArray();
 
+        // Personas externas (clase de prueba / suelta): mismas reglas, sumadas a cada cifra y detalladas aparte.
+        $xSold = $this->ext->sold($from, $to);
+        $xPaid = $this->ext->paid($from, $to);
+        $xServ = $this->ext->service($from, $to);
+        $xDue  = $this->ext->due($start);
+        $xDueP = $this->ext->due($start, $from, $to);
+        $xUnpriced = $this->ext->unpriced($start);
+
         return [
-            'sold'      => ['count' => (int) $sold['n'], 'cents' => (int) $sold['v'], 'discount' => (int) $sold['d']],
-            'paid'      => ['count' => (int) $paid['n'], 'cents' => (int) $paid['v'], 'by_method' => $byMethod],
-            'service'   => $service,
+            'sold'      => ['count' => (int) $sold['n'] + $xSold['count'], 'cents' => (int) $sold['v'] + $xSold['cents'], 'discount' => (int) $sold['d']],
+            'paid'      => ['count' => (int) $paid['n'] + $xPaid['count'], 'cents' => (int) $paid['v'] + $xPaid['cents'],
+                            'by_method' => self::mergeByMethod($byMethod, $xPaid['by_method'])],
+            'service'   => ['count' => $service['count'] + $xServ['count'], 'cents' => $service['cents'] + $xServ['cents']],
             'expenses'  => ['count' => (int) $exp['n'], 'cents' => (int) $exp['v'], 'by_category' => $byCat],
-            'result'    => (int) $paid['v'] - (int) $exp['v'],
-            'due'       => $due,
-            'due_period' => $duePeriod,
+            'result'    => (int) $paid['v'] + $xPaid['cents'] - (int) $exp['v'],
+            'due'       => $due + $xDue,
+            'due_period' => $duePeriod + $xDueP,
+            // Cuánto de lo anterior viene de personas externas (para verlo desglosado).
+            'externos'  => ['sold' => $xSold, 'paid' => ['count' => $xPaid['count'], 'cents' => $xPaid['cents']],
+                            'service' => $xServ, 'due' => $xDue, 'unpriced' => $xUnpriced],
             'prepaid'   => ['sessions' => (int) $prepaid['s'], 'cents' => (int) round((float) $prepaid['v'])],
             'expired'   => ['count' => (int) $expired['n'], 'sessions' => (int) $expired['s'], 'cents' => (int) round((float) $expired['v'])],
             'avg_session_cents' => (int) $avg['s'] > 0 ? (int) round((int) $avg['v'] / (int) $avg['s']) : 0,
@@ -218,7 +249,12 @@ class FinanceReportService
              WHERE cs.status = 'completed' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs'),
             [$hours, $hours, $from, $to]
         )->getRowArray();
-        return array_map('intval', $r ?? []) + ['notice_hours' => $hours];
+        $r = array_map('intval', $r ?? []);
+        // Las personas externas también cuentan en la asistencia (vino / no vino).
+        $x = $this->ext->attendance($from, $to);
+        $r['present'] = ($r['present'] ?? 0) + $x['present'];
+        $r['absent']  = ($r['absent'] ?? 0) + $x['absent'];
+        return $r + ['notice_hours' => $hours];
     }
 
     public function noticeHours(): int
@@ -237,9 +273,11 @@ class FinanceReportService
             $out[] = [
                 'month'    => $m,
                 'label'    => ucfirst(mb_substr(self::MONTHS[(int) substr($m, 5, 2)], 0, 3)) . ' ' . substr($m, 2, 2),
-                'sold'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to]),
-                'paid'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to]),
-                'service'  => $this->serviceValue($from, $to)['cents'],
+                'sold'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_charges WHERE voided_at IS NULL AND charged_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to])
+                              + $this->ext->sold($from, $to)['cents'],
+                'paid'     => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_payments WHERE voided_at IS NULL AND paid_at BETWEEN ? AND ?" . FinanceExclusion::playerSql('player_id'), [$from, $to])
+                              + $this->ext->paid($from, $to)['cents'],
+                'service'  => $this->serviceValue($from, $to)['cents'] + $this->ext->service($from, $to)['cents'],
                 'expenses' => $this->scalar("SELECT COALESCE(SUM(amount_cents),0) FROM fin_expenses WHERE voided_at IS NULL AND spent_at BETWEEN ? AND ?", [$from, $to]),
             ];
         }
@@ -323,6 +361,12 @@ class FinanceReportService
             }
         }
 
+        // Personas externas (clase de prueba / suelta): ventas, cobros y clases dadas, marcadas «(externo)».
+        $extTypes = array_values(array_filter(['venta', 'cobro', 'servicio'], $want));
+        if ($extTypes) {
+            $rows = array_merge($rows, $this->ext->movements($from, $to, $extTypes));
+        }
+
         usort($rows, fn($a, $b) => [$b['date'], $b['ref']] <=> [$a['date'], $a['ref']]);
 
         $totals = array_fill_keys(array_keys(self::MOVE_TYPES), ['count' => 0, 'cents' => 0]);
@@ -357,6 +401,9 @@ class FinanceReportService
             )->getResultArray(), 'id'));
             $present = $sids ? $this->scalar("SELECT COUNT(*) FROM class_session_players WHERE attendance = 'present' AND session_id IN (" . implode(',', $sids) . ")") : 0;
             $service = $this->serviceValue($from, $to, $sids);
+            // Las clases con personas externas que dio este entrenador también cuentan.
+            $present += $this->ext->attendance($from, $to, $sids)['present'];
+            $service['cents'] += $this->ext->service($from, $to, $sids)['cents'];
             $exp = $this->db->query("SELECT COUNT(*) n, COALESCE(SUM(amount_cents),0) v FROM fin_expenses
                                      WHERE voided_at IS NULL AND staff_id = ? AND spent_at BETWEEN ? AND ?", [(int) $s['id'], $from, $to])->getRowArray();
             if (!$sids && !(int) $exp['n'] && $s['role'] !== 'coach') {
@@ -409,6 +456,16 @@ class FinanceReportService
              LEFT JOIN player_profiles pp ON pp.player_id = csp.user_id
              WHERE cs.status = 'completed' AND csp.attendance = 'present' AND cs.session_date BETWEEN ? AND ?" . FinanceExclusion::sessionSql('cs') . "
              GROUP BY pp.category ORDER BY attended DESC", [$from, $to])->getResultArray();
+
+        // Personas externas: ventas por tipo (prueba / suelta) y como una categoría más de asistencia.
+        foreach ($this->ext->byKind($from, $to) as $k) {
+            $byType[] = ['name' => $k['name'] . ' (externos)', 'n' => $k['n'], 'v' => $k['v'], 'd' => 0, 'sessions' => 1];
+        }
+        usort($byType, static fn($a, $b) => (int) $b['v'] <=> (int) $a['v']);
+        $xa = $this->ext->distinctAttended($from, $to);
+        if ($xa['attended'] > 0) {
+            $byCategory[] = ['cat' => 'Externos (sin cuenta)', 'players' => $xa['people'], 'attended' => $xa['attended']];
+        }
 
         return [
             'by_type'     => $byType,

@@ -461,6 +461,17 @@ $statusHint   = [
         </div>
         <?php endif; ?>
 
+        <?php if ($canManage): ?>
+            <?= view('clases/_externos', [
+                'session'           => $session,
+                'externos'          => $externos,
+                'canSeePersonal'    => $canSeeExternosPersonal,
+                'externosAvailable' => $externosAvailable,
+                'canMoney'          => $externosCanMoney,
+                'payMethods'        => $externosMethods,
+            ]) ?>
+        <?php endif; ?>
+
     </div><!-- /col-lg-8 -->
 
     <!-- ── Sidebar ──────────────────────────────────────────── -->

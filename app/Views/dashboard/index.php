@@ -1028,6 +1028,8 @@ window.JPLive && JPLive.on(['class', 'bono'], () => DBCAL.load());
 <?php if ($dbCanManage): ?>
 <script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script src="<?= base_url('assets/js/series-builder.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/series-builder.js') ?>"></script>
+<script src="<?= base_url('assets/js/person-picker.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/person-picker.js') ?: time() ?>"></script>
+<script src="<?= base_url('assets/js/externos-list.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/externos-list.js') ?: time() ?>"></script>
 <script src="<?= base_url('assets/js/clase-modal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/clase-modal.js') ?: time() ?>"></script>
 <script>
 ClaseModal.init({
