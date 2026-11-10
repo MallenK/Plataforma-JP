@@ -366,6 +366,22 @@ $routes->post('clases/(:num)/externos/cobros/(:num)/anular', 'ExternosController
     'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 
+// ── Personas externas: listado, ficha con historial, y conversión a alumno ──
+// Solo admin/superadmin (datos personales, a veces de menores). El dinero lo filtra FinanceAccessService en la vista.
+$routes->get('externos', 'ExternosPersonasController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('externos/(:num)', 'ExternosPersonasController::show/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('externos/(:num)/editar', 'ExternosPersonasController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('externos/(:num)/convertir', 'ExternosPersonasController::convert/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+
 // ── Pasar Lista — Vista semanal (solo navegación) ──────────
 $routes->get('pasar-lista', 'ClasesController::pasarListaIndex', [
     'filter' => ['auth', 'role:superadmin,admin'],

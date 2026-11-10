@@ -164,6 +164,23 @@ function type(w, el, text) {
     d2.getElementById('f2').dispatchEvent(new w2.Event('submit', { cancelable: true }));
     ok(d2.querySelectorAll('[data-ex-hidden] input').length === 0, 'en modo alumno registrado no se envía ningún externo');
 
+    // ── Cambio de pestaña: nunca se descarta nada sin preguntar ──
+    const dom3 = page('<div data-ex-root><div data-ex-list></div><input data-ex="first_name"><button type="button" data-ex-save>x</button></div>', ['externos-list.js']);
+    const w3 = dom3.window, d3 = w3.document;
+    const root3 = d3.querySelector('[data-ex-root]');
+    ok(w3.ExternosList.pendingCount(root3) === 0, 'sin personas: nada que descartar');
+    d3.querySelector('input').value = 'Leo';
+    ok(w3.ExternosList.pendingCount(root3) === 1, 'una persona a medio escribir cuenta como pendiente');
+    d3.querySelector('[data-ex-save]').click();
+    d3.querySelector('input').value = 'Ana';
+    ok(w3.ExternosList.pendingCount(root3) === 2, 'guardada + a medio escribir = 2 pendientes');
+    let asked = null;
+    w3.RadixUI = { confirm: (o) => { asked = o; return Promise.resolve(false); } };
+    const res = await w3.ExternosList.confirmDiscard({ title: 'T', description: 'D', confirmLabel: 'Quitar', cancelLabel: 'Mantener' });
+    ok(res === false && asked && asked.danger === true && asked.cancelLabel === 'Mantener', 'confirmDiscard usa el diálogo de la plataforma y respeta «Volver atrás»');
+    w3.ExternosList.attach(root3).reset();
+    ok(w3.ExternosList.pendingCount(root3) === 0, 'tras confirmar, reset deja la lista vacía');
+
     console.log(fails ? '\n' + fails + ' FALLO(S)' : '\nTodo OK');
     process.exit(fails ? 1 : 0);
 })();
