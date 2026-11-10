@@ -168,7 +168,9 @@ class ClasesService
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
 
-        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+        // Con una persona externa (clase puntual) no hace falta un alumno registrado:
+        // el controller ya validó sus datos y marcó externo_validated.
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [], !empty($data['externo_validated']))) {
             return ['success' => false, 'error' => $err];
         }
 
@@ -207,11 +209,12 @@ class ClasesService
      * Toda clase necesita, como mínimo, un responsable (entrenador o staff) y
      * un alumno. Devuelve el mensaje de error, o null si se cumple. Pura.
      */
-    public static function participantsError($coachIds, $playerIds): ?string
+    public static function participantsError($coachIds, $playerIds, bool $hasExternal = false): ?string
     {
         $ids = static fn($v) => array_filter(array_map('intval', (array) $v), static fn($i) => $i > 0);
         $noCoach  = $ids($coachIds) === [];
-        $noPlayer = $ids($playerIds) === [];
+        // Una persona externa (clase de prueba / suelta) cuenta como «quien recibe la clase».
+        $noPlayer = $ids($playerIds) === [] && !$hasExternal;
         if ($noCoach && $noPlayer) {
             return 'Una clase necesita al menos un entrenador y un alumno.';
         }
@@ -254,6 +257,10 @@ class ClasesService
             return ['success' => false, 'error' => 'Sesión no encontrada.'];
         }
         $players = (int) $this->db->table('class_session_players')->where('session_id', $id)->countAllResults();
+        // Una persona externa (clase de prueba / suelta) también es «alguien en la clase»: no se borra.
+        if ($this->db->tableExists('class_session_guests')) {
+            $players += (int) $this->db->table('class_session_guests')->where('session_id', $id)->countAllResults();
+        }
         $files   = $this->db->tableExists('class_session_attachments')
             ? (int) $this->db->table('class_session_attachments')->where('session_id', $id)->countAllResults()
             : 0;
@@ -591,7 +598,8 @@ class ClasesService
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
 
-        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+        // Con una persona externa (clase puntual) no hace falta alumno registrado (ver ExternosService::createClass).
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [], !empty($data['externo_validated']))) {
             return ['success' => false, 'error' => $err];
         }
 
@@ -869,12 +877,33 @@ class ClasesService
             }
         }
 
+        // Personas EXTERNAS (clase de prueba / suelta): clases especiales. Solo en la vista de gestión
+        // (withAlerts): un alumno nunca ve a otras personas en su calendario.
+        $guestMap = [];
+        if ($withAlerts && !empty($ids) && $this->db->tableExists('class_session_guests')) {
+            $rows = $this->db->table('class_session_guests csg')
+                ->select('csg.session_id, g.first_name, g.last_name')
+                ->join('class_guests g', 'g.id = csg.guest_id')
+                ->whereIn('csg.session_id', $ids)
+                ->orderBy('g.first_name', 'ASC')
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $guestMap[(int) $r['session_id']][] = trim($r['first_name'] . ' ' . ($r['last_name'] ?? ''));
+            }
+        }
+
         $alertData = $withAlerts ? $this->loadAlertData($ids) : [];
 
-        return array_map(function ($s) use ($coachMap, $playerNamesMap, $withAlerts, $alertData) {
+        return array_map(function ($s) use ($coachMap, $playerNamesMap, $guestMap, $withAlerts, $alertData) {
             $sid   = (int) $s['id'];
             $c     = $coachMap[$sid] ?? null;
-            $playerLabel = self::playerLabel($playerNamesMap[$sid] ?? []);
+            // Los externos se marcan «(ext.)» en la etiqueta: así se distinguen en TODOS los calendarios
+            // (semana, día, mes, móvil y lista «+N») sin tocar cada pintado.
+            $labelNames = array_merge(
+                $playerNamesMap[$sid] ?? [],
+                array_map(static fn($n) => $n . ' (ext.)', $guestMap[$sid] ?? [])
+            );
+            $playerLabel = self::playerLabel($labelNames);
 
             // Alumno: color clásico por estado. Resto de roles: nivel de alerta.
             $alert = $withAlerts ? self::alertLevel([
@@ -901,6 +930,9 @@ class ClasesService
                 'responsable_id'   => $c['id'] ?? null,
                 'responsable_name' => $c['name'] ?? null,
                 'player_label'     => $playerLabel,
+                // Clase especial: con persona externa (sin cuenta de alumno). null si no.
+                'special'          => !empty($guestMap[$sid]) ? 'externo' : null,
+                'has_guest'        => !empty($guestMap[$sid]),
             ];
         }, $sessions);
     }
@@ -2034,6 +2066,7 @@ class ClasesService
 
         $today  = date('Y-m-d');
         $search = strtolower(trim($search));
+        $externosSvc = new ExternosService();
 
         foreach ($sessions as &$s) {
             $sid = (int)$s['id'];
@@ -2072,10 +2105,17 @@ class ClasesService
 
             $s['players'] = $players;
 
+            // Personas externas (sin cuenta de alumno): también pasan lista y cuentan en los contadores.
+            $s['externos'] = $externosSvc->available() ? $externosSvc->forSession($sid, false) : [];
+
             // Contadores
             $counts = ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0];
             foreach ($players as $p) {
                 if (isset($counts[$p['attendance']])) $counts[$p['attendance']]++;
+                else $counts['pending']++;
+            }
+            foreach ($s['externos'] as $x) {
+                if (isset($counts[$x['attendance']])) $counts[$x['attendance']]++;
                 else $counts['pending']++;
             }
             $s['player_counts'] = $counts;
@@ -2087,6 +2127,9 @@ class ClasesService
             $sessions = array_filter($sessions, function ($s) use ($search) {
                 foreach ($s['players'] as $p) {
                     if (str_contains(strtolower($p['name']), $search)) return true;
+                }
+                foreach ($s['externos'] ?? [] as $x) {
+                    if (str_contains(strtolower($x['name']), $search)) return true;
                 }
                 foreach ($s['coaches'] as $c) {
                     if (str_contains(strtolower($c['name']), $search)) return true;
@@ -2212,15 +2255,36 @@ class ClasesService
         $players = $this->db->table('class_session_players')->where('session_id', $id)->get()->getResultArray();
         $coaches = $this->db->table('class_session_coaches')->where('session_id', $id)->get()->getResultArray();
 
+        // Personas externas (clase de prueba / suelta): si alguna ya tiene asistencia, es histórico.
+        $guests = $this->db->tableExists('class_session_guests')
+            ? $this->db->table('class_session_guests')->where('session_id', $id)->get()->getResultArray()
+            : [];
+
         $blocker = self::sessionDeletionBlocker($session, $players, date('Y-m-d'));
+        if ($blocker === null) {
+            foreach ($guests as $g) {
+                if (($g['attendance'] ?? 'pending') !== 'pending') {
+                    $blocker = 'Una persona externa ya tiene asistencia registrada: cancela la sesión en lugar de eliminarla.';
+                    break;
+                }
+                if (ExternosService::hasPayments((int) $g['id'])) {
+                    $blocker = 'Una persona externa tiene cobros registrados: cancela la sesión en lugar de eliminarla.';
+                    break;
+                }
+            }
+        }
         if ($blocker !== null) {
             AuditService::record('class_session', $id, AuditService::BLOCKED, null, null, $blocker);
             return ['success' => false, 'error' => $blocker];
         }
 
         AuditService::record('class_session', $id, AuditService::DELETE,
-            ['session' => $session, 'players' => $players, 'coaches' => $coaches], null,
+            ['session' => $session, 'players' => $players, 'coaches' => $coaches, 'guests' => $guests], null,
             'Sesión futura sin histórico');
+        if ($guests) {
+            // Solo el vínculo con esta clase: la ficha de la persona NO se borra.
+            $this->db->table('class_session_guests')->where('session_id', $id)->delete();
+        }
 
         // Por seguridad (no debería haber ninguno si pasó el bloqueo).
         $this->refundAllDeductedForSession($id);

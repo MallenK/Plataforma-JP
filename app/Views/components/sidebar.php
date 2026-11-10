@@ -131,7 +131,8 @@ if ($isAdmin) {
 
 
             <!-- Organización — todos los roles salvo el alumno (agenda, planificador, tareas) -->
-            <?php if (!$isAlumno): ?>
+            <?php /* Oculta de momento (sección sin terminar): ver OrganizacionService::ENABLED */ ?>
+            <?php if (\App\Services\OrganizacionService::ENABLED && !$isAlumno): ?>
             <li class="sidebar-nav-item">
                 <a href="<?= base_url('organizacion') ?>"
                    class="sidebar-nav-link <?= sidebarActive('/organizacion', $currentUri) ?>">

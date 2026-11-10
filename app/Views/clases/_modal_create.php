@@ -9,6 +9,18 @@
  */
 $modalId = $modalId ?? 'modalCreateClass';
 $btnId   = $btnId   ?? 'cm-submit';
+
+// Persona externa (clase de prueba / suelta): solo si las tablas existen. El precio y el cobro,
+// además, solo con acceso total a Finanzas (igual que en el formulario completo).
+$cmExterno = false; $cmMoney = false; $cmMethods = [];
+try {
+    $cmSvc     = new \App\Services\ExternosService();
+    $cmExterno = $cmSvc->available();
+    $cmMoney   = $cmExterno && \App\Services\FinanceAccessService::canFull() && $cmSvc->moneyAvailable();
+    $cmMethods = $cmMoney ? (new \App\Services\FinanceService())->methods() : [];
+} catch (\Throwable $e) {
+    $cmExterno = false; $cmMoney = false;
+}
 ?>
 
 <div id="<?= $modalId ?>" class="cs-modal-overlay d-none">
@@ -37,6 +49,107 @@ $btnId   = $btnId   ?? 'cm-submit';
                     <input type="text" id="cm-title" class="form-control-jp"
                            placeholder="Ej: Entrenamiento individual – Control y pase">
                 </div>
+
+                <!-- Entrenadores (buscador) -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="cm-coach-q">Entrenadores</label>
+                    <div class="pp" id="cm-coach-picker">
+                        <input type="search" id="cm-coach-q" class="form-control-jp" placeholder="Buscar entrenador…">
+                        <ul class="pp-list" hidden></ul>
+                    </div>
+                    <div id="cm-coach-list" class="cm-tags mt-2"></div>
+                </div>
+
+                <!-- Jugadores: alumno registrado o persona externa (clase puntual) -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="cm-player-q">Jugadores</label>
+                    <?php if ($cmExterno): ?>
+                    <div class="cm-who mb-2" id="cm-who" role="radiogroup" aria-label="Quién recibe la clase">
+                        <button type="button" class="cm-who-tab active" data-cm-who="reg"><i class="bi bi-person-check-fill me-1"></i>Alumno</button>
+                        <button type="button" class="cm-who-tab" data-cm-who="ext"><i class="bi bi-person-badge-fill me-1"></i>Externo</button>
+                    </div>
+                    <?php endif; ?>
+                    <div id="cm-reg-block">
+                        <div class="pp" id="cm-player-picker">
+                            <input type="search" id="cm-player-q" class="form-control-jp" placeholder="Buscar alumno…">
+                            <ul class="pp-list" hidden></ul>
+                        </div>
+                        <div id="cm-player-list" class="cm-tags mt-2"></div>
+                    </div>
+                    <?php if ($cmExterno): ?>
+                    <p id="cm-ext-hint" class="d-none" style="font-size:12px;color:var(--text-muted);margin:0">
+                        Persona que no es alumna (clase de prueba o suelta): rellena sus datos abajo.
+                    </p>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($cmExterno): ?>
+                <!-- Datos de la persona externa: solo se envían en modo «Externo» -->
+                <div class="col-12 d-none" id="cm-ext-block">
+                    <div class="cm-ext-box" data-ex-root>
+                        <div data-ex-list></div>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-first">Nombre <span style="color:var(--danger)">*</span></label>
+                                <input type="text" id="cm-ex-first" data-ex="first_name" class="form-control-jp" maxlength="100">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-last">Apellidos</label>
+                                <input type="text" id="cm-ex-last" data-ex="last_name" class="form-control-jp" maxlength="100">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-birth">Fecha de nacimiento <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+                                <input type="date" id="cm-ex-birth" data-ex="birth_date" class="form-control-jp" max="<?= date('Y-m-d') ?>">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-phone">Teléfono</label>
+                                <input type="tel" id="cm-ex-phone" data-ex="phone" class="form-control-jp" maxlength="30">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-email">Email</label>
+                                <input type="email" id="cm-ex-email" data-ex="email" class="form-control-jp" maxlength="150">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-gname">Madre / padre / tutor <span style="font-weight:400;color:var(--text-muted)">(si es menor)</span></label>
+                                <input type="text" id="cm-ex-gname" data-ex="guardian_name" class="form-control-jp" maxlength="150">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="cm-ex-gphone">Teléfono del tutor</label>
+                                <input type="tel" id="cm-ex-gphone" data-ex="guardian_phone" class="form-control-jp" maxlength="30">
+                            </div>
+                            <?php if ($cmMoney): ?>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="cm-ex-price">Precio (€)</label>
+                                <input type="text" inputmode="decimal" id="cm-ex-price" data-ex="price" class="form-control-jp" placeholder="0 = gratis">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="cm-ex-method">Medio de pago</label>
+                                <select id="cm-ex-method" data-ex="method_id" class="form-control-jp">
+                                    <?php foreach ($cmMethods as $m): ?>
+                                        <option value="<?= (int) $m['id'] ?>" <?= $m['code'] === 'efectivo' ? 'selected' : '' ?>><?= esc($m['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end">
+                                <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;margin-bottom:10px">
+                                    <input type="checkbox" id="cm-ex-paid" data-ex="paid_now" value="1"><span>Cobrado ahora</span>
+                                </label>
+                            </div>
+                            <?php endif; ?>
+                            <div class="col-12">
+                                <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer">
+                                    <input type="checkbox" id="cm-ex-img" data-ex="image_rights" value="1" style="margin-top:3px">
+                                    <span>Autoriza el uso de su imagen en las comunicaciones de la academia.</span>
+                                </label>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ex-save><i class="bi bi-person-plus-fill me-1"></i>Guardar persona</button>
+                                <p data-ex-error hidden></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Formato de clase -->
                 <div class="col-12">
@@ -128,22 +241,6 @@ $btnId   = $btnId   ?? 'cm-submit';
                               placeholder="Descripción / ejercicios / objetivos…"></textarea>
                 </div>
 
-                <!-- Entrenadores -->
-                <div class="col-12 col-md-6">
-                    <label class="form-label">Entrenadores</label>
-                    <select id="cm-coach-sel" class="form-control-jp">
-                        <option value="">Añadir entrenador…</option>
-                    </select>
-                    <div id="cm-coach-list" class="cm-tags mt-2"></div>
-                </div>
-                <!-- Jugadores -->
-                <div class="col-12 col-md-6">
-                    <label class="form-label">Jugadores</label>
-                    <select id="cm-player-sel" class="form-control-jp">
-                        <option value="">Añadir jugador…</option>
-                    </select>
-                    <div id="cm-player-list" class="cm-tags mt-2"></div>
-                </div>
             </div>
 
             <!-- Aviso de bono (TICKET-013): solo informa, no bloquea -->
@@ -232,6 +329,15 @@ $btnId   = $btnId   ?? 'cm-submit';
     background:none; border:none; color:var(--accent); cursor:pointer;
     padding:0; font-size:13px; line-height:1;
 }
+
+/* Alumno / Externo */
+.cm-who { display:flex; gap:6px; }
+.cm-who-tab {
+    flex:1; padding:7px 10px; border:2px solid var(--border); background:var(--bg-card);
+    border-radius:8px; font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer;
+}
+.cm-who-tab.active { border-color:var(--accent); background:var(--accent-light); color:var(--accent); }
+.cm-ext-box { padding:12px; border:1px dashed var(--border); border-radius:8px; background:var(--bg-app); }
 
 /* Warning / error */
 .cm-warning {

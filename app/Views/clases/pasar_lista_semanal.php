@@ -214,7 +214,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                 <span class="pl-tag is-pending"><i class="bi bi-hourglass-split"></i>Por pasar</span>
                 <?php endif; ?>
 
-                <?php if (!empty($s['players'])): ?>
+                <?php if (!empty($s['players']) || !empty($s['externos'])): ?>
                 <span class="pl-session-counts">
                     <span class="pl-c-present" title="Presentes"><i class="bi bi-person-check-fill"></i><?= (int)($pc['present'] ?? 0) ?></span>
                     <span class="pl-c-absent" title="Ausentes / no justificadas"><i class="bi bi-person-x-fill"></i><?= (int)($pc['absent'] ?? 0) + (int)($pc['unjustified'] ?? 0) ?></span>
@@ -226,7 +226,7 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
             </div>
 
             <div class="pl-session-body">
-                <?php if (empty($s['players'])): ?>
+                <?php if (empty($s['players']) && empty($s['externos'])): ?>
                 <div class="pl-empty"><i class="bi bi-people me-1"></i>Sin alumnos asignados a esta sesión.</div>
                 <?php else: ?>
                 <div class="pl-roster">
@@ -247,6 +247,18 @@ $qs = fn(int $off) => '/pasar-lista?semana=' . $off . ($search ? '&buscar=' . ur
                         <?php if (in_array($att, ['absent', 'unjustified'], true) && !empty($p['absence_reason'])): ?>
                         <span class="pl-player-reason"><?= esc($p['absence_reason']) ?></span>
                         <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php foreach ($s['externos'] ?? [] as $x): ?>
+                    <?php $m = attendance_meta($x['attendance'] ?? 'pending'); ?>
+                    <div class="pl-player">
+                        <div>
+                            <span class="pl-player-name"><?= esc($x['name']) ?></span>
+                            <span class="pl-player-note" style="color:#0369a1"><i class="bi bi-person-badge-fill me-1"></i>Externo</span>
+                        </div>
+                        <span class="pl-badge" style="background:<?= $m['bg'] ?>;color:<?= $m['fg'] ?>">
+                            <i class="bi bi-<?= $m['icon'] ?>"></i><?= esc($m['label']) ?>
+                        </span>
                     </div>
                     <?php endforeach; ?>
                 </div>

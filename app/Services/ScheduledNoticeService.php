@@ -51,10 +51,12 @@ class ScheduledNoticeService
         } catch (\Throwable $e) {
             log_message('error', 'ScheduledNoticeService expiry: ' . $e->getMessage());
         }
-        try {
-            $out['org'] = (new OrgNoticeService())->sendReminders();
-        } catch (\Throwable $e) {
-            log_message('error', 'ScheduledNoticeService org: ' . $e->getMessage());
+        if (OrganizacionService::ENABLED) {
+            try {
+                $out['org'] = (new OrgNoticeService())->sendReminders();
+            } catch (\Throwable $e) {
+                log_message('error', 'ScheduledNoticeService org: ' . $e->getMessage());
+            }
         }
         return $out;
     }

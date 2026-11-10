@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.5.0",
+        "date": "2026-11-09 00:00:00",
+        "description": "Clases con personas externas: al crear una clase puntual (formulario completo y pop-up de clase rápida del dashboard y /clases) se puede elegir «Externo» para quien recibe una clase de prueba o suelta sin ser alumno (ficha ligera sin cuenta: solo el nombre es obligatorio; nacimiento, contacto, tutor si es menor y autorización de imagen son opcionales). Se pueden añadir varias personas a la vez y editarlas o quitarlas desde la ficha de la clase. Se les pasa lista (misma pantalla que los alumnos), se cierran con la clase, salen marcados «(ext.)» en todos los calendarios y en Revisión, y los datos personales solo los ve administración. Con acceso total a Finanzas se fija precio y se registran cobros (parciales, por medio de pago, anulables); todo suma en Resumen, Movimientos, Entrenadores y Análisis con su propio desglose. No usan bono. Nada se borra y todo queda auditado. El formulario de nueva clase pasa a dos columnas, con entrenadores y jugadores por encima de Formato y buscadores en lugar de desplegables. Todas las fechas de la plataforma se escriben ahora como DD/MM/AAAA. La sección Organización queda oculta de momento para todos (se reactiva con OrganizacionService::ENABLED)."
+    },
+    {
         "version": "2.4.0",
         "date": "2026-11-05 00:00:00",
         "description": "Bonos: al emitir un bono (y desde su ficha) el admin puede saldar con él, a su elección, las clases ya dadas sin bono y las programadas confirmadas sin descontar. Casillas por clase, se descuenta 1 sesión por cada una de la más antigua a la más reciente, se para al acabarse el saldo y nada se descuenta si no se marca."

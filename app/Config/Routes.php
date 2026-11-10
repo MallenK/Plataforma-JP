@@ -258,6 +258,8 @@ $routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
 
 // ── Organización interna (TICKET-014): tareas por estados, planificador y agenda ──
 // Todos los roles salvo el alumno. La visibilidad (equipo/personal) la aplica el servicio.
+// OCULTA de momento (sección sin terminar): se activa con OrganizacionService::ENABLED = true.
+if (\App\Services\OrganizacionService::ENABLED) {
 $routes->group('organizacion', ['filter' => ['auth', 'role:superadmin,admin,staff,coach']], static function ($routes) {
     $routes->get('/',                          'OrganizacionController::index');
     $routes->get('data',                       'OrganizacionController::data');
@@ -267,6 +269,7 @@ $routes->group('organizacion', ['filter' => ['auth', 'role:superadmin,admin,staf
     $routes->post('eventos/guardar',           'OrganizacionController::eventSave');
     $routes->post('eventos/(:num)/archivar',   'OrganizacionController::eventArchive/$1');
 });
+}
 
 // ── Ayuda / cómo funciona (pensada para alumnos y familias; cualquier usuario con sesión) ──
 $routes->get('ayuda', 'AyudaController::index', ['filter' => 'auth']);
@@ -336,6 +339,31 @@ $routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [
 ]);
 $routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::removePlayer/$1/$2', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
+]);
+
+// ── Externos (clase de prueba / suelta, sin cuenta de alumno) ──
+// Coach/staff solo en sus clases (lo comprueba ExternosController::sessionOrFail).
+$routes->post('clases/(:num)/externos/add', 'ExternosController::add/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/editar', 'ExternosController::edit/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/asistencia', 'ExternosController::attendance/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/quitar', 'ExternosController::remove/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+// Dinero del externo (precio y cobros): solo con acceso total a Finanzas, como cualquier importe.
+$routes->post('clases/(:num)/externos/(:num)/precio', 'ExternosController::price/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/cobro', 'ExternosController::pay/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
+]);
+$routes->post('clases/(:num)/externos/cobros/(:num)/anular', 'ExternosController::voidPay/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
 ]);
 
 // ── Pasar Lista — Vista semanal (solo navegación) ──────────

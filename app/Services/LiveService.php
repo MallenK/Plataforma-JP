@@ -145,7 +145,7 @@ class LiveService
     /** Organización: tareas y eventos visibles para esta persona (equipo + propios). Null si su rol no la tiene. */
     private function orgStamp(int $userId, string $role): ?string
     {
-        if (!OrganizacionService::canAccess($role) || !$this->db->tableExists('org_tasks')) {
+        if (!OrganizacionService::ENABLED || !OrganizacionService::canAccess($role) || !$this->db->tableExists('org_tasks')) {
             return null;
         }
         $t = $this->db->query(

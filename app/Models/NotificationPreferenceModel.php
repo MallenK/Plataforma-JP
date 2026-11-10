@@ -45,7 +45,8 @@ class NotificationPreferenceModel extends Model
         ];
 
         // El alumno no tiene la pantalla de Organización: no se le ofrece la categoría.
-        if (in_array($role, ['player', 'alumno'], true)) {
+        // Mientras la sección esté oculta (OrganizacionService::ENABLED = false) nadie ve la categoría.
+        if (!\App\Services\OrganizacionService::ENABLED || in_array($role, ['player', 'alumno'], true)) {
             unset($all[self::CAT_ORGANIZACION]);
         }
         return $all;

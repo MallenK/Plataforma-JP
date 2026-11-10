@@ -67,8 +67,14 @@ final class OrganizacionServiceTest extends CIUnitTestCase
 
     public function testOrganizacionCategoryIsHiddenFromPlayers(): void
     {
-        $this->assertArrayHasKey('organizacion', NotificationPreferenceModel::categories('coach'));
-        $this->assertArrayHasKey('organizacion', NotificationPreferenceModel::categories());
+        // Con la sección oculta (ENABLED=false) nadie ve la categoría; al activarla, todos menos el alumno.
+        if (S::ENABLED) {
+            $this->assertArrayHasKey('organizacion', NotificationPreferenceModel::categories('coach'));
+            $this->assertArrayHasKey('organizacion', NotificationPreferenceModel::categories());
+        } else {
+            $this->assertArrayNotHasKey('organizacion', NotificationPreferenceModel::categories('coach'));
+            $this->assertArrayNotHasKey('organizacion', NotificationPreferenceModel::categories());
+        }
         $this->assertArrayNotHasKey('organizacion', NotificationPreferenceModel::categories('player'));
         $this->assertSame('organizacion', NotificationPreferenceModel::categoryFor(['source_type' => 'org_task']));
         $this->assertSame('organizacion', NotificationPreferenceModel::categoryFor(['source_type' => 'org_event']));
@@ -80,6 +86,13 @@ final class OrganizacionServiceTest extends CIUnitTestCase
         $this->assertSame('organizacion?evento=9', NotificationModel::sourceLink(['source_type' => 'org_event', 'source_id' => 9])['path']);
         $kept = NotificationModel::prepareSource(['source_type' => 'org_task', 'source_id' => 7], true);
         $this->assertSame('org_task', $kept['source_type']);
+    }
+
+    public function testSeccionOcultaDeMomento(): void
+    {
+        $this->assertFalse(S::ENABLED, 'Organización debe seguir oculta hasta que esté completa');
+        $this->assertStringContainsString('OrganizacionService::ENABLED', file_get_contents(APPPATH . 'Views/components/sidebar.php'));
+        $this->assertStringContainsString('OrganizacionService::ENABLED', file_get_contents(APPPATH . 'Config/Routes.php'));
     }
 
     public function testEveryOrganizacionRouteHasAuthAndRoleFilter(): void

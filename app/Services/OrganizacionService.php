@@ -24,6 +24,13 @@ class OrganizacionService
     public const PRIORITIES = ['baja' => 'Baja', 'normal' => 'Normal', 'alta' => 'Alta'];
     public const ROLES      = ['superadmin', 'admin', 'staff', 'coach'];
 
+    /**
+     * Interruptor general de la sección. FALSE = oculta para todos (aún no está completa): sin enlace en el
+     * menú, sin rutas, sin categoría de avisos, sin recordatorios ni sondeo. Todo el código y las tablas se
+     * conservan: para reactivarla basta con ponerlo a TRUE.
+     */
+    public const ENABLED = false;
+
     private \CodeIgniter\Database\BaseConnection $db;
 
     public function __construct()
