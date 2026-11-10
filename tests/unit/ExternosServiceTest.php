@@ -123,6 +123,33 @@ final class ExternosServiceTest extends CIUnitTestCase
         $this->assertSame('pagado', ExternosService::moneyState(2500, 3000));
     }
 
+    public function testNuncaSeDescartaNadaEnSilencio(): void
+    {
+        $svc = new ExternosService();
+        $never = function () { $this->fail('no debe crearse la clase'); };
+
+        // Alumnos registrados Y persona externa a la vez → error, no se elige uno por el usuario.
+        $r = $svc->createClass($never, [
+            'type' => 'single', 'externo_mode' => '1', 'player_ids' => ['5'],
+            'externos' => [['first_name' => 'Leo']],
+        ], 1, false);
+        $this->assertFalse($r['success']);
+        $this->assertStringContainsString('a la vez', $r['error']);
+
+        // Personas externas rellenadas pero modo «alumno registrado» → error.
+        $r2 = $svc->createClass($never, [
+            'type' => 'single', 'externo_mode' => '0', 'externos' => [['first_name' => 'Leo']],
+        ], 1, false);
+        $this->assertFalse($r2['success']);
+        $this->assertStringContainsString('no se guarda nada por suposición', $r2['error']);
+
+        // Clase recurrente con externos → error.
+        $r3 = $svc->createClass($never, [
+            'type' => 'recurring', 'externo_mode' => '1', 'externos' => [['first_name' => 'Leo']],
+        ], 1, false);
+        $this->assertFalse($r3['success']);
+    }
+
     public function testEditarExternoYFechasEnTodaLaApp(): void
     {
         $routes = file_get_contents(APPPATH . 'Config/Routes.php');

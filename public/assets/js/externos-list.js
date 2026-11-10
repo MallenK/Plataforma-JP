@@ -217,7 +217,28 @@
         return '';
     }
 
-    window.ExternosList = { attach: attach, appendTo: appendTo };
+    /**
+     * Pregunta antes de descartar lo que la persona ya había elegido. Nunca se descarta nada sin que lo
+     * confirme: devuelve Promise<boolean>. Usa el diálogo de la plataforma (RadixUI) o, en su defecto, confirm().
+     */
+    function confirmDiscard(opts) {
+        if (window.RadixUI && typeof window.RadixUI.confirm === 'function') {
+            return window.RadixUI.confirm({
+                title: opts.title, description: opts.description || '',
+                confirmLabel: opts.confirmLabel || 'Quitar y continuar', cancelLabel: opts.cancelLabel || 'Volver atrás', danger: true
+            });
+        }
+        return Promise.resolve(window.confirm(opts.title + (opts.description ? '\n\n' + opts.description : '')));
+    }
+
+    /** ¿Hay personas externas guardadas o a medio escribir en este bloque? */
+    function pendingCount(root) {
+        if (!root) return 0;
+        var c = attach(root).collect();
+        return c.people.length + (c.error ? 1 : 0);
+    }
+
+    window.ExternosList = { attach: attach, appendTo: appendTo, confirmDiscard: confirmDiscard, pendingCount: pendingCount };
 
     document.addEventListener('DOMContentLoaded', function () {
         [].forEach.call(document.querySelectorAll('[data-ex-root]'), attach);

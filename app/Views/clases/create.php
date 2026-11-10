@@ -182,11 +182,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                     <input type="hidden" name="externo_mode" id="externo_mode" value="<?= old('externo_mode') ? '1' : '0' ?>">
                     <div class="d-flex gap-2 mb-3" id="who-tabs" role="radiogroup" aria-label="Quién recibe la clase">
                         <label class="who-tab" id="lbl-who-reg">
-                            <input type="radio" name="_who_ui" value="reg" checked onchange="setWho('reg')">
+                            <input type="radio" name="_who_ui" value="reg" checked onchange="switchWho('reg')">
                             <span><i class="bi bi-person-check-fill me-1"></i>Alumno registrado</span>
                         </label>
                         <label class="who-tab" id="lbl-who-ext">
-                            <input type="radio" name="_who_ui" value="ext" onchange="setWho('ext')">
+                            <input type="radio" name="_who_ui" value="ext" onchange="switchWho('ext')">
                             <span><i class="bi bi-person-badge-fill me-1"></i>Externo (clase puntual)</span>
                         </label>
                     </div>
@@ -665,6 +665,19 @@ function setBlockDisabled(block, disabled) {
 }
 
 function toggleType(v) {
+    // Una clase recurrente no admite externos: si ya hay personas externas, se pregunta antes de quitarlas.
+    if (v === 'recurring' && typeof externosPendientes === 'function' && externosPendientes() > 0 && !toggleType._ok) {
+        const n = externosPendientes();
+        ExternosList.confirmDiscard({
+            title: 'Una clase recurrente no admite personas externas',
+            description: 'Has añadido ' + n + ' persona' + (n === 1 ? '' : 's') + ' externa' + (n === 1 ? '' : 's') + '. Si sigues, se quitarán de esta clase. Para una persona externa usa una clase puntual.',
+            confirmLabel: 'Quitar y hacerla recurrente', cancelLabel: 'Mantener clase puntual'
+        }).then(ok => {
+            if (ok) { toggleType._ok = true; document.querySelector('#externo-block [data-ex-root]')?._exList?.reset(); const r = document.querySelector('[name="type"][value="recurring"]'); if (r) r.checked = true; toggleType('recurring'); toggleType._ok = false; }
+        });
+        const keep = document.querySelector('[name="type"][value="single"]'); if (keep) keep.checked = true;   // mientras decide, no cambia nada
+        return;
+    }
     if (typeof syncWhoTabs === 'function') syncWhoTabs(v);
     const single = document.getElementById('block-single');
     const recur  = document.getElementById('block-recurring');
@@ -844,6 +857,37 @@ function removePlayer(id) {
 }
 
 // ── Alumno registrado / Externo (clase puntual) ───────────────
+// Cambio de pestaña Alumno registrado ⇄ Externo: nunca se descarta nada sin preguntar.
+function externosPendientes() {
+    const root = document.querySelector('#externo-block [data-ex-root]');
+    return root && window.ExternosList ? ExternosList.pendingCount(root) : 0;
+}
+function switchWho(mode) {
+    const cur = document.getElementById('externo_mode')?.value === '1' ? 'ext' : 'reg';
+    if (mode === cur) return;
+    const back = () => { const r = document.querySelector('#who-tabs input[value="' + cur + '"]'); if (r) r.checked = true; };
+    if (mode === 'ext' && addedPlayers.size > 0) {
+        const names = [...document.querySelectorAll('#playerList .selected-person > div span')].map(s => s.textContent.trim()).filter(Boolean);
+        ExternosList.confirmDiscard({
+            title: 'Ya has elegido alumnos registrados',
+            description: (names.length ? names.join(', ') + '. ' : '') + 'Si pasas a «Externo» se quitarán de esta clase (una clase se crea o con alumnos registrados o con personas externas, no con ambos). ¿Quitarlos?',
+            confirmLabel: 'Quitar alumnos y pasar a Externo', cancelLabel: 'Mantener alumnos'
+        }).then(ok => { if (ok) { [...addedPlayers].forEach(id => removePlayer(id)); setWho('ext'); } });
+        back();
+        return;
+    }
+    if (mode === 'reg' && externosPendientes() > 0) {
+        const n = externosPendientes();
+        ExternosList.confirmDiscard({
+            title: 'Ya has añadido personas externas',
+            description: n + ' persona' + (n === 1 ? '' : 's') + ' externa' + (n === 1 ? '' : 's') + ' (guardada' + (n === 1 ? '' : 's') + ' o a medio escribir). Si pasas a «Alumno registrado» se quitarán de esta clase. ¿Quitarlas?',
+            confirmLabel: 'Quitar personas y pasar a Alumno', cancelLabel: 'Mantener externas'
+        }).then(ok => { if (ok) { document.querySelector('#externo-block [data-ex-root]')?._exList?.reset(); setWho('reg'); } });
+        back();
+        return;
+    }
+    setWho(mode);
+}
 function setWho(mode) {
     const hidden = document.getElementById('externo_mode');
     if (!hidden) return;                                   // edición o sin migrar: no hay modo externo

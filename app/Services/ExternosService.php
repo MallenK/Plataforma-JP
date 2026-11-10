@@ -570,6 +570,10 @@ class ExternosService
         if (!empty($post['externo_mode']) && ($post['type'] ?? 'single') !== 'recurring') {
             $rows = self::peopleFromPost($post);
             $errs = [];
+            // Nada se descarta en silencio: una clase lleva alumnos registrados O personas externas.
+            if (!empty(array_filter((array) ($post['player_ids'] ?? [])))) {
+                return ['success' => false, 'error' => 'Has elegido alumnos registrados y personas externas a la vez. Quita unos u otros: no se guarda nada por suposición.'];
+            }
             if (!$this->available()) {
                 $errs[] = 'Falta aplicar la migración de externos en esta base de datos.';
             }
@@ -606,6 +610,10 @@ class ExternosService
             $post['externo_validated'] = 1;
         } else {
             unset($post['externo_validated']);  // nunca se confía en un valor enviado por el navegador
+            // Personas externas rellenadas pero la clase no está en modo externo (otra pestaña o clase recurrente).
+            if (self::peopleFromPost($post)) {
+                return ['success' => false, 'error' => 'Hay personas externas rellenadas, pero esta clase no es una clase puntual con persona externa. Quítalas o cambia a «Externo» en una clase puntual: no se guarda nada por suposición.'];
+            }
         }
 
         $db = \Config\Database::connect();
