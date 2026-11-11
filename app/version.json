@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.7.0",
+        "date": "2026-11-11 00:00:00",
+        "description": "Botones que te guían: en los formularios y pop-ups más importantes (nueva clase, editar clase, nuevo bono, cobros y precios de clases con personas externas, anular, convertir en alumno) el botón de guardar se ve apagado mientras falta algo y una línea te dice exactamente qué falta; al pulsarlo te lleva al campo que falta. Al editar, el botón espera a que cambies algo. En Pasar lista solo se avisa de cuántos quedan sin marcar, sin bloquear. Corregido: al editar una clase no funcionaban los buscadores de entrenador y alumno."
+    },
+    {
         "version": "2.6.0",
         "date": "2026-11-11 00:00:00",
         "description": "Personas externas: nueva pantalla «Personas externas» (Alumnos › Personas externas, solo administración) con la ficha de cada persona, todas sus clases, asistencia y cobros; se pueden corregir sus datos y convertirla en alumno con un clic (se crea su cuenta y sus clases anteriores quedan como histórico, sin tocar bonos). Nada se borra de estas personas. Al cambiar de «Alumno» a «Externo» (o a clase recurrente) con datos ya elegidos, la plataforma pregunta antes de quitarlos, y el servidor ya no elige por ti. Todas las fechas se escriben ahora como DD/MM/AAAA. Se quita el difuminado de los importes. Los avisos de confirmación se ven por encima de los pop-ups. La ayuda de Finanzas queda solo para superadmin y administradores con acceso total."
