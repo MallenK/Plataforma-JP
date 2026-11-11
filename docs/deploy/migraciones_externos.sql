@@ -54,10 +54,10 @@ CREATE TABLE IF NOT EXISTS `class_session_guests` (
 
 -- ============================================================================
 -- Externos (Fase 2): dinero. Equivale a la migración 2026-11-10-000001_ClassGuestMoney.
--- Ejecutar DESPUÉS de las dos tablas de arriba. Idempotente a medias: el ALTER falla
+-- Ejecutar DESPUÉS de las dos tablas de arriba. Idempotente (MariaDB): el ALTER usa IF NOT EXISTS; antes fallaba
 -- con "Duplicate column" si se repite (es inocuo); el CREATE TABLE usa IF NOT EXISTS.
 -- ============================================================================
-ALTER TABLE `class_session_guests` ADD COLUMN `price_cents` INT NULL DEFAULT NULL AFTER `attendance`;
+ALTER TABLE `class_session_guests` ADD COLUMN IF NOT EXISTS `price_cents` INT NULL DEFAULT NULL AFTER `attendance`;
 
 CREATE TABLE IF NOT EXISTS `class_guest_payments` (
     `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
