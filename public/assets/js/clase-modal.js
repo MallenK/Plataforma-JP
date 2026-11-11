@@ -445,11 +445,32 @@
         btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creando…';
 
         try {
-            const res  = await fetch('/clases/rapida', { method: 'POST', body: fd });
-            const data = await res.json();
+            const res = await fetch('/clases/rapida', {
+                method: 'POST', body: fd, credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            });
+            const raw = await res.text();
+            let data = null;
+            try { data = JSON.parse(raw); } catch (e) { /* no era JSON */ }
+            if (data && data.csrf) opts.csrfHash = data.csrf;   // por si el servidor rota el token
+
+            // Sesión caducada / página desactualizada: redirige al login (no es JSON) o responde 401/403 sin mensaje de negocio.
+            const sessionLost = res.redirected || /\/login/.test(res.url) || res.status === 401 || (res.status === 403 && !(data && data.error));
+            if (sessionLost) {
+                errEl.textContent = 'Tu sesión ha caducado o la página está desactualizada. Recarga la página (F5) e inténtalo de nuevo; no se ha creado nada.';
+                show(errEl);
+                return;
+            }
+            if (!data) {
+                console.error('clases/rapida: respuesta inesperada', res.status, raw.slice(0, 300));
+                errEl.textContent = 'El servidor ha respondido con un error (' + res.status + '). No se ha creado nada: inténtalo de nuevo o avisa con el botón «Reportar».';
+                show(errEl);
+                return;
+            }
             if (data.success) {
                 close();
-                if (typeof opts.onCreated === 'function') opts.onCreated(data);
+                try { if (typeof opts.onCreated === 'function') opts.onCreated(data); }
+                catch (e) { console.error('clases/rapida: error al refrescar el calendario', e); }
             } else if (window.handleApiError && window.handleApiError(data, 'clases.rapida')) {
                 close();
             } else {
@@ -457,7 +478,8 @@
                 show(errEl);
             }
         } catch (e) {
-            errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
+            console.error('clases/rapida', e);
+            errEl.textContent = 'No se pudo contactar con el servidor (¿sin conexión?). No se ha creado nada: inténtalo de nuevo.';
             show(errEl);
         } finally {
             btn.disabled = false;

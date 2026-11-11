@@ -2047,7 +2047,9 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 1000;
+    /* Por encima del pop-up de nueva clase (1050) y de los avisos (1100): el diálogo de confirmación
+       puede abrirse desde dentro de otro modal y no debe quedar detrás. */
+    z-index: 1200;
     opacity: 0;
     transition: opacity .15s ease;
 }

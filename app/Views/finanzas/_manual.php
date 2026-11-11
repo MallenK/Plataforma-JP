@@ -76,9 +76,7 @@ $shot = static function (string $file, string $caption) use ($img) {
     <ul style="margin:4px 0 0">
         <li>¿Tienes prisa? Ve a <a href="#fm-queres">«¿Qué quieres hacer?»</a> y salta directo a tu tarea.</li>
         <li>¿Prefieres ver cómo se hace? Mira los <a href="#fm-videos">vídeos tutoriales</a>.</li>
-        <li>En casi todas las pantallas verás un símbolo <span class="fm-btn">?</span>: pasa el ratón por encima (o tócalo en el móvil) y te explica qué es.</li>
-        <li>Los <strong>importes salen difuminados</strong> por privacidad. Pulsa el ojo que hay junto a un importe (o el de la barra superior) para verlos.</li>
-    </ul>
+        <li>En casi todas las pantallas verás un símbolo <span class="fm-btn">?</span>: pasa el ratón por encima (o tócalo en el móvil) y te explica qué es.</li>    </ul>
 </div>
 
 <h3>Contenido</h3>
