@@ -549,6 +549,8 @@ $pageSubtitle = 'Gestión de bonos y membresías';
 }
 .bono-modal-header button:hover { background:var(--bg-app);color:var(--text-h); }
 .bono-modal-body { padding:20px;overflow-y:auto;flex:1; }
+/* El formulario ocupa el alto del modal: el cuerpo hace scroll y los botones (y el aviso «Falta: …») quedan siempre a la vista */
+#modalEmitirBono .bono-modal > form { display:flex;flex-direction:column;flex:1;min-height:0; }
 </style>
 <script>
 let BONOS_CSRF_NAME = '<?= csrf_token() ?>';
@@ -871,5 +873,31 @@ async function checkBonoActivo(playerId) {
         btnEmitir.disabled = false;
     }
 }
+
+// ── «Crear bono» blando: dice qué falta y lleva al campo (JPGuard) ──────────────────────
+(function () {
+  // form-guard.js se carga al final de la página: se espera a que esté lista
+  function initGuard() {
+    if (!window.JPGuard) return;
+    var form = document.querySelector('#modalEmitirBono form');
+    var btn  = document.getElementById('btnEmitir');
+    if (!form || !btn) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var payNow = function () { var c = $('bnPayNow'); return !!c && c.checked; };
+    var g = JPGuard.attach({
+        root: form, buttons: [btn], hintAfter: form.querySelector('.bono-modal-body'), hintClass: 'jpg-hint-bar',
+        rules: [
+            { label: 'el tipo de bono', ok: function () { return $('selectBonoType').value !== ''; }, focus: function () { return $('selectBonoType'); } },
+            { label: 'un descuento válido (10, 10,50 o 10%)', ok: function () { return !$('bnDiscount') || JPGuard.discountValid($('bnDiscount').value); }, focus: function () { return $('bnDiscount'); } },
+            { label: 'el jugador (hace falta para registrar el cobro)', ok: function () { return !payNow() || $('selectPlayer').value !== ''; }, focus: function () { return $('selectPlayer'); } },
+            { label: 'un importe cobrado mayor que 0', ok: function () { return !payNow() || JPGuard.moneyValid($('bnPayAmount').value, false); }, focus: function () { return $('bnPayAmount'); } }
+        ]
+    });
+    // el modal se abre y se rellena por código (jugador preseleccionado, tipo…)
+    var open = window.openModalEmitir;
+    if (typeof open === 'function') window.openModalEmitir = function () { var r = open.apply(this, arguments); g.refresh(); return r; };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGuard); else initGuard();
+})();
 </script>
 <?= $this->endSection() ?>

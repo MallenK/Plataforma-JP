@@ -112,6 +112,7 @@
         // Submit
         const submitBtn = overlay.querySelector('button[id$="submit"]') || $('cm-submit');
         submitBtn?.addEventListener('click', submit);
+        attachGuard(overlay);
 
         // Configuración de la serie (TICKET-013)
         if (window.SeriesBuilder && $('cm-series-builder')) {
@@ -153,6 +154,34 @@
 
         // Inicializar tipo
         setType('single');
+    }
+
+    // ── Botón «Crear» blando: dice qué falta y lleva al campo (JPGuard) ──
+    // Espejo de lo que exige el servidor (ClasesService::participantsError + horas + fecha).
+    let guard = null;
+    function attachGuard(overlay) {
+        if (!window.JPGuard || !$('cm-submit')) return;
+        const exRoot = () => $('cm-ext-block')?.querySelector('[data-ex-root]');
+        const people = () => (exRoot() && window.ExternosList) ? ExternosList.attach(exRoot()).collect() : { people: [], error: '' };
+        const dateEl = () => $('cm-date')._dateEs || $('cm-date');
+        guard = JPGuard.attach({
+            root: overlay,
+            buttons: [$('cm-submit')],
+            // la línea «Falta: …» va entre el cuerpo (que tiene scroll) y los botones: siempre a la vista
+            hintAfter: $('cm-error').parentElement, hintClass: 'jpg-hint-bar',
+            rules: [
+                { label: 'el título', ok: () => $('cm-title').value.trim() !== '', focus: () => $('cm-title') },
+                { label: 'la fecha', ok: () => currentType !== 'single' || !!$('cm-date').value, focus: dateEl },
+                { label: 'al menos un día de la semana', ok: () => currentType !== 'recurring' || selectedDays.size > 0,
+                  focus: () => overlay.querySelector('.cm-block-recurring button, .cm-block-recurring input') },
+                { label: 'la configuración de la serie', ok: () => currentType !== 'recurring' || !sb || !sb.validate(),
+                  focus: () => overlay.querySelector('#cm-series-builder input, #cm-series-builder button') },
+                { label: 'una hora de fin posterior a la de inicio', ok: () => { const t = curTimes(); return !t.end || t.end === '00:00' || t.end > t.start; }, focus: () => $('cm-end-h') },
+                { label: 'un entrenador', ok: () => selectedCoaches.size > 0, focus: () => $('cm-coach-q') },
+                { label: 'un alumno', ok: () => externoMode || selectedPlayers.size > 0, focus: () => $('cm-player-q') },
+                { label: 'el nombre de la persona externa', ok: () => { if (!externoMode) return true; const c = people(); return c.people.length > 0 && !c.error; }, focus: () => $('cm-ex-first') }
+            ]
+        });
     }
 
     // ── Cargar opciones (entrenadores, jugadores, lugares) ───────
@@ -356,6 +385,7 @@
         setType('single');
         $('modalCreateClass').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
+        guard?.refresh();
         setTimeout(() => $('cm-title').focus(), 50);
     }
 

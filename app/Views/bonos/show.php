@@ -462,7 +462,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
             <div class="card-jp-header">
                 <span class="card-jp-title" style="color:var(--danger)"><i class="bi bi-x-octagon-fill me-2"></i>Anular bono</span>
             </div>
-            <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/anular') ?>" method="post"
+            <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/anular') ?>" method="post" data-guard
                   data-ru-confirm="¿Anular este bono?"
                   data-ru-confirm-desc="Las <?= $remaining ?> sesiones que quedan se cancelan. Las ya descontadas y todo su historial se conservan. No se puede deshacer."
                   data-ru-confirm-label="Anular bono">

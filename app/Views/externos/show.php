@@ -48,7 +48,7 @@ $stateColor = ['sin_precio' => '#b45309', 'gratis' => '#64748b', 'pagado' => '#0
     <div class="col-12 col-lg-5">
         <div class="card-jp mb-3">
             <div class="card-jp-header"><span class="card-jp-title"><i class="bi bi-person-lines-fill me-2" style="color:#0ea5e9"></i>Datos</span></div>
-            <form action="<?= base_url('externos/' . $gid . '/editar') ?>" method="POST" class="card-jp-body" autocomplete="off">
+            <form action="<?= base_url('externos/' . $gid . '/editar') ?>" method="POST" class="card-jp-body" autocomplete="off" data-guard data-guard-changes>
                 <?= csrf_field() ?>
                 <div class="row g-2">
                     <div class="col-12 col-md-6">
@@ -108,7 +108,7 @@ $stateColor = ['sin_precio' => '#b45309', 'gratis' => '#64748b', 'pagado' => '#0
                 <?php if (!$converted): ?>
                 <details class="mb-3">
                     <summary class="btn-jp btn-jp-primary btn-jp-sm" style="display:inline-flex;cursor:pointer"><i class="bi bi-person-check-fill me-1"></i>Convertir en alumno</summary>
-                    <form action="<?= base_url('externos/' . $gid . '/convertir') ?>" method="POST" class="mt-3" autocomplete="off"
+                    <form action="<?= base_url('externos/' . $gid . '/convertir') ?>" method="POST" class="mt-3" autocomplete="off" data-guard
                           data-ru-confirm="¿Crear la cuenta de alumno de <?= esc($guest['name'], 'attr') ?>?"
                           data-ru-confirm-desc="Se creará su usuario, se le enviará un email de bienvenida con una contraseña temporal y esta ficha quedará enlazada. Sus clases anteriores se conservan como histórico: no se les descuenta ningún bono."
                           data-ru-confirm-label="Crear cuenta">

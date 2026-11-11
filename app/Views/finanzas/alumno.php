@@ -94,7 +94,7 @@ $attLabel = ['present' => 'Presente', 'absent' => 'Ausencia justificada', 'unjus
                         <td style="text-align:right;font-weight:700"><?= $l['balance'] < 0 ? eur(-$l['balance']) . ' a favor' : eur($l['balance']) ?></td>
                         <td>
                             <?php if (!$l['voided']): ?>
-                            <form action="<?= base_url(($isCharge ? 'finanzas/cargos/' : 'finanzas/cobros/') . (int) $l['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0"
+                            <form action="<?= base_url(($isCharge ? 'finanzas/cargos/' : 'finanzas/cobros/') . (int) $l['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0" data-guard data-guard-hint="none"
                                   data-ru-confirm="¿Anular este <?= $isCharge ? 'cargo' : 'pago' ?>?" data-ru-confirm-desc="No se borra: queda anulado con el motivo." data-ru-confirm-label="Anular">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="back" value="<?= esc($back, 'attr') ?>">

@@ -683,6 +683,9 @@ function toggleType(v) {
     const recur  = document.getElementById('block-recurring');
     const lblS   = document.getElementById('lbl-single');
     const lblR   = document.getElementById('lbl-recurring');
+    // Al EDITAR no existe el selector Puntual/Recurrente (ni sus bloques): sin esto lanzaba un error de JavaScript
+    // que abortaba el resto del script y dejaba sin funcionar los buscadores de entrenador y alumno.
+    if (!single || !recur || !lblS || !lblR) return;
 
     if (v === 'recurring') {
         single.classList.add('d-none');
@@ -972,6 +975,57 @@ if (document.getElementById('externo_mode')?.value === '1') setWho('ext');
     });
     // Check on load if editing
     if (EXCLUDE_ID) checkLocationConflict();
+})();
+</script>
+
+<script>
+// ── Botón «<?= $btnLabel ?>» blando: dice qué falta y lleva al campo (JPGuard) ───────────
+// Espejo de lo que exige el servidor (ClasesService::participantsError, horas, fecha).
+(function () {
+  // form-guard.js se carga al final de la página: se espera a que esté lista
+  function initGuard() {
+    if (!window.JPGuard) return;
+    var form = document.getElementById('claseForm');
+    var btn  = form && form.querySelector('.cf-footer button[type="submit"]');
+    if (!btn) return;
+    var IS_EDIT = <?= $isEdit ? 'true' : 'false' ?>;
+    // Editar: el servidor solo valida los alumnos si se envían; una clase sin alumnos registrados (p. ej. solo con
+    // personas externas) se puede editar. Solo se pide alumno si la clase ya los tenía y se han quitado todos.
+    var INITIAL_PLAYERS = form.querySelectorAll('[name="player_ids[]"]').length;
+    var on  = function (el) { return el && !el.disabled; };
+    var one = function (sel) { return [].filter.call(form.querySelectorAll(sel), on)[0] || null; };
+    var visibleDate = function () { var d = one('[name="session_date"]'); return d && (d._dateEs || d); };
+    var externoOn = function () { var h = document.getElementById('externo_mode'); return !!h && h.value === '1'; };
+    var externos = function () {
+        var root = document.querySelector('#externo-block [data-ex-root]');
+        return (root && window.ExternosList) ? ExternosList.attach(root).collect() : { people: [], error: '' };
+    };
+    var isStaff = function () { var s = document.getElementById('session_type_input'); return !!s && s.value === 'staff'; };
+    var recurring = function () { var r = document.getElementById('block-recurring'); return !!r && !r.classList.contains('d-none') && !!one('#block-recurring [name="session_date"]'); };
+
+    var guard = JPGuard.attach({
+        root: form,
+        buttons: [btn],
+        hintAfter: btn,
+        needsChange: IS_EDIT ? (function () { var base = JPGuard.snapshot(form); return function () { return JPGuard.snapshot(form) !== base; }; })() : null,
+        rules: [
+            { label: 'el título', ok: function () { return form.querySelector('[name="title"]').value.trim() !== ''; }, focus: function () { return form.querySelector('[name="title"]'); } },
+            { label: 'la fecha', ok: function () { var d = visibleDate(); return !d || !!one('[name="session_date"]').value; }, focus: visibleDate },
+            { label: 'al menos un día de la semana', ok: function () { return !recurring() || recurDays().length > 0; }, focus: function () { return form.querySelector('#block-recurring [name="recurrence_days[]"]'); } },
+            { label: 'la configuración de la serie', ok: function () { return IS_EDIT || !recurring() || !seriesBuilder || !seriesBuilder.validate(); }, focus: function () { return document.querySelector('#series-builder input, #series-builder button'); } },
+            { label: 'una hora de fin posterior a la de inicio', ok: function () { var s = one('[name="start_time"]'), e = one('[name="end_time"]'); return !s || !e || !e.value || e.value === '00:00' || e.value > s.value; }, focus: function () { return one('[name="end_time"]'); } },
+            { label: function () { return isStaff() ? 'un responsable (staff)' : 'un entrenador'; }, ok: function () { return form.querySelectorAll('[name="coach_ids[]"]').length > 0; }, focus: function () { return document.querySelector('#coachPicker input[type="search"]'); } },
+            { label: 'un alumno', ok: function () { var n = form.querySelectorAll('[name="player_ids[]"]').length; return IS_EDIT ? (INITIAL_PLAYERS === 0 || n > 0) : (externoOn() || n > 0); }, focus: function () { return document.querySelector('#playerPicker input[type="search"]'); } },
+            { label: 'el nombre de la persona externa', ok: function () { if (!externoOn()) return true; var c = externos(); return c.people.length > 0 && !c.error; }, focus: function () { return document.getElementById('ex-first'); } }
+        ]
+    });
+    // los valores que se cambian por código (fechas, tipo de clase) no siempre disparan eventos
+    ['setWho', 'toggleType'].forEach(function (fn) {
+        var orig = window[fn];
+        if (typeof orig === 'function') window[fn] = function () { var r = orig.apply(this, arguments); setTimeout(function () { guard.refresh(); }, 0); return r; };
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGuard); else initGuard();
 })();
 </script>
 <?= $this->endSection() ?>
