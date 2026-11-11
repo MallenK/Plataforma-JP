@@ -175,6 +175,13 @@
         }
 
         if (saveBtn) saveBtn.addEventListener('click', save);
+        // «Guardar persona» blando: hace falta el nombre (JPGuard, si está cargado)
+        if (saveBtn && window.JPGuard) {
+            JPGuard.attach({
+                root: root, buttons: [saveBtn], hintAfter: saveBtn,
+                rules: [{ label: 'el nombre de la persona', ok: function () { return hasName(readDraft()); }, focus: function () { return fields[0]; } }]
+            });
+        }
         if (listEl) {
             listEl.addEventListener('click', function (e) {
                 var ed = e.target.closest('[data-ex-edit]');

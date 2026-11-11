@@ -38,6 +38,8 @@
 
 <?= $this->renderSection('content') ?>
 
+<!-- Botones «blandos» que guían al usuario (JPGuard). ANTES de loaders.js: frena el envío antes de marcar el botón como ocupado -->
+<script src="<?= base_url('assets/js/form-guard.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/form-guard.js') ?: time() ?>"></script>
 <!-- Indicadores de carga (JPLoader): barra superior + botones ocupados. Antes que el resto: lo usan live.js y soft-nav.js -->
 <script src="<?= base_url('assets/js/loaders.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/loaders.js') ?: time() ?>"></script>
 <!-- Fechas siempre como DD/MM/AAAA (sustituye a los <input type="date"> del navegador) -->

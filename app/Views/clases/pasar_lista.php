@@ -601,6 +601,14 @@ $listaSaved = !empty($session['lista_pasada_at']);
         }
     });
 
+    // Cuántos siguen sin marcar (también filas fuera de página en la tabla paginada): lo usa el aviso del botón.
+    window.JPPlPending = function () {
+        var n = 0;
+        plAll('.att-select').forEach(function (s) { if (s.value === 'pending') n++; });
+        Array.prototype.forEach.call(document.querySelectorAll('.ext-att-select'), function (s) { if (s.value === 'pending') n++; });
+        return n;
+    };
+
     // "Guardar y cerrar": avisa si algo se queda a medias. Cerrar ya no es
     // irreversible (existe "Reabrir sesión"), por eso avisa sin obligar.
     var btnGuardarCerrar = document.getElementById('btn-guardar-cerrar');
@@ -663,6 +671,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 <?php endif; ?>
+</script>
+
+<script>
+// ── Aviso NO bloqueante junto a «Guardar y cerrar»: cuántos quedan sin marcar ────────────────
+// Cerrar con alumnos sin marcar es legítimo (se puede reabrir), así que solo se informa; no se apaga el botón.
+(function () {
+  // form-guard.js se carga al final de la página: se espera a que esté lista
+  function initGuard() {
+    if (!window.JPGuard) return;
+    var btn = document.querySelector('form#form-lista button[name="cerrar"][value="1"], form#form-lista-ext button[name="cerrar"][value="1"]');
+    if (!btn) return;
+    var pending = function () {
+        if (typeof window.JPPlPending === 'function') return window.JPPlPending();
+        var n = 0;
+        Array.prototype.forEach.call(document.querySelectorAll('.att-select, .ext-att-select'), function (s) { if (s.value === 'pending') n++; });
+        return n;
+    };
+    JPGuard.attach({
+        root: btn.form, buttons: [btn], rules: [], blocking: false,
+        info: function () {
+            var n = pending();
+            return n > 0 ? 'Quedan ' + n + (n === 1 ? ' persona sin marcar' : ' personas sin marcar') + '. Puedes cerrar igualmente y reabrir la sesión después.' : '';
+        }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGuard); else initGuard();
+})();
 </script>
 
 <?= $this->endSection() ?>

@@ -101,7 +101,7 @@ $total = array_sum(array_map(fn($e) => $e['voided_at'] ? 0 : (int) $e['amount_ce
                 <td><?php if (!empty($e['attachment_path'])): ?><a href="<?= base_url('finanzas/gastos/' . (int) $e['id'] . '/adjunto') ?>" aria-label="Descargar adjunto"><i class="bi bi-paperclip"></i> Ver</a><?php else: ?>—<?php endif; ?></td>
                 <td>
                     <?php if (!$e['voided_at']): ?>
-                    <form action="<?= base_url('finanzas/gastos/' . (int) $e['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0"
+                    <form action="<?= base_url('finanzas/gastos/' . (int) $e['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0" data-guard data-guard-hint="none"
                           data-ru-confirm="¿Anular este gasto?" data-ru-confirm-desc="No se borra: queda anulado con el motivo." data-ru-confirm-label="Anular gasto">
                         <?= csrf_field() ?>
                         <input type="text" name="reason" class="form-control-jp" style="width:120px;padding:3px 6px;font-size:12px" placeholder="Motivo" required minlength="3" aria-label="Motivo de la anulación">

@@ -99,13 +99,13 @@ if ($bare && $cancelled) { return; }
         </div>
 
         <?php if (!$cancelled): ?>
-        <form id="ex-edit-<?= (int) $e['link_id'] ?>" action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/editar" method="POST" hidden
+        <form id="ex-edit-<?= (int) $e['link_id'] ?>" action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/editar" method="POST" hidden data-guard data-guard-changes
               style="margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm)" autocomplete="off">
             <?= csrf_field() ?>
             <div class="row g-2">
                 <div class="col-12 col-md-6">
                     <label class="form-label">Nombre *</label>
-                    <input type="text" name="first_name" class="form-control-jp" maxlength="100" required value="<?= esc($e['first_name']) ?>">
+                    <input type="text" name="first_name" class="form-control-jp" maxlength="100" required data-guard-label="el nombre" value="<?= esc($e['first_name']) ?>">
                 </div>
                 <div class="col-12 col-md-6">
                     <label class="form-label">Apellidos</label>
@@ -165,12 +165,13 @@ if ($bare && $cancelled) { return; }
                 <?php if (true): /* el precio se puede corregir siempre (no puede quedar por debajo de lo cobrado) */ ?>
                 <!-- Fijar o cambiar el precio (y, si aún no hay precio, cobrarlo de una vez) -->
                 <div class="col-12 col-lg-<?= ($e['pending_cents'] !== null && $e['pending_cents'] > 0) ? '5' : '12' ?>">
-                    <form action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/precio" method="POST">
+                    <form action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/precio" method="POST" data-guard data-guard-hint="after">
                         <?= csrf_field() ?>
                         <label class="form-label" for="pr-<?= (int) $e['link_id'] ?>">Precio de la clase (€)</label>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <input id="pr-<?= (int) $e['link_id'] ?>" type="text" inputmode="decimal" name="price" class="form-control-jp" style="max-width:110px"
-                                   value="<?= esc(eur_input($e['price_cents'])) ?>" placeholder="0 = gratis" required>
+                                   value="<?= esc(eur_input($e['price_cents'])) ?>" placeholder="0 = gratis" required
+                                   data-guard-money="zero" data-guard-min="<?= (int) ($e['paid_cents'] ?? 0) ?>" data-guard-label="el precio (no inferior a lo ya cobrado)">
                             <?php if ($e['price_cents'] === null): ?>
                             <select name="method_id" class="form-control-jp" style="max-width:150px" aria-label="Medio de pago">
                                 <?php foreach ($payMethods as $pm): ?>
@@ -178,7 +179,7 @@ if ($bare && $cancelled) { return; }
                                 <?php endforeach; ?>
                             </select>
                             <label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;margin:0">
-                                <input type="checkbox" name="paid_now" value="1"><span>Ya lo ha pagado</span>
+                                <input type="checkbox" name="paid_now" value="1" data-guard-needs="#pr-<?= (int) $e['link_id'] ?>"><span>Ya lo ha pagado</span>
                             </label>
                             <?php endif; ?>
                             <button class="btn-jp btn-jp-secondary btn-jp-sm" type="submit">Guardar</button>
@@ -190,12 +191,13 @@ if ($bare && $cancelled) { return; }
                 <?php if ($e['pending_cents'] !== null && $e['pending_cents'] > 0): ?>
                 <!-- Registrar un cobro (completo o parcial) -->
                 <div class="col-12 col-lg-7">
-                    <form action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/cobro" method="POST">
+                    <form action="/clases/<?= $sid ?>/externos/<?= (int) $e['link_id'] ?>/cobro" method="POST" data-guard data-guard-hint="after">
                         <?= csrf_field() ?>
                         <label class="form-label">Registrar cobro</label>
                         <div class="d-flex flex-wrap gap-2">
                             <input type="text" inputmode="decimal" name="amount" class="form-control-jp" style="max-width:110px"
-                                   value="<?= esc(eur_input($e['pending_cents'])) ?>" aria-label="Importe cobrado" required>
+                                   value="<?= esc(eur_input($e['pending_cents'])) ?>" aria-label="Importe cobrado" required
+                                   data-guard-money data-guard-max="<?= (int) $e['pending_cents'] ?>" data-guard-label="un importe de hasta lo pendiente">
                             <select name="method_id" class="form-control-jp" style="max-width:160px" aria-label="Medio de pago">
                                 <?php foreach ($payMethods as $pm): ?>
                                     <option value="<?= (int) $pm['id'] ?>" <?= $pm['code'] === 'efectivo' ? 'selected' : '' ?>><?= esc($pm['name']) ?></option>
@@ -224,7 +226,7 @@ if ($bare && $cancelled) { return; }
                                 <?php if ($voided): ?>
                                     <span style="font-size:11px;text-decoration:none">Anulado: <?= esc($p['void_reason'] ?? '') ?></span>
                                 <?php else: ?>
-                                    <form action="/clases/<?= $sid ?>/externos/cobros/<?= (int) $p['id'] ?>/anular" method="POST" class="d-flex gap-1" style="margin:0">
+                                    <form action="/clases/<?= $sid ?>/externos/cobros/<?= (int) $p['id'] ?>/anular" method="POST" class="d-flex gap-1" style="margin:0" data-guard data-guard-hint="after">
                                         <?= csrf_field() ?>
                                         <input type="text" name="reason" class="form-control-jp" style="font-size:12px;padding:3px 6px" placeholder="Motivo" required maxlength="255" aria-label="Motivo de la anulación">
                                         <button class="btn-jp btn-jp-danger btn-jp-sm" type="submit">Anular</button>
@@ -248,12 +250,12 @@ if ($bare && $cancelled) { return; }
             <summary class="btn-jp btn-jp-secondary btn-jp-sm" style="display:inline-flex;cursor:pointer">
                 <i class="bi bi-person-plus me-1"></i>Añadir persona externa
             </summary>
-            <form action="/clases/<?= $sid ?>/externos/add" method="POST" class="mt-3" autocomplete="off">
+            <form action="/clases/<?= $sid ?>/externos/add" method="POST" class="mt-3" autocomplete="off" data-guard>
                 <?= csrf_field() ?>
                 <div class="row g-2">
                     <div class="col-12 col-md-6">
                         <label class="form-label" for="ex-first">Nombre *</label>
-                        <input id="ex-first" type="text" name="first_name" class="form-control-jp" maxlength="100" required>
+                        <input id="ex-first" type="text" name="first_name" class="form-control-jp" maxlength="100" required data-guard-label="el nombre">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label" for="ex-last">Apellidos</label>
@@ -286,7 +288,7 @@ if ($bare && $cancelled) { return; }
                     <?php if ($canMoney): ?>
                     <div class="col-12 col-md-4">
                         <label class="form-label" for="ex-price">Precio (€)</label>
-                        <input id="ex-price" type="text" inputmode="decimal" name="price" class="form-control-jp" placeholder="0 = gratis">
+                        <input id="ex-price" type="text" inputmode="decimal" name="price" class="form-control-jp" placeholder="0 = gratis" data-guard-money="zero" data-guard-label="un precio válido">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label" for="ex-method">Medio de pago</label>
@@ -298,7 +300,7 @@ if ($bare && $cancelled) { return; }
                     </div>
                     <div class="col-12 col-md-4 d-flex align-items-end">
                         <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;margin-bottom:10px">
-                            <input type="checkbox" name="paid_now" value="1"><span>Cobrado ahora</span>
+                            <input type="checkbox" name="paid_now" value="1" data-guard-needs="#ex-price"><span>Cobrado ahora</span>
                         </label>
                     </div>
                     <?php endif; ?>
