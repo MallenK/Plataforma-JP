@@ -123,6 +123,16 @@ final class ExternosServiceTest extends CIUnitTestCase
         $this->assertSame('pagado', ExternosService::moneyState(2500, 3000));
     }
 
+    public function testElPopupExplicaLaSesionCaducadaYLosErrores(): void
+    {
+        $js = file_get_contents(FCPATH . 'assets/js/clase-modal.js');
+        $this->assertStringContainsString('Tu sesión ha caducado', $js, 'sesión caducada (401/403 sin mensaje o redirección al login)');
+        $this->assertStringContainsString('res.status === 403', $js);
+        $this->assertStringContainsString('El servidor ha respondido con un error', $js, 'respuesta que no es JSON');
+        $this->assertStringContainsString('No se pudo contactar con el servidor', $js, 'sin conexión real');
+        $this->assertStringContainsString('X-Requested-With', $js, 'se pide como AJAX para recibir JSON y no una redirección');
+    }
+
     public function testNuncaSeDescartaNadaEnSilencio(): void
     {
         $svc = new ExternosService();
