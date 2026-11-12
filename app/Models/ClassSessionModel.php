@@ -21,6 +21,7 @@ class ClassSessionModel extends Model
 
     // ── Date-range queries ────────────────────────────────────
 
+    /** Sesiones del mes para el calendario. Incluye las canceladas: se ven en rojo, no desaparecen. */
     public function getForMonth(int $year, int $month): array
     {
         $start = sprintf('%04d-%02d-01', $year, $month);
@@ -28,7 +29,6 @@ class ClassSessionModel extends Model
 
         return $this->where('session_date >=', $start)
                     ->where('session_date <=', $end)
-                    ->where('status !=', 'cancelled')
                     ->orderBy('session_date', 'ASC')
                     ->orderBy('start_time', 'ASC')
                     ->findAll();

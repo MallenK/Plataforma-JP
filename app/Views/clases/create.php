@@ -46,9 +46,9 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
 
         <!-- ── Columna principal ──────────────────────────── -->
         <div class="col-12">
-        <div class="cf-grid">
+        <div class="cf-layout">
 
-            <div class="cf-span">
+            <div class="cf-info">
             <!-- Información básica -->
             <div class="card-jp mb-3">
                 <div class="card-jp-header">
@@ -80,7 +80,9 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-            </div><!-- /cf-span -->
+            </div><!-- /cf-info -->
+
+            <div class="cf-grid">
 
             <div class="cf-stack">
             <!-- Tipo de responsable -->
@@ -199,23 +201,12 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                         <ul class="pp-list" hidden></ul>
                     </div>
                     <div id="playerList" style="display:flex;flex-direction:column;gap:6px">
-                        <?php foreach ($session['players'] ?? [] as $p):
-                            $pCoachId = $p['coach_id'] ?? ''; ?>
+                        <?php foreach ($session['players'] ?? [] as $p): ?>
                         <div class="selected-person" id="player-<?= $p['user_id'] ?>">
                             <input type="hidden" name="player_ids[]" value="<?= $p['user_id'] ?>">
-                            <div style="padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                                    <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i><?= esc($p['name']) ?></span>
-                                    <button type="button" onclick="removePlayer(<?= $p['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                                <select name="player_coach_map[<?= $p['user_id'] ?>]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
-                                    <option value="">Sin responsable asignado</option>
-                                    <?php
-                                    $responsibleOptions = $currentSessionType === 'staff' ? $staffOptions : $coachOptions;
-                                    foreach ($responsibleOptions as $c): ?>
-                                        <option value="<?= $c['id'] ?>" <?= $pCoachId == $c['id'] ? 'selected' : '' ?>><?= esc($c['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
+                                <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i><?= esc($p['name']) ?></span>
+                                <button type="button" onclick="removePlayer(<?= $p['user_id'] ?>)" aria-label="Quitar alumno" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -520,10 +511,10 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
             </div>
 
             </div><!-- /cf-stack lugar -->
-        </div><!-- /cf-grid -->
+            </div><!-- /cf-grid -->
 
-        <!-- ── Sidebar ──────────────────────────────────── -->
-        <div class="cf-footer">
+        <!-- ── Caja de acciones: arriba a la derecha, 25 % de la fila de «Información de la clase» ── -->
+        <aside class="cf-footer">
 
             <?php if (!$isEdit): ?>
             <!-- Cobertura de bono (TICKET-013): se rellena por JS al elegir alumnos + serie -->
@@ -547,7 +538,8 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-        </div><!-- /cf-footer -->
+        </aside><!-- /cf-footer -->
+        </div><!-- /cf-layout -->
         </div><!-- /col-12 -->
     </div>
 </form>
@@ -575,16 +567,26 @@ $playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => 
     border-color: var(--accent);
     color: var(--accent);
 }
-/* Formulario en dos columnas: cada .cf-stack es una columna de tarjetas; .cf-span ocupa las dos */
-.cf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; align-items: start; }
-.cf-span { grid-column: 1 / -1; }
-.cf-stack, .cf-span { min-width: 0; }
-@media (max-width: 991.98px) { .cf-grid { grid-template-columns: minmax(0, 1fr); } }
-/* Crear / Cancelar siempre a mano al final, en una sola fila */
-.cf-footer { position: sticky; bottom: 0; z-index: 20; padding-top: 4px; }
-.cf-footer .card-jp-body { display: flex; gap: 8px; flex-wrap: wrap; }
-.cf-footer .card-jp-body .w-100 { width: auto !important; flex: 1 1 160px; margin: 0 !important; }
-.cf-footer .card-jp { box-shadow: 0 -6px 18px rgba(15, 23, 42, .08); }
+/* Disposición: fila superior 75 % «Información de la clase» + 25 % caja de acciones;
+   debajo, el formulario en dos columnas (cada .cf-stack es una columna de tarjetas) a todo el ancho */
+.cf-layout {
+    display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 0 16px; align-items: start;
+    grid-template-areas: "info box" "grid grid";
+}
+.cf-info   { grid-area: info; min-width: 0; }
+.cf-grid   { grid-area: grid; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; align-items: start; min-width: 0; }
+.cf-footer { grid-area: box; min-width: 0; }
+.cf-stack  { min-width: 0; }
+.cf-footer .card-jp-body .btn-jp { display: block; width: 100%; text-align: center; }
+/* Móvil / tablet: una sola columna y la caja queda como barra al pie, a mano para el pulgar */
+@media (max-width: 991.98px) {
+    .cf-layout { grid-template-columns: minmax(0, 1fr); gap: 0; grid-template-areas: "info" "grid" "box"; }
+    .cf-grid { grid-template-columns: minmax(0, 1fr); }
+    .cf-footer { position: sticky; bottom: 0; z-index: 20; padding-top: 4px; }
+    .cf-footer .card-jp-body { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cf-footer .card-jp-body .btn-jp { width: auto !important; flex: 1 1 140px; margin: 0 !important; }
+    .cf-footer .card-jp { box-shadow: 0 -6px 18px rgba(15, 23, 42, .08); }
+}
 /* (los estilos del buscador de personas los inyecta person-picker.js) */
 /* Alumno registrado / Externo */
 .who-tab { flex: 1; cursor: pointer; margin: 0; }
@@ -634,14 +636,6 @@ function switchResponsible(type) {
         el.style.color = isStaff ? '#7c3aed' : '#059669';
     });
 
-    // Rebuild player_coach_map dropdowns
-    document.querySelectorAll('.player-responsible-map').forEach(sel => {
-        const selectedVal = sel.value;
-        const options = isStaff ? staffOptions : coachOptions;
-        const label = isStaff ? 'Sin staff asignado' : 'Sin entrenador asignado';
-        sel.innerHTML = `<option value="">${escHtml(label)}</option>` +
-            options.map(o => `<option value="${o.id}"${o.id == selectedVal ? ' selected' : ''}>${escHtml(o.name)}</option>`).join('');
-    });
 }
 
 // Init visual state on load
@@ -830,21 +824,11 @@ function addPlayer(opt) {
     const name = escHtml(opt.name);
     addedPlayers.add(id);
 
-    const responsibleOpts = (currentSessionType === 'staff' ? staffOptions : coachOptions)
-        .map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
-    const responsibleLabel = currentSessionType === 'staff' ? 'Sin staff asignado' : 'Sin entrenador asignado';
-
     const html = `<div class="selected-person" id="player-${id}">
         <input type="hidden" name="player_ids[]" value="${id}">
-        <div style="padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>${name}</span>
-                <button type="button" onclick="removePlayer(${id})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <select name="player_coach_map[${id}]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
-                <option value="">${responsibleLabel}</option>
-                ${responsibleOpts}
-            </select>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
+            <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>${name}</span>
+            <button type="button" onclick="removePlayer(${id})" aria-label="Quitar alumno" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>`;
     document.getElementById('playerList').insertAdjacentHTML('beforeend', html);

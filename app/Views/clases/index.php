@@ -164,6 +164,7 @@
             <span><i style="background:#3b82f6"></i>Asignada, sin pasar lista</span>
             <span><i style="background:#10b981"></i>Lista pasada</span>
             <span><i style="background:#f59e0b"></i>Aviso (ausencia del alumno, sin entrenador)</span>
+            <span><i style="background:#ef4444"></i>Cancelada</span>
         </div>
         <?php endif; ?>
     </div>
@@ -446,7 +447,7 @@ window.CalOverlap = (function () {
                 out += '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-event-block" ' +
                     'style="top:' + t + 'px;height:' + hgt + 'px;' +
                         'left:calc(' + leftPct + '% + 2px);width:calc(' + w + '% - 4px);right:auto;' +
-                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + '' + '" ' +
+                        'background:' + ev.color + '22;color:' + ev.color + ';border:1px solid ' + ev.color + '44' + (ev.status === 'cancelled' ? ';text-decoration:line-through' : '') + '" ' +
                     'title="' + esc(ev.title) + respFull + ' &middot; ' + esc(ev.start) + '–' + esc(ev.end || '') + (ev.alert_reason ? ' &middot; ' + esc(ev.alert_reason) : '') + '" ' +
                     'onclick="event.stopPropagation()">' +
                     (ev.alert_level === 'warn' ? '&#9888; ' : '') + esc(ev.start) + ' ' + esc(mainLabel) + respShort +
@@ -466,50 +467,11 @@ window.CalOverlap = (function () {
     }
 
     // ── Pop-up selector ─────────────────────────────────────────────
-    function closePopup() {
-        var el = document.getElementById('cal-picker');
-        if (el) el.remove();
-        document.removeEventListener('keydown', onKey);
-        document.body.style.overflow = '';
-    }
-    function onKey(e) { if (e.key === 'Escape') closePopup(); }
+    // El selector (buscador + filtros + orden por hora) vive en assets/js/cal-picker.js, compartido
+    // entre Clases y Dashboard.
+    function closePopup() { if (window.CalPicker) CalPicker.close(); }
 
-    function showPicker(titleTxt, evts) {
-        var rows = evts.map(function (ev) {
-            return '<a href="/clases/' + encodeURIComponent(ev.id) + '" class="cal-picker-row">' +
-                '<span class="cal-picker-dot" style="background:' + ev.color + '"></span>' +
-                '<span class="cal-picker-time">' + esc(ev.start) +
-                    (ev.end ? '<small>–' + esc(ev.end) + '</small>' : '') + '</span>' +
-                '<span class="cal-picker-title">' + esc(ev.player_label || ev.title) +
-                    (ev.responsable_name ? ' <small style="opacity:.65">&middot; ' + esc(ev.responsable_name) + '</small>' : '') +
-                '</span>' +
-                '<i class="bi bi-chevron-right cal-picker-arrow"></i>' +
-                '</a>';
-        }).join('') || '<div class="cal-picker-empty">No hay clases.</div>';
-
-        closePopup();
-
-        var overlay = document.createElement('div');
-        overlay.id = 'cal-picker';
-        overlay.className = 'cal-picker-overlay';
-        overlay.innerHTML =
-            '<div class="cal-picker-modal" role="dialog" aria-modal="true">' +
-                '<div class="cal-picker-head">' +
-                    '<span><i class="bi bi-calendar3"></i> ' + esc(titleTxt) + '</span>' +
-                    '<button type="button" class="cal-picker-close" aria-label="Cerrar">' +
-                        '<i class="bi bi-x-lg"></i></button>' +
-                '</div>' +
-                '<div class="cal-picker-hint">Elige qué clase quieres ver</div>' +
-                '<div class="cal-picker-list">' + rows + '</div>' +
-            '</div>';
-
-        overlay.addEventListener('click', function (e) { if (e.target === overlay) closePopup(); });
-        overlay.querySelector('.cal-picker-close').addEventListener('click', closePopup);
-        document.addEventListener('keydown', onKey);
-
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-    }
+    function showPicker(titleTxt, evts) { if (window.CalPicker) CalPicker.show(titleTxt, evts); }
 
     function dayLabel(dateStr, extra) {
         var d = new Date(dateStr + 'T00:00:00');
@@ -551,6 +513,7 @@ window.CalOverlap = (function () {
     };
 })();
 </script>
+<script src="<?= base_url('assets/js/cal-picker.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/cal-picker.js') ?>"></script>
 <script src="<?= base_url('assets/js/bono-coverage.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script src="<?= base_url('assets/js/series-builder.js') ?>?v=<?= (int) @filemtime(FCPATH . 'assets/js/series-builder.js') ?>"></script>
 <script src="<?= base_url('assets/js/person-picker.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/person-picker.js') ?: time() ?>"></script>
@@ -708,7 +671,7 @@ const CAL = {
                 const respShort = ev.responsable_name ? ' · <span class="cal-chip-resp">' + CalOverlap.esc(CalOverlap.shortName(ev.responsable_name)) + '</span>' : '';
                 const tooltip = CalOverlap.esc(ev.title) + respFull + ' ' + ev.start + '–' + ev.end + (ev.alert_reason ? ' · ' + CalOverlap.esc(ev.alert_reason) : '');
                 html += `<a href="/clases/${ev.id}" class="cal-chip"
-                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44"
+                            style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44${ev.status === 'cancelled' ? ';text-decoration:line-through' : ''}"
                             title="${tooltip}">
                             ${ev.alert_level === 'warn' ? '&#9888; ' : ''}${ev.start} ${t}${respShort}
                          </a>`;

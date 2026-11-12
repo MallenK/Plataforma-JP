@@ -279,6 +279,16 @@ $routes->post('clases/(:num)/mensaje', 'ClasesController::studentMessage/$1', [
     'filter' => ['auth', 'role:player'],
 ]);
 
+// ── Petición de la familia: «quiero recuperar esta clase». NO cambia el estado de la clase:
+//    solo avisa al equipo, que es quien reactiva la clase o retira el aviso. ──
+$routes->post('clases/(:num)/recuperar', 'ClasesController::requestRecover/$1', [
+    'filter' => ['auth', 'role:player'],
+]);
+// El equipo retira el aviso de ausencia de un alumno (motivo obligatorio; queda en auditoría).
+$routes->post('clases/(:num)/retirar-aviso', 'ClasesController::withdrawAbsenceNotice/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+
 // ── Editar / Cancelar / Eliminar ───────────────────────────
 $routes->get('clases/(:num)/editar', 'ClasesController::edit/$1', [
     'filter' => ['auth', 'role:superadmin,admin,staff,coach'],

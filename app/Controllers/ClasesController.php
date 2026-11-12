@@ -497,7 +497,7 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $result = $this->clasesService->reabrirSesion($id);
+        $result = $this->clasesService->reabrirSesion($id, (string) ($this->request->getPost('reason') ?? ''), $this->currentUserId());
 
         if (!$result['success']) {
             session()->setFlashdata('error', $result['error'] ?? 'No se pudo reabrir la sesión.');
@@ -505,7 +505,9 @@ class ClasesController extends BaseController
         }
 
         if (($result['from'] ?? '') === 'cancelled') {
-            session()->setFlashdata('success', 'Sesión reactivada: vuelve a estar programada.');
+            $n = (int) ($result['cleared'] ?? 0);
+            session()->setFlashdata('success', 'Sesión reactivada: vuelve a estar programada y se ha avisado a alumnos y entrenadores.'
+                . ($n > 0 ? ' Se ' . ($n === 1 ? 'ha retirado 1 aviso de ausencia' : 'han retirado ' . $n . ' avisos de ausencia') . '.' : ''));
             return redirect()->to('/clases/' . $id);
         }
 
@@ -650,6 +652,50 @@ class ClasesController extends BaseController
             session()->setFlashdata('success', $msg);
         }
 
+        return redirect()->to('/clases/' . $id);
+    }
+
+    /**
+     * El alumno (o su familia) pide recuperar una clase cancelada o con aviso de ausencia. NO cambia nada:
+     * solo avisa al equipo. Reactivar o retirar el aviso es cosa de admin/entrenador.
+     */
+    public function requestRecover(int $id)
+    {
+        $result = $this->clasesService->requestRecover(
+            $this->currentUserId(),
+            $id,
+            (string) ($this->request->getPost('note') ?? '')
+        );
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se ha podido enviar la petición.');
+        } else {
+            session()->setFlashdata('success', 'Petición enviada. La administración la revisará y te confirmará: tu clase no cambia hasta entonces.');
+        }
+        return redirect()->to('/clases/' . $id);
+    }
+
+    /** El equipo retira el aviso de ausencia de un alumno de esta clase (motivo obligatorio). */
+    public function withdrawAbsenceNotice(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para modificar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
+        $result = $this->clasesService->withdrawAbsenceNotice(
+            $id,
+            (int) $this->request->getPost('user_id'),
+            (string) ($this->request->getPost('reason') ?? ''),
+            $this->currentUserId()
+        );
+
+        session()->setFlashdata($result['success'] ? 'success' : 'error',
+            $result['success'] ? 'Aviso de ausencia retirado: la clase sigue en pie y se ha avisado al alumno y al equipo.' : ($result['error'] ?? 'No se ha podido retirar el aviso.'));
         return redirect()->to('/clases/' . $id);
     }
 

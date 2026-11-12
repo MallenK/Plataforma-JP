@@ -75,4 +75,13 @@ final class CalendarAlertLevelTest extends CIUnitTestCase
     {
         $this->assertSame('warn', $this->level(['has_coach' => false]));
     }
+
+    /** Una clase cancelada no desaparece del calendario: sale en rojo, pase lo que pase con lo demás. */
+    public function testCancelledIsRedAndOutranksEverythingElse(): void
+    {
+        $r = $this->alert(['status' => 'cancelled']);
+        $this->assertSame('cancelled', $r['level']);
+        $this->assertSame('#ef4444', ClasesService::ALERT_COLORS['cancelled']);
+        $this->assertSame('cancelled', $this->level(['status' => 'cancelled', 'has_coach' => false, 'absence_notice' => true, 'list_taken' => true]));
+    }
 }
