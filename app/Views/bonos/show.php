@@ -174,33 +174,51 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
         </div>
         <?php endif; ?>
 
-        <?php if (!$unassigned && !empty($debts)): ?>
-        <!-- Deudas abiertas del alumno (TICKET-013) -->
+        <?php if (!$unassigned && !empty($settleCandidates)): ?>
+        <!-- Clases saldables con este bono: ya dadas sin bono (TICKET-013) y programadas confirmadas sin descontar -->
+        <?php $canSettle = $isActive; ?>
         <div class="card-jp" style="border:1px solid #fecaca">
             <div class="card-jp-header">
-                <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases dadas sin bono (<?= count($debts) ?>)</span>
+                <span class="card-jp-title" style="color:#b91c1c"><i class="bi bi-receipt me-2"></i>Clases para saldar con este bono (<?= count($settleCandidates) ?>)</span>
                 <a href="<?= base_url('bonos/deudas') ?>" class="btn-jp btn-jp-secondary btn-jp-sm" style="text-decoration:none">Gestionar</a>
             </div>
             <div class="card-jp-body" style="font-size:13px">
-                <?php foreach ($debts as $d): ?>
-                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-                    <span><?= esc($d['title']) ?></span>
-                    <span style="color:var(--text-muted)"><?= date('d/m/Y', strtotime($d['session_date'])) ?></span>
-                </div>
-                <?php endforeach; ?>
-                <div style="font-size:12px;color:var(--text-muted);margin:8px 0 10px">
-                    No se descuentan solas: tú decides con qué bono saldarlas. Si el alumno tiene varios bonos, hazlo desde el que quieras (también puedes elegir clase a clase en «Gestionar»).
-                </div>
-                <?php $canSettle = $isActive; $nSettle = min(count($debts), $remaining); ?>
-                <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/saldar-deudas') ?>" method="post" style="margin:0"
-                      data-ru-confirm="¿Saldar <?= (int) $nSettle ?> clase(s) con este bono?"
-                      data-ru-confirm-desc="Se descuenta 1 sesión de «<?= esc($bono['bono_name'], 'attr') ?>» por cada clase, empezando por la más antigua. Queda registrado y puedes devolver la sesión después."
+                <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/saldar-deudas') ?>" method="post" style="margin:0" id="formSaldar"
+                      data-ru-confirm="¿Saldar las clases marcadas con este bono?"
+                      data-ru-confirm-desc="Se descuenta 1 sesión de «<?= esc($bono['bono_name'], 'attr') ?>» por cada clase, de la más antigua a la más reciente, hasta que se acabe el saldo. Queda registrado y puedes devolver la sesión después."
                       data-ru-confirm-label="Saldar con este bono">
                     <?= csrf_field() ?>
-                    <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm" <?= $canSettle ? '' : 'disabled title="Este bono no tiene saldo o está caducado"' ?>>
-                        <i class="bi bi-ticket-perforated-fill me-1"></i>Saldar <?= (int) $nSettle ?> clase(s) con este bono
+                    <?php $grp = ''; foreach ($settleCandidates as $c): ?>
+                        <?php if ($c['kind'] !== $grp): $grp = $c['kind']; ?>
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin:8px 0 2px">
+                            <?= $grp === 'past' ? 'Ya dadas, sin bono' : 'Programadas (confirmadas, sin descontar)' ?>
+                        </div>
+                        <?php endif; ?>
+                        <label style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer">
+                            <span><input type="checkbox" class="chk-saldar" name="settle[]" value="<?= (int) $c['csp_id'] ?>" <?= $c['kind'] === 'past' ? 'checked' : '' ?> <?= $canSettle ? '' : 'disabled' ?>> <?= esc($c['title']) ?></span>
+                            <span style="color:var(--text-muted)"><?= date('d/m/Y', strtotime($c['date'])) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                    <div style="font-size:12px;color:var(--text-muted);margin:8px 0 10px">
+                        No se descuentan solas: marca las que quieras saldar con este bono (ya dadas o programadas). Si el alumno tiene varios bonos, hazlo desde el que quieras (también puedes elegir clase a clase en «Gestionar»).
+                        Este bono tiene <strong><?= (int) $remaining ?></strong> sesión(es): se saldan en orden hasta que se acabe el saldo.
+                    </div>
+                    <button type="submit" id="btnSaldar" class="btn-jp btn-jp-primary btn-jp-sm" <?= $canSettle ? '' : 'disabled title="Este bono no tiene saldo o está caducado"' ?>>
+                        <i class="bi bi-ticket-perforated-fill me-1"></i><span id="btnSaldarTxt">Saldar con este bono</span>
                     </button>
                 </form>
+                <script>
+                (function () {
+                    var f = document.getElementById('formSaldar'), rem = <?= (int) $remaining ?>;
+                    if (!f) return;
+                    function upd() {
+                        var n = f.querySelectorAll('.chk-saldar:checked').length, k = Math.min(n, rem);
+                        document.getElementById('btnSaldarTxt').textContent = n ? 'Saldar ' + k + ' clase' + (k === 1 ? '' : 's') + ' con este bono' : 'Marca alguna clase';
+                        document.getElementById('btnSaldar').disabled = !n || <?= $canSettle ? 'false' : 'true' ?>;
+                    }
+                    f.addEventListener('change', upd); upd();
+                })();
+                </script>
             </div>
         </div>
         <?php endif; ?>
@@ -444,7 +462,7 @@ $barColor   = $pct > 50 ? 'var(--success)' : ($pct > 20 ? 'var(--warning)' : 'va
             <div class="card-jp-header">
                 <span class="card-jp-title" style="color:var(--danger)"><i class="bi bi-x-octagon-fill me-2"></i>Anular bono</span>
             </div>
-            <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/anular') ?>" method="post"
+            <form action="<?= base_url('bonos/' . (int) $bono['id'] . '/anular') ?>" method="post" data-guard
                   data-ru-confirm="¿Anular este bono?"
                   data-ru-confirm-desc="Las <?= $remaining ?> sesiones que quedan se cancelan. Las ya descontadas y todo su historial se conservan. No se puede deshacer."
                   data-ru-confirm-label="Anular bono">

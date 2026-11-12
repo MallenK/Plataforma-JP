@@ -26,5 +26,6 @@ class AvisosProgramados extends BaseCommand
         $res = ScheduledNoticeService::run(CLI::getOption('forzar-caducidad') !== null);
         CLI::write(sprintf('Recordatorios de clase enviados: %d', $res['reminders']));
         CLI::write(sprintf('Bonos avisados por caducidad: %d', $res['expiry']));
+        CLI::write(sprintf('Recordatorios de Organización enviados: %d', $res['org']));
     }
 }

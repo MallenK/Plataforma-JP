@@ -106,7 +106,7 @@ $total = array_sum(array_map(fn($p) => $p['voided_at'] ? 0 : (int) $p['amount_ce
                 <td data-order="<?= (int) $p['amount_cents'] ?>" style="text-align:right;font-weight:700;<?= $p['voided_at'] ? 'text-decoration:line-through' : '' ?>"><?= eur((int) $p['amount_cents']) ?></td>
                 <td>
                     <?php if (!$p['voided_at']): ?>
-                    <form action="<?= base_url('finanzas/cobros/' . (int) $p['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0"
+                    <form action="<?= base_url('finanzas/cobros/' . (int) $p['id'] . '/anular') ?>" method="post" class="d-flex gap-1" style="margin:0" data-guard data-guard-hint="none"
                           data-ru-confirm="¿Anular este cobro de <?= eur((int) $p['amount_cents']) ?>?" data-ru-confirm-desc="No se borra: queda anulado con el motivo y lo que pagaba vuelve a estar pendiente." data-ru-confirm-label="Anular cobro">
                         <?= csrf_field() ?>
                         <input type="text" name="reason" class="form-control-jp" style="width:130px;padding:3px 6px;font-size:12px" placeholder="Motivo" required minlength="3" aria-label="Motivo de la anulación">

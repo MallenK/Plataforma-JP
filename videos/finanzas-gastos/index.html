@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b1220; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #fff;
+        background: radial-gradient(1100px 800px at 18% 20%, #17305f 0%, #0b1220 70%); }
+      .step { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #60a5fa; }
+      .txt { font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+      .sub { color: #cbd5e1; font-weight: 500; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 200px; }
+      .center img { width: 300px; margin-bottom: 36px; }
+      .big { font-size: 104px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+      .mid { margin-top: 34px; font-size: 48px; color: #cbd5e1; font-weight: 500; line-height: 1.25; }
+      .layer { position: absolute; inset: 0; opacity: 0; overflow: hidden; z-index: 0; background: #f1f5f9; }
+      .layer img { width: 1152px; height: auto; display: block; }
+      .mark { position: absolute; border: 5px solid #ef4444; border-radius: 12px; opacity: 0; box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 30px rgba(239,68,68,.55); z-index: 55; pointer-events: none; }
+      .cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; opacity: 0; z-index: 70; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+      .ripple { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 6px solid #ef4444; background: rgba(239,68,68,.22); opacity: 0; z-index: 65; pointer-events: none; }
+      .pill { position: absolute; z-index: 56; background: #ef4444; color: #fff; font-weight: 800; font-size: 22px; padding: 6px 16px; border-radius: 999px; opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,.4); white-space: nowrap; pointer-events: none; }
+      .cap { position: absolute; left: 70px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+      .cap .step { font-size: 28px; margin-bottom: 18px; }
+      .cap .txt { font-size: 56px; }
+      .cap .txt b { color: #fbbf24; }
+      .cap .sub { margin-top: 20px; font-size: 31px; line-height: 1.28; }
+      .cap .sub b { color: #fff; }
+      .device { position: absolute; left: 700px; top: 160px; width: 1180px; height: 760px; border-radius: 26px; background: #05080f; padding: 14px;
+        box-shadow: 0 0 0 3px #27324a, 0 40px 100px rgba(0,0,0,.6), 0 0 140px rgba(59,130,246,.16); }
+      .screen { position: relative; width: 1152px; height: 720px; border-radius: 14px; overflow: hidden; background: #0f172a; }
+      #cam { position: absolute; left: 0; top: 0; width: 1152px; height: 720px; transform-origin: 0 0; }
+      .device-stand { position: absolute; left: 1140px; top: 920px; width: 260px; height: 22px; background: linear-gradient(#1c2538, #0b1220); border-radius: 0 0 24px 24px; box-shadow: 0 0 0 2px #27324a; }
+      .progress { position: absolute; left: 0; bottom: 0; height: 8px; width: 100%; background: #1e293b; z-index: 80; }
+      .progress i { display: block; height: 100%; width: 0; background: #3b82f6; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="55.8" data-width="1920" data-height="1080">
+
+      <div id="intro" class="center clip" data-start="0" data-duration="3.2" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Registrar un gasto</div>
+        <div class="mid">Material, alquiler de campos, entrenadores…</div>
+      </div>
+
+      <div id="stage" class="clip" data-start="3.2" data-duration="49" data-track-index="2" style="position:absolute;inset:0">
+        <div id="cap-tab" class="cap clip" data-start="3.2" data-duration="5.5" data-track-index="3"><div class="step">Paso 1 de 7</div><div class="txt">Entra en <b>Finanzas › Gastos</b></div><div class="sub">Aquí se apunta todo lo que paga la academia.</div></div>
+        <div id="cap-importe" class="cap clip" data-start="8.7" data-duration="8" data-track-index="3"><div class="step">Paso 2 de 7</div><div class="txt"><b>Importe</b> y fecha</div><div class="sub">Escribe cuánto fue y el día en que se pagó.</div></div>
+        <div id="cap-categoria" class="cap clip" data-start="16.7" data-duration="7" data-track-index="3"><div class="step">Paso 3 de 7</div><div class="txt"><b>Categoría</b> y forma de pago</div><div class="sub">La categoría sirve para ver en qué se va el dinero. Añade una descripción corta.</div></div>
+        <div id="cap-extras" class="cap clip" data-start="23.7" data-duration="8" data-track-index="3"><div class="step">Paso 4 de 7</div><div class="txt">¿De un <b>entrenador</b> o una sede?</div><div class="sub">Opcional: asígnalo para verlo en la pestaña Entrenadores. Y adjunta una <b>foto del ticket</b> o la factura.</div></div>
+        <div id="cap-guardar" class="cap clip" data-start="31.7" data-duration="6" data-track-index="3"><div class="step">Paso 5 de 7</div><div class="txt">Pulsa <b>Guardar gasto</b></div><div class="sub">Ya cuenta en las cifras del mes.</div></div>
+        <div id="cap-lista" class="cap clip" data-start="37.7" data-duration="7" data-track-index="3"><div class="step">Paso 6 de 7</div><div class="txt">La <b>lista</b> de gastos</div><div class="sub">Filtra por categoría y abre el ticket con <b>Ver</b>.</div></div>
+        <div id="cap-anular" class="cap clip" data-start="44.7" data-duration="7.5" data-track-index="3"><div class="step">Paso 7 de 7</div><div class="txt">¿Te has <b>equivocado</b>?</div><div class="sub">No se borra: escribe el <b>motivo</b> y pulsa anular. Queda tachado y las cuentas se recalculan.</div></div>
+
+          <div class="device"><div class="screen"><div id="cam">
+          <div id="L-tab" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/tab.png" alt="" /></div>
+          <div id="L-importe" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/importe.png" alt="" /></div>
+          <div id="L-categoria" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/categoria.png" alt="" /></div>
+          <div id="L-extras" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/extras.png" alt="" /></div>
+          <div id="L-guardar" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/guardar.png" alt="" /></div>
+          <div id="L-lista" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/lista.png" alt="" /></div>
+          <div id="L-anular" data-layout-allow-overlap data-layout-allow-occlusion class="layer"><img src="assets/anular.png" alt="" /></div>
+          <div id="mk0" class="mark" style="left:492px;top:74.4px;width:79.2px;height:33.2px"></div>
+          <div id="pl0" class="pill" style="left:492px;top:30.4px">Gastos</div>
+          <div id="rip0" class="ripple" style="left:531.6px;top:91px"></div>
+          <div id="mk1" class="mark" style="left:230.4px;top:202.4px;width:216px;height:40.2px"></div>
+          <div id="pl1" class="pill" style="left:230.4px;top:158.4px">Importe</div>
+          <div id="mk2" class="mark" style="left:452.8px;top:199.2px;width:216px;height:40.2px"></div>
+          <div id="pl2" class="pill" style="left:452.8px;top:155.2px">Fecha</div>
+          <div id="mk3" class="mark" style="left:675.2px;top:202.4px;width:216px;height:38.4px"></div>
+          <div id="pl3" class="pill" style="left:675.2px;top:158.4px">Categoría</div>
+          <div id="mk4" class="mark" style="left:230.4px;top:268.2px;width:290.125px;height:40.2px"></div>
+          <div id="pl4" class="pill" style="left:230.4px;top:224.2px">Descripción</div>
+          <div id="mk5" class="mark" style="left:823.45px;top:271.4px;width:141.863px;height:38.4px"></div>
+          <div id="pl5" class="pill" style="left:823.45px;top:227.4px">Entrenador</div>
+          <div id="mk6" class="mark" style="left:971.713px;top:271.4px;width:141.863px;height:38.4px"></div>
+          <div id="pl6" class="pill" style="left:971.713px;top:227.4px">Sede</div>
+          <div id="mk7" class="mark" style="left:823.463px;top:346.6px;width:290.125px;height:37px"></div>
+          <div id="pl7" class="pill" style="left:823.463px;top:302.6px">Guardar gasto</div>
+          <div id="rip7" class="ripple" style="left:968.525px;top:365.1px"></div>
+          <div id="mk8" class="mark" style="left:211.2px;top:492.2px;width:921.6px;height:273.3px"></div>
+          <div id="pl8" class="pill" style="left:211.2px;top:448.2px">Gastos del periodo</div>
+          <div id="mk9" class="mark" style="left:940.65px;top:670.3px;width:102.4px;height:30.4px"></div>
+          <div id="pl9" class="pill" style="left:940.65px;top:626.3px">Motivo</div>
+          <div id="mk10" class="mark" style="left:1039.85px;top:670.3px;width:36.8px;height:30.4px"></div>
+          <div id="pl10" class="pill" style="left:1039.85px;top:626.3px">Anular</div>
+          <div id="rip10" class="ripple" style="left:1058.25px;top:685.5px"></div>
+          <svg id="cursor" class="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.5L16 20l-3 1.2-3.5-7.6L4 18z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div></div></div>
+          <div class="device-stand"></div>
+          <div class="progress"><i></i></div>
+      </div>
+
+      <div id="outro" class="center clip" data-start="52.2" data-duration="3.6" data-track-index="1">
+        <img src="assets/logo.webp" alt="JP Preparation" />
+        <div class="big">Gasto registrado</div>
+        <div class="mid">Baja el <b>Resultado</b> del mes y suma en su categoría</div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#intro img, #intro .big, #intro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 0.1);
+      tl.to("#intro", { opacity: 0, duration: 0.3 }, 2.85);
+      tl.fromTo("#outro img, #outro .big, #outro .mid", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18 }, 52.4);
+      tl.fromTo(".device, .device-stand", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 3.2);
+      tl.to(".device, .device-stand", { opacity: 0, duration: 0.4 }, 51.8);
+      tl.fromTo(".progress i", { width: "0%" }, { width: "100%", duration: 49, ease: "none" }, 3.2);
+      document.querySelectorAll(".cap").forEach((c) => {
+              const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+              tl.fromTo(c.children, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, s + 0.05);
+              tl.to(c.children, { opacity: 0, y: -20, duration: 0.3 }, s + d - 0.35);
+            });
+      tl.fromTo("#L-tab", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 3.2);
+      tl.to("#L-tab", { opacity: 0, duration: 0.3 }, 8.7);
+      tl.fromTo("#L-importe", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.7);
+      tl.to("#L-importe", { opacity: 0, duration: 0.3 }, 16.7);
+      tl.fromTo("#L-categoria", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 16.7);
+      tl.to("#L-categoria", { opacity: 0, duration: 0.3 }, 23.7);
+      tl.fromTo("#L-extras", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 23.7);
+      tl.to("#L-extras", { opacity: 0, duration: 0.3 }, 31.7);
+      tl.fromTo("#L-guardar", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 31.7);
+      tl.to("#L-guardar", { opacity: 0, duration: 0.3 }, 37.7);
+      tl.fromTo("#L-lista", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 37.7);
+      tl.to("#L-lista", { opacity: 0, duration: 0.3 }, 44.7);
+      tl.fromTo("#L-anular", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 44.7);
+      tl.to("#L-anular", { opacity: 0, duration: 0.3 }, 52.2);
+      tl.fromTo("#mk0", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 4.2);
+      tl.to("#mk0", { opacity: 0, duration: 0.25 }, 8.6);
+      tl.fromTo("#pl0", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 4.35);
+      tl.to("#pl0", { opacity: 0, duration: 0.25 }, 8.6);
+      tl.fromTo("#mk1", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 9.7);
+      tl.to("#mk1", { opacity: 0, duration: 0.25 }, 16.6);
+      tl.fromTo("#pl1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 9.85);
+      tl.to("#pl1", { opacity: 0, duration: 0.25 }, 16.6);
+      tl.fromTo("#mk2", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 12.8);
+      tl.to("#mk2", { opacity: 0, duration: 0.25 }, 16.6);
+      tl.fromTo("#pl2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 12.95);
+      tl.to("#pl2", { opacity: 0, duration: 0.25 }, 16.6);
+      tl.fromTo("#mk3", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 17.7);
+      tl.to("#mk3", { opacity: 0, duration: 0.25 }, 23.6);
+      tl.fromTo("#pl3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 17.85);
+      tl.to("#pl3", { opacity: 0, duration: 0.25 }, 23.6);
+      tl.fromTo("#mk4", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 20.3);
+      tl.to("#mk4", { opacity: 0, duration: 0.25 }, 23.6);
+      tl.fromTo("#pl4", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 20.45);
+      tl.to("#pl4", { opacity: 0, duration: 0.25 }, 23.6);
+      tl.fromTo("#mk5", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 24.7);
+      tl.to("#mk5", { opacity: 0, duration: 0.25 }, 31.6);
+      tl.fromTo("#pl5", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 24.85);
+      tl.to("#pl5", { opacity: 0, duration: 0.25 }, 31.6);
+      tl.fromTo("#mk6", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 27.8);
+      tl.to("#mk6", { opacity: 0, duration: 0.25 }, 31.6);
+      tl.fromTo("#pl6", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 27.95);
+      tl.to("#pl6", { opacity: 0, duration: 0.25 }, 31.6);
+      tl.fromTo("#mk7", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 32.7);
+      tl.to("#mk7", { opacity: 0, duration: 0.25 }, 37.6);
+      tl.fromTo("#pl7", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 32.85);
+      tl.to("#pl7", { opacity: 0, duration: 0.25 }, 37.6);
+      tl.fromTo("#mk8", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 38.7);
+      tl.to("#mk8", { opacity: 0, duration: 0.25 }, 44.6);
+      tl.fromTo("#pl8", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 38.85);
+      tl.to("#pl8", { opacity: 0, duration: 0.25 }, 44.6);
+      tl.fromTo("#mk9", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 45.7);
+      tl.to("#mk9", { opacity: 0, duration: 0.25 }, 52.1);
+      tl.fromTo("#pl9", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 45.85);
+      tl.to("#pl9", { opacity: 0, duration: 0.25 }, 52.1);
+      tl.fromTo("#mk10", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }, 48.55);
+      tl.to("#mk10", { opacity: 0, duration: 0.25 }, 52.1);
+      tl.fromTo("#pl10", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 48.7);
+      tl.to("#pl10", { opacity: 0, duration: 0.25 }, 52.1);
+      
+      gsap.set("#cursor", { x: 900, y: 640 });
+      tl.fromTo("#cursor", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.3);
+      tl.to("#cursor", { x: 525.6, y: 87, duration: 0.7, ease: "power2.inOut" }, 3.4);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 4.3);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 4.42);
+      tl.fromTo("#rip0", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 4.3);
+      tl.to("#cursor", { x: 332.4, y: 218.5, duration: 0.7, ease: "power2.inOut" }, 8.9);
+      tl.to("#cursor", { x: 554.8, y: 215.3, duration: 0.7, ease: "power2.inOut" }, 12);
+      tl.to("#cursor", { x: 777.2, y: 217.6, duration: 0.7, ease: "power2.inOut" }, 16.9);
+      tl.to("#cursor", { x: 369.463, y: 284.3, duration: 0.7, ease: "power2.inOut" }, 19.5);
+      tl.to("#cursor", { x: 888.381, y: 286.6, duration: 0.7, ease: "power2.inOut" }, 23.9);
+      tl.to("#cursor", { x: 1036.644, y: 286.6, duration: 0.7, ease: "power2.inOut" }, 27);
+      tl.to("#cursor", { x: 962.525, y: 361.1, duration: 0.7, ease: "power2.inOut" }, 31.9);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 32.8);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 32.92);
+      tl.fromTo("#rip7", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 32.8);
+      tl.to("#cursor", { x: 365.2, y: 538.2, duration: 0.7, ease: "power2.inOut" }, 37.9);
+      tl.to("#cursor", { x: 985.85, y: 681.5, duration: 0.7, ease: "power2.inOut" }, 44.9);
+      tl.to("#cursor", { x: 1052.25, y: 681.5, duration: 0.7, ease: "power2.inOut" }, 47.75);
+      tl.to("#cursor", { scale: 0.85, duration: 0.1 }, 48.65);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 48.77);
+      tl.fromTo("#rip10", { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.6, ease: "power2.out", immediateRender: false }, 48.65);
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 51.7);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+      
+    </script>
+  </body>
+</html>

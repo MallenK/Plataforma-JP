@@ -168,7 +168,9 @@ class ClasesService
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
 
-        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+        // Con una persona externa (clase puntual) no hace falta un alumno registrado:
+        // el controller ya validó sus datos y marcó externo_validated.
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [], !empty($data['externo_validated']))) {
             return ['success' => false, 'error' => $err];
         }
 
@@ -207,11 +209,12 @@ class ClasesService
      * Toda clase necesita, como mínimo, un responsable (entrenador o staff) y
      * un alumno. Devuelve el mensaje de error, o null si se cumple. Pura.
      */
-    public static function participantsError($coachIds, $playerIds): ?string
+    public static function participantsError($coachIds, $playerIds, bool $hasExternal = false): ?string
     {
         $ids = static fn($v) => array_filter(array_map('intval', (array) $v), static fn($i) => $i > 0);
         $noCoach  = $ids($coachIds) === [];
-        $noPlayer = $ids($playerIds) === [];
+        // Una persona externa (clase de prueba / suelta) cuenta como «quien recibe la clase».
+        $noPlayer = $ids($playerIds) === [] && !$hasExternal;
         if ($noCoach && $noPlayer) {
             return 'Una clase necesita al menos un entrenador y un alumno.';
         }
@@ -254,6 +257,10 @@ class ClasesService
             return ['success' => false, 'error' => 'Sesión no encontrada.'];
         }
         $players = (int) $this->db->table('class_session_players')->where('session_id', $id)->countAllResults();
+        // Una persona externa (clase de prueba / suelta) también es «alguien en la clase»: no se borra.
+        if ($this->db->tableExists('class_session_guests')) {
+            $players += (int) $this->db->table('class_session_guests')->where('session_id', $id)->countAllResults();
+        }
         $files   = $this->db->tableExists('class_session_attachments')
             ? (int) $this->db->table('class_session_attachments')->where('session_id', $id)->countAllResults()
             : 0;
@@ -591,7 +598,8 @@ class ClasesService
         $data['start_time'] = $times['start'];
         $data['end_time']   = $times['end'];
 
-        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [])) {
+        // Con una persona externa (clase puntual) no hace falta alumno registrado (ver ExternosService::createClass).
+        if ($err = self::participantsError($data['coach_ids'] ?? [], $data['player_ids'] ?? [], !empty($data['externo_validated']))) {
             return ['success' => false, 'error' => $err];
         }
 
@@ -783,7 +791,6 @@ class ClasesService
                 ->where('csp.user_id', $userId)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -793,7 +800,6 @@ class ClasesService
                 ->select($select)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->where('NOT EXISTS (SELECT 1 FROM class_session_coaches csc WHERE csc.session_id = cs.id)', null, false)
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
@@ -807,7 +813,6 @@ class ClasesService
                 ->where('csc.user_id', (int) $responsableFilter)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -820,7 +825,6 @@ class ClasesService
                 ->where('csc.user_id', $userId)
                 ->where('cs.session_date >=', $start)
                 ->where('cs.session_date <=', $end)
-                ->where('cs.status !=', 'cancelled')
                 ->orderBy('cs.session_date', 'ASC')
                 ->orderBy('cs.start_time', 'ASC')
                 ->get()->getResultArray();
@@ -869,12 +873,33 @@ class ClasesService
             }
         }
 
+        // Personas EXTERNAS (clase de prueba / suelta): clases especiales. Solo en la vista de gestión
+        // (withAlerts): un alumno nunca ve a otras personas en su calendario.
+        $guestMap = [];
+        if ($withAlerts && !empty($ids) && $this->db->tableExists('class_session_guests')) {
+            $rows = $this->db->table('class_session_guests csg')
+                ->select('csg.session_id, g.first_name, g.last_name')
+                ->join('class_guests g', 'g.id = csg.guest_id')
+                ->whereIn('csg.session_id', $ids)
+                ->orderBy('g.first_name', 'ASC')
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $guestMap[(int) $r['session_id']][] = trim($r['first_name'] . ' ' . ($r['last_name'] ?? ''));
+            }
+        }
+
         $alertData = $withAlerts ? $this->loadAlertData($ids) : [];
 
-        return array_map(function ($s) use ($coachMap, $playerNamesMap, $withAlerts, $alertData) {
+        return array_map(function ($s) use ($coachMap, $playerNamesMap, $guestMap, $withAlerts, $alertData) {
             $sid   = (int) $s['id'];
             $c     = $coachMap[$sid] ?? null;
-            $playerLabel = self::playerLabel($playerNamesMap[$sid] ?? []);
+            // Los externos se marcan «(ext.)» en la etiqueta: así se distinguen en TODOS los calendarios
+            // (semana, día, mes, móvil y lista «+N») sin tocar cada pintado.
+            $labelNames = array_merge(
+                $playerNamesMap[$sid] ?? [],
+                array_map(static fn($n) => $n . ' (ext.)', $guestMap[$sid] ?? [])
+            );
+            $playerLabel = self::playerLabel($labelNames);
 
             // Alumno: color clásico por estado. Resto de roles: nivel de alerta.
             $alert = $withAlerts ? self::alertLevel([
@@ -901,6 +926,9 @@ class ClasesService
                 'responsable_id'   => $c['id'] ?? null,
                 'responsable_name' => $c['name'] ?? null,
                 'player_label'     => $playerLabel,
+                // Clase especial: con persona externa (sin cuenta de alumno). null si no.
+                'special'          => !empty($guestMap[$sid]) ? 'externo' : null,
+                'has_guest'        => !empty($guestMap[$sid]),
             ];
         }, $sessions);
     }
@@ -1252,9 +1280,13 @@ class ClasesService
      * Conserva lista_pasada_at y toda la asistencia ya registrada, de modo
      * que cerrar o cancelar deja de ser una acción irreversible.
      *
-     * @return array{success:bool,from?:string,error?:string}
+     * Reactivar una CANCELADA exige un motivo: se anota en la auditoría, se retiran los avisos de
+     * ausencia que hubiera (la clase vuelve a estar en pie) y se avisa a alumnos y responsables.
+     * Reabrir una CERRADA no pide motivo (corregir la asistencia) y no toca los avisos.
+     *
+     * @return array{success:bool,from?:string,cleared?:int,error?:string}
      */
-    public function reabrirSesion(int $sessionId): array
+    public function reabrirSesion(int $sessionId, ?string $reason = null, ?int $actorId = null): array
     {
         $session = $this->sessionModel->find($sessionId);
         if (!$session) {
@@ -1269,8 +1301,225 @@ class ClasesService
             return ['success' => false, 'error' => 'Esta sesión no se puede reabrir.'];
         }
 
-        $this->sessionModel->update($sessionId, ['status' => 'scheduled']);
-        return ['success' => true, 'from' => $from];
+        $reason = mb_substr(trim((string) $reason), 0, 300);
+        if ($from === 'cancelled' && $reason === '') {
+            return ['success' => false, 'error' => 'Indica el motivo para reactivar la clase.'];
+        }
+        $actorId = $actorId ?? $this->actorId();
+
+        $cleared = 0;
+        $this->db->transBegin();
+        try {
+            $this->sessionModel->update($sessionId, ['status' => 'scheduled']);
+            if ($from === 'cancelled') {
+                foreach ($this->playerModel->where('session_id', $sessionId)->findAll() as $row) {
+                    if ($this->clearAbsenceNotice($row, 'Clase reactivada: ' . $reason, $actorId)) {
+                        $cleared++;
+                    }
+                }
+            }
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+
+        if ($from === 'cancelled') {
+            AuditService::record('class_session', $sessionId, AuditService::RESTORE,
+                ['status' => 'cancelled'], ['status' => 'scheduled'], $reason, $actorId ?: null);
+            if ($actorId > 0) {
+                $this->notices()->reactivated(array_merge($session, ['status' => 'scheduled']), $reason, $actorId);
+            }
+        }
+        return ['success' => true, 'from' => $from, 'cleared' => $cleared];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Retirar el aviso de ausencia de un alumno (lo hace SIEMPRE el equipo)
+    // ────────────────────────────────────────────────────────────────
+
+    /** Cabecera de la petición «quiero recuperar mi clase» que guarda el alumno en student_message. */
+    public const RECOVER_PREFIX = 'Quiere recuperar esta clase';
+
+    /** ¿Este mensaje del alumno es una petición de recuperar la clase? Pura. */
+    public static function isRecoverMessage(?string $message): bool
+    {
+        return $message !== null && str_starts_with($message, self::RECOVER_PREFIX);
+    }
+
+    /**
+     * Quita el aviso de ausencia (y la petición de recuperar) de una fila de alumno. NADA SE PIERDE:
+     * lo que había queda en auditoría (entidad «student_notice») con el motivo, y desde ahí sale en el
+     * historial del alumno. Si el aviso había provocado «Avisó ausencia» (con o sin bono descontado por
+     * ello), la asistencia vuelve a «pendiente» y se devuelve la sesión. No abre transacción propia.
+     *
+     * @return bool true si había algo que quitar
+     */
+    private function clearAbsenceNotice(array $row, string $reason, ?int $actorId): bool
+    {
+        $hasNotice  = !empty($row['student_noted_at']) || !empty($row['student_note']);
+        $hasRecover = self::isRecoverMessage($row['student_message'] ?? null);
+        if (!$hasNotice && !$hasRecover) {
+            return false;
+        }
+
+        $before = [
+            'student_note'     => $row['student_note'] ?? null,
+            'student_noted_at' => $row['student_noted_at'] ?? null,
+            'attendance'       => $row['attendance'] ?? null,
+        ];
+        $update = [];
+        if ($hasNotice) {
+            $update['student_note']     = null;
+            $update['student_noted_at'] = null;
+            if (($row['attendance'] ?? 'pending') === 'declined') {
+                // El descuento (si lo hubo) vino de ese aviso tardío: se devuelve con él.
+                if (!empty($row['bono_deducted_at'])) {
+                    $this->doRefund($row);
+                    $before['bono_deducted_at'] = $row['bono_deducted_at'];
+                }
+                $update['attendance'] = 'pending';
+            }
+        }
+        if ($hasRecover) {
+            $before['student_message']    = $row['student_message'];
+            $before['student_message_at'] = $row['student_message_at'] ?? null;
+            $update['student_message']    = null;
+            $update['student_message_at'] = null;
+        }
+
+        $this->playerModel->update($row['id'], $update);
+        AuditService::record('student_notice', (int) $row['id'], AuditService::UPDATE, $before, [
+            'student_note'     => $hasNotice ? null : ($row['student_note'] ?? null),
+            'student_noted_at' => $hasNotice ? null : ($row['student_noted_at'] ?? null),
+            'attendance'       => $update['attendance'] ?? ($row['attendance'] ?? null),
+        ], $reason, $actorId ?: null);
+        return true;
+    }
+
+    /**
+     * El equipo retira el aviso de ausencia de UN alumno de una clase programada («al final sí viene»).
+     * Motivo obligatorio. Avisa al alumno y a los responsables. La clase NO cambia de estado.
+     *
+     * @return array{success:bool,error?:string}
+     */
+    public function withdrawAbsenceNotice(int $sessionId, int $userId, string $reason, ?int $actorId = null): array
+    {
+        $reason = mb_substr(trim($reason), 0, 300);
+        if ($reason === '') {
+            return ['success' => false, 'error' => 'Indica el motivo para retirar el aviso.'];
+        }
+        $session = $this->sessionModel->find($sessionId);
+        if (!$session) {
+            return ['success' => false, 'error' => 'Sesión no encontrada.'];
+        }
+        if (($session['status'] ?? '') !== 'scheduled') {
+            return ['success' => false, 'error' => $session['status'] === 'cancelled'
+                ? 'La clase está cancelada: reactívala y se retirarán los avisos.'
+                : 'La sesión está cerrada: reábrela para corregir.'];
+        }
+        $row = $this->playerModel->where('session_id', $sessionId)->where('user_id', $userId)->first();
+        if (!$row) {
+            return ['success' => false, 'error' => 'Ese alumno no está en la sesión.'];
+        }
+        if (empty($row['student_noted_at']) && empty($row['student_note'])) {
+            return ['success' => false, 'error' => 'Este alumno no tiene ningún aviso de ausencia.'];
+        }
+        $actorId = $actorId ?? $this->actorId();
+
+        $this->db->transBegin();
+        try {
+            $this->clearAbsenceNotice($row, $reason, $actorId);
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+
+        if ($actorId > 0) {
+            $name  = (string) ((new UserModel())->select('name')->find($userId)['name'] ?? 'El alumno');
+            $staff = array_map(fn($c) => (int) $c['user_id'], $this->getCoachesForSession($sessionId));
+            if (!empty($row['coach_id'])) {
+                $staff[] = (int) $row['coach_id'];
+            }
+            foreach ((new UserModel())->select('id')->whereIn('role', ['admin', 'superadmin'])->where('status', 'active')->findAll() as $a) {
+                $staff[] = (int) $a['id'];
+            }
+            $this->notices()->absenceWithdrawn($session, $userId, $name, $reason, $actorId, array_values(array_unique($staff)));
+        }
+        return ['success' => true];
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    //  Petición de la familia: «quiero recuperar esta clase» (NO cambia nada por sí sola)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * ¿Puede el alumno pedir recuperar esta clase? Sí si es futura (o de hoy) y está cancelada, o está
+     * programada con un aviso de ausencia suyo. Pura: no toca la BD.
+     */
+    public static function canRequestRecover(array $session, ?array $playerRow, ?string $today = null): bool
+    {
+        if ($playerRow === null) {
+            return false;
+        }
+        if (($session['session_date'] ?? '') < ($today ?? date('Y-m-d'))) {
+            return false;
+        }
+        $status = $session['status'] ?? '';
+        if ($status === 'cancelled') {
+            return true;
+        }
+        return $status === 'scheduled' && (!empty($playerRow['student_noted_at']) || !empty($playerRow['student_note']));
+    }
+
+    /**
+     * El alumno (o su familia) pide al equipo que le devuelva la clase. NO cambia el estado de la clase,
+     * ni la asistencia, ni el bono: guarda la petición (visible en la ficha) y avisa a responsables y admin.
+     * Reactivarla o retirar el aviso lo decide siempre el equipo.
+     *
+     * @return array{success:bool,error?:string,duplicate?:bool}
+     */
+    public function requestRecover(int $userId, int $sessionId, string $note = ''): array
+    {
+        $session = $this->sessionModel->find($sessionId);
+        $player  = $this->playerModel->where('session_id', $sessionId)->where('user_id', $userId)->first();
+        if (!$session || !$player) {
+            return ['success' => false, 'error' => 'No estás asignado a esta sesión.'];
+        }
+        if (!self::canRequestRecover($session, $player)) {
+            return ['success' => false, 'error' => 'Ahora mismo no se puede pedir recuperar esta clase.'];
+        }
+
+        $note    = trim(preg_replace('/\s+/u', ' ', $note) ?? '');
+        $note    = mb_substr($note, 0, 300);
+        $message = self::RECOVER_PREFIX . '.' . ($note !== '' ? ' «' . $note . '»' : '');
+
+        if (($player['student_message'] ?? null) === $message) {
+            return ['success' => true, 'duplicate' => true];   // doble envío
+        }
+
+        $this->playerModel->update($player['id'], [
+            'student_message'    => $message,
+            'student_message_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        try {
+            $student = (new UserModel())->select('name')->find($userId);
+            $name    = $student['name'] ?? 'Un alumno';
+            $date    = date('d/m/Y', strtotime($session['session_date']));
+            $cancelled = ($session['status'] ?? '') === 'cancelled';
+            $this->notifyClassStaff($session, $player, $userId, [
+                'title' => '🔄 ' . $name . ' quiere recuperar su clase',
+                'body'  => sprintf('%s pide recuperar la clase "%s" del %s%s. %s',
+                    $name, $session['title'], $date,
+                    $note !== '' ? ' («' . $note . '»)' : '',
+                    $cancelled ? 'Si procede, reactívala desde la ficha de la clase.' : 'Si procede, retira su aviso de ausencia desde la ficha de la clase.'),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'requestRecover: notificación falló: ' . $e->getMessage());
+        }
+        return ['success' => true];
     }
 
     /**
@@ -2034,6 +2283,7 @@ class ClasesService
 
         $today  = date('Y-m-d');
         $search = strtolower(trim($search));
+        $externosSvc = new ExternosService();
 
         foreach ($sessions as &$s) {
             $sid = (int)$s['id'];
@@ -2072,10 +2322,17 @@ class ClasesService
 
             $s['players'] = $players;
 
+            // Personas externas (sin cuenta de alumno): también pasan lista y cuentan en los contadores.
+            $s['externos'] = $externosSvc->available() ? $externosSvc->forSession($sid, false) : [];
+
             // Contadores
             $counts = ['present' => 0, 'absent' => 0, 'unjustified' => 0, 'pending' => 0];
             foreach ($players as $p) {
                 if (isset($counts[$p['attendance']])) $counts[$p['attendance']]++;
+                else $counts['pending']++;
+            }
+            foreach ($s['externos'] as $x) {
+                if (isset($counts[$x['attendance']])) $counts[$x['attendance']]++;
                 else $counts['pending']++;
             }
             $s['player_counts'] = $counts;
@@ -2087,6 +2344,9 @@ class ClasesService
             $sessions = array_filter($sessions, function ($s) use ($search) {
                 foreach ($s['players'] as $p) {
                     if (str_contains(strtolower($p['name']), $search)) return true;
+                }
+                foreach ($s['externos'] ?? [] as $x) {
+                    if (str_contains(strtolower($x['name']), $search)) return true;
                 }
                 foreach ($s['coaches'] as $c) {
                     if (str_contains(strtolower($c['name']), $search)) return true;
@@ -2212,15 +2472,36 @@ class ClasesService
         $players = $this->db->table('class_session_players')->where('session_id', $id)->get()->getResultArray();
         $coaches = $this->db->table('class_session_coaches')->where('session_id', $id)->get()->getResultArray();
 
+        // Personas externas (clase de prueba / suelta): si alguna ya tiene asistencia, es histórico.
+        $guests = $this->db->tableExists('class_session_guests')
+            ? $this->db->table('class_session_guests')->where('session_id', $id)->get()->getResultArray()
+            : [];
+
         $blocker = self::sessionDeletionBlocker($session, $players, date('Y-m-d'));
+        if ($blocker === null) {
+            foreach ($guests as $g) {
+                if (($g['attendance'] ?? 'pending') !== 'pending') {
+                    $blocker = 'Una persona externa ya tiene asistencia registrada: cancela la sesión en lugar de eliminarla.';
+                    break;
+                }
+                if (ExternosService::hasPayments((int) $g['id'])) {
+                    $blocker = 'Una persona externa tiene cobros registrados: cancela la sesión en lugar de eliminarla.';
+                    break;
+                }
+            }
+        }
         if ($blocker !== null) {
             AuditService::record('class_session', $id, AuditService::BLOCKED, null, null, $blocker);
             return ['success' => false, 'error' => $blocker];
         }
 
         AuditService::record('class_session', $id, AuditService::DELETE,
-            ['session' => $session, 'players' => $players, 'coaches' => $coaches], null,
+            ['session' => $session, 'players' => $players, 'coaches' => $coaches, 'guests' => $guests], null,
             'Sesión futura sin histórico');
+        if ($guests) {
+            // Solo el vínculo con esta clase: la ficha de la persona NO se borra.
+            $this->db->table('class_session_guests')->where('session_id', $id)->delete();
+        }
 
         // Por seguridad (no debería haber ninguno si pasó el bloqueo).
         $this->refundAllDeductedForSession($id);
@@ -3452,10 +3733,13 @@ class ClasesService
             $coachId = isset($coachMap[$uid]) ? ((int)$coachMap[$uid] ?: null) : null;
 
             if (isset($existingByUser[$uid])) {
-                // Ya estaba: solo actualiza el responsable asignado.
-                $this->db->table('class_session_players')
-                    ->where('id', $existingByUser[$uid])
-                    ->update(['coach_id' => $coachId, 'updated_at' => $now]);
+                // Ya estaba: solo se toca el responsable si el formulario lo envía. El formulario ya no
+                // lo pide por alumno, y NO enviarlo no debe borrar lo que ya estaba asignado.
+                if (isset($coachMap[$uid])) {
+                    $this->db->table('class_session_players')
+                        ->where('id', $existingByUser[$uid])
+                        ->update(['coach_id' => $coachId, 'updated_at' => $now]);
+                }
                 continue;
             }
 
@@ -3525,11 +3809,13 @@ class ClasesService
     public const ALERT_PENDING   = 'pending';
     public const ALERT_OK        = 'ok';
     public const ALERT_WARN      = 'warn';
+    public const ALERT_CANCELLED = 'cancelled';
 
     public const ALERT_COLORS = [
         self::ALERT_PENDING   => '#3b82f6',
         self::ALERT_OK        => '#10b981',
         self::ALERT_WARN      => '#f59e0b',
+        self::ALERT_CANCELLED => '#ef4444',
     ];
 
     /**
@@ -3546,6 +3832,11 @@ class ClasesService
     public static function alertLevel(array $in): array
     {
         $status = $in['status'] ?? '';
+
+        // Cancelada: se queda en el calendario, en rojo. Nada más importa (no se imparte).
+        if ($status === 'cancelled') {
+            return ['level' => self::ALERT_CANCELLED, 'reason' => 'Clase cancelada'];
+        }
 
         $listTaken = !empty($in['list_taken']) || $status === 'completed';
         $warn      = [];
@@ -3614,7 +3905,7 @@ class ClasesService
         return [
             'scheduled' => '#3b82f6',
             'completed' => '#10b981',
-            'cancelled' => '#6b7280',
+            'cancelled' => self::ALERT_COLORS[self::ALERT_CANCELLED],
         ][$status] ?? '#3b82f6';
     }
 }

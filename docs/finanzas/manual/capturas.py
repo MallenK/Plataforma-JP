@@ -34,6 +34,7 @@ pages = [
     ("entrenadores", "/finanzas/entrenadores?mes=2026-09", 950,  False),
     ("analisis",     "/finanzas/analisis?mes=2026-09",     1150, False),
     ("revision",     "/finanzas/revision",                 1150, False),
+    ("configuracion", "/finanzas/configuracion",           2900, False),
 ]
 for name, path, h, tip in pages:
     page = get(path)

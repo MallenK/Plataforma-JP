@@ -251,9 +251,14 @@ class RevisionService
     public function incompleteSessions(): array
     {
         $hasFiles = $this->db->tableExists('class_session_attachments');
+        // Una persona externa (clase de prueba / suelta) cuenta como «quien recibe la clase»:
+        // una clase solo con externo NO está vacía ni se puede eliminar desde aquí.
+        $hasGuests  = $this->db->tableExists('class_session_guests');
+        $guestCount = $hasGuests ? " + (SELECT COUNT(*) FROM class_session_guests g WHERE g.session_id = cs.id)" : '';
+        $noGuests   = $hasGuests ? " AND NOT EXISTS (SELECT 1 FROM class_session_guests g WHERE g.session_id = cs.id)" : '';
         $rows = $this->db->query(
             "SELECT cs.id, cs.title, cs.session_date, cs.start_time, cs.status, cs.class_id, cs.session_type,
-                    (SELECT COUNT(*) FROM class_session_players p WHERE p.session_id = cs.id) AS players,
+                    ((SELECT COUNT(*) FROM class_session_players p WHERE p.session_id = cs.id){$guestCount}) AS players,
                     (SELECT COUNT(*) FROM class_session_coaches c WHERE c.session_id = cs.id) AS coaches,
                     (SELECT GROUP_CONCAT(u.name ORDER BY u.name SEPARATOR ', ') FROM class_session_coaches c
                        JOIN users u ON u.id = c.user_id WHERE c.session_id = cs.id) AS coach_names,
@@ -262,7 +267,7 @@ class RevisionService
                     " . ($hasFiles ? "(SELECT COUNT(*) FROM class_session_attachments a WHERE a.session_id = cs.id)" : '0') . " AS files
              FROM class_sessions cs
              WHERE cs.session_date >= ?" . FinanceExclusion::sessionSql('cs') . "
-               AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+               AND ((NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id){$noGuests})
                     OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))
              ORDER BY cs.session_date ASC, cs.start_time ASC",
             [$this->start]
@@ -335,17 +340,21 @@ class RevisionService
     {
         $today   = $today ?: date('Y-m-d');
         $control = new BonoControlService($this->db);
+        // Una clase solo con persona externa no está «vacía» (ver incompleteSessions).
+        $noGuests = $this->db->tableExists('class_session_guests')
+            ? " AND NOT EXISTS (SELECT 1 FROM class_session_guests g WHERE g.session_id = cs.id)" : '';
 
         return [
             'unclosed'  => (int) $this->db->table('class_sessions cs')->where('cs.status', 'scheduled')->where('cs.session_date <', $today)
                                     ->where('cs.session_date >=', $this->start)
-                                    ->where('EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)', null, false)
+                                    ->where('(EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)'
+                                        . ($this->db->tableExists('class_session_guests') ? ' OR EXISTS (SELECT 1 FROM class_session_guests g WHERE g.session_id = cs.id)' : '') . ')', null, false)
                                     ->where(FinanceExclusion::sessionCond('cs') ?: '1=1', null, false)
                                     ->countAllResults(),
             'incomplete' => (int) $this->db->query(
                 "SELECT COUNT(*) AS n FROM class_sessions cs
                  WHERE cs.session_date >= ?" . FinanceExclusion::sessionSql('cs') . "
-                   AND (NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id)
+                   AND ((NOT EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id){$noGuests})
                         OR (cs.status <> 'cancelled' AND NOT EXISTS (SELECT 1 FROM class_session_coaches c WHERE c.session_id = cs.id)))",
                 [$this->start]
             )->getRow()->n,
@@ -367,21 +376,25 @@ class RevisionService
     public function unclosedSessions(?string $today = null): array
     {
         $today = $today ?: date('Y-m-d');
-        return $this->db->table('class_sessions cs')
-            ->select("cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at,
-                      GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ') AS coach_names,
-                      COUNT(DISTINCT csp.id) AS players,
-                      SUM(CASE WHEN csp.attendance <> 'pending' THEN 1 ELSE 0 END) AS marked", false)
-            ->join('class_session_coaches csc', 'csc.session_id = cs.id', 'left')
-            ->join('users u', 'u.id = csc.user_id', 'left')
-            ->join('class_session_players csp', 'csp.session_id = cs.id')
-            ->where('cs.status', 'scheduled')
-            ->where('cs.session_date <', $today)
-            ->where('cs.session_date >=', $this->start)
-            ->where(FinanceExclusion::sessionCond('cs') ?: '1=1', null, false)
-            ->groupBy('cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at')
-            ->orderBy('cs.session_date', 'ASC')->orderBy('cs.start_time', 'ASC')
-            ->get()->getResultArray();
+        // Una persona externa (clase de prueba / suelta) también es «quien recibe la clase»: una clase
+        // pasada con solo un externo tiene que poder cerrarse y salir aquí igual que cualquier otra.
+        $hasGuests   = $this->db->tableExists('class_session_guests');
+        $guestCount  = $hasGuests ? " + (SELECT COUNT(*) FROM class_session_guests g WHERE g.session_id = cs.id)" : '';
+        $guestMarked = $hasGuests ? " + (SELECT COUNT(*) FROM class_session_guests g WHERE g.session_id = cs.id AND g.attendance <> 'pending')" : '';
+        $anyGuest    = $hasGuests ? " OR EXISTS (SELECT 1 FROM class_session_guests g WHERE g.session_id = cs.id)" : '';
+
+        return $this->db->query(
+            "SELECT cs.id, cs.title, cs.session_date, cs.start_time, cs.lista_pasada_at,
+                    (SELECT GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ')
+                       FROM class_session_coaches csc JOIN users u ON u.id = csc.user_id WHERE csc.session_id = cs.id) AS coach_names,
+                    ((SELECT COUNT(*) FROM class_session_players p WHERE p.session_id = cs.id){$guestCount}) AS players,
+                    ((SELECT COUNT(*) FROM class_session_players p WHERE p.session_id = cs.id AND p.attendance <> 'pending'){$guestMarked}) AS marked
+             FROM class_sessions cs
+             WHERE cs.status = 'scheduled' AND cs.session_date < ? AND cs.session_date >= ?" . FinanceExclusion::sessionSql('cs') . "
+               AND (EXISTS (SELECT 1 FROM class_session_players p WHERE p.session_id = cs.id){$anyGuest})
+             ORDER BY cs.session_date ASC, cs.start_time ASC",
+            [$today, $this->start]
+        )->getResultArray();
     }
 
     /** Bonos con precio estimado (no anulados), del más antiguo al más reciente. */

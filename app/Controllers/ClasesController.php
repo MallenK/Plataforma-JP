@@ -124,6 +124,11 @@ class ClasesController extends BaseController
             'staffOptions'    => $this->clasesService->getStaffOptions(),
             'playerOptions'   => $this->clasesService->getPlayerOptions(),
             'locationOptions' => $this->clasesService->getLocationOptions(),
+            'externosAvailable' => (new \App\Services\ExternosService())->available(),
+            // Precio y cobro del externo: solo con acceso total a Finanzas
+            'externosCanMoney'  => \App\Services\FinanceAccessService::canFull() && (new \App\Services\ExternosService())->moneyAvailable(),
+            'externosMethods'   => (\App\Services\FinanceAccessService::canFull() && (new \App\Services\ExternosService())->moneyAvailable())
+                                    ? (new \App\Services\FinanceService())->methods() : [],
         ]);
     }
 
@@ -162,9 +167,12 @@ class ClasesController extends BaseController
 
     public function store()
     {
-        $result = $this->clasesService->createSession(
+        $uid    = $this->currentUserId();
+        $result = (new \App\Services\ExternosService())->createClass(
+            fn(array $p) => $this->clasesService->createSession($p, $uid),
             (array) $this->request->getPost(),
-            $this->currentUserId()
+            $uid,
+            \App\Services\FinanceAccessService::canFull()
         );
 
         if (!$result['success']) {
@@ -187,9 +195,12 @@ class ClasesController extends BaseController
 
     public function quickCreate()
     {
-        $result = $this->clasesService->quickCreate(
+        $uid    = $this->currentUserId();
+        $result = (new \App\Services\ExternosService())->createClass(
+            fn(array $p) => $this->clasesService->quickCreate($p, $uid),
             (array) $this->request->getPost(),
-            $this->currentUserId()
+            $uid,
+            \App\Services\FinanceAccessService::canFull()
         );
 
         return $this->response->setJSON($result);
@@ -257,9 +268,19 @@ class ClasesController extends BaseController
             }
         }
 
+        // Externos (clase de prueba / suelta, sin cuenta de alumno). Datos personales: solo admin.
+        $externosSvc = new \App\Services\ExternosService();
+        $canSeeExternosPersonal = \App\Services\ExternosService::canSeePersonal($role);
+
         return view('clases/show', [
             'title'              => $session['title'] . ' — JP Preparation',
             'session'            => $session,
+            // El dinero del externo (precio, cobros) solo lo ve quien tiene acceso total a Finanzas.
+            'externos'                => $canManage ? $externosSvc->forSession($id, $canSeeExternosPersonal, \App\Services\FinanceAccessService::canFull()) : [],
+            'canSeeExternosPersonal'  => $canSeeExternosPersonal,
+            'externosAvailable'       => $externosSvc->available(),
+            'externosCanMoney'        => \App\Services\FinanceAccessService::canFull() && $externosSvc->moneyAvailable(),
+            'externosMethods'         => (\App\Services\FinanceAccessService::canFull() && $externosSvc->moneyAvailable()) ? (new \App\Services\FinanceService())->methods() : [],
             'isAdmin'            => $this->isAdmin(),
             'canManage'          => $canManage,
             'isAdminRole'        => $isAdminRole,
@@ -476,7 +497,7 @@ class ClasesController extends BaseController
             return redirect()->to('/clases');
         }
 
-        $result = $this->clasesService->reabrirSesion($id);
+        $result = $this->clasesService->reabrirSesion($id, (string) ($this->request->getPost('reason') ?? ''), $this->currentUserId());
 
         if (!$result['success']) {
             session()->setFlashdata('error', $result['error'] ?? 'No se pudo reabrir la sesión.');
@@ -484,7 +505,9 @@ class ClasesController extends BaseController
         }
 
         if (($result['from'] ?? '') === 'cancelled') {
-            session()->setFlashdata('success', 'Sesión reactivada: vuelve a estar programada.');
+            $n = (int) ($result['cleared'] ?? 0);
+            session()->setFlashdata('success', 'Sesión reactivada: vuelve a estar programada y se ha avisado a alumnos y entrenadores.'
+                . ($n > 0 ? ' Se ' . ($n === 1 ? 'ha retirado 1 aviso de ausencia' : 'han retirado ' . $n . ' avisos de ausencia') . '.' : ''));
             return redirect()->to('/clases/' . $id);
         }
 
@@ -629,6 +652,50 @@ class ClasesController extends BaseController
             session()->setFlashdata('success', $msg);
         }
 
+        return redirect()->to('/clases/' . $id);
+    }
+
+    /**
+     * El alumno (o su familia) pide recuperar una clase cancelada o con aviso de ausencia. NO cambia nada:
+     * solo avisa al equipo. Reactivar o retirar el aviso es cosa de admin/entrenador.
+     */
+    public function requestRecover(int $id)
+    {
+        $result = $this->clasesService->requestRecover(
+            $this->currentUserId(),
+            $id,
+            (string) ($this->request->getPost('note') ?? '')
+        );
+
+        if (!$result['success']) {
+            session()->setFlashdata('error', $result['error'] ?? 'No se ha podido enviar la petición.');
+        } else {
+            session()->setFlashdata('success', 'Petición enviada. La administración la revisará y te confirmará: tu clase no cambia hasta entonces.');
+        }
+        return redirect()->to('/clases/' . $id);
+    }
+
+    /** El equipo retira el aviso de ausencia de un alumno de esta clase (motivo obligatorio). */
+    public function withdrawAbsenceNotice(int $id)
+    {
+        $session = $this->clasesService->getSession($id);
+        if (!$session) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+        if (!$this->isAssignedOrAdmin($session)) {
+            session()->setFlashdata('error', 'No tienes permiso para modificar esta sesión.');
+            return redirect()->to('/clases');
+        }
+
+        $result = $this->clasesService->withdrawAbsenceNotice(
+            $id,
+            (int) $this->request->getPost('user_id'),
+            (string) ($this->request->getPost('reason') ?? ''),
+            $this->currentUserId()
+        );
+
+        session()->setFlashdata($result['success'] ? 'success' : 'error',
+            $result['success'] ? 'Aviso de ausencia retirado: la clase sigue en pie y se ha avisado al alumno y al equipo.' : ($result['error'] ?? 'No se ha podido retirar el aviso.'));
         return redirect()->to('/clases/' . $id);
     }
 
@@ -988,6 +1055,8 @@ class ClasesController extends BaseController
             'session'        => $session,
             'isAdmin'        => $this->isAdmin(),
             'absenceReasons' => ['Enfermedad', 'Viaje', 'Personal', 'Sin aviso', 'Lesión', 'Otro'],
+            // Personas externas de la clase (sin datos personales: aquí solo se marca si vinieron).
+            'externos'       => (new \App\Services\ExternosService())->forSession($id, false),
         ]);
     }
 
@@ -1020,6 +1089,9 @@ class ClasesController extends BaseController
             $this->request->getPost('absence_notes') ?? []
         );
 
+        // Asistencia de las personas externas (clase de prueba / suelta), en el mismo guardado.
+        $extRes = (new \App\Services\ExternosService())->saveAttendanceMap($id, (array) ($this->request->getPost('externo_attendance') ?? []));
+
         $devueltos = (int) ($res['bonos_devueltos'] ?? 0);
         $cierre    = '';
 
@@ -1032,6 +1104,10 @@ class ClasesController extends BaseController
         }
 
         $msg = 'Asistencia guardada' . $cierre . '.';
+        if ($cerrar && $extRes['pending'] > 0) {
+            $msg .= ' Ojo: ' . $this->plural($extRes['pending'], 'queda 1 persona externa', 'quedan ' . $extRes['pending'] . ' personas externas')
+                  . ' sin marcar si vino; reabre la sesión para marcarla.';
+        }
         if ($devueltos > 0 && $this->canManageBonos()) {
             $msg .= " Se {$this->plural($devueltos, 'ha devuelto', 'han devuelto')} {$devueltos} "
                   . $this->plural($devueltos, 'bono', 'bonos')

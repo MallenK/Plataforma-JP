@@ -56,10 +56,11 @@ final class ClasesAlertasTest extends CIUnitTestCase
     {
         $v = file_get_contents(APPPATH . 'Views/clases/show.php');
 
-        // Los 6 formularios sensibles llevan data-ru-confirm (cancelar,
-        // reabrir, reactivar, eliminar sesión, eliminar serie, quitar entrenador/staff).
-        $this->assertSame(6, substr_count($v, 'data-ru-confirm='),
-            'deben ser 6 formularios con data-ru-confirm en show.php');
+        // Los 5 formularios sensibles llevan data-ru-confirm (cancelar, reabrir una cerrada,
+        // eliminar sesión, eliminar serie, quitar entrenador/staff). «Reactivar» una cancelada ya no
+        // es un simple confirmar: pide un motivo obligatorio en su propio modal (AbsenceNoticeFlowTest).
+        $this->assertSame(5, substr_count($v, 'data-ru-confirm='),
+            'deben ser 5 formularios con data-ru-confirm en show.php');
         // v1.33.0: ya no es "permanentemente" — solo se borran sesiones futuras sin histórico.
         $this->assertStringContainsString("'¿Eliminar esta sesión?'", $v);
         $this->assertStringContainsString('data-ru-confirm-danger', $v);

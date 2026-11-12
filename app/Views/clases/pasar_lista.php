@@ -29,7 +29,7 @@ $listaSaved = !empty($session['lista_pasada_at']);
             <p class="pl-sub">
                 <?= date('d/m/Y', strtotime($session['session_date'])) ?>
                 · <?= substr($session['start_time'], 0, 5) ?>–<?= substr($session['end_time'], 0, 5) ?>
-                · <?= count($players) ?> alumno<?= count($players) !== 1 ? 's' : '' ?>
+                · <?= count($players) ?> alumno<?= count($players) !== 1 ? 's' : '' ?><?= !empty($externos) ? ' · ' . count($externos) . ' externo' . (count($externos) !== 1 ? 's' : '') : '' ?>
             </p>
         </div>
         <div class="pl-head-aside">
@@ -61,10 +61,36 @@ $listaSaved = !empty($session['lista_pasada_at']);
         </div>
     </div>
 
-    <?php if (empty($players)): ?>
+    <?php if (empty($players) && empty($externos)): ?>
     <div class="card-jp" style="padding:32px;text-align:center;color:var(--text-muted)">
         <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px"></i>
         No hay alumnos asignados a esta sesión.
+    </div>
+    <?php elseif (empty($players)): ?>
+    <!-- Clase solo con personas externas (prueba / suelta): sin alumnos registrados, solo se marca si vinieron -->
+    <?php if ($isClosed): ?>
+    <div class="pl-note"><i class="bi bi-lock-fill"></i><span>Sesión cerrada: la asistencia está bloqueada. Pulsa <b>Reabrir sesión</b> para volver a editarla.</span></div>
+    <?php endif; ?>
+    <div class="card-jp">
+        <form id="form-lista-ext" action="/clases/<?= $session['id'] ?>/lista" method="POST">
+            <?= csrf_field() ?>
+            <?= view('clases/_pl_externos', ['externos' => $externos, 'isClosed' => $isClosed, 'standalone' => true]) ?>
+            <div class="pl-session-foot" style="justify-content:space-between">
+                <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm"><i class="bi bi-calendar-event me-1"></i>Ver sesión</a>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <?php if ($isClosed): ?>
+                    <span style="font-size:12px;color:var(--text-muted)"><i class="bi bi-lock-fill me-1"></i>Cerrada · asistencia bloqueada</span>
+                    <button type="submit" form="form-reabrir-ext" class="btn-jp btn-jp-sm btn-jp-secondary"><i class="bi bi-unlock-fill me-1"></i>Reabrir sesión</button>
+                    <?php elseif ($session['status'] === 'scheduled'): ?>
+                    <button type="submit" name="cerrar" value="0" class="btn-jp btn-jp-sm btn-jp-secondary"><i class="bi bi-floppy-fill me-1"></i>Guardar sin cerrar</button>
+                    <button type="submit" name="cerrar" value="1" class="btn-jp btn-jp-sm btn-jp-primary"><i class="bi bi-check2-circle me-1"></i>Guardar y cerrar</button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </form>
+        <?php if ($isClosed): ?>
+        <form id="form-reabrir-ext" action="/clases/<?= $session['id'] ?>/reabrir" method="POST" hidden><?= csrf_field() ?></form>
+        <?php endif; ?>
     </div>
     <?php else: ?>
 
@@ -191,6 +217,8 @@ $listaSaved = !empty($session['lista_pasada_at']);
                 </tbody>
             </table>
             </div>
+
+            <?= view('clases/_pl_externos', ['externos' => $externos ?? [], 'isClosed' => $isClosed]) ?>
 
             <div class="pl-session-foot" style="justify-content:space-between">
                 <a href="/clases/<?= $session['id'] ?>" class="btn-jp btn-jp-secondary btn-jp-sm">
@@ -573,6 +601,14 @@ $listaSaved = !empty($session['lista_pasada_at']);
         }
     });
 
+    // Cuántos siguen sin marcar (también filas fuera de página en la tabla paginada): lo usa el aviso del botón.
+    window.JPPlPending = function () {
+        var n = 0;
+        plAll('.att-select').forEach(function (s) { if (s.value === 'pending') n++; });
+        Array.prototype.forEach.call(document.querySelectorAll('.ext-att-select'), function (s) { if (s.value === 'pending') n++; });
+        return n;
+    };
+
     // "Guardar y cerrar": avisa si algo se queda a medias. Cerrar ya no es
     // irreversible (existe "Reabrir sesión"), por eso avisa sin obligar.
     var btnGuardarCerrar = document.getElementById('btn-guardar-cerrar');
@@ -635,6 +671,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 <?php endif; ?>
+</script>
+
+<script>
+// ── Aviso NO bloqueante junto a «Guardar y cerrar»: cuántos quedan sin marcar ────────────────
+// Cerrar con alumnos sin marcar es legítimo (se puede reabrir), así que solo se informa; no se apaga el botón.
+(function () {
+  // form-guard.js se carga al final de la página: se espera a que esté lista
+  function initGuard() {
+    if (!window.JPGuard) return;
+    var btn = document.querySelector('form#form-lista button[name="cerrar"][value="1"], form#form-lista-ext button[name="cerrar"][value="1"]');
+    if (!btn) return;
+    var pending = function () {
+        if (typeof window.JPPlPending === 'function') return window.JPPlPending();
+        var n = 0;
+        Array.prototype.forEach.call(document.querySelectorAll('.att-select, .ext-att-select'), function (s) { if (s.value === 'pending') n++; });
+        return n;
+    };
+    JPGuard.attach({
+        root: btn.form, buttons: [btn], rules: [], blocking: false,
+        info: function () {
+            var n = pending();
+            return n > 0 ? 'Quedan ' + n + (n === 1 ? ' persona sin marcar' : ' personas sin marcar') + '. Puedes cerrar igualmente y reabrir la sesión después.' : '';
+        }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGuard); else initGuard();
+})();
 </script>
 
 <?= $this->endSection() ?>

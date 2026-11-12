@@ -774,7 +774,12 @@ class TicketsController extends BaseController
             return ['error' => 'El archivo supera el límite de 10 MB.'];
         }
 
-        if (!in_array($file->getMimeType(), $allowed)) {
+        // El MIME se lee ANTES de mover: tras move() el temporal ya no existe y
+        // getMimeType() lanzaba "finfo_file(): Failed to open stream" (500 al adjuntar).
+        $mime = $file->getMimeType();
+        $size = $file->getSize();
+
+        if (!in_array($mime, $allowed)) {
             return ['error' => 'Tipo de archivo no permitido.'];
         }
 
@@ -795,8 +800,8 @@ class TicketsController extends BaseController
         return [
             'path' => upload_stored_path('tickets', $newName),
             'name' => $file->getClientName(),
-            'size' => $file->getSize(),
-            'mime' => $file->getMimeType(),
+            'size' => $size,
+            'mime' => $mime,
         ];
     }
 

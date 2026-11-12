@@ -19,7 +19,9 @@ use CodeIgniter\Router\RouteCollection;
 //  v1.33.0 «Nada se borra»: las rutas que antes eliminaban (bonos, tipos de
 //  bono, sedes, staff, sesiones, quitar alumno) ahora anulan, archivan, dan de
 //  baja o se niegan si hay histórico. Todo queda en `audit_log`.
-//  coach      → sus grupos, alumnos asignados, organizador, clases
+//  coach      → sus grupos, alumnos asignados, clases
+//  Organización (/organizacion*) → superadmin, admin, staff, coach (NO player).
+//               Cada ítem es del equipo o personal (solo su creador; ver OrganizacionService).
 //  alumno     → su propio perfil y documentación
 //  staff      → documentación
 //
@@ -147,6 +149,7 @@ $routes->post('/alumno/save', 'AlumnosController::saveProfile', [
 // ENTRENADORES
 //
 //  /entrenadores              → listado — admin, superadmin
+//  /entrenadores/rankings     → rankings y estadísticas de entrenadores — admin, superadmin (sin dinero)
 //  /entrenadores/nuevo        → formulario nuevo entrenador — admin, superadmin
 //  /entrenadores/:id          → perfil completo — admin, superadmin
 //  /entrenadores/:id/editar   → formulario edición — admin, superadmin
@@ -154,6 +157,10 @@ $routes->post('/alumno/save', 'AlumnosController::saveProfile', [
 // ------------------------------------------------------------
 
 $routes->get('entrenadores', 'EntrenadoresController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
+$routes->get('entrenadores/rankings', 'EntrenadoresController::rankings', [
     'filter' => ['auth', 'role:superadmin,admin'],
 ]);
 
@@ -249,12 +256,37 @@ $routes->post('clases/(:num)/ausencia', 'ClasesController::notifyAbsence/$1', [
     'filter' => 'auth',
 ]);
 
+// ── Organización interna (TICKET-014): tareas por estados, planificador y agenda ──
+// Todos los roles salvo el alumno. La visibilidad (equipo/personal) la aplica el servicio.
+// OCULTA de momento (sección sin terminar): se activa con OrganizacionService::ENABLED = true.
+if (\App\Services\OrganizacionService::ENABLED) {
+$routes->group('organizacion', ['filter' => ['auth', 'role:superadmin,admin,staff,coach']], static function ($routes) {
+    $routes->get('/',                          'OrganizacionController::index');
+    $routes->get('data',                       'OrganizacionController::data');
+    $routes->post('tareas/guardar',            'OrganizacionController::taskSave');
+    $routes->post('tareas/(:num)/mover',       'OrganizacionController::taskMove/$1');
+    $routes->post('tareas/(:num)/archivar',    'OrganizacionController::taskArchive/$1');
+    $routes->post('eventos/guardar',           'OrganizacionController::eventSave');
+    $routes->post('eventos/(:num)/archivar',   'OrganizacionController::eventArchive/$1');
+});
+}
+
 // ── Ayuda / cómo funciona (pensada para alumnos y familias; cualquier usuario con sesión) ──
 $routes->get('ayuda', 'AyudaController::index', ['filter' => 'auth']);
 
 // ── Mensaje del alumno sobre su clase (llegaré tarde, molestias, dudas) ──
 $routes->post('clases/(:num)/mensaje', 'ClasesController::studentMessage/$1', [
     'filter' => ['auth', 'role:player'],
+]);
+
+// ── Petición de la familia: «quiero recuperar esta clase». NO cambia el estado de la clase:
+//    solo avisa al equipo, que es quien reactiva la clase o retira el aviso. ──
+$routes->post('clases/(:num)/recuperar', 'ClasesController::requestRecover/$1', [
+    'filter' => ['auth', 'role:player'],
+]);
+// El equipo retira el aviso de ausencia de un alumno (motivo obligatorio; queda en auditoría).
+$routes->post('clases/(:num)/retirar-aviso', 'ClasesController::withdrawAbsenceNotice/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
 ]);
 
 // ── Editar / Cancelar / Eliminar ───────────────────────────
@@ -318,6 +350,47 @@ $routes->post('clases/(:num)/jugadores/add', 'ClasesController::addPlayer/$1', [
 $routes->post('clases/(:num)/jugadores/(:num)/remove', 'ClasesController::removePlayer/$1/$2', [
     'filter' => ['auth', 'role:superadmin,admin,staff'],
 ]);
+
+// ── Externos (clase de prueba / suelta, sin cuenta de alumno) ──
+// Coach/staff solo en sus clases (lo comprueba ExternosController::sessionOrFail).
+$routes->post('clases/(:num)/externos/add', 'ExternosController::add/$1', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/editar', 'ExternosController::edit/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/asistencia', 'ExternosController::attendance/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/quitar', 'ExternosController::remove/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin,staff,coach'],
+]);
+// Dinero del externo (precio y cobros): solo con acceso total a Finanzas, como cualquier importe.
+$routes->post('clases/(:num)/externos/(:num)/precio', 'ExternosController::price/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
+]);
+$routes->post('clases/(:num)/externos/(:num)/cobro', 'ExternosController::pay/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
+]);
+$routes->post('clases/(:num)/externos/cobros/(:num)/anular', 'ExternosController::voidPay/$1/$2', [
+    'filter' => ['auth', 'role:superadmin,admin', 'finance:full'],
+]);
+
+// ── Personas externas: listado, ficha con historial, y conversión a alumno ──
+// Solo admin/superadmin (datos personales, a veces de menores). El dinero lo filtra FinanceAccessService en la vista.
+$routes->get('externos', 'ExternosPersonasController::index', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->get('externos/(:num)', 'ExternosPersonasController::show/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('externos/(:num)/editar', 'ExternosPersonasController::update/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+$routes->post('externos/(:num)/convertir', 'ExternosPersonasController::convert/$1', [
+    'filter' => ['auth', 'role:superadmin,admin'],
+]);
+
 
 // ── Pasar Lista — Vista semanal (solo navegación) ──────────
 $routes->get('pasar-lista', 'ClasesController::pasarListaIndex', [
@@ -412,10 +485,6 @@ $routes->get('finanzas', 'FinanzasController::index', [
 $routes->get('finanzas/revision', 'FinanzasController::revision', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
 ]);
-// Ayuda de la Revisión de clases (solo texto, sin importes): también para los administradores sin acceso total.
-$routes->get('finanzas/ayuda-revision', 'FinanzasController::ayudaRevision', [
-    'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
-]);
 // Acciones de la Revisión que NO tocan dinero: las pueden hacer los dos niveles.
 $routes->post('finanzas/revision/cerrar-clases', 'FinanzasController::closeListedClasses', [
     'filter' => ['auth', 'role:superadmin,admin', 'finance:review'],
@@ -455,10 +524,13 @@ $routes->group('finanzas', ['filter' => ['auth', 'role:superadmin,admin', 'finan
     $routes->get('configuracion',           'FinanzasController::config');
     $routes->post('configuracion',          'FinanzasController::saveConfig');
     $routes->post('configuracion/(metodo|categoria)', 'FinanzasController::saveCatalog/$1');
+    $routes->get('exportar',                'FinanzasController::exportar');
+    $routes->get('exportar/descargar',      'FinanzasController::exportarDescargar');
     $routes->get('ayuda',                   'FinanzasController::ayuda');
     $routes->get('ayuda/imprimir',          'FinanzasController::ayudaImprimir');
     $routes->get('ayuda/manual.pdf',        'FinanzasController::manualPdf');
     $routes->get('ayuda/img/(:segment)',    'FinanzasController::manualImg/$1');
+    $routes->get('ayuda/video/(:segment)',  'FinanzasController::manualVideo/$1');
     // Cierre en bloque de la revisión inicial y precios: tocan dinero → acceso total
     $routes->post('revision/cierre-inicial',    'FinanzasController::initialClose');
     $routes->post('revision/confirmar-precios', 'FinanzasController::confirmAllPrices');

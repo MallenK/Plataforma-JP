@@ -1,8 +1,53 @@
 [
     {
+        "version": "2.8.0",
+        "date": "2026-11-12 00:00:00",
+        "description": "Avisos de ausencia y recuperar clases: si un alumno avisa de que no va, la familia ahora puede pedir recuperar la clase («Quiero recuperar esta clase», tanto con un aviso enviado como con la clase cancelada) y el equipo lo ve destacado en la ficha. Solo administración, entrenadores y staff cambian el estado: nuevo «Retirar aviso» por alumno y «Reactivar sesión» con motivo obligatorio, que avisa a alumnos y entrenadores y deja constancia en el historial. Calendario: las clases canceladas ya no desaparecen, se ven en rojo y tachadas (también para el alumno) y salen en la leyenda. El selector «Elige qué clase quieres ver» es mucho más amplio, con buscador y filtros por estado, y ordena por hora descendente (con un clic, ascendente). Nueva clase (avanzada): la caja Crear/Cancelar pasa arriba a la derecha (25 % de la fila de «Información de la clase»). Se quita el selector de responsable por alumno, que no se usaba. El texto del aviso tardío ya no promete un descuento inmediato."
+    },
+    {
+        "version": "2.7.0",
+        "date": "2026-11-11 00:00:00",
+        "description": "Botones que te guían: en los formularios y pop-ups más importantes (nueva clase, editar clase, nuevo bono, cobros y precios de clases con personas externas, anular, convertir en alumno) el botón de guardar se ve apagado mientras falta algo y una línea te dice exactamente qué falta; al pulsarlo te lleva al campo que falta. Al editar, el botón espera a que cambies algo. En Pasar lista solo se avisa de cuántos quedan sin marcar, sin bloquear. Corregido: al editar una clase no funcionaban los buscadores de entrenador y alumno."
+    },
+    {
+        "version": "2.6.0",
+        "date": "2026-11-11 00:00:00",
+        "description": "Personas externas: nueva pantalla «Personas externas» (Alumnos › Personas externas, solo administración) con la ficha de cada persona, todas sus clases, asistencia y cobros; se pueden corregir sus datos y convertirla en alumno con un clic (se crea su cuenta y sus clases anteriores quedan como histórico, sin tocar bonos). Nada se borra de estas personas. Al cambiar de «Alumno» a «Externo» (o a clase recurrente) con datos ya elegidos, la plataforma pregunta antes de quitarlos, y el servidor ya no elige por ti. Todas las fechas se escriben ahora como DD/MM/AAAA. Se quita el difuminado de los importes. Los avisos de confirmación se ven por encima de los pop-ups. La ayuda de Finanzas queda solo para superadmin y administradores con acceso total."
+    },
+    {
+        "version": "2.5.0",
+        "date": "2026-11-09 00:00:00",
+        "description": "Clases con personas externas: al crear una clase puntual (formulario completo y pop-up de clase rápida del dashboard y /clases) se puede elegir «Externo» para quien recibe una clase de prueba o suelta sin ser alumno (ficha ligera sin cuenta: solo el nombre es obligatorio; nacimiento, contacto, tutor si es menor y autorización de imagen son opcionales). Se pueden añadir varias personas a la vez y editarlas o quitarlas desde la ficha de la clase. Se les pasa lista (misma pantalla que los alumnos), se cierran con la clase, salen marcados «(ext.)» en todos los calendarios y en Revisión, y los datos personales solo los ve administración. Con acceso total a Finanzas se fija precio y se registran cobros (parciales, por medio de pago, anulables); todo suma en Resumen, Movimientos, Entrenadores y Análisis con su propio desglose. No usan bono. Nada se borra y todo queda auditado. El formulario de nueva clase pasa a dos columnas, con entrenadores y jugadores por encima de Formato y buscadores en lugar de desplegables. Todas las fechas de la plataforma se escriben ahora como DD/MM/AAAA. La sección Organización queda oculta de momento para todos (se reactiva con OrganizacionService::ENABLED)."
+    },
+    {
+        "version": "2.4.0",
+        "date": "2026-11-05 00:00:00",
+        "description": "Bonos: al emitir un bono (y desde su ficha) el admin puede saldar con él, a su elección, las clases ya dadas sin bono y las programadas confirmadas sin descontar. Casillas por clase, se descuenta 1 sesión por cada una de la más antigua a la más reciente, se para al acabarse el saldo y nada se descuenta si no se marca."
+    },
+    {
+        "version": "2.3.0",
+        "date": "2026-11-02 00:00:00",
+        "description": "Finanzas: nueva pestaña «Exportar» (solo con acceso total) para descargar todos los datos en un JSON o en un ZIP de CSV, con opción de ocultar nombres de alumnos. El Resumen se reordena en «Dinero del periodo» y «Pendiente y servicio», con aviso de revisiones pendientes y el glosario plegado. «Pendiente de cobro» pasa a mostrar lo pendiente del periodo y, aparte, el total a hoy; el Resultado indica cuánto sería si se cobra todo lo pendiente."
+    },
+    {
+        "version": "2.2.0",
+        "date": "2026-10-27 00:00:00",
+        "description": "Se prepara la sección «Organización» (tablero de tareas por estados, agenda del equipo y avisos). De momento está oculta para todos mientras se completa: no aparece en el menú ni en las preferencias de notificación."
+    },
+    {
         "version": "2.1.6",
         "date": "2026-10-26 00:00:00",
         "description": "Nueva pantalla «Alumnos inactivos» (solo administradores): lista los alumnos dados de baja y permite volver a habilitarlos con un botón. Desde Alumnos hay un acceso directo."
+    },
+    {
+        "version": "2.1.5",
+        "date": "2026-10-21 00:00:00",
+        "description": "Nuevo apartado «Rankings» dentro de Entrenadores (solo administradores): clases, horas, asistencia de los alumnos, alumnos fieles, cierre de listas a tiempo, mapa de horarios y evolución mensual, con filtros por periodo, sede y entrenador individual. Todas las cifras salen de las clases y la asistencia registradas, sin importes."
+    },
+    {
+        "version": "2.1.4",
+        "date": "2026-10-20 00:00:00",
+        "description": "Corregido: ya se pueden adjuntar archivos al crear un ticket o al responderlo (antes daba un error al enviar con cualquier adjunto). Y en la ficha del entrenador, «Últimas sesiones dirigidas» ya no muestra clases futuras: solo las pasadas, de la más reciente a la más antigua; las futuras salen en «Próximas sesiones»."
     },
     {
         "version": "2.1.3",
@@ -13,11 +58,6 @@
         "version": "2.1.2",
         "date": "2026-10-19 00:00:00",
         "description": "Corregido el error «Respuesta inválida del servidor» al enviar un mensaje (y fallos parecidos al reportar un problema, cambiar el estado de un ticket o enviar una notificación). El mensaje sí se guardaba, pero la respuesta llegaba vacía porque el aviso al móvil se enviaba antes de responder. Ahora se envía después. También se corrige la página de error, que fallaba a su vez y tapaba el problema."
-    },
-    {
-        "version": "2.1.1",
-        "date": "2026-10-19 00:00:00",
-        "description": "Ayuda de Finanzas actualizada. El manual explica ahora quién ve cada parte (el administrador principal y quien él autorice ven las finanzas completas; el resto de administradores ve solo la Revisión de clases), que el descuento automático de sesiones viene desactivado, los cuatro apartados de clases de la Revisión, la nueva opción de excluir cuentas de prueba y las pantallas de Configuración, con capturas y PDF nuevos. Además, los administradores sin acceso total tienen ahora su propia pestaña «Ayuda» dentro de la Revisión de clases, solo con texto y sin ningún importe."
     },
     {
         "version": "2.1.0",

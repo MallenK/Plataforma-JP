@@ -961,6 +961,53 @@ body {
 .cal-picker-arrow { flex: none; font-size: 12px; color: var(--text-muted); }
 .cal-picker-empty { padding: 16px; text-align: center; font-size: 13px; color: var(--text-muted); }
 
+/* Selector ancho con buscador y filtros (public/assets/js/cal-picker.js) */
+.cal-picker-modal.cpk { max-width: 980px; max-height: 88vh; min-height: min(560px, 88vh); }
+.cpk-tools { display: flex; gap: 8px; padding: 12px 16px 0; }
+.cpk-search { position: relative; flex: 1; min-width: 0; }
+.cpk-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none; }
+.cpk-search input {
+    width: 100%; padding: 9px 12px 9px 34px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-h);
+}
+.cpk-search input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.cpk-sort {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; font-size: 13px; font-weight: 600; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; color: var(--text-body); cursor: pointer; white-space: nowrap;
+}
+.cpk-sort:hover { border-color: var(--accent); color: var(--accent); }
+.cpk-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.cpk-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--text-body); cursor: pointer;
+}
+.cpk-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.cpk-chip b { font-weight: 700; color: var(--text-muted); }
+.cpk-chip:hover { border-color: var(--accent); }
+.cpk-chip.is-on { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); }
+.cpk-chip.is-on b { color: var(--accent-dark); }
+.cpk-meta { padding: 10px 16px 0; font-size: 12px; color: var(--text-muted); }
+.cpk-list { flex: 1; min-height: 160px; }
+.cpk-row { display: grid; grid-template-columns: 92px minmax(0, 1.6fr) minmax(0, 1fr) auto 14px; align-items: center; gap: 12px; }
+.cpk-main { min-width: 0; display: flex; flex-direction: column; }
+.cpk-name { font-size: 13.5px; font-weight: 600; color: var(--text-h); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cpk-main small { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cpk-coach { min-width: 0; font-size: 12.5px; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cpk-coach i { margin-right: 6px; color: var(--text-muted); }
+.cpk-coach em { color: var(--text-muted); }
+.cpk-badge { padding: 3px 10px; font-size: 11.5px; font-weight: 700; border: 1px solid; border-radius: 999px; white-space: nowrap; }
+.cpk-row.is-cancelled { background: #fef2f2; border-color: #fecaca; }
+.cpk-row.is-cancelled .cpk-name, .cpk-row.is-cancelled .cal-picker-time { text-decoration: line-through; color: #b91c1c; }
+@media (max-width: 640px) {
+    .cal-picker-overlay { padding: 8px; }
+    .cal-picker-modal.cpk { max-height: 94vh; }
+    .cpk-sort { padding: 0 10px; }
+    .cpk-row { grid-template-columns: 76px minmax(0, 1fr) auto; gap: 4px 10px; }
+    .cpk-coach { grid-column: 2 / 3; grid-row: 2; }
+    .cpk-badge { grid-column: 3; grid-row: 1; }
+    .cpk-row .cal-picker-arrow { display: none; }
+}
+
 /* ── Items de lista (torneos, clases, etc.) ──────────────── */
 .list-item-jp {
     display: flex;
@@ -2047,7 +2094,9 @@ a.notif-title-link:hover { color: var(--accent); text-decoration: underline; }
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 1000;
+    /* Por encima del pop-up de nueva clase (1050) y de los avisos (1100): el diálogo de confirmación
+       puede abrirse desde dentro de otro modal y no debe quedar detrás. */
+    z-index: 1200;
     opacity: 0;
     transition: opacity .15s ease;
 }

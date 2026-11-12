@@ -433,6 +433,39 @@ class StudentHistoryService
             }
         });
 
+        // ── Antes de ser alumno: clases recibidas como persona externa (ficha enlazada al convertirla) ──
+        $safe('externo', function () use ($playerId, $add) {
+            if (!$this->db->tableExists('class_guests') || !$this->db->tableExists('class_session_guests')) {
+                return;
+            }
+            $guests = $this->db->table('class_guests')->select('id, first_name, last_name')->where('converted_user_id', $playerId)->get()->getResultArray();
+            if (!$guests) {
+                return;
+            }
+            $hasMoney = $this->db->tableExists('class_guest_payments') && $this->db->fieldExists('price_cents', 'class_session_guests');
+            foreach ($guests as $g) {
+                $links = $this->db->table('class_session_guests csg')
+                    ->select('csg.id, csg.session_id, csg.attendance' . ($hasMoney ? ', csg.price_cents' : '') . ', cs.title, cs.session_date, cs.start_time, cs.status')
+                    ->join('class_sessions cs', 'cs.id = csg.session_id')->where('csg.guest_id', (int) $g['id'])->get()->getResultArray();
+                foreach ($links as $l) {
+                    if (($l['status'] ?? '') === 'cancelled') {
+                        continue;
+                    }
+                    $paid = 0;
+                    if ($hasMoney) {
+                        $r = $this->db->table('class_guest_payments')->selectSum('amount_cents', 's')
+                            ->where('session_guest_id', (int) $l['id'])->where('voided_at IS NULL')->get()->getRowArray();
+                        $paid = (int) ($r['s'] ?? 0);
+                    }
+                    $att    = ['present' => 'Vino', 'absent' => 'No vino', 'pending' => 'Por marcar'][$l['attendance']] ?? $l['attendance'];
+                    $detail = $l['title'] . ' · ' . $att . ' · no usó bono'
+                            . (($l['price_cents'] ?? null) !== null ? ' · precio ' . self::money((int) $l['price_cents']) . ', cobrado ' . self::money($paid) : '');
+                    $add($l['session_date'] . ' ' . ($l['start_time'] ?: '00:00:00'), 'clases', 'Clase como persona externa', $detail, null, null,
+                        base_url('clases/' . (int) $l['session_id']));
+                }
+            }
+        });
+
         // ── Auditoría: cambios que no salen ya en otras filas ───────────
         $safe('auditoria', function () use ($playerId, $add, $bonos, $bonoLabel, $csp) {
             $bonoIds = array_keys($bonos);
@@ -444,11 +477,17 @@ class StudentHistoryService
             }
             if ($cspIds) {
                 $q->orGroupStart()->where('a.entity_type', 'class_session_player')->whereIn('a.entity_id', $cspIds)->whereIn('a.action', [AuditService::BLOCKED, AuditService::DELETE])->groupEnd();
+                // El equipo retiró un aviso de ausencia: el aviso ya no está en la ficha, por eso se cuenta aquí
+                $q->orGroupStart()->where('a.entity_type', 'student_notice')->whereIn('a.entity_id', $cspIds)->groupEnd();
             }
             foreach ($q->groupEnd()->get()->getResultArray() as $a) {
                 $who = $a['actor_id'] ? $this->name((int) $a['actor_id']) : self::SYSTEM;
                 if ($a['action'] === AuditService::VIEW) {
                     $add($a['created_at'], 'auditoria', 'Consulta del historial', (string) $a['reason'], null, $who, null, ['noise' => true]);
+                    continue;
+                }
+                if ($a['entity_type'] === 'student_notice') {
+                    $add($a['created_at'], 'auditoria', 'Aviso de ausencia retirado', self::describeNoticeWithdrawal($a['before_json'], $a['reason']), null, $who);
                     continue;
                 }
                 $what = $a['entity_type'] === 'player_bono'
@@ -749,6 +788,29 @@ class StudentHistoryService
             }
         }
         return ['assign' => $assign, 'leftover' => $left];
+    }
+
+    /**
+     * Texto de «aviso de ausencia retirado»: qué había avisado el alumno y por qué se retiró. Pura.
+     */
+    public static function describeNoticeWithdrawal(?string $before, ?string $reason): string
+    {
+        $b   = json_decode((string) $before, true) ?: [];
+        $out = [];
+        if (!empty($b['student_noted_at'])) {
+            $out[] = 'había avisado el ' . date('d/m/Y H:i', strtotime($b['student_noted_at']));
+        }
+        if (!empty($b['student_note'])) {
+            $out[] = '«' . mb_substr((string) $b['student_note'], 0, 160) . '»';
+        }
+        if (!empty($b['student_message']) && ClasesService::isRecoverMessage($b['student_message'])) {
+            $out[] = 'y había pedido recuperar la clase';
+        }
+        if (!empty($b['bono_deducted_at'])) {
+            $out[] = 'se devolvió la sesión descontada';
+        }
+        $text = $out ? implode(' · ', $out) : 'Aviso de ausencia';
+        return $text . ($reason ? ' · motivo: ' . $reason : '');
     }
 
     /**

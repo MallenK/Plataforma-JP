@@ -45,8 +45,10 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
     <div class="row g-3">
 
         <!-- ── Columna principal ──────────────────────────── -->
-        <div class="col-12 col-lg-8">
+        <div class="col-12">
+        <div class="cf-layout">
 
+            <div class="cf-info">
             <!-- Información básica -->
             <div class="card-jp mb-3">
                 <div class="card-jp-header">
@@ -78,6 +80,232 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
+            </div><!-- /cf-info -->
+
+            <div class="cf-grid">
+
+            <div class="cf-stack">
+            <!-- Tipo de responsable -->
+            <div class="card-jp mb-3">
+                <div class="card-jp-header">
+                    <span class="card-jp-title" style="font-size:13px">
+                        <i class="bi bi-person-badge-fill me-2" style="color:#7c3aed"></i>Tipo de responsable
+                    </span>
+                </div>
+                <div class="card-jp-body">
+                    <input type="hidden" name="session_type" id="session_type_input" value="<?= esc($currentSessionType) ?>">
+                    <div class="d-flex gap-2">
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-coach">
+                            <input type="radio" name="_session_type_ui" value="coach"
+                                   <?= $currentSessionType === 'coach' ? 'checked' : '' ?>
+                                   onchange="switchResponsible('coach')"
+                                   style="accent-color:var(--accent)">
+                            <div>
+                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Entrenamiento</div>
+                                <div style="font-size:11px;color:var(--text-muted)">Con entrenador</div>
+                            </div>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-staff">
+                            <input type="radio" name="_session_type_ui" value="staff"
+                                   <?= $currentSessionType === 'staff' ? 'checked' : '' ?>
+                                   onchange="switchResponsible('staff')"
+                                   style="accent-color:#7c3aed">
+                            <div>
+                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Sesión de staff</div>
+                                <div style="font-size:11px;color:var(--text-muted)">Con personal</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Responsable (entrenador o staff, según tipo) -->
+            <div class="card-jp mb-3">
+                <div class="card-jp-header">
+                    <span class="card-jp-title" style="font-size:13px" id="responsible-card-title">
+                        <i class="bi bi-person-workspace me-2" id="responsible-card-icon" style="color:#059669"></i>
+                        <span id="responsible-card-label"><?= $currentSessionType === 'staff' ? 'Staff responsable' : 'Entrenadores' ?></span>
+                    </span>
+                </div>
+                <div class="card-jp-body">
+                    <input type="hidden" name="coach_ids_present" value="1">
+                    <?php if ($isRec && ($seriesFutureCount ?? 0) > 1): ?>
+                    <!-- Clase recurrente: preguntar el alcance del cambio de
+                         responsable, igual que el modal de la ficha (TICKET-011) —
+                         nunca aplicar a la serie entera sin que se elija a propósito. -->
+                    <div class="mb-3" style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--bg-app);border-radius:var(--radius-sm)">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="radio" name="coach_scope" value="single" checked>
+                            Solo esta sesión
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="radio" name="coach_scope" value="series">
+                            Esta y las siguientes (<?= $seriesFutureCount ?> sesiones de la serie)
+                        </label>
+                    </div>
+                    <?php else: ?>
+                    <input type="hidden" name="coach_scope" value="single">
+                    <?php endif; ?>
+                    <!-- Buscador de entrenador / staff (la lista cambia con el tipo de responsable) -->
+                    <div class="pp mb-2" id="coachPicker">
+                        <input type="search" class="form-control-jp" aria-label="Buscar responsable"
+                               placeholder="<?= $currentSessionType === 'staff' ? 'Buscar miembro del staff…' : 'Buscar entrenador…' ?>">
+                        <ul class="pp-list" hidden></ul>
+                    </div>
+                    <div id="coachList" style="display:flex;flex-direction:column;gap:6px">
+                        <?php foreach ($session['coaches'] ?? [] as $c): ?>
+                        <div class="selected-person" id="coach-<?= $c['user_id'] ?>">
+                            <input type="hidden" name="coach_ids[]" value="<?= $c['user_id'] ?>">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
+                                <span><i class="bi bi-person-fill me-2" id="coach-icon-<?= $c['user_id'] ?>" style="color:<?= $currentSessionType === 'staff' ? '#7c3aed' : '#059669' ?>"></i><?= esc($c['name']) ?></span>
+                                <button type="button" onclick="removeCoach(<?= $c['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['coaches'] ?? []) ? '' : ';display:none' ?>">Sin responsable asignado</div>
+                </div>
+            </div>
+
+            </div><!-- /cf-stack entrenadores -->
+
+            <div class="cf-stack">
+            <!-- Jugadores -->
+            <div class="card-jp mb-3">
+                <div class="card-jp-header">
+                    <span class="card-jp-title" style="font-size:13px">
+                        <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>Jugadores
+                    </span>
+                </div>
+                <div class="card-jp-body">
+                    <?php $canExterno = !$isEdit && !empty($externosAvailable); ?>
+                    <?php if ($canExterno): ?>
+                    <!-- ¿Alumno registrado o persona externa? (clase puntual de prueba / suelta) -->
+                    <input type="hidden" name="externo_mode" id="externo_mode" value="<?= old('externo_mode') ? '1' : '0' ?>">
+                    <div class="d-flex gap-2 mb-3" id="who-tabs" role="radiogroup" aria-label="Quién recibe la clase">
+                        <label class="who-tab" id="lbl-who-reg">
+                            <input type="radio" name="_who_ui" value="reg" checked onchange="switchWho('reg')">
+                            <span><i class="bi bi-person-check-fill me-1"></i>Alumno registrado</span>
+                        </label>
+                        <label class="who-tab" id="lbl-who-ext">
+                            <input type="radio" name="_who_ui" value="ext" onchange="switchWho('ext')">
+                            <span><i class="bi bi-person-badge-fill me-1"></i>Externo (clase puntual)</span>
+                        </label>
+                    </div>
+                    <?php endif; ?>
+
+                    <div id="registered-block">
+                    <!-- Buscador de alumnos -->
+                    <div class="pp mb-2" id="playerPicker">
+                        <input type="search" class="form-control-jp" aria-label="Buscar alumno" placeholder="Buscar alumno…">
+                        <ul class="pp-list" hidden></ul>
+                    </div>
+                    <div id="playerList" style="display:flex;flex-direction:column;gap:6px">
+                        <?php foreach ($session['players'] ?? [] as $p): ?>
+                        <div class="selected-person" id="player-<?= $p['user_id'] ?>">
+                            <input type="hidden" name="player_ids[]" value="<?= $p['user_id'] ?>">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
+                                <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i><?= esc($p['name']) ?></span>
+                                <button type="button" onclick="removePlayer(<?= $p['user_id'] ?>)" aria-label="Quitar alumno" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['players'] ?? []) ? '' : ';display:none' ?>">Sin jugadores asignados</div>
+                    </div><!-- /registered-block -->
+
+                    <?php if ($canExterno): ?>
+                    <!-- Datos de la persona externa: solo se envían si el modo «Externo» está activo -->
+                    <div id="externo-block" class="d-none">
+                        <?php
+                        // Personas que había al volver de un error de validación (varias) o, antes, una sola.
+                        $exInitial = old('externos');
+                        if (!is_array($exInitial)) {
+                            $exInitial = old('externo') && is_array(old('externo')) ? [old('externo')] : [];
+                        }
+                        ?>
+                        <div data-ex-root class="d-none" data-ex-prefix="externos" data-initial="<?= esc(json_encode(array_values($exInitial), JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP), 'attr') ?>">
+                        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+                            Para personas que no son alumnas (prueba o clase suelta). Solo el nombre es obligatorio.
+                            Rellena una persona y pulsa <b>Guardar persona</b>; repite para añadir más.
+                        </p>
+                        <div data-ex-list></div>
+                        <div data-ex-hidden hidden></div>
+                        <p class="ex-draft-title">Nueva persona</p>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-first">Nombre <span style="color:var(--danger)">*</span></label>
+                                <input id="ex-first" type="text" data-ex="first_name" class="form-control-jp" maxlength="100">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-last">Apellidos</label>
+                                <input id="ex-last" type="text" data-ex="last_name" class="form-control-jp" maxlength="100">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-birth">Fecha de nacimiento <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+                                <input id="ex-birth" type="date" data-ex="birth_date" class="form-control-jp" max="<?= date('Y-m-d') ?>">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-phone">Teléfono <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+                                <input id="ex-phone" type="tel" data-ex="phone" class="form-control-jp" maxlength="30">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-email">Email <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+                                <input id="ex-email" type="email" data-ex="email" class="form-control-jp" maxlength="150">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-gname">Madre / padre / tutor <span style="font-weight:400;color:var(--text-muted)">(si es menor)</span></label>
+                                <input id="ex-gname" type="text" data-ex="guardian_name" class="form-control-jp" maxlength="150">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="ex-gphone">Teléfono del tutor</label>
+                                <input id="ex-gphone" type="tel" data-ex="guardian_phone" class="form-control-jp" maxlength="30">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="ex-notes">Notas</label>
+                                <textarea id="ex-notes" rows="2" data-ex="notes" class="form-control-jp"></textarea>
+                            </div>
+                            <?php if (!empty($externosCanMoney)): ?>
+                            <!-- Dinero de la clase: solo con acceso total a Finanzas -->
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="ex-price">Precio (€)</label>
+                                <input id="ex-price" type="text" inputmode="decimal" data-ex="price" class="form-control-jp" placeholder="0 = gratis">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="ex-method">Medio de pago</label>
+                                <select id="ex-method" data-ex="method_id" class="form-control-jp">
+                                    <?php foreach ($externosMethods as $m): ?>
+                                        <option value="<?= (int) $m['id'] ?>" <?= $m['code'] === 'efectivo' ? 'selected' : '' ?>><?= esc($m['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end">
+                                <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;margin-bottom:10px">
+                                    <input type="checkbox" data-ex="paid_now" value="1">
+                                    <span>Cobrado ahora</span>
+                                </label>
+                            </div>
+                            <?php endif; ?>
+                            <div class="col-12">
+                                <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer">
+                                    <input type="checkbox" data-ex="image_rights" value="1" style="margin-top:3px">
+                                    <span>Autoriza el uso de su imagen (foto/vídeo) en las comunicaciones de la academia.</span>
+                                </label>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" data-ex-save><i class="bi bi-person-plus-fill me-1"></i>Guardar persona</button>
+                                <p data-ex-error hidden></p>
+                            </div>
+                        </div>
+                        </div><!-- /data-ex-root -->
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            </div><!-- /cf-stack jugadores -->
+
+            <div class="cf-stack">
             <!-- Tipo: puntual vs recurrente (solo en creación) -->
             <?php if (!$isEdit): ?>
             <div class="card-jp mb-3">
@@ -227,6 +455,9 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
             </div>
             <?php endif; ?>
 
+            </div><!-- /cf-stack tipo -->
+
+            <div class="cf-stack">
             <!-- Lugar -->
             <div class="card-jp mb-3">
                 <div class="card-jp-header">
@@ -279,10 +510,11 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-        </div><!-- /col-8 -->
+            </div><!-- /cf-stack lugar -->
+            </div><!-- /cf-grid -->
 
-        <!-- ── Sidebar ──────────────────────────────────── -->
-        <div class="col-12 col-lg-4">
+        <!-- ── Caja de acciones: arriba a la derecha, 25 % de la fila de «Información de la clase» ── -->
+        <aside class="cf-footer">
 
             <?php if (!$isEdit): ?>
             <!-- Cobertura de bono (TICKET-013): se rellena por JS al elegir alumnos + serie -->
@@ -306,151 +538,15 @@ if ($isEdit && !empty($session['class_info']['recurrence_days'])) {
                 </div>
             </div>
 
-            <!-- Tipo de responsable -->
-            <div class="card-jp mb-3">
-                <div class="card-jp-header">
-                    <span class="card-jp-title" style="font-size:13px">
-                        <i class="bi bi-person-badge-fill me-2" style="color:#7c3aed"></i>Tipo de responsable
-                    </span>
-                </div>
-                <div class="card-jp-body">
-                    <input type="hidden" name="session_type" id="session_type_input" value="<?= esc($currentSessionType) ?>">
-                    <div class="d-flex gap-2">
-                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-coach">
-                            <input type="radio" name="_session_type_ui" value="coach"
-                                   <?= $currentSessionType === 'coach' ? 'checked' : '' ?>
-                                   onchange="switchResponsible('coach')"
-                                   style="accent-color:var(--accent)">
-                            <div>
-                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Entrenamiento</div>
-                                <div style="font-size:11px;color:var(--text-muted)">Con entrenador</div>
-                            </div>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);flex:1;transition:border-color .15s" id="lbl-stype-staff">
-                            <input type="radio" name="_session_type_ui" value="staff"
-                                   <?= $currentSessionType === 'staff' ? 'checked' : '' ?>
-                                   onchange="switchResponsible('staff')"
-                                   style="accent-color:#7c3aed">
-                            <div>
-                                <div style="font-weight:700;font-size:12px;color:var(--text-h)">Sesión de staff</div>
-                                <div style="font-size:11px;color:var(--text-muted)">Con personal</div>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Responsable (entrenador o staff, según tipo) -->
-            <div class="card-jp mb-3">
-                <div class="card-jp-header">
-                    <span class="card-jp-title" style="font-size:13px" id="responsible-card-title">
-                        <i class="bi bi-person-workspace me-2" id="responsible-card-icon" style="color:#059669"></i>
-                        <span id="responsible-card-label"><?= $currentSessionType === 'staff' ? 'Staff responsable' : 'Entrenadores' ?></span>
-                    </span>
-                </div>
-                <div class="card-jp-body">
-                    <input type="hidden" name="coach_ids_present" value="1">
-                    <?php if ($isRec && ($seriesFutureCount ?? 0) > 1): ?>
-                    <!-- Clase recurrente: preguntar el alcance del cambio de
-                         responsable, igual que el modal de la ficha (TICKET-011) —
-                         nunca aplicar a la serie entera sin que se elija a propósito. -->
-                    <div class="mb-3" style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--bg-app);border-radius:var(--radius-sm)">
-                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                            <input type="radio" name="coach_scope" value="single" checked>
-                            Solo esta sesión
-                        </label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                            <input type="radio" name="coach_scope" value="series">
-                            Esta y las siguientes (<?= $seriesFutureCount ?> sesiones de la serie)
-                        </label>
-                    </div>
-                    <?php else: ?>
-                    <input type="hidden" name="coach_scope" value="single">
-                    <?php endif; ?>
-                    <!-- Selector entrenador -->
-                    <select id="coachSelect" class="form-control-jp mb-2"
-                            onchange="addCoach(this)"
-                            style="<?= $currentSessionType === 'staff' ? 'display:none' : '' ?>">
-                        <option value="">Añadir entrenador…</option>
-                        <?php foreach ($coachOptions as $c): ?>
-                            <option value="<?= $c['id'] ?>" data-name="<?= esc($c['name']) ?>">
-                                <?= esc($c['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <!-- Selector staff -->
-                    <select id="staffSelect" class="form-control-jp mb-2"
-                            onchange="addCoach(this)"
-                            style="<?= $currentSessionType === 'coach' ? 'display:none' : '' ?>">
-                        <option value="">Añadir miembro del staff…</option>
-                        <?php foreach ($staffOptions as $s): ?>
-                            <option value="<?= $s['id'] ?>" data-name="<?= esc($s['name']) ?>">
-                                <?= esc($s['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <div id="coachList" style="display:flex;flex-direction:column;gap:6px">
-                        <?php foreach ($session['coaches'] ?? [] as $c): ?>
-                        <div class="selected-person" id="coach-<?= $c['user_id'] ?>">
-                            <input type="hidden" name="coach_ids[]" value="<?= $c['user_id'] ?>">
-                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-                                <span><i class="bi bi-person-fill me-2" id="coach-icon-<?= $c['user_id'] ?>" style="color:<?= $currentSessionType === 'staff' ? '#7c3aed' : '#059669' ?>"></i><?= esc($c['name']) ?></span>
-                                <button type="button" onclick="removeCoach(<?= $c['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <div id="coachEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['coaches'] ?? []) ? '' : ';display:none' ?>">Sin responsable asignado</div>
-                </div>
-            </div>
-
-            <!-- Jugadores -->
-            <div class="card-jp">
-                <div class="card-jp-header">
-                    <span class="card-jp-title" style="font-size:13px">
-                        <i class="bi bi-people-fill me-2" style="color:var(--accent)"></i>Jugadores
-                    </span>
-                </div>
-                <div class="card-jp-body">
-                    <select id="playerSelect" class="form-control-jp mb-2" onchange="addPlayer(this)">
-                        <option value="">Añadir jugador…</option>
-                        <?php foreach ($playerOptions as $p): ?>
-                            <option value="<?= $p['id'] ?>" data-name="<?= esc($p['name']) ?>">
-                                <?= esc($p['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <div id="playerList" style="display:flex;flex-direction:column;gap:6px">
-                        <?php foreach ($session['players'] ?? [] as $p):
-                            $pCoachId = $p['coach_id'] ?? ''; ?>
-                        <div class="selected-person" id="player-<?= $p['user_id'] ?>">
-                            <input type="hidden" name="player_ids[]" value="<?= $p['user_id'] ?>">
-                            <div style="padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                                    <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i><?= esc($p['name']) ?></span>
-                                    <button type="button" onclick="removePlayer(<?= $p['user_id'] ?>)" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                                <select name="player_coach_map[<?= $p['user_id'] ?>]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
-                                    <option value="">Sin responsable asignado</option>
-                                    <?php
-                                    $responsibleOptions = $currentSessionType === 'staff' ? $staffOptions : $coachOptions;
-                                    foreach ($responsibleOptions as $c): ?>
-                                        <option value="<?= $c['id'] ?>" <?= $pCoachId == $c['id'] ? 'selected' : '' ?>><?= esc($c['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <div id="playerEmpty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px <?= empty($session['players'] ?? []) ? '' : ';display:none' ?>">Sin jugadores asignados</div>
-                </div>
-            </div>
-
-        </div><!-- /sidebar -->
+        </aside><!-- /cf-footer -->
+        </div><!-- /cf-layout -->
+        </div><!-- /col-12 -->
     </div>
 </form>
 
 <?= $this->section('scripts') ?>
+<script src="/assets/js/person-picker.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/person-picker.js') ?>"></script>
+<script src="/assets/js/externos-list.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/externos-list.js') ?>"></script>
 <?php if (!$isEdit): ?>
 <script src="/assets/js/bono-coverage.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/bono-coverage.js') ?>"></script>
 <script src="/assets/js/series-builder.js?v=<?= (int) @filemtime(FCPATH . 'assets/js/series-builder.js') ?>"></script>
@@ -471,12 +567,46 @@ $playerOptionsJs = json_encode(array_map(fn($p) => ['id' => $p['id'], 'name' => 
     border-color: var(--accent);
     color: var(--accent);
 }
+/* Disposición: fila superior 75 % «Información de la clase» + 25 % caja de acciones;
+   debajo, el formulario en dos columnas (cada .cf-stack es una columna de tarjetas) a todo el ancho */
+.cf-layout {
+    display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 0 16px; align-items: start;
+    grid-template-areas: "info box" "grid grid";
+}
+.cf-info   { grid-area: info; min-width: 0; }
+.cf-grid   { grid-area: grid; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; align-items: start; min-width: 0; }
+.cf-footer { grid-area: box; min-width: 0; }
+.cf-stack  { min-width: 0; }
+.cf-footer .card-jp-body .btn-jp { display: block; width: 100%; text-align: center; }
+/* Móvil / tablet: una sola columna y la caja queda como barra al pie, a mano para el pulgar */
+@media (max-width: 991.98px) {
+    .cf-layout { grid-template-columns: minmax(0, 1fr); gap: 0; grid-template-areas: "info" "grid" "box"; }
+    .cf-grid { grid-template-columns: minmax(0, 1fr); }
+    .cf-footer { position: sticky; bottom: 0; z-index: 20; padding-top: 4px; }
+    .cf-footer .card-jp-body { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cf-footer .card-jp-body .btn-jp { width: auto !important; flex: 1 1 140px; margin: 0 !important; }
+    .cf-footer .card-jp { box-shadow: 0 -6px 18px rgba(15, 23, 42, .08); }
+}
+/* (los estilos del buscador de personas los inyecta person-picker.js) */
+/* Alumno registrado / Externo */
+.who-tab { flex: 1; cursor: pointer; margin: 0; }
+.who-tab input { position: absolute; opacity: 0; pointer-events: none; }
+.who-tab span {
+    display: block; text-align: center; padding: 9px 10px; font-size: 13px; font-weight: 600;
+    border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--text-body);
+}
+.who-tab:has(input:checked) span { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.who-tab:has(input:focus-visible) span { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 <script>
 const coachOptions  = <?= $coachOptionsJs ?>;
 const staffOptions  = <?= $staffOptionsJs ?>;
 const playerOptions = <?= $playerOptionsJs ?>;
 let currentSessionType = '<?= esc($currentSessionType, 'js') ?>';
+function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+}
+let coachPicker = null, playerPicker = null;
 
 // ── Cambio tipo responsable ───────────────────────────────────
 function switchResponsible(type) {
@@ -489,11 +619,11 @@ function switchResponsible(type) {
     if (lblCoach) lblCoach.style.borderColor = isStaff ? 'var(--border)' : 'var(--accent)';
     if (lblStaff) lblStaff.style.borderColor = isStaff ? '#7c3aed'       : 'var(--border)';
 
-    // Swap selects
-    const coachSel = document.getElementById('coachSelect');
-    const staffSel = document.getElementById('staffSelect');
-    if (coachSel) coachSel.style.display = isStaff ? 'none' : '';
-    if (staffSel) staffSel.style.display = isStaff ? ''     : 'none';
+    // El buscador de responsable cambia de lista (entrenadores / staff)
+    if (typeof coachPicker !== 'undefined' && coachPicker) {
+        coachPicker.setPlaceholder(isStaff ? 'Buscar miembro del staff…' : 'Buscar entrenador…');
+        coachPicker.refresh();
+    }
 
     // Update card label and icon
     const label = document.getElementById('responsible-card-label');
@@ -506,14 +636,6 @@ function switchResponsible(type) {
         el.style.color = isStaff ? '#7c3aed' : '#059669';
     });
 
-    // Rebuild player_coach_map dropdowns
-    document.querySelectorAll('.player-responsible-map').forEach(sel => {
-        const selectedVal = sel.value;
-        const options = isStaff ? staffOptions : coachOptions;
-        const label = isStaff ? 'Sin staff asignado' : 'Sin entrenador asignado';
-        sel.innerHTML = `<option value="">${label}</option>` +
-            options.map(o => `<option value="${o.id}"${o.id == selectedVal ? ' selected' : ''}>${o.name}</option>`).join('');
-    });
 }
 
 // Init visual state on load
@@ -537,10 +659,27 @@ function setBlockDisabled(block, disabled) {
 }
 
 function toggleType(v) {
+    // Una clase recurrente no admite externos: si ya hay personas externas, se pregunta antes de quitarlas.
+    if (v === 'recurring' && typeof externosPendientes === 'function' && externosPendientes() > 0 && !toggleType._ok) {
+        const n = externosPendientes();
+        ExternosList.confirmDiscard({
+            title: 'Una clase recurrente no admite personas externas',
+            description: 'Has añadido ' + n + ' persona' + (n === 1 ? '' : 's') + ' externa' + (n === 1 ? '' : 's') + '. Si sigues, se quitarán de esta clase. Para una persona externa usa una clase puntual.',
+            confirmLabel: 'Quitar y hacerla recurrente', cancelLabel: 'Mantener clase puntual'
+        }).then(ok => {
+            if (ok) { toggleType._ok = true; document.querySelector('#externo-block [data-ex-root]')?._exList?.reset(); const r = document.querySelector('[name="type"][value="recurring"]'); if (r) r.checked = true; toggleType('recurring'); toggleType._ok = false; }
+        });
+        const keep = document.querySelector('[name="type"][value="single"]'); if (keep) keep.checked = true;   // mientras decide, no cambia nada
+        return;
+    }
+    if (typeof syncWhoTabs === 'function') syncWhoTabs(v);
     const single = document.getElementById('block-single');
     const recur  = document.getElementById('block-recurring');
     const lblS   = document.getElementById('lbl-single');
     const lblR   = document.getElementById('lbl-recurring');
+    // Al EDITAR no existe el selector Puntual/Recurrente (ni sus bloques): sin esto lanzaba un error de JavaScript
+    // que abortaba el resto del script y dejaba sin funcionar los buscadores de entrenador y alumno.
+    if (!single || !recur || !lblS || !lblR) return;
 
     if (v === 'recurring') {
         single.classList.add('d-none');
@@ -640,9 +779,9 @@ document.querySelectorAll('.day-check').forEach(cb => {
 // ── Gestión de entrenadores ───────────────────────────────────
 const addedCoaches = new Set([<?= implode(',', array_map(fn($c) => $c['user_id'], $session['coaches'] ?? [])) ?>]);
 
-function addCoach(sel) {
-    const id = parseInt(sel.value);
-    if (!id || addedCoaches.has(id)) { sel.value = ''; return; }
+function addCoach(opt) {
+    const id = parseInt(opt.id);
+    if (!id || addedCoaches.has(id)) { return; }
 
     // Solo se admite 1 responsable por sesión (ver ClasesService::syncCoaches,
     // que solo guarda el primer coach_ids[] recibido). Si dejábamos acumular
@@ -655,9 +794,8 @@ function addCoach(sel) {
     });
     addedCoaches.clear();
 
-    const name = sel.options[sel.selectedIndex].dataset.name;
+    const name = escHtml(opt.name);
     addedCoaches.add(id);
-    sel.value = '';
 
     const iconColor = currentSessionType === 'staff' ? '#7c3aed' : '#059669';
     const html = `<div class="selected-person" id="coach-${id}">
@@ -680,28 +818,17 @@ function removeCoach(id) {
 // ── Gestión de jugadores ──────────────────────────────────────
 const addedPlayers = new Set([<?= implode(',', array_map(fn($p) => $p['user_id'], $session['players'] ?? [])) ?>]);
 
-function addPlayer(sel) {
-    const id = parseInt(sel.value);
-    if (!id || addedPlayers.has(id)) { sel.value = ''; return; }
-    const name = sel.options[sel.selectedIndex].dataset.name;
+function addPlayer(opt) {
+    const id = parseInt(opt.id);
+    if (!id || addedPlayers.has(id)) { return; }
+    const name = escHtml(opt.name);
     addedPlayers.add(id);
-    sel.value = '';
-
-    const responsibleOpts = (currentSessionType === 'staff' ? staffOptions : coachOptions)
-        .map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    const responsibleLabel = currentSessionType === 'staff' ? 'Sin staff asignado' : 'Sin entrenador asignado';
 
     const html = `<div class="selected-person" id="player-${id}">
         <input type="hidden" name="player_ids[]" value="${id}">
-        <div style="padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>${name}</span>
-                <button type="button" onclick="removePlayer(${id})" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <select name="player_coach_map[${id}]" class="form-control-jp player-responsible-map" style="font-size:12px;padding:4px 8px">
-                <option value="">${responsibleLabel}</option>
-                ${responsibleOpts}
-            </select>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-app);border-radius:var(--radius-sm);font-size:13px">
+            <span><i class="bi bi-person-fill me-2" style="color:var(--accent)"></i>${name}</span>
+            <button type="button" onclick="removePlayer(${id})" aria-label="Quitar alumno" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>`;
     document.getElementById('playerList').insertAdjacentHTML('beforeend', html);
@@ -715,6 +842,78 @@ function removePlayer(id) {
     if (!addedPlayers.size) document.getElementById('playerEmpty').style.display = '';
     refreshBonoCov();
 }
+
+// ── Alumno registrado / Externo (clase puntual) ───────────────
+// Cambio de pestaña Alumno registrado ⇄ Externo: nunca se descarta nada sin preguntar.
+function externosPendientes() {
+    const root = document.querySelector('#externo-block [data-ex-root]');
+    return root && window.ExternosList ? ExternosList.pendingCount(root) : 0;
+}
+function switchWho(mode) {
+    const cur = document.getElementById('externo_mode')?.value === '1' ? 'ext' : 'reg';
+    if (mode === cur) return;
+    const back = () => { const r = document.querySelector('#who-tabs input[value="' + cur + '"]'); if (r) r.checked = true; };
+    if (mode === 'ext' && addedPlayers.size > 0) {
+        const names = [...document.querySelectorAll('#playerList .selected-person > div span')].map(s => s.textContent.trim()).filter(Boolean);
+        ExternosList.confirmDiscard({
+            title: 'Ya has elegido alumnos registrados',
+            description: (names.length ? names.join(', ') + '. ' : '') + 'Si pasas a «Externo» se quitarán de esta clase (una clase se crea o con alumnos registrados o con personas externas, no con ambos). ¿Quitarlos?',
+            confirmLabel: 'Quitar alumnos y pasar a Externo', cancelLabel: 'Mantener alumnos'
+        }).then(ok => { if (ok) { [...addedPlayers].forEach(id => removePlayer(id)); setWho('ext'); } });
+        back();
+        return;
+    }
+    if (mode === 'reg' && externosPendientes() > 0) {
+        const n = externosPendientes();
+        ExternosList.confirmDiscard({
+            title: 'Ya has añadido personas externas',
+            description: n + ' persona' + (n === 1 ? '' : 's') + ' externa' + (n === 1 ? '' : 's') + ' (guardada' + (n === 1 ? '' : 's') + ' o a medio escribir). Si pasas a «Alumno registrado» se quitarán de esta clase. ¿Quitarlas?',
+            confirmLabel: 'Quitar personas y pasar a Alumno', cancelLabel: 'Mantener externas'
+        }).then(ok => { if (ok) { document.querySelector('#externo-block [data-ex-root]')?._exList?.reset(); setWho('reg'); } });
+        back();
+        return;
+    }
+    setWho(mode);
+}
+function setWho(mode) {
+    const hidden = document.getElementById('externo_mode');
+    if (!hidden) return;                                   // edición o sin migrar: no hay modo externo
+    const ext = mode === 'ext';
+    hidden.value = ext ? '1' : '0';
+    document.getElementById('registered-block')?.classList.toggle('d-none', ext);
+    const block = document.getElementById('externo-block');
+    if (block) {
+        block.classList.toggle('d-none', !ext);
+        // El bloque contiene el contenedor [data-ex-root]; ExternosList mira esta clase al enviar.
+        block.querySelectorAll('[data-ex-root]').forEach(r => r.classList.toggle('d-none', !ext));
+    }
+    const radio = document.querySelector('#who-tabs input[value="' + mode + '"]');
+    if (radio) radio.checked = true;
+    refreshBonoCov();
+}
+// Una clase recurrente no admite externos (es para una sola clase puntual).
+function syncWhoTabs(type) {
+    const tabs = document.getElementById('who-tabs');
+    if (!tabs) return;
+    const recurring = type === 'recurring';
+    tabs.classList.toggle('d-none', recurring);
+    if (recurring) setWho('reg');
+}
+
+// ── Buscadores (sustituyen a los desplegables) ────────────────
+coachPicker = PersonPicker.attach({
+    root:       document.getElementById('coachPicker'),
+    getOptions: () => currentSessionType === 'staff' ? staffOptions : coachOptions,
+    isTaken:    id => addedCoaches.has(parseInt(id)),
+    onPick:     addCoach
+});
+playerPicker = PersonPicker.attach({
+    root:       document.getElementById('playerPicker'),
+    getOptions: () => playerOptions,
+    isTaken:    id => addedPlayers.has(parseInt(id)),
+    onPick:     addPlayer
+});
+if (document.getElementById('externo_mode')?.value === '1') setWho('ext');
 
 // ── Aviso conflicto instalación ───────────────────────────────
 (function() {
@@ -760,6 +959,57 @@ function removePlayer(id) {
     });
     // Check on load if editing
     if (EXCLUDE_ID) checkLocationConflict();
+})();
+</script>
+
+<script>
+// ── Botón «<?= $btnLabel ?>» blando: dice qué falta y lleva al campo (JPGuard) ───────────
+// Espejo de lo que exige el servidor (ClasesService::participantsError, horas, fecha).
+(function () {
+  // form-guard.js se carga al final de la página: se espera a que esté lista
+  function initGuard() {
+    if (!window.JPGuard) return;
+    var form = document.getElementById('claseForm');
+    var btn  = form && form.querySelector('.cf-footer button[type="submit"]');
+    if (!btn) return;
+    var IS_EDIT = <?= $isEdit ? 'true' : 'false' ?>;
+    // Editar: el servidor solo valida los alumnos si se envían; una clase sin alumnos registrados (p. ej. solo con
+    // personas externas) se puede editar. Solo se pide alumno si la clase ya los tenía y se han quitado todos.
+    var INITIAL_PLAYERS = form.querySelectorAll('[name="player_ids[]"]').length;
+    var on  = function (el) { return el && !el.disabled; };
+    var one = function (sel) { return [].filter.call(form.querySelectorAll(sel), on)[0] || null; };
+    var visibleDate = function () { var d = one('[name="session_date"]'); return d && (d._dateEs || d); };
+    var externoOn = function () { var h = document.getElementById('externo_mode'); return !!h && h.value === '1'; };
+    var externos = function () {
+        var root = document.querySelector('#externo-block [data-ex-root]');
+        return (root && window.ExternosList) ? ExternosList.attach(root).collect() : { people: [], error: '' };
+    };
+    var isStaff = function () { var s = document.getElementById('session_type_input'); return !!s && s.value === 'staff'; };
+    var recurring = function () { var r = document.getElementById('block-recurring'); return !!r && !r.classList.contains('d-none') && !!one('#block-recurring [name="session_date"]'); };
+
+    var guard = JPGuard.attach({
+        root: form,
+        buttons: [btn],
+        hintAfter: btn,
+        needsChange: IS_EDIT ? (function () { var base = JPGuard.snapshot(form); return function () { return JPGuard.snapshot(form) !== base; }; })() : null,
+        rules: [
+            { label: 'el título', ok: function () { return form.querySelector('[name="title"]').value.trim() !== ''; }, focus: function () { return form.querySelector('[name="title"]'); } },
+            { label: 'la fecha', ok: function () { var d = visibleDate(); return !d || !!one('[name="session_date"]').value; }, focus: visibleDate },
+            { label: 'al menos un día de la semana', ok: function () { return !recurring() || recurDays().length > 0; }, focus: function () { return form.querySelector('#block-recurring [name="recurrence_days[]"]'); } },
+            { label: 'la configuración de la serie', ok: function () { return IS_EDIT || !recurring() || !seriesBuilder || !seriesBuilder.validate(); }, focus: function () { return document.querySelector('#series-builder input, #series-builder button'); } },
+            { label: 'una hora de fin posterior a la de inicio', ok: function () { var s = one('[name="start_time"]'), e = one('[name="end_time"]'); return !s || !e || !e.value || e.value === '00:00' || e.value > s.value; }, focus: function () { return one('[name="end_time"]'); } },
+            { label: function () { return isStaff() ? 'un responsable (staff)' : 'un entrenador'; }, ok: function () { return form.querySelectorAll('[name="coach_ids[]"]').length > 0; }, focus: function () { return document.querySelector('#coachPicker input[type="search"]'); } },
+            { label: 'un alumno', ok: function () { var n = form.querySelectorAll('[name="player_ids[]"]').length; return IS_EDIT ? (INITIAL_PLAYERS === 0 || n > 0) : (externoOn() || n > 0); }, focus: function () { return document.querySelector('#playerPicker input[type="search"]'); } },
+            { label: 'el nombre de la persona externa', ok: function () { if (!externoOn()) return true; var c = externos(); return c.people.length > 0 && !c.error; }, focus: function () { return document.getElementById('ex-first'); } }
+        ]
+    });
+    // los valores que se cambian por código (fechas, tipo de clase) no siempre disparan eventos
+    ['setWho', 'toggleType'].forEach(function (fn) {
+        var orig = window[fn];
+        if (typeof orig === 'function') window[fn] = function () { var r = orig.apply(this, arguments); setTimeout(function () { guard.refresh(); }, 0); return r; };
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGuard); else initGuard();
 })();
 </script>
 <?= $this->endSection() ?>

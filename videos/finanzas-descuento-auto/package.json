@@ -1,0 +1,10 @@
+{
+  "name": "finanzas-descuento-auto",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "npx hyperframes check",
+    "render": "npx hyperframes render",
+    "dev": "npx hyperframes preview"
+  }
+}
