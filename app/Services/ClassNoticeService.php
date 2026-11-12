@@ -234,6 +234,72 @@ class ClassNoticeService
         });
     }
 
+    /** Texto del aviso «clase reactivada». Pura. @return array{title:string, body:string} */
+    public static function reactivatedMessage(array $session, string $reason): array
+    {
+        $reason = trim($reason);
+        return [
+            'title' => '✅ Clase reactivada: ' . $session['title'],
+            'body'  => sprintf('La clase "%s" prevista para %s vuelve a estar programada.%s',
+                $session['title'], self::whenLabel($session), $reason !== '' ? ' Motivo: ' . $reason . '.' : ''),
+        ];
+    }
+
+    /** Texto del aviso «aviso de ausencia retirado». Pura. @return array{title:string, body:string} */
+    public static function absenceWithdrawnMessage(array $session, string $studentName, string $reason, bool $forStudent): array
+    {
+        $reason = trim($reason);
+        if ($forStudent) {
+            return [
+                'title' => '✅ Tu clase sigue en pie: ' . $session['title'],
+                'body'  => sprintf('El equipo ha retirado tu aviso de ausencia: la clase "%s" de %s sigue programada. ¡Te esperamos!',
+                    $session['title'], self::whenLabel($session)),
+            ];
+        }
+        return [
+            'title' => '✅ Aviso de ausencia retirado: ' . $studentName,
+            'body'  => sprintf('%s vuelve a la clase "%s" de %s: se ha retirado su aviso de ausencia.%s',
+                $studentName, $session['title'], self::whenLabel($session), $reason !== '' ? ' Motivo: ' . $reason . '.' : ''),
+        ];
+    }
+
+    /**
+     * Clase cancelada que vuelve a estar programada: avisa a alumnos y responsables
+     * (el actor, que es quien la reactiva, no recibe el suyo).
+     */
+    public function reactivated(array $session, string $reason, int $actorId): void
+    {
+        $this->safely('reactivated', function () use ($session, $reason, $actorId) {
+            $id = (int) ($session['id'] ?? 0);
+            if ($id <= 0 || $actorId <= 0) {
+                return;
+            }
+            [$players, $coaches] = $this->audience($id);
+            $msg = self::reactivatedMessage($session, $reason);
+            $this->notify($actorId, array_merge($players, $coaches), $msg['title'], $msg['body'], $id);
+        });
+    }
+
+    /**
+     * El equipo retira el aviso de ausencia de un alumno: se lo dice a él y a los
+     * responsables de la clase (y a los admin, vía los responsables que ya reciben el aviso original).
+     *
+     * @param list<int> $staffIds responsables + admin a avisar (sin el alumno)
+     */
+    public function absenceWithdrawn(array $session, int $studentId, string $studentName, string $reason, int $actorId, array $staffIds): void
+    {
+        $this->safely('absenceWithdrawn', function () use ($session, $studentId, $studentName, $reason, $actorId, $staffIds) {
+            $id = (int) ($session['id'] ?? 0);
+            if ($id <= 0 || $actorId <= 0) {
+                return;
+            }
+            $s = self::absenceWithdrawnMessage($session, $studentName, $reason, true);
+            $this->notify($actorId, [$studentId], $s['title'], $s['body'], $id);
+            $t = self::absenceWithdrawnMessage($session, $studentName, $reason, false);
+            $this->notify($actorId, array_diff($staffIds, [$studentId]), $t['title'], $t['body'], $id);
+        });
+    }
+
     /**
      * Alumnos añadidos o quitados de una clase ya existente.
      *

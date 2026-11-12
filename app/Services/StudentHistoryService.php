@@ -477,11 +477,17 @@ class StudentHistoryService
             }
             if ($cspIds) {
                 $q->orGroupStart()->where('a.entity_type', 'class_session_player')->whereIn('a.entity_id', $cspIds)->whereIn('a.action', [AuditService::BLOCKED, AuditService::DELETE])->groupEnd();
+                // El equipo retiró un aviso de ausencia: el aviso ya no está en la ficha, por eso se cuenta aquí
+                $q->orGroupStart()->where('a.entity_type', 'student_notice')->whereIn('a.entity_id', $cspIds)->groupEnd();
             }
             foreach ($q->groupEnd()->get()->getResultArray() as $a) {
                 $who = $a['actor_id'] ? $this->name((int) $a['actor_id']) : self::SYSTEM;
                 if ($a['action'] === AuditService::VIEW) {
                     $add($a['created_at'], 'auditoria', 'Consulta del historial', (string) $a['reason'], null, $who, null, ['noise' => true]);
+                    continue;
+                }
+                if ($a['entity_type'] === 'student_notice') {
+                    $add($a['created_at'], 'auditoria', 'Aviso de ausencia retirado', self::describeNoticeWithdrawal($a['before_json'], $a['reason']), null, $who);
                     continue;
                 }
                 $what = $a['entity_type'] === 'player_bono'
@@ -782,6 +788,29 @@ class StudentHistoryService
             }
         }
         return ['assign' => $assign, 'leftover' => $left];
+    }
+
+    /**
+     * Texto de «aviso de ausencia retirado»: qué había avisado el alumno y por qué se retiró. Pura.
+     */
+    public static function describeNoticeWithdrawal(?string $before, ?string $reason): string
+    {
+        $b   = json_decode((string) $before, true) ?: [];
+        $out = [];
+        if (!empty($b['student_noted_at'])) {
+            $out[] = 'había avisado el ' . date('d/m/Y H:i', strtotime($b['student_noted_at']));
+        }
+        if (!empty($b['student_note'])) {
+            $out[] = '«' . mb_substr((string) $b['student_note'], 0, 160) . '»';
+        }
+        if (!empty($b['student_message']) && ClasesService::isRecoverMessage($b['student_message'])) {
+            $out[] = 'y había pedido recuperar la clase';
+        }
+        if (!empty($b['bono_deducted_at'])) {
+            $out[] = 'se devolvió la sesión descontada';
+        }
+        $text = $out ? implode(' · ', $out) : 'Aviso de ausencia';
+        return $text . ($reason ? ' · motivo: ' . $reason : '');
     }
 
     /**

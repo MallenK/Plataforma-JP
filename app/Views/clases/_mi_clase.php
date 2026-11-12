@@ -28,6 +28,28 @@ $place    = $session['location_name'] ?? $session['location_custom'] ?? null;
 $who      = $myPlayer['coach_name'] ?? ($session['coaches'][0]['name'] ?? null);
 $sid      = (int) $session['id'];
 
+// Petición de la familia para recuperar la clase (no cambia nada: la decide el equipo)
+$recoverSent = ClasesService::isRecoverMessage($myPlayer['student_message'] ?? null);
+$canRecover  = ClasesService::canRequestRecover($session, $myPlayer);
+$recoverAt   = !empty($myPlayer['student_message_at']) ? date('d/m H:i', strtotime($myPlayer['student_message_at'])) : '';
+$recoverBlock = function () use ($recoverSent, $canRecover, $recoverAt, $sid): void {
+    if ($recoverSent): ?>
+        <p class="mc-hint"><i class="bi bi-hourglass-split"></i> Ya has pedido recuperar esta clase<?= $recoverAt !== '' ? ' (' . $recoverAt . ')' : '' ?>. La administración lo está revisando; hasta que te lo confirmen, tu clase no cambia.</p>
+    <?php elseif ($canRecover): ?>
+        <details class="mc-msg mc-recover">
+            <summary><i class="bi bi-arrow-counterclockwise"></i> Quiero recuperar esta clase</summary>
+            <form action="/clases/<?= $sid ?>/recuperar" method="POST" class="mc-form" data-live-form>
+                <?= csrf_field() ?>
+                <label for="mc-rec-<?= $sid ?>" class="mc-label">¿Quieres añadir algo? <small>(opcional)</small></label>
+                <textarea id="mc-rec-<?= $sid ?>" name="note" class="form-control-jp" rows="2" maxlength="300"
+                          placeholder="Por ejemplo: al final sí podemos ir"></textarea>
+                <p class="mc-hint">Tú no puedes cambiar la clase desde aquí: enviamos tu petición a la administración y ellos te confirmarán.</p>
+                <button type="submit" class="mc-btn mc-btn-primary"><i class="bi bi-send-fill"></i> Enviar petición</button>
+            </form>
+        </details>
+    <?php endif;
+};
+
 $reasonKinds = [
     'enfermo' => ['bi-thermometer-half', 'Enfermo o lesionado'],
     'colegio' => ['bi-backpack2',        'Colegio o exámenes'],
@@ -40,7 +62,8 @@ $reasonKinds = [
     <div class="mc-aviso">
     <?php if ($session['status'] === 'cancelled'): ?>
         <div class="mc-state is-info"><i class="bi bi-x-circle-fill"></i>
-            <div><strong>Esta clase se ha cancelado.</strong><p>No tienes que hacer nada.</p></div></div>
+            <div><strong>Esta clase se ha cancelado.</strong><p>No tienes que hacer nada.</p>
+                <?php $recoverBlock(); ?></div></div>
 
     <?php elseif (!$scheduled): ?>
         <div class="mc-state is-info"><i class="bi bi-check-circle-fill"></i>
@@ -57,9 +80,12 @@ $reasonKinds = [
                 <?php if ($deducted && $late): ?>
                     <p><strong>Aviso tardío:</strong> se ha descontado una sesión de tu bono. Tu entrenador lo revisará cuando cierre la clase.</p>
                 <?php elseif ($late): ?>
-                    <p><strong>Aviso tardío:</strong> tu entrenador decidirá cuando cierre la clase.</p>
+                    <p><strong>Aviso tardío:</strong> avisaste con menos de <?= $hours ?> horas. Tu entrenador decidirá al cerrar la clase si cuenta como sesión.</p>
+                <?php else: ?>
+                    <p>Has avisado con tiempo: no se descuenta ninguna sesión de tu bono.</p>
                 <?php endif; ?>
-                <p class="mc-hint">¿Te has equivocado o ha cambiado algo? Escribe un mensaje abajo y la administración te ayudará.</p>
+                <p class="mc-hint">¿Te has equivocado o ha cambiado algo? Pídele a la administración que te devuelva la clase; tú no puedes deshacer el aviso desde aquí.</p>
+                <?php $recoverBlock(); ?>
             </div>
         </div>
 
@@ -93,7 +119,7 @@ $reasonKinds = [
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         <div>
                             <strong>Faltan menos de <?= $hours ?> horas para la clase.</strong>
-                            <p><?php if ($autoOn): ?>Se te descontará <strong>una sesión de tu bono</strong> hasta que tu entrenador cierre la clase y decida si vuelve a tu bono.<?php else: ?>Se registrará como <strong>aviso tardío</strong> y tu entrenador decidirá si cuenta como sesión.<?php endif; ?></p>
+                            <p><?php if ($autoOn): ?>Cuando tu entrenador cierre la clase se te descontará <strong>una sesión de tu bono</strong>, salvo que decida lo contrario.<?php else: ?>Se registrará como <strong>aviso tardío</strong> y tu entrenador decidirá si cuenta como sesión.<?php endif; ?></p>
                             <p>Se avisará también a la administración.</p>
                         </div>
                     </div>
@@ -106,7 +132,7 @@ $reasonKinds = [
                         </div>
                     </div>
                     <?php endif; ?>
-                    <p class="mc-hint"><i class="bi bi-info-circle"></i> Una vez enviado no se puede deshacer desde aquí; si cambia algo, escribe un mensaje a la administración.</p>
+                    <p class="mc-hint"><i class="bi bi-info-circle"></i> Una vez enviado no se puede deshacer desde aquí; si cambia algo, podrás pedir a la administración que te devuelva la clase.</p>
                 </fieldset>
 
                 <div class="mc-actions">

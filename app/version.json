@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.8.0",
+        "date": "2026-11-12 00:00:00",
+        "description": "Avisos de ausencia y recuperar clases: si un alumno avisa de que no va, la familia ahora puede pedir recuperar la clase («Quiero recuperar esta clase», tanto con un aviso enviado como con la clase cancelada) y el equipo lo ve destacado en la ficha. Solo administración, entrenadores y staff cambian el estado: nuevo «Retirar aviso» por alumno y «Reactivar sesión» con motivo obligatorio, que avisa a alumnos y entrenadores y deja constancia en el historial. Calendario: las clases canceladas ya no desaparecen, se ven en rojo y tachadas (también para el alumno) y salen en la leyenda. El selector «Elige qué clase quieres ver» es mucho más amplio, con buscador y filtros por estado, y ordena por hora descendente (con un clic, ascendente). Nueva clase (avanzada): la caja Crear/Cancelar pasa arriba a la derecha (25 % de la fila de «Información de la clase»). Se quita el selector de responsable por alumno, que no se usaba. El texto del aviso tardío ya no promete un descuento inmediato."
+    },
+    {
         "version": "2.7.0",
         "date": "2026-11-11 00:00:00",
         "description": "Botones que te guían: en los formularios y pop-ups más importantes (nueva clase, editar clase, nuevo bono, cobros y precios de clases con personas externas, anular, convertir en alumno) el botón de guardar se ve apagado mientras falta algo y una línea te dice exactamente qué falta; al pulsarlo te lleva al campo que falta. Al editar, el botón espera a que cambies algo. En Pasar lista solo se avisa de cuántos quedan sin marcar, sin bloquear. Corregido: al editar una clase no funcionaban los buscadores de entrenador y alumno."

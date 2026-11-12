@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta · Nueva clase (avanzada)</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<!-- Estilos REALES de la plataforma, para que el mockup se vea igual que la app -->
+<link href="../../public/assets/css/app.css" rel="stylesheet">
+<style>
+body { background: var(--bg-app); padding: 24px; font-family: 'Montserrat', sans-serif; }
+.wrap { max-width: 1280px; margin: 0 auto; }
+.note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12.5px; margin-bottom: 16px; }
+
+/* ── Disposición: 75 / 25 arriba, dos columnas debajo ─────────────────── */
+.cf-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 0 16px; align-items: start; grid-template-areas: "que box" "cuando quien" "mas mas"; }
+.cf-que { grid-area: que; } .cf-box { grid-area: box; } .cf-cuando { grid-area: cuando; } .cf-quien { grid-area: quien; } .cf-mas { grid-area: mas; }
+.cf-layout > * { min-width: 0; }
+@media (max-width: 991.98px) {
+  .cf-layout { grid-template-columns: minmax(0,1fr); grid-template-areas: "que" "cuando" "quien" "mas" "box"; }
+  .cf-box { position: sticky; bottom: 0; z-index: 20; }
+}
+
+/* Paso numerado en el título de cada tarjeta */
+.step { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
+        background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; margin-right: 8px; flex: 0 0 auto; transition: background .2s; }
+.step.done { background: var(--success); }
+.card-jp-title { display: flex; align-items: center; }
+
+/* Segmentado (puntual/recurrente, alumno/externo, entrenador/staff) */
+.seg { display: flex; gap: 6px; }
+.seg label { flex: 1; margin: 0; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; font-size: 13px; font-weight: 600;
+            border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--text-body); background: #fff; }
+.seg input:checked + span { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.seg.sm span { padding: 5px 10px; font-size: 12px; }
+
+/* Días de la semana */
+.days { display: flex; gap: 6px; flex-wrap: wrap; }
+.days label { margin: 0; cursor: pointer; }
+.days input { position: absolute; opacity: 0; pointer-events: none; }
+.days span { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+             border: 2px solid var(--border); border-radius: 50%; color: var(--text-body); background: #fff; }
+.days input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Chips de personas + buscador */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent-dark); border-radius: 999px; padding: 4px 6px 4px 10px; font-size: 12.5px; font-weight: 600; }
+.chip button { border: 0; background: rgba(29,78,216,.12); color: inherit; width: 18px; height: 18px; border-radius: 50%; line-height: 1; font-size: 12px; cursor: pointer; }
+.sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sugg button { border: 1px dashed var(--border-dark); background: #fff; color: var(--text-body); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.sugg button:hover { border-color: var(--accent); color: var(--accent); }
+.sub { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); margin: 14px 0 6px; }
+.sub:first-child { margin-top: 0; }
+
+/* Caja de resumen (25 %) */
+.sum-line { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; padding: 6px 0; color: var(--text-h); }
+.sum-line i { width: 18px; text-align: center; color: var(--text-muted); margin-top: 2px; }
+.sum-line.empty { color: var(--text-muted); font-style: italic; }
+.sum-line.empty i { color: var(--border-dark); }
+.sum-line small { display: block; color: var(--text-muted); font-size: 11.5px; }
+.sum-title { font-weight: 700; font-size: 15px; line-height: 1.3; margin-bottom: 6px; word-break: break-word; }
+.todo { font-size: 12px; color: #b45309; background: #fffbeb; border-radius: var(--radius-sm); padding: 8px 10px; margin-top: 10px; }
+.todo.ok { color: #047857; background: #ecfdf5; }
+.btn-jp[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.cov { font-size: 12px; background: var(--accent-light); color: var(--accent-dark); border-radius: var(--radius-sm); padding: 8px 10px; margin-top: 10px; }
+
+/* Más detalles plegable */
+details.more > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; font-weight: 700; font-size: 14px; color: var(--text-h); }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more[open] > summary .bi-chevron-down { transform: rotate(180deg); }
+details.more > summary .bi-chevron-down { transition: transform .2s; color: var(--text-muted); }
+details.more > summary small { font-weight: 500; color: var(--text-muted); margin-left: 8px; }
+.hide { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note">
+    <b>Propuesta de rediseño</b> (mockup interactivo, no conecta con el servidor). Prueba a rellenar el título, elegir fecha, hora, entrenador y alumnos:
+    el resumen de arriba a la derecha se actualiza solo y el botón te dice qué falta.
+  </div>
+
+  <div class="page-header mb-3">
+    <a href="#" class="btn-jp btn-jp-secondary btn-jp-sm"><i class="bi bi-arrow-left me-1"></i>Clases</a>
+  </div>
+
+  <div class="cf-layout">
+
+    <!-- ① QUÉ ─────────────────────────────────────────────── (75 %) -->
+    <div class="cf-que">
+      <div class="card-jp mb-3">
+        <div class="card-jp-header"><span class="card-jp-title"><span class="step" id="st1">1</span>¿Qué clase es?</span></div>
+        <div class="card-jp-body">
+          <label class="form-label">Título <span style="color:var(--danger)">*</span></label>
+          <input id="title" type="text" class="form-control-jp" placeholder="Ej: Entrenamiento individual – Control y pase" autocomplete="off">
+          <div class="sugg" id="titleSugg">
+            <span style="font-size:11.5px;color:var(--text-muted);align-self:center">Usadas antes:</span>
+            <button type="button">Entrenamiento individual</button>
+            <button type="button">Técnica en grupo reducido</button>
+            <button type="button">Porteros</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESUMEN EN VIVO ───────────────────────────────────── (25 %) -->
+    <aside class="cf-box">
+      <div class="card-jp mb-3">
+        <div class="card-jp-header"><span class="card-jp-title" style="font-size:13px"><i class="bi bi-card-checklist me-2" style="color:var(--accent)"></i>Resumen</span></div>
+        <div class="card-jp-body">
+          <div class="sum-title" id="sTitle" style="color:var(--text-muted);font-style:italic;font-weight:500">Sin título</div>
+          <div class="sum-line empty" id="sWhen"><i class="bi bi-calendar-event"></i><span>Falta fecha y hora</span></div>
+          <div class="sum-line empty" id="sWhere"><i class="bi bi-geo-alt"></i><span>Sin sede</span></div>
+          <div class="sum-line empty" id="sCoach"><i class="bi bi-person-workspace"></i><span>Sin entrenador</span></div>
+          <div class="sum-line empty" id="sPlayers"><i class="bi bi-people"></i><span>Sin alumnos</span></div>
+          <div class="cov hide" id="cov"><i class="bi bi-ticket-perforated me-1"></i><span></span></div>
+          <hr style="margin:12px 0">
+          <button type="button" class="btn-jp btn-jp-primary w-100 mb-2" id="go" aria-disabled="true" style="display:block"><i class="bi bi-check-lg me-1"></i>Crear sesión</button>
+          <a href="#" class="btn-jp btn-jp-secondary w-100" style="text-align:center;display:block">Cancelar</a>
+          <div class="todo" id="todo"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ② CUÁNDO ─────────────────────────────────────────── -->
+    <div class="cf-cuando">
+      <div class="card-jp mb-3">
+        <div class="card-jp-header"><span class="card-jp-title"><span class="step" id="st2">2</span>¿Cuándo y dónde?</span></div>
+        <div class="card-jp-body">
+          <div class="seg mb-3">
+            <label><input type="radio" name="freq" value="one" checked><span><i class="bi bi-calendar-event"></i>Una vez</span></label>
+            <label><input type="radio" name="freq" value="rec"><span><i class="bi bi-arrow-repeat"></i>Se repite</span></label>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-sm-6" id="dateOne">
+              <label class="form-label">Fecha <span style="color:var(--danger)">*</span></label>
+              <input id="date" type="date" class="form-control-jp">
+              <div class="sugg" id="dateSugg"></div>
+            </div>
+            <div class="col-12 hide" id="recBlock">
+              <label class="form-label">Días de la semana <span style="color:var(--danger)">*</span></label>
+              <div class="days">
+                <label><input type="checkbox" class="dayc" value="L"><span>L</span></label>
+                <label><input type="checkbox" class="dayc" value="M"><span>M</span></label>
+                <label><input type="checkbox" class="dayc" value="X"><span>X</span></label>
+                <label><input type="checkbox" class="dayc" value="J"><span>J</span></label>
+                <label><input type="checkbox" class="dayc" value="V"><span>V</span></label>
+                <label><input type="checkbox" class="dayc" value="S"><span>S</span></label>
+                <label><input type="checkbox" class="dayc" value="D"><span>D</span></label>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:8px">Desde <input id="dateFrom" type="date" class="form-control-jp" style="display:inline-block;width:auto;padding:4px 8px"> hasta fin de temporada</div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <label class="form-label">Inicio <span style="color:var(--danger)">*</span></label>
+              <input id="tStart" type="time" class="form-control-jp">
+            </div>
+            <div class="col-6 col-sm-3">
+              <label class="form-label">Fin <span style="font-weight:400;color:var(--text-muted)">(por defecto +1 h)</span></label>
+              <input id="tEnd" type="time" class="form-control-jp">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Sede</label>
+              <select id="where" class="form-control-jp">
+                <option value="">Sin sede</option>
+                <option>Camp de Futbol Municipal</option>
+                <option>Pavelló Sant Vicenç</option>
+                <option>Campo 2 – Césped artificial</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ QUIÉN ──────────────────────────────────────────── -->
+    <div class="cf-quien">
+      <div class="card-jp mb-3">
+        <div class="card-jp-header"><span class="card-jp-title"><span class="step" id="st3">3</span>¿Quién participa?</span></div>
+        <div class="card-jp-body">
+
+          <div class="sub" style="display:flex;justify-content:space-between;align-items:center">
+            <span id="respLabel">Entrenador</span>
+            <span class="seg sm" style="text-transform:none;letter-spacing:0">
+              <label><input type="radio" name="resp" value="coach" checked><span>Entrenador</span></label>
+              <label><input type="radio" name="resp" value="staff"><span>Staff</span></label>
+            </span>
+          </div>
+          <input id="coachSearch" type="search" class="form-control-jp" placeholder="Buscar entrenador…" autocomplete="off">
+          <div class="chips" id="coachChips"></div>
+          <div class="sugg" id="coachSugg"></div>
+
+          <div class="sub">Alumnos</div>
+          <div class="seg sm mb-2">
+            <label><input type="radio" name="who" value="reg" checked><span><i class="bi bi-person-check"></i>Alumno registrado</span></label>
+            <label><input type="radio" name="who" value="ext"><span><i class="bi bi-person-badge"></i>Externo (clase puntual)</span></label>
+          </div>
+          <div id="regBlock">
+            <input id="playerSearch" type="search" class="form-control-jp" placeholder="Buscar alumno…" autocomplete="off">
+            <div class="chips" id="playerChips"></div>
+            <div class="sugg" id="playerSugg"></div>
+          </div>
+          <div id="extBlock" class="hide">
+            <input id="extName" type="text" class="form-control-jp" placeholder="Nombre de la persona externa *" autocomplete="off">
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px">Solo el nombre es obligatorio; teléfono y datos se pueden añadir luego en su ficha.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÁS DETALLES (plegado) ─────────────────────────────── -->
+    <div class="cf-mas">
+      <div class="card-jp mb-3">
+        <details class="more">
+          <summary><span><i class="bi bi-sliders me-2" style="color:var(--text-muted)"></i>Más detalles<small>opcional · objetivo, descripción y planificación</small></span><i class="bi bi-chevron-down"></i></summary>
+          <div class="card-jp-body" style="border-top:1px solid var(--border)">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Objetivo del entrenamiento</label>
+                <input type="text" class="form-control-jp" placeholder="Ej: Mejora del primer toque, trabajo de presión alta…">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Descripción / notas generales</label>
+                <input type="text" class="form-control-jp" placeholder="Información adicional sobre la sesión…">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Planificación previa</label>
+                <textarea class="form-control-jp" rows="3" placeholder="Qué se trabajará, ejercicios planificados, puntos de mejora…"></textarea>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var COACHES = ['Joan Puig', 'Marta Soler', 'Pau Ribas', 'Laia Vidal'];
+  var STAFF   = ['Núria (coordinación)', 'Carles (material)'];
+  var PLAYERS = ['Leo Martínez', 'Hugo García', 'Arnau Pons', 'Biel Roca', 'Nil Ferrer', 'Pol Serra'];
+  var coaches = [], players = [];
+  var DOW = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  var MON = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  function val(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ''; }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function fmtDate(s) { if (!s) return ''; var p = s.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]); return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
+  function addH(t, h) { var p = t.split(':'); var m = (+p[0] * 60 + +p[1] + h * 60) % 1440; return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); }
+  function setLine(id, icon, html, empty) { var el = $(id); el.className = 'sum-line' + (empty ? ' empty' : ''); el.innerHTML = '<i class="bi bi-' + icon + '"></i><span>' + html + '</span>'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // Atajos de fecha: hoy, mañana, el próximo lunes…
+  (function () {
+    var box = $('dateSugg'), t = new Date(), m = new Date(); m.setDate(t.getDate() + 1);
+    var nl = new Date(); nl.setDate(t.getDate() + ((8 - t.getDay()) % 7 || 7));
+    [['Hoy', t], ['Mañana', m], ['Próx. lunes', nl]].forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = x[0];
+      b.onclick = function () { $('date').value = iso(x[1]); render(); }; box.appendChild(b);
+    });
+  })();
+
+  function chipList(boxId, arr, onRemove) {
+    var box = $(boxId); box.innerHTML = '';
+    arr.forEach(function (n, i) {
+      var c = document.createElement('span'); c.className = 'chip';
+      c.innerHTML = esc(n) + '<button type="button" aria-label="Quitar">×</button>';
+      c.querySelector('button').onclick = function () { arr.splice(i, 1); onRemove(); };
+      box.appendChild(c);
+    });
+  }
+  function suggest(boxId, all, arr, q, onAdd) {
+    var box = $(boxId); box.innerHTML = '';
+    all.filter(function (n) { return arr.indexOf(n) < 0 && (!q || n.toLowerCase().indexOf(q.toLowerCase()) >= 0); }).slice(0, 5).forEach(function (n) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = '+ ' + n;
+      b.onclick = function () { arr.push(n); onAdd(); }; box.appendChild(b);
+    });
+  }
+  function renderPeople() {
+    var list = val('resp') === 'staff' ? STAFF : COACHES;
+    $('respLabel').textContent = val('resp') === 'staff' ? 'Staff responsable' : 'Entrenador';
+    chipList('coachChips', coaches, render);
+    suggest('coachSugg', list, coaches, $('coachSearch').value, function () { $('coachSearch').value = ''; render(); });
+    chipList('playerChips', players, render);
+    suggest('playerSugg', PLAYERS, players, $('playerSearch').value, function () { $('playerSearch').value = ''; render(); });
+  }
+
+  function render() {
+    var title = $('title').value.trim(), rec = val('freq') === 'rec';
+    var date = $('date').value, st = $('tStart').value, en = $('tEnd').value;
+    var days = [].filter.call(document.querySelectorAll('.dayc:checked'), function () { return true; }).map(function (x) { return x.value; });
+    var ext = val('who') === 'ext', extName = $('extName').value.trim();
+    $('dateOne').classList.toggle('hide', rec); $('recBlock').classList.toggle('hide', !rec);
+    $('regBlock').classList.toggle('hide', ext); $('extBlock').classList.toggle('hide', !ext);
+    renderPeople();
+
+    // Resumen
+    var t = $('sTitle');
+    if (title) { t.textContent = title; t.style.cssText = ''; } else { t.textContent = 'Sin título'; t.style.cssText = 'color:var(--text-muted);font-style:italic;font-weight:500'; }
+    var endShown = en || (st ? addH(st, 1) : '');
+    var whenOk = rec ? (days.length && st) : (date && st);
+    if (whenOk) {
+      var h = st + '–' + endShown;
+      setLine('sWhen', 'calendar-event', rec ? '<b>Cada ' + days.join(' · ') + '</b> · ' + h + '<small>Serie desde ' + (fmtDate($('dateFrom').value) || 'la fecha elegida') + '</small>' : '<b>' + fmtDate(date) + '</b> · ' + h, false);
+    } else { setLine('sWhen', 'calendar-event', rec ? 'Falta elegir días y hora' : 'Falta fecha y hora', true); }
+    var w = $('where').value; w ? setLine('sWhere', 'geo-alt', esc(w), false) : setLine('sWhere', 'geo-alt', 'Sin sede', true);
+    coaches.length ? setLine('sCoach', 'person-workspace', esc(coaches.join(', ')), false) : setLine('sCoach', 'person-workspace', val('resp') === 'staff' ? 'Sin staff responsable' : 'Sin entrenador', true);
+    if (ext) { extName ? setLine('sPlayers', 'person-badge', '<b>' + esc(extName) + '</b> (externo)<small>No usa bono</small>', false) : setLine('sPlayers', 'people', 'Falta el nombre del externo', true); }
+    else { players.length ? setLine('sPlayers', 'people', '<b>' + players.length + '</b> alumno' + (players.length > 1 ? 's' : '') + '<small>' + esc(players.join(', ')) + '</small>', false) : setLine('sPlayers', 'people', 'Sin alumnos', true); }
+
+    // Cobertura de bono (simulada): aparece al haber alumnos registrados
+    var cov = $('cov');
+    if (!ext && players.length) { cov.classList.remove('hide'); cov.querySelector('span').textContent = rec ? 'Bonos: se comprobará que cubren toda la serie.' : 'Bonos: ' + players.length + ' alumno(s) con saldo suficiente.'; }
+    else cov.classList.add('hide');
+
+    // Qué falta
+    var miss = [];
+    if (!title) miss.push('el título');
+    if (rec ? !days.length : !date) miss.push(rec ? 'algún día de la semana' : 'la fecha');
+    if (!st) miss.push('la hora de inicio');
+    if (st && en && en !== '00:00' && en <= st) miss.push('una hora de fin posterior al inicio');
+    if (!coaches.length) miss.push(val('resp') === 'staff' ? 'un responsable' : 'un entrenador');
+    if (ext ? !extName : !players.length) miss.push(ext ? 'el nombre del externo' : 'un alumno');
+    var btn = $('go'), todo = $('todo');
+    btn.setAttribute('aria-disabled', miss.length ? 'true' : 'false');
+    todo.className = 'todo' + (miss.length ? '' : ' ok');
+    todo.innerHTML = miss.length ? '<i class="bi bi-exclamation-circle-fill me-1"></i>Falta: ' + miss.join(', ') : '<i class="bi bi-check-circle-fill me-1"></i>Todo listo para crear';
+
+    // Pasos hechos
+    $('st1').className = 'step' + (title ? ' done' : ''); $('st1').textContent = title ? '✓' : '1';
+    var ok2 = whenOk && !(st && en && en !== '00:00' && en <= st); $('st2').className = 'step' + (ok2 ? ' done' : ''); $('st2').textContent = ok2 ? '✓' : '2';
+    var ok3 = coaches.length && (ext ? extName : players.length); $('st3').className = 'step' + (ok3 ? ' done' : ''); $('st3').textContent = ok3 ? '✓' : '3';
+  }
+
+  document.addEventListener('input', render);
+  document.addEventListener('change', function (e) { if (e.target.name === 'resp') coaches = []; render(); });
+  [].forEach.call($('titleSugg').querySelectorAll('button'), function (b) { b.onclick = function () { $('title').value = b.textContent; render(); }; });
+  $('go').onclick = function () {
+    if ($('go').getAttribute('aria-disabled') === 'true') {
+      var f = !$('title').value.trim() ? $('title') : (val('freq') === 'one' && !$('date').value ? $('date') : (!$('tStart').value ? $('tStart') : (!coaches.length ? $('coachSearch') : $('playerSearch'))));
+      f.focus(); f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else alert('Mockup: aquí se crearía la sesión.');
+  };
+  render();
+})();
+</script>
+</body>
+</html>

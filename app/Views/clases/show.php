@@ -80,15 +80,9 @@ $statusHint   = [
             </button>
         </form>
         <?php elseif ($session['status'] === 'cancelled'): ?>
-        <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" style="margin:0"
-              data-ru-confirm="¿Reactivar esta sesión cancelada?"
-              data-ru-confirm-desc="Volverá a estar programada."
-              data-ru-confirm-label="Reactivar">
-            <?= csrf_field() ?>
-            <button type="submit" class="btn-jp btn-jp-secondary btn-jp-sm">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar sesión
-            </button>
-        </form>
+        <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" onclick="openModal('modalReactivate')">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar sesión
+        </button>
         <?php endif; ?>
         <?php if ($isAdminRole): ?>
         <?php $inSeries = !empty($session['class_id']); ?>
@@ -390,12 +384,21 @@ $statusHint   = [
                                 <div style="font-size:10px;color:var(--text-muted)">
                                     <?= !empty($p['student_noted_at']) ? date('d/m H:i', strtotime($p['student_noted_at'])) : '' ?>
                                 </div>
+                                <?php if ($canManage && $session['status'] === 'scheduled'): ?>
+                                <button type="button" class="btn-jp btn-jp-secondary btn-jp-sm" style="margin-top:4px;font-size:11px;padding:2px 8px"
+                                        title="El alumno finalmente asiste: se retira su aviso de ausencia (la clase no cambia de estado)"
+                                        onclick="event.stopPropagation();openWithdrawNotice(<?= (int) $p['user_id'] ?>, '<?= esc($p['name'], 'js') ?>')">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Retirar aviso
+                                </button>
+                                <?php endif; ?>
                                 <?php elseif (empty($p['student_message'])): ?>
                                 <span style="color:var(--text-muted)">—</span>
                                 <?php endif; ?>
-                                <?php if (!empty($p['student_message'])): ?>
-                                <div style="margin-top:4px;font-size:12px;color:#1d4ed8;white-space:normal" title="Mensaje del alumno">
-                                    <i class="bi bi-chat-dots-fill me-1"></i><?= esc($p['student_message']) ?>
+                                <?php if (!empty($p['student_message'])):
+                                    $isRecover = \App\Services\ClasesService::isRecoverMessage($p['student_message']); ?>
+                                <div style="margin-top:4px;font-size:12px;color:#1d4ed8;white-space:normal<?= $isRecover ? ';background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:5px 8px;font-weight:600' : '' ?>"
+                                     title="<?= $isRecover ? 'Petición de la familia: tú decides' : 'Mensaje del alumno' ?>">
+                                    <i class="bi <?= $isRecover ? 'bi-arrow-counterclockwise' : 'bi-chat-dots-fill' ?> me-1"></i><?= esc($p['student_message']) ?>
                                     <span style="font-size:10px;color:var(--text-muted)"><?= !empty($p['student_message_at']) ? date('d/m H:i', strtotime($p['student_message_at'])) : '' ?></span>
                                 </div>
                                 <?php endif; ?>
@@ -559,14 +562,6 @@ $statusHint   = [
                             <?php if (!$isAssigned): ?>
                             <option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option>
                             <?php endif; ?>
-                        <?php endforeach; ?>
-                    </select>
-                    <select name="coach_id" class="form-control-jp mb-2">
-                        <option value=""><?= $isStaffSession ? 'Sin staff asignado' : 'Sin entrenador asignado' ?></option>
-                        <?php
-                        $responsiblePool = $isStaffSession ? $staffOptions : $coachOptions;
-                        foreach ($responsiblePool as $c): ?>
-                            <option value="<?= $c['id'] ?>"><?= esc($c['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn-jp btn-jp-primary btn-jp-sm w-100">
@@ -763,6 +758,78 @@ $statusHint   = [
         </div>
     </div>
 </div>
+
+<?php if ($canManage): ?>
+<?php
+$noticeCount = count(array_filter($session['players'] ?? [], fn($p) => !empty($p['student_noted_at']) || !empty($p['student_note'])));
+$recoverCount = count(array_filter($session['players'] ?? [], fn($p) => \App\Services\ClasesService::isRecoverMessage($p['student_message'] ?? null)));
+?>
+<!-- ── Modal: reactivar una sesión cancelada (motivo obligatorio) ── -->
+<?php if ($session['status'] === 'cancelled'): ?>
+<div id="modalReactivate" class="cs-modal-overlay d-none">
+    <div class="cs-modal">
+        <div class="cs-modal-header">
+            <span>Reactivar sesión</span>
+            <button type="button" onclick="closeModal('modalReactivate')" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cs-modal-body">
+            <form action="/clases/<?= $session['id'] ?>/reabrir" method="POST" data-guard>
+                <?= csrf_field() ?>
+                <p style="font-size:13px;color:var(--text-body);margin-bottom:10px">
+                    La clase vuelve a estar <b>programada</b> y se avisa a alumnos y entrenadores.
+                    <?php if ($noticeCount > 0): ?>Se retirarán los <b><?= $noticeCount ?> aviso<?= $noticeCount > 1 ? 's' : '' ?> de ausencia</b> que había (queda constancia en el historial).<?php endif; ?>
+                    <?php if ($recoverCount > 0): ?> Hay <b><?= $recoverCount ?> petición<?= $recoverCount > 1 ? 'es' : '' ?> de la familia</b> para recuperarla.<?php endif; ?>
+                </p>
+                <label class="form-label" for="reactivate-reason">Motivo <span style="color:var(--danger)">*</span></label>
+                <textarea id="reactivate-reason" name="reason" class="form-control-jp mb-3" rows="2" maxlength="300" required
+                          data-guard-label="el motivo" placeholder="Ej: la familia ha pedido recuperar la clase"></textarea>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn-jp btn-jp-secondary" data-guard-ignore onclick="closeModal('modalReactivate')">Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- ── Modal: retirar el aviso de ausencia de un alumno (motivo obligatorio) ── -->
+<?php if ($session['status'] === 'scheduled'): ?>
+<div id="modalWithdraw" class="cs-modal-overlay d-none">
+    <div class="cs-modal">
+        <div class="cs-modal-header">
+            <span>Retirar aviso de ausencia</span>
+            <button type="button" onclick="closeModal('modalWithdraw')" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cs-modal-body">
+            <form action="/clases/<?= $session['id'] ?>/retirar-aviso" method="POST" data-guard>
+                <?= csrf_field() ?>
+                <input type="hidden" name="user_id" id="withdraw-user">
+                <p style="font-size:13px;color:var(--text-body);margin-bottom:10px">
+                    <b id="withdraw-name">El alumno</b> vuelve a la clase: se retira su aviso de ausencia y se le avisa a él y al equipo.
+                    La clase no cambia de estado. Si el aviso había generado un descuento de bono, se devuelve.
+                </p>
+                <label class="form-label" for="withdraw-reason">Motivo <span style="color:var(--danger)">*</span></label>
+                <textarea id="withdraw-reason" name="reason" class="form-control-jp mb-3" rows="2" maxlength="300" required
+                          data-guard-label="el motivo" placeholder="Ej: la familia nos avisa de que al final sí viene"></textarea>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn-jp btn-jp-secondary" data-guard-ignore onclick="closeModal('modalWithdraw')">Cancelar</button>
+                    <button type="submit" class="btn-jp btn-jp-primary"><i class="bi bi-arrow-counterclockwise me-1"></i>Retirar aviso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function openWithdrawNotice(userId, name) {
+    document.getElementById('withdraw-user').value = userId;
+    document.getElementById('withdraw-name').textContent = name;
+    openModal('modalWithdraw');
+    var t = document.getElementById('withdraw-reason'); if (t) setTimeout(function () { t.focus(); }, 50);
+}
+</script>
+<?php endif; ?>
+<?php endif; ?>
 
 <!-- ── Modal: cambiar campo/instalación ─────────────────────── -->
 <?php if ($isAdminRole): ?>
