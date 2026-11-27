@@ -1,5 +1,10 @@
 [
     {
+        "version": "2.9.0",
+        "date": "2026-11-27 00:00:00",
+        "description": "Cuando un alumno deja un comentario en las observaciones de su perfil, ahora reciben aviso la administración y hasta dos entrenadores de sus próximas clases; el aviso lleva a la ficha del alumno. Mensajes: de forma temporal se bloquea que enviar un mensaje (o volver a identificarse) pueda recargar la página."
+    },
+    {
         "version": "2.8.0",
         "date": "2026-11-12 00:00:00",
         "description": "Avisos de ausencia y recuperar clases: si un alumno avisa de que no va, la familia ahora puede pedir recuperar la clase («Quiero recuperar esta clase», tanto con un aviso enviado como con la clase cancelada) y el equipo lo ve destacado en la ficha. Solo administración, entrenadores y staff cambian el estado: nuevo «Retirar aviso» por alumno y «Reactivar sesión» con motivo obligatorio, que avisa a alumnos y entrenadores y deja constancia en el historial. Calendario: las clases canceladas ya no desaparecen, se ven en rojo y tachadas (también para el alumno) y salen en la leyenda. El selector «Elige qué clase quieres ver» es mucho más amplio, con buscador y filtros por estado, y ordena por hora descendente (con un clic, ascendente). Nueva clase (avanzada): la caja Crear/Cancelar pasa arriba a la derecha (25 % de la fila de «Información de la clase»). Se quita el selector de responsable por alumno, que no se usaba. El texto del aviso tardío ya no promete un descuento inmediato."
