@@ -99,6 +99,11 @@ class AnnotationController extends BaseController
             'document_id' => $documentId,
         ]);
 
+        // Solo cuando escribe el propio alumno (que además solo puede en su perfil).
+        if ($role === 'player') {
+            (new \App\Services\StudentCommentNoticeService())->notify($playerId, $content, $documentId !== null);
+        }
+
         session()->setFlashdata('annotation_success', 'Anotación añadida correctamente.');
 
         return $this->redirectBack($playerId);

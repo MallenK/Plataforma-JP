@@ -186,6 +186,9 @@ class AlumnosController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        // Entrar en la ficha deja leídos los avisos de comentarios de este alumno.
+        (new \App\Models\NotificationModel())->markReadBySource((int) $this->currentUserId(), \App\Models\NotificationModel::SOURCE_PLAYER, $id);
+
         $annotationModel = new \App\Models\PlayerAnnotationModel();
         $role  = $this->currentRole();
         $types = ($role === 'player') ? ['public'] : ['public', 'internal'];
