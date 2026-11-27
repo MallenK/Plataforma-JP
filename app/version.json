@@ -2,7 +2,7 @@
     {
         "version": "2.9.0",
         "date": "2026-11-27 00:00:00",
-        "description": "Cuando un alumno deja un comentario en las observaciones de su perfil, ahora reciben aviso la administración y hasta dos entrenadores de sus próximas clases; el aviso lleva a la ficha del alumno. Mensajes: de forma temporal se bloquea que enviar un mensaje (o volver a identificarse) pueda recargar la página."
+        "description": "Cuando un alumno deja un comentario en las observaciones de su perfil, ahora reciben aviso la administración y hasta dos entrenadores de sus próximas clases; el aviso lleva a la ficha del alumno. Mensajes: corregido que al enviar con Enter en Firefox saliera el aviso «Algo ha fallado» y se recargara la página sin enviar el mensaje."
     },
     {
         "version": "2.8.0",
