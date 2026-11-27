@@ -106,7 +106,8 @@ $roleLabels = [
 
         <!-- Input -->
         <div class="chat-input-bar" id="chat-input-bar">
-            <form id="form-message" enctype="multipart/form-data">
+            <?php // onsubmit: red de seguridad para que el envío nativo no recargue la página si falla el JS. ?>
+            <form id="form-message" enctype="multipart/form-data" onsubmit="event.preventDefault()">
                 <input type="hidden" name="conversation_id" id="input-conv-id">
                 <input type="hidden" name="<?= $csrfName ?>" id="csrf-msg" value="<?= $csrfHash ?>">
 
@@ -208,7 +209,7 @@ $roleLabels = [
             </h3>
             <button type="button" data-ru-dialog-close aria-label="Cerrar" id="btn-reauth-cancel"><i class="bi bi-x-lg"></i></button>
         </div>
-        <form id="form-reauth">
+        <form id="form-reauth" onsubmit="event.preventDefault()">
             <div class="ru-dialog-body">
                 <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">
                     Por seguridad tu sesión ha caducado por inactividad. Introduce tu contraseña
@@ -662,7 +663,9 @@ $roleLabels = [
     document.getElementById('msg-body')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            document.getElementById('form-message').dispatchEvent(new Event('submit'));
+            // requestSubmit() y NO dispatchEvent(new Event('submit')): ese evento no se puede
+            // cancelar y Firefox envía el formulario de verdad (recarga y «Algo ha fallado»).
+            document.getElementById('form-message').requestSubmit();
         }
     });
 
